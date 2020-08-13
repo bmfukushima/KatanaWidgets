@@ -118,9 +118,9 @@ import math
 
 from PyQt5.QtWidgets import (
     QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout,
-    QShortcut, QScrollArea, QSplitter, QMessageBox, QPlainTextEdit,
+    QScrollArea, QSplitter, QPlainTextEdit,
     QTreeWidget, QHeaderView, QAbstractItemView, QLineEdit,
-    QGridLayout, QSizePolicy, QMenu, QTreeWidgetItem, QStackedLayout,
+    QSizePolicy, QMenu, QTreeWidgetItem, QStackedLayout,
     QSpacerItem
 )
 from PyQt5 import QtCore, QtGui
@@ -143,10 +143,8 @@ from Settings import (
     SPLITTER_STYLE_SHEET_HIDE,
     SPLITTER_HANDLE_WIDTH,
     ACCEPT_COLOR_RGBA,
-    CANCEL_COLOR_RGBA,
     MAYBE_COLOR_RGBA,
     ACCEPT_HOVER_COLOR_RGBA,
-    CANCEL_HOVER_COLOR_RGBA,
     MAYBE_HOVER_COLOR_RGBA
     )
 
@@ -211,6 +209,7 @@ class VariableManagerEditor(QWidget):
         nodegraph_widget.cleanup()
 
 
+# noinspection PyTypeChecker
 class VariableManagerMainWidget(QWidget):
     """
     Main editor widget for the Variable Manager.
@@ -257,7 +256,7 @@ class VariableManagerMainWidget(QWidget):
 
     def initDefaultAttributes(self, node):
         """
-        renitializes default attributes on the node, so that they
+        reinitialize default attributes on the node, so that they
         can be recalled
 
         Args:
@@ -319,10 +318,10 @@ class VariableManagerMainWidget(QWidget):
 
     def updateAllVariableSwitches(self, root_node, new_pattern=None):
         """
-        recusively searchs up the node graph to set update the variable switches
+        recursively searches up the node graph to set update the variable switches
 
         Args:
-            root_node : node to start looking for udpate on.  This should be
+            root_node : node to start looking for update on.  This should be
                 a node with the parameter type set to root.
             new_pattern : if it exists will add this to the variable list
                 (getVariableList only finds current vars).  This only needs
@@ -389,7 +388,7 @@ class VariableManagerMainWidget(QWidget):
             block_node_name = root_node.getParameter('nodeReference.block_group').getValue(0)
             block_node = NodegraphAPI.GetNode(block_node_name)
             temp_list = [new_pattern]
-            variable_list = getVariableList(block_node, variable_list=filter(None, temp_list))
+            variable_list = getVariableList(block_node, variable_list=list(filter(None, temp_list)))
 
             # update the internal variable switches
             updateVariableSwitch(root_node, variable_list)
@@ -520,7 +519,7 @@ class VariableManagerMainWidget(QWidget):
         accept (fun): The function to run if the user hits accept
         cancel (fun): The function to run if the user hits cancel
         detailed_warning_text (str): The super detailed warning message
-            to provide any additinoal warning details to the user.
+            to provide any additional warning details to the user.
         """
         self.warning_display_widget.update(
                 warning_text, accept, cancel, detailed_warning_text
@@ -662,7 +661,7 @@ class VariableManagerMainWidget(QWidget):
         the current publishes
 
         TODO:
-            change retvals from ints to keywords
+            change return values from ints to keywords
         """
         def createDirectories(publish_dir, variable):
             """
@@ -758,7 +757,7 @@ but you need this crap in order to save stuff into it.
             self.setWorkingItem(master_item)
 
             # set version
-            self.versions_display_widget.update(column=2, GUI=True)
+            self.versions_display_widget.update(column=2, gui=True)
 
     """ PROPERTIES """
     def getNode(self):
@@ -1918,18 +1917,18 @@ class VariableManagerGSVMenu(AbstractComboBox):
             self.main_widget.variable_manager_widget.variable_browser.showMiniNodeGraph()
 
     def createNewGSV(self, gsv):
-        '''
+        """
         Creates a new GSV in the project settings.
 
         Args:
             gsv (str) the name of the GSV to add
-        '''
-        variablesGroup = NodegraphAPI.GetRootNode().getParameter('variables')
-        variableParam = variablesGroup.createChildGroup(gsv)
-        variableParam.createChildNumber('enable', 1)
-        variableParam.createChildString('value', '')
-        variableParam.createChildStringArray('options', 0)
-        return variableParam.getName()
+        """
+        variables_group = NodegraphAPI.GetRootNode().getParameter('variables')
+        variable_param = variables_group.createChildGroup(gsv)
+        variable_param.createChildNumber('enable', 1)
+        variable_param.createChildString('value', '')
+        variable_param.createChildStringArray('options', 0)
+        return variable_param.getName()
 
     """ EVENTS """
     def mousePressEvent(self, *args, **kwargs):
@@ -2157,6 +2156,9 @@ class VariableManagerBrowser(QTreeWidget):
             item (VariableManagerBrowserItem): item to have its parent set.
             new_parent_item (VariableManagerBrowserItem): Item to be
                 parented to.
+
+        Kwargs:
+            index (int): the new index of the child
         """
         old_parent_item = item.parent()
 
@@ -2230,13 +2232,13 @@ class VariableManagerBrowser(QTreeWidget):
         root_dir = self.main_widget.getRootPublishDir()
 
         """
-        To Do:
+        TODO:
             variable != ''
                 repeated... because the directories need to exist to
                 create the master item?  Do I need to be repeating
                 this?
         """
-        # do stuff if variable is empty/unassigned/iniatlizing
+        # do stuff if variable is empty/unassigned/initializing
         if variable != '':
             variable_dir = '{root_dir}/{variable}'.format(root_dir=root_dir, variable=variable)
             publish_dir = variable_dir + '/patterns/master'
@@ -2276,7 +2278,7 @@ class VariableManagerBrowser(QTreeWidget):
         Args:
             item (VariableManagerBrowserItem): The item that is currently
                 being moved around.
-            new_parent (VariableManagerBrowserItem): The parent item
+            new_parent_item (VariableManagerBrowserItem): The parent item
                 that has had an item moved under it.
             new_index (int): The new index of the child for the
                 new parent.
@@ -2301,9 +2303,10 @@ class VariableManagerBrowser(QTreeWidget):
         to its existing parent
 
         Args:
-            node (Root Node):  The items root node
-            old_block_node (Block Node): The items previous parents
-                block node.
+            item (VariableManagerBrowserItem): The item that is currently
+                being moved around.
+            old_parent_item (VariableManagerBrowserItem): The parent item
+                that the item is being removed from
         """
         # get nodes
         node = item.getRootNode()
@@ -2313,7 +2316,7 @@ class VariableManagerBrowser(QTreeWidget):
         Massive duck typing hack to get around issue in the
         dropOnPattern --> __createUserBlockItem
             due to the fact that it has to create at origin every time...
-            so... it will disconenct the last node... which will cause it
+            so... it will disconnect the last node... which will cause it
             to not be able to find a connect port, which will cause the
             index error in the list, which will make me pull me hair out
             trying to trace this down...
@@ -2343,7 +2346,7 @@ class VariableManagerBrowser(QTreeWidget):
         Dereferences the item from the old parent item.
 
         Args:
-            item (VariableManagerBrowserItem): item to be dereferenced
+            item (VariableManagerBrowserItem): item to be unreferenced
                 from the old_parent_item
             old_parent_item (VariableManagerBrowserItem): the item to have
                 the reference removed from.
@@ -2755,7 +2758,7 @@ class VariableManagerBrowser(QTreeWidget):
                 if new_parent == item_dropped_on:
                     self.__dropOnBlockEvent(dropped_item, old_parent, new_parent, new_index)
 
-        # Dropped inbetween items
+        # Dropped in between items
         else:
             return_val = super(VariableManagerBrowser, self).dropEvent(event, *args, **kwargs)
             new_parent = dropped_item.parent()
@@ -2803,7 +2806,7 @@ class VariableManagerBrowser(QTreeWidget):
     def showMiniNodeGraph(self):
         """
         If the Node Type is set to <multi> by the user.  This will enable it
-        so that when a user cilcks on a new item, the mini node graph
+        so that when a user clicks on a new item, the mini node graph
         to the left of the GSV manager will automatically go to that
         node.
         """
