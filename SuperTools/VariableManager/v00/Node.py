@@ -418,7 +418,10 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
     """ PROPERTIES """
     @property
     def variable_root_node(self):
-        return self._variable_root_node
+        try:
+            return self._variable_root_node
+        except AttributeError:
+            return self.getChildByIndex(0)
 
     @variable_root_node.setter
     def variable_root_node(self, variable_root_node):
