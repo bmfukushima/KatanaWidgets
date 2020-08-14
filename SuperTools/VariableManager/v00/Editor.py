@@ -999,11 +999,12 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
     the user can change the version and check the release notes on each version
     before accepting this version
     Args:
-        display_type
         column (int): column clicked to determine if it is publishing a pattern (1) or block (2)
-        version
-        GUI (bool)
-        previous_variable
+        version (str): version to use in string format such as "v000"
+        gui (bool): If True, this widget pops up and lets the user choose what version
+            they want to use.  If False, this widget is bypassed, and the updates happen
+            automatically to the live/latest version.
+        previous_variable (str): the previous GSV.  This is here incase it needs to be reset later?
     """
     def __init__(
         self,
@@ -1147,7 +1148,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
     ):
         """
         This is the show command, when this is triggered,
-        the widget will update and be dispalyed to the user.
+        the widget will update and be displayed to the user.
         """
         # change widget to versions display
         self.display()
