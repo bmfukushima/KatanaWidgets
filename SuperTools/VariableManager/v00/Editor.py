@@ -125,9 +125,14 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5 import QtCore, QtGui
 
-from Katana import UI4, QT4Widgets, QT4FormWidgets
-from Katana import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
-from Katana import UniqueName, FormMaster, Utils
+try:
+    from Katana import UI4, QT4Widgets, QT4FormWidgets
+    from Katana import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
+    from Katana import UniqueName, FormMaster, Utils
+except ImportError:
+    import UI4, QT4Widgets, QT4FormWidgets
+    import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
+    import UniqueName, FormMaster, Utils
 
 from ItemTypes import (
     MASTER_ITEM,
@@ -209,7 +214,6 @@ class VariableManagerEditor(QWidget):
         nodegraph_widget.cleanup()
 
 
-# noinspection PyTypeChecker
 class VariableManagerMainWidget(QWidget):
     """
     Main editor widget for the Variable Manager.
@@ -228,6 +232,7 @@ class VariableManagerMainWidget(QWidget):
         working_item (item): this attribute is the current selection in the
             VariableManagerBrowser TreeWidget
     """
+
     def __name__(self):
         return "VariableManagerMainWidget"
 
@@ -315,8 +320,65 @@ class VariableManagerMainWidget(QWidget):
             node_type_menu.setCurrentIndexToText(node_type)
 
     """ UTILS """
+    """ UPDATE VARIABLE SWITCH"""
+    def updateVariableSwitch(self, root_node, variable_list):
+        """
+        creates/deletes all the ports for one individual variable switch
+
+        Args:
+            root_node (Root Node): Root node container
+            variable_list (list): list of all of the GSV's in the
+                current project plus the new one to append
+                if this is a user update.  This is gathered from
+                the getVariableList() in this scope.
+        """
+        # get nodes
+        block_group = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
+        vs_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.vs_node').getValue(0))
+
+        # remove existing ports
+        for input_port in vs_node.getInputPorts():
+            if input_port.getName() != 'default':
+                vs_node.removeInputPort(input_port.getName())
+
+        # add ports
+        for pattern_string in sorted(variable_list):
+            param_string = pattern_string
+            for char in param_string:
+                if char.isalnum() is False:
+                    param_string = param_string.replace(char, '_')
+
+            port = vs_node.addInputPort(param_string)
+            pattern = pattern_string.replace(PATTERN_PREFIX, '')
+            vs_node.getParameter('patterns.%s' % param_string).setValue(str(pattern), 0)
+            port.connect(block_group.getOutputPortByIndex(0))
+
+    def getVariableList(self, block_group, variable_list):
+        """
+        Gathers all of the patterns necessary for this specific variable
+        that is downstream of the current item
+
+        Args:
+            block_group (Block Node): Node that holds all of the
+                patterns/blocks.
+            variable_list (list): A list of strings containing the current GSV list
+        Returns (list): of strings with the name of all of the GSVs
+            in the current project
+        """
+        for param in block_group.getParameter('nodeReference').getChildren():
+            if PATTERN_PREFIX in param.getName():
+                veg_node = NodegraphAPI.GetNode(param.getValue(0))
+                pattern = veg_node.getParameter('pattern').getValue(0)
+                variable_list.append(PATTERN_PREFIX+pattern)
+
+            elif BLOCK_PREFIX in param.getName():
+                root_node = NodegraphAPI.GetNode(param.getValue(0))
+                block_group = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
+                self.getVariableList(block_group, variable_list)
+        return list(set(variable_list))
 
     def updateAllVariableSwitches(self, root_node, new_pattern=None):
+
         """
         recursively searches up the node graph to set update the variable switches
 
@@ -327,58 +389,6 @@ class VariableManagerMainWidget(QWidget):
                 (getVariableList only finds current vars).  This only needs
                 to be provided when a NEW GSV has been created.
         """
-        def getVariableList(block_group, variable_list=[]):
-            """
-            Gathers all of the patterns necessary for this specific variable
-            that is downstream of the current item
-
-            Args:
-                block_group (Block Node): Node that holds all of the
-                    patterns/blocks.
-
-            Returns (list): of strings with the name of all of the GSVs
-                in the current project
-            """
-            for param in block_group.getParameter('nodeReference').getChildren():
-                if PATTERN_PREFIX in param.getName():
-                    veg_node = NodegraphAPI.GetNode(param.getValue(0))
-                    pattern = veg_node.getParameter('pattern').getValue(0)
-                    variable_list.append(PATTERN_PREFIX+pattern)
-
-                elif BLOCK_PREFIX in param.getName():
-                    root_node = NodegraphAPI.GetNode(param.getValue(0))
-                    block_group = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
-                    getVariableList(block_group, variable_list=variable_list)
-            return list(set(variable_list))
-
-        def updateVariableSwitch(root_node, variable_list):
-            """
-            creates/deletes all the ports for the variable switch
-
-            Args:
-                root_node (Root Node): Root node container
-                variable_list (list): list of all of the GSV's in the
-                    current project plus the new one to append
-                    if this is a user update.  This is gathered from
-                    the getVariableList() in this scope.
-            """
-            block_group = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
-            vs_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.vs_node').getValue(0))
-            for input_port in vs_node.getInputPorts():
-                if input_port.getName() != 'default':
-                    vs_node.removeInputPort(input_port.getName())
-
-            # add ports
-            for pattern_string in sorted(variable_list):
-                param_string = pattern_string
-                for char in param_string:
-                    if char.isalnum() is False:
-                        param_string = param_string.replace(char, '_')
-
-                port = vs_node.addInputPort(param_string)
-                pattern = pattern_string.replace(PATTERN_PREFIX, '')
-                vs_node.getParameter('patterns.%s' % param_string).setValue(str(pattern), 0)
-                port.connect(block_group.getOutputPortByIndex(0))
 
         # end recursion if at top level
         if root_node.getParameter('hash').getValue(0) == 'master':
@@ -388,10 +398,10 @@ class VariableManagerMainWidget(QWidget):
             block_node_name = root_node.getParameter('nodeReference.block_group').getValue(0)
             block_node = NodegraphAPI.GetNode(block_node_name)
             temp_list = [new_pattern]
-            variable_list = getVariableList(block_node, variable_list=list(filter(None, temp_list)))
+            variable_list = self.getVariableList(block_node, variable_list=list(filter(None, temp_list)))
 
             # update the internal variable switches
-            updateVariableSwitch(root_node, variable_list)
+            self.updateVariableSwitch(root_node, variable_list)
 
             # recurse
             new_root_node = root_node.getParent().getParent()
@@ -522,8 +532,8 @@ class VariableManagerMainWidget(QWidget):
             to provide any additional warning details to the user.
         """
         self.warning_display_widget.update(
-                warning_text, accept, cancel, detailed_warning_text
-            )
+            warning_text, accept, cancel, detailed_warning_text
+        )
         self.layout().setCurrentIndex(3)
 
     """ EVENTS """
@@ -909,9 +919,9 @@ class VariableManagerWidget(QWidget):
             TODO:
                 Create item creation widget here...
             """
-            params = QLabel("12345")
+            item_create_widget = VariableManagerCreateNewItemWidget(self)
             variable_browser_vbox.addWidget(self.variable_browser)
-            variable_browser_vbox.addWidget(params)
+            variable_browser_vbox.addWidget(item_create_widget)
 
             return variable_browser_widget
 
@@ -927,12 +937,12 @@ class VariableManagerWidget(QWidget):
             SPLITTER_HANDLE_WIDTH
         )
 
-        variable_browser_widget = createVariableManagerBrowserStack()
+        self.variable_browser_widget = createVariableManagerBrowserStack()
         self.node_graph_widget = self.createNodeGraphWidget()
         # self.variable_browser.showMiniNodeGraph()
 
         # Setup Layouts
-        self.variable_splitter.addWidget(variable_browser_widget)
+        self.variable_splitter.addWidget(self.variable_browser_widget)
         self.variable_splitter.addWidget(self.node_graph_widget)
         vbox.addWidget(self.variable_splitter)
         return widget
@@ -983,6 +993,8 @@ class VariableManagerWidget(QWidget):
 
 class VersionsDisplayWidget(AbstractUserBooleanWidget):
     """
+    TODO:
+        clean this up...
     creates a new widget for the user to view the versions currently available
     the user can change the version and check the release notes on each version
     before accepting this version
@@ -1322,15 +1334,8 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
     Hitting Accept / Cancel will return the user back to the main GUI
     for the Variable Manager
 
-    Args:
-        name (str): gsv name, pattern, and version of what the user
-            will currently publish.  Display as
-                <gsv name>|<gsv pattern>|<v000>
-        publish_type (settings.ITEM_TYPE):
-            How is this setting to pattern somewhere...
-        publish_state (int): determines if this should be set to the live version or not.
-            0 = Note Live
-            1 = Live
+    TODO:
+        Update doc strings...
     """
     def __init__(self, parent=None):
         super(PublishDisplayWidget, self).__init__(parent)
@@ -1384,6 +1389,16 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         publish_type=None,
         item=None,
     ):
+        """
+        Args:
+            name (str): gsv name, pattern, and version of what the user
+                will currently publish.  Display as
+                    <gsv name>|<gsv pattern>|<v000>
+            publish_type (settings.ITEM_TYPE):
+                How is this setting to pattern somewhere...
+            item (VariableManagerBrowserItem): Item that is currently being
+                published
+        """
         if name:
             self.label.setText(name)
             self.name = name
@@ -1736,17 +1751,126 @@ class PublishNotesWidget(QPlainTextEdit):
         QPlainTextEdit.focusOutEvent(self, event, *args, **kwargs)
 
 
-class VariableManagerCreateGSVWidget(QLineEdit):
+class VariableManagerCreateNewItemWidget(QWidget):
+    """
+    Lives at the bottom of the variable stack, this widget
+    is in charge of creating new items for the user.  This
+    could be a block or pattern depending on the selection
+    chosen by the user.
+
+    Attributes:
+        node_type (ITEM_TYPE): the type of item to create
+
+    Widgets:
+        item_type_button (QPushButton): Toggles what type
+            of item the user will be creating.
+        item_text_field (QLineEdit): Text of the new item to
+            be created.
+        enter_button (QPushButton): If the user is incapable of
+            understanding that you can hit enter/return to accept
+            something.  This is a really big, pretty much pointless
+            button.
+    """
 
     def __init__(self, parent=None):
-        super(VariableManagerCreateGSVWidget, self).__init__(parent)
+        super(VariableManagerCreateNewItemWidget, self).__init__(parent)
+        self.initGUI()
+        self.node_type = PATTERN_ITEM
+        self.main_widget = getMainWidget(self)
 
-    def createGSV(self):
+    def initGUI(self):
+        # create widgets
+        QHBoxLayout(self)
+        self.item_type_button = QPushButton()
+        self.item_text_field = QLineEdit()
+        self.enter_button = QPushButton(":thumbs_up:")
+
+        # connect signals to buttons
+        self.item_type_button.clicked.connect(self.toggleItemType)
+        self.enter_button.clicked.connect(self.__accept)
+
+        # add widgets to layout
+        self.layout().addWidget(self.item_type_button)
+        self.layout().addWidget(self.item_text_field)
+        self.layout().addWidget(self.enter_button)
+
+    """ EVENTS """
+    def toggleItemType(self):
+        """
+        Switches the item type that is going to be created
+        between Patterns and Blocks
+        """
+        if self.node_type == PATTERN_ITEM:
+            self.node_type = BLOCK_ITEM
+        elif self.node_type == BLOCK_ITEM:
+            self.node_type = PATTERN_ITEM
+
+    def __accept(self):
+        """
+        Creates a new item based off of what type of item is
+        set in the item_type_button.
+        """
+        # get current item
+        item = self.main_widget.getWorkingItem()
+        current_text = str(self.item_text_field.text())
+        if item:
+            if current_text:
+                browser_widget = self.main_widget.variable_manager_widget.variable_browser
+                browser_widget.createNewBrowserItem(self.node_type, item_text=current_text)
+                self.createNewPattern()
+
+    def keyPressEvent(self, event):
+        if event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
+            self.__accept()
+        return QWidget.keyPressEvent(self, event)
+
+    """ UTILS"""
+    def createNewPattern(self):
         """
         Creates a new pattern item for this widget.  If that pattern
         does not exist for the current graph state variable, it will
         create the new pattern aswell
         """
+        # get attributes
+        variable = self.main_widget.variable
+        new_variable = str(self.item_text_field.text())
+
+        # get variables list
+        variables_list_parm = NodegraphAPI.GetRootNode().getParameter(
+            'variables.{variable}.options'.format(variable=variable)
+        )
+        variables_list = [child.getName() for child in variables_list_parm.getChildren()]
+
+        # suppress callback...
+        # create new variable if doesn't exist
+        if new_variable not in variables_list:
+            num_children = variables_list_parm.getNumChildren()
+            variables_list_parm.resizeArray(num_children + 1)
+            variables_list_parm.getChildByIndex(num_children).setValue(new_variable, 0)
+
+    def __updateItemTypeButton(self):
+        """
+        Updates the look for the Node Type button.  This will
+        eventually change colors as well.
+
+        TODO:
+            ITEM TYPE COLOR
+        """
+        # Update button
+        if self.node_type == PATTERN_ITEM:
+            self.item_type_button.setText('P')
+        elif self.node_type == BLOCK_ITEM:
+            self.item_type_button.setText('B')
+
+    """ PROPERTIES """
+    @property
+    def node_type(self):
+        return self._node_type
+
+    @node_type.setter
+    def node_type(self, node_type):
+        self._node_type = node_type
+        self.__updateItemTypeButton()
 
 
 class VariableManagerGSVMenu(AbstractComboBox):
@@ -2897,7 +3021,7 @@ class VariableManagerBrowser(QTreeWidget):
 
     def contextMenuEvent(self, event):
         """
-        popup menu created when the rmb is hit - has a submethod
+        popup menu created when the rmb is hit - has a sub method
         'actionPicker' which is choosing another method inside of
         this class to do an action when that particular name is chosen
         """
@@ -2924,7 +3048,7 @@ class VariableManagerBrowser(QTreeWidget):
 
             # Publish item
             elif 'Publish' in action.text():
-                item = self.main_widget.getWorkingItem()
+                # item = self.main_widget.getWorkingItem()
                 node = self.main_widget.getNode()
                 current_text = self.main_widget.working_item.text(0)
                 variable = node.getParameter('variable').getValue(0)
