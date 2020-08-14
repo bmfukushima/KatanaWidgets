@@ -1,13 +1,9 @@
 """
-n = UI4.App.Tabs.FindTopTab('Node Graph')
-w = n._NodegraphPanel__nodegraphWidget
-
-for i in wl.iterkeys():
-    NodeGraphView.CleanupModule(i)
-    #w._NodegraphWidget__nodegraphWidgetList.pop(i, None)
-    print i
-
-*    need to be able to create patterns...
+* __dropOnPatternEvent
+    When drag/dropping out of block node into a pattern...
+    it creates the new block item under the wrong parent...
+    but only sometimes... mainly when its the last item in
+    a block item...
 
 *    checkHash repeats...
 
@@ -37,6 +33,7 @@ for i in wl.iterkeys():
     *    Hotkey return to last nodegraph display location?
 
 FEATURES:
+    *   Enable / Disable
     *    Delete GSV / Block
             a.) Drag / Drop in/out of Tree Widget.
                 - If exists tree widget and direction is horizontal-ish.. or not vertical
@@ -2828,7 +2825,7 @@ class VariableManagerBrowser(QTreeWidget):
                 being moved around.
             new_parent_item (VariableManagerBrowserItem): The new parent item
                 that has had an item moved under it.
-            old_parent (VariableManagerBrowserItem): The previous parent item
+            old_parent_item (VariableManagerBrowserItem): The previous parent item
                 that has had an item moved under it.
             new_index (int): The new index of the child for the
                 new parent.
@@ -2890,11 +2887,10 @@ class VariableManagerBrowser(QTreeWidget):
         """
         if dropped_item.getItemType() == PATTERN_ITEM:
             # create new block and setup node hierarchy
-            new_block_item = self.__createUserBlockItem(item_dropped_on)
-            # old parent is none sometimes? PORQUEUEUEUEUEUEU
-            #                                                                           NONE --V
-            #                                                               when drag/dropping last index out into pattern...
-            self.__moveItem(new_block_item, new_parent, new_block_item.parent(), new_index)
+            new_block_item = self.__createUserBlockItem(item=item_dropped_on)
+            new_block_item_parent = new_block_item.parent()
+
+            self.__moveItem(new_block_item, new_parent, new_block_item_parent, new_index)
             self.reparentItem(new_block_item, new_parent, index=new_index)
 
             # move dropped node under new block item
@@ -3077,7 +3073,7 @@ class VariableManagerBrowser(QTreeWidget):
                 # move block to patterns old location
                 new_grandparent_item = new_parent_item.parent()
                 self.__moveItem(new_parent_item, new_grandparent_item, new_grandparent_item, index)
-                new_grandparent_item.takeChild(new_grandparent_item.childCount()-1)
+                # new_grandparent_item.takeChild(new_grandparent_item.childCount()-1)
                 new_grandparent_item.insertChild(index, new_parent_item)
 
                 # expand new group
