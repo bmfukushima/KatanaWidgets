@@ -2647,13 +2647,14 @@ class VariableManagerBrowser(QTreeWidget):
 
         return master_item
 
-    def __createNewBlockItem(self):
+    def __createNewBlockItem(self, item_text='New_Block'):
         """
         Creates a new block item, which is a container for
         holding patterns in a GSV.
 
         This is called by the createNewBrowserItem method
-
+        Args:
+                item_text (str): The name of the new block
         return (VariableManagerBrowserItem)
         """
         # gather variables for item creation
@@ -2661,7 +2662,7 @@ class VariableManagerBrowser(QTreeWidget):
         parent_node, parent_item, current_pos = self.__getNewItemSetupAttributes()
 
         # create node group
-        block_node = node.createBlockRootNode(parent_node, name='New_Block')
+        block_node = node.createBlockRootNode(parent_node, name=item_text)
 
         # connect and align nodes
         self.__setupNodes(block_node, parent_node, current_pos)
@@ -2740,7 +2741,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         """
         if item_type == BLOCK_ITEM:
-            return self.__createNewBlockItem()
+            return self.__createNewBlockItem(item_text=item_text)
 
         elif item_type == PATTERN_ITEM:
             return self.__createNewPatternItem(item_text)

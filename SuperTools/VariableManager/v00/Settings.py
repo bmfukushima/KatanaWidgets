@@ -14,8 +14,15 @@ BLOCK_PREFIX = 'block__'
 NODEREFNAME = 'nodeReference'
 
 """ STYLES """
-
-
+"""
+################################
+#########    COLORS    ###########
+################################
+"""
+""" BLOCK / PATTERN """
+# item bg color
+# push button hover color
+""" ACCEPTS / DECLINE / MAYBE"""
 def convertToHoverColor(rgba, hover_mult=1.5):
     """
     """
