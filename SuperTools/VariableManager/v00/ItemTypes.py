@@ -3,6 +3,7 @@
 
 class MASTER_ITEM(object):
     COLUMN = 0
+    COLOR = (255, 200, 0, 255)
 
     def __repr__(self):
         return 'master'
@@ -10,6 +11,8 @@ class MASTER_ITEM(object):
 
 class PATTERN_ITEM(object):
     COLUMN = 1
+    COLOR = (100, 200, 100, 255)
+    BACKGROUND_COLOR = 0
 
     def __repr__(self):
         return 'pattern'
@@ -17,6 +20,8 @@ class PATTERN_ITEM(object):
 
 class BLOCK_ITEM(object):
     COLUMN = 2
+    COLOR = (128, 128, 255, 255)
+    BACKGROUND_COLOR = 0
 
     def __repr__(self):
         return 'block'

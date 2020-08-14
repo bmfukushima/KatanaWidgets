@@ -140,10 +140,10 @@ from ItemTypes import (
     BLOCK_ITEM,
     BLOCK_PUBLISH_GROUP,
 )
-
 from Settings import (
     PATTERN_PREFIX,
     BLOCK_PREFIX,
+    GRID_COLOR,
     SPLITTER_STYLE_SHEET,
     SPLITTER_STYLE_SHEET_HIDE,
     SPLITTER_HANDLE_WIDTH,
@@ -152,6 +152,7 @@ from Settings import (
     ACCEPT_HOVER_COLOR_RGBA,
     MAYBE_HOVER_COLOR_RGBA
     )
+
 
 from Utils import (
     AbstractComboBox,
@@ -1761,7 +1762,8 @@ class VariableManagerCreateNewItemWidget(QWidget):
 
     Attributes:
         node_type (ITEM_TYPE): the type of item to create
-
+        spacing (int): how much space is between the buttons
+            and the user input.
     Widgets:
         item_type_button (QPushButton): Toggles what type
             of item the user will be creating.
@@ -1775,6 +1777,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
 
     def __init__(self, parent=None):
         super(VariableManagerCreateNewItemWidget, self).__init__(parent)
+        self.spacing = 5
         self.initGUI()
         self.node_type = PATTERN_ITEM
         self.main_widget = getMainWidget(self)
@@ -1784,7 +1787,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
         QHBoxLayout(self)
         self.item_type_button = QPushButton()
         self.item_text_field = QLineEdit()
-        self.enter_button = QPushButton(":thumbs_up:")
+        self.enter_button = QPushButton(":)")
 
         # connect signals to buttons
         self.item_type_button.clicked.connect(self.toggleItemType)
@@ -1795,6 +1798,39 @@ class VariableManagerCreateNewItemWidget(QWidget):
         self.layout().addWidget(self.item_text_field)
         self.layout().addWidget(self.enter_button)
 
+        # set up widget styles
+        # remove all spacing
+        self.setStyleSheet("""
+            margin: 0px;
+        """)
+        self.layout().setSpacing(0)
+        self.layout().setContentsMargins(0, 0, 0, 0)
+
+        # set buttons as flat
+        self.item_type_button.setFlat(True)
+        self.enter_button.setFlat(True)
+
+        # set stylesheets
+        self.item_text_field.setStyleSheet("""
+                    {style_sheet}
+                    border: None;
+        """.format(style_sheet=self.item_text_field.styleSheet()))
+
+        self.item_type_button.setStyleSheet("""
+            outline: None;
+            border-right: {spacing}px solid rgba{grid_color};
+        """.format(
+            spacing=str(self.spacing),
+            grid_color=GRID_COLOR
+        ))
+
+        self.enter_button.setStyleSheet("""
+            outline: None;
+            border-left: {spacing}px solid rgba{grid_color};
+        """.format(
+            spacing=str(self.spacing),
+            grid_color=GRID_COLOR
+        ))
     """ EVENTS """
     def toggleItemType(self):
         """
@@ -1825,6 +1861,12 @@ class VariableManagerCreateNewItemWidget(QWidget):
             self.__accept()
         return QWidget.keyPressEvent(self, event)
 
+    def resizeEvent(self, event):
+        height = self.height()
+        self.item_type_button.setFixedWidth(height+self.spacing)
+        self.enter_button.setFixedWidth(height)
+        QWidget.resizeEvent(self, event)
+
     """ UTILS"""
     def createNewPattern(self):
         """
@@ -1853,15 +1895,26 @@ class VariableManagerCreateNewItemWidget(QWidget):
         """
         Updates the look for the Node Type button.  This will
         eventually change colors as well.
-
-        TODO:
-            ITEM TYPE COLOR
         """
-        # Update button
+        style_sheet = self.item_type_button.styleSheet()
+        # setup pattern
         if self.node_type == PATTERN_ITEM:
             self.item_type_button.setText('P')
+            color = repr(PATTERN_ITEM.COLOR)
+        # set up block
         elif self.node_type == BLOCK_ITEM:
             self.item_type_button.setText('B')
+            color = repr(BLOCK_ITEM.COLOR)
+
+        # set up style sheet
+        self.item_type_button.setStyleSheet("""
+                {style_sheet}
+                color: rgba{rgba};
+            """.format(
+                style_sheet=style_sheet,
+                rgba=color
+            )
+        )
 
     """ PROPERTIES """
     @property
@@ -1872,6 +1925,14 @@ class VariableManagerCreateNewItemWidget(QWidget):
     def node_type(self, node_type):
         self._node_type = node_type
         self.__updateItemTypeButton()
+
+    @property
+    def spacing(self):
+        return self._spacing
+
+    @spacing.setter
+    def spacing(self, spacing):
+        self._spacing = spacing
 
 
 class VariableManagerGSVMenu(AbstractComboBox):
@@ -2830,6 +2891,9 @@ class VariableManagerBrowser(QTreeWidget):
         if dropped_item.getItemType() == PATTERN_ITEM:
             # create new block and setup node hierarchy
             new_block_item = self.__createUserBlockItem(item_dropped_on)
+            # old parent is none sometimes? PORQUEUEUEUEUEUEU
+            #                                                                           NONE --V
+            #                                                               when drag/dropping last index out into pattern...
             self.__moveItem(new_block_item, new_parent, new_block_item.parent(), new_index)
             self.reparentItem(new_block_item, new_parent, index=new_index)
 
@@ -3274,6 +3338,9 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.setText(1, pattern_version)
         self.setText(2, block_version)
 
+        # update colors
+        self.setColor()
+
     def createPublishDir(self, unique_hash=None):
         """
         creates all directories on disk to be used when
@@ -3316,6 +3383,27 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         self.publish_dir = '%s/%s' % (location, self.hash)
         return self.hash
+
+    def setColor(self):
+        if self.getItemType() == PATTERN_ITEM:
+            color = QtGui.QColor(
+                PATTERN_ITEM.COLOR[0],
+                PATTERN_ITEM.COLOR[1],
+                PATTERN_ITEM.COLOR[2]
+            )
+        elif self.getItemType() == BLOCK_ITEM:
+            color = QtGui.QColor(
+                BLOCK_ITEM.COLOR[0],
+                BLOCK_ITEM.COLOR[1],
+                BLOCK_ITEM.COLOR[2]
+            )
+        elif self.getItemType() == MASTER_ITEM:
+            color = QtGui.QColor(
+                MASTER_ITEM.COLOR[0],
+                MASTER_ITEM.COLOR[1],
+                MASTER_ITEM.COLOR[2]
+            )
+        self.setForeground(0, QtGui.QBrush(color))
 
     """ ATTRIBUTES """
     def getItemType(self):
