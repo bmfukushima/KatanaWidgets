@@ -1,21 +1,31 @@
 """
-* __dropOnPatternEvent
-    When drag/dropping out of block node into a pattern...
-    it creates the new block item under the wrong parent...
-    but only sometimes... mainly when its the last item in
-    a block item...
-
-*    checkHash repeats...
-
-*    gsv change
-        -- load live version of
-                pattern
-                block
-
-* directory publish
-    VariableManagerBrowserItem --> createPublishDir
-    VariableManagerMainWidget --> changeDirectory
-
+TODO
+    Publish
+        *   change publish dir to
+                $ROOT_DIR / GSV / <node type>
+        *   publish root
+                combined pattern + block
+    Versions
+        *   Create simple display of menu, vs the advanced
+                display with notes.
+    Cleanup
+        *    checkHash repeats...
+        *    gsv change
+                -- load live version of
+                        pattern
+                        block
+        * directory publish
+            VariableManagerBrowserItem --> createPublishDir
+            VariableManagerMainWidget --> changeDirectory
+    WISH LIST:
+        1.) Import/Export?
+        2.) Drag/Drop
+            Drop into Widget:
+                if its the same node type, copy parameters into the correct pattern
+            Drag out of widget, drop in Nodegraph
+                Create duplicate of w/e of drag/dropped
+        3.) Expose for pipeline
+        4.) Filterable versions in advanced menu
 - bugs...
     *  Node Type change
             This needs to be linked to publishing system...
@@ -23,8 +33,6 @@
     *    adding GSV's when auto created...
             this is probably bad... will need some sort of function to ask to add to all or not?
                 addGSVPattern
-    *    __init__ never registers... until set node viewed flag hit...
-            so... what do you do?
 
 - maybe
     *    publish to node name?
@@ -48,14 +56,6 @@ FEATURES:
 # OLD NOTES
 # ===============================================================================
 BUG
-###will fail if GSV has no children/options...
-
-Probably remove GSV Parameter  reference...
-
-
-Cancel/Restting...
-    maybe add a previous variable/dir property to call? Rather than
-    the current way of manually every time?
 
 Node Type Change
     Don't repopulate the variableBrowser... just change node type...
@@ -66,48 +66,18 @@ Should a Block also save/load the pattern for that location?
         to load 2 containers...
 
 
-
 SuperTool --> group (shot/variable)
             --> block --> group (pattern/shot) [shot] --> block/shots --> LG --> Nodes
-PATTERN    :    VEG --> LG --> NODES
-BLOCK        :    GROUP/GROUP/VARIABLE SWITCH
+PATTERN    :    LG --> VEG --> NODES
+BLOCK        :    LG --> ROOT NODES
 MASTER: Top most group
 
-ADD NODES
-ports bug.... if ports dont exist?
 
-CLEANUP:
-    1.) add getters/settings for widgets in main widget
-    2.) Undo Stack --> Need to find all the events...
-        Utils.UndoStack.OpenGroup('Import Library Asset')
-        Utils.UndoStack.CloseGroup()
 BUGS:
+    1.) cant name pattern 'block__' or block 'pattern__' will break... due to string search
 
-    critical?
-    0.) Node list... displaying a shitton of useless nodes
 
-    1.) when publish_dir changed... doesnt check subdirs... ie if dir exists,
-        it wont create the new blocks, it will assume they already exist,
-        which will cause failures...
-    non-critcal
 
-    2.) Node not deleting?
-    1.) Closing parameters error
-            from Nodegraph hack
-                    - potentially close widget on param view?
-
-    3.) cant name pattern 'block__' or block 'pattern__' will break... due to string search
-    3.) Splitter - default geometry settings?
-            init width is wrong somewhere...
-            min_width...?
-
-WISH LIST:
-    1.) Import/Export?
-    3.) Drag/Drop nodes into LG?
-    4.) Change 'master' name to <variable name>
-    5.) Expose %s to shot/master/creation dirs... so that it can be easily added into a pipeline
-        for custom save directories
-    6.) Show version of live/greatest (filters by these versions?)
 """
 
 import os
@@ -597,7 +567,7 @@ class VariableManagerMainWidget(QWidget):
         As this is the parameter display handler for inside for the special
         <multi> case..
         """
-        if self.node_type == '<multi>':
+        if self.node_type == 'Group':
             self.populateParameters(node_list=NodegraphAPI.GetAllSelectedNodes())
 
     def createParamReference(self, node_name, hide_title=False):

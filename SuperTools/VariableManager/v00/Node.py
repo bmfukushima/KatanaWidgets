@@ -12,13 +12,6 @@ from Utils import mkdirRecursive, updateNodeName
 
 log = logging.getLogger("Test.Node")
 
-"""
-Pattern node, node reference breaking on block nodes, because there are
-two types of block nodes... top level block nodes, and root level block nodes
-    - split block nodes from root nodes
-    - check pattern reference creation (this is what's creating the pattern_pattern and the block fuck ups...
-"""
-
 
 class VariableManagerNode(NodegraphAPI.SuperTool):
     """
@@ -91,7 +84,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         self.variable_param = self.getParameters().createChildString('variable', '')
         self.variable_param.setHintString(repr({'readOnly': 'True'}))
 
-        self.node_type_param = self.getParameters().createChildString('node_type', '<multi>')
+        self.node_type_param = self.getParameters().createChildString('node_type', 'Group')
         self.publish_dir = self.getParameters().createChildString('publish_dir', PUBLISH_DIR)
         self.publish_dir.setHintString(repr({'widget': 'fileInput'}))
 
@@ -402,7 +395,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                     os.mkdir(publish_dir + '/%s/live' % dir_item)
 
         # create node of specific type
-        if self.getParameter('node_type').getValue(0) != '<multi>':
+        if self.getParameter('node_type').getValue(0) != 'Group':
             self.createNodeOfType(veg_node)
 
         return pattern_root_node

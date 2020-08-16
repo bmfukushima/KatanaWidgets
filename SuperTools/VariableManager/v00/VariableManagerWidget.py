@@ -1,3 +1,24 @@
+"""
+TODO:
+    *   Floating Params causes Nodegraph to not delete
+    *   Multi Pattern
+        - update variable switches
+        - moving..
+            remove
+                search up hierarchy until a duplicate is found
+                or it reaches the master item
+            add
+                see if it exists, if not, then create
+    *   Auto create handler needs to go in init function
+    *   Create New Item Box
+        - hotkey to enter
+        - hotkey type swap
+            pen down = change
+TODO (DONE):
+    *   Convert <multi> --> group
+            change default state to GafferThree
+"""
+
 import os
 import math
 
@@ -5,7 +26,7 @@ from PyQt5.QtWidgets import (
     QWidget, QPushButton, QVBoxLayout, QHBoxLayout,
     QScrollArea, QSplitter,
     QTreeWidget, QHeaderView, QAbstractItemView, QLineEdit,
-    QSizePolicy, QMenu, QTreeWidgetItem, QStackedLayout,
+    QApplication, QMenu, QTreeWidgetItem, QStackedLayout,
     QSpacerItem
 )
 from PyQt5.QtCore import (
@@ -249,12 +270,12 @@ class VariableManagerCreateNewItemWidget(QWidget):
         # create widgets
         QHBoxLayout(self)
         self.item_type_button = QPushButton()
-        self.item_text_field = QLineEdit()
+        self.item_text_field = VariableManagerCreateNewItemTextWidget()
         self.enter_button = QPushButton(":)")
 
         # connect signals to buttons
         self.item_type_button.clicked.connect(self.toggleItemType)
-        self.enter_button.clicked.connect(self.__accept)
+        self.enter_button.clicked.connect(self.accept)
 
         # add widgets to layout
         self.layout().addWidget(self.item_type_button)
@@ -305,7 +326,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
         elif self.node_type == BLOCK_ITEM:
             self.node_type = PATTERN_ITEM
 
-    def __accept(self):
+    def accept(self):
         """
         Creates a new item based off of what type of item is
         set in the item_type_button.
@@ -325,11 +346,6 @@ class VariableManagerCreateNewItemWidget(QWidget):
 
                 # reset text
                 self.item_text_field.setText('')
-
-    def keyPressEvent(self, event):
-        if event.key() in [Qt.Key_Enter, Qt.Key_Return]:
-            self.__accept()
-        return QWidget.keyPressEvent(self, event)
 
     def resizeEvent(self, event):
         height = self.height()
@@ -403,6 +419,56 @@ class VariableManagerCreateNewItemWidget(QWidget):
     @spacing.setter
     def spacing(self, spacing):
         self._spacing = spacing
+
+
+class VariableManagerCreateNewItemTextWidget(QLineEdit):
+    """
+    Text widget for the user to type in the new name of either
+    a new Pattern or Block.
+
+    Pressing CTRL+SHIFT will toggle the creation type between
+    blocks and patterns.  This will only register while the keys are
+    pressed, and will revert back to the original one upon key release.
+
+    TODO
+        *   Toggle on accept happens to fast
+                need to figure out way to make it happen less fast..
+                1.) Release keys on accept
+                2.) Wait timer
+    """
+    def __init__(self, parent=None):
+        super(VariableManagerCreateNewItemTextWidget, self).__init__(parent)
+        self.is_toggled = False
+
+    """ EVENTS """
+    def keyPressEvent(self, event):
+        modifiers = event.modifiers()
+        if modifiers == (Qt.ControlModifier | Qt.ShiftModifier):
+            if self.is_toggled is False:
+                self.parent().toggleItemType()
+                self.is_toggled = True
+
+        if event.key() in [Qt.Key_Enter, Qt.Key_Return]:
+            self.parent().accept()
+
+        return QLineEdit.keyPressEvent(self, event)
+
+    def keyReleaseEvent(self, event):
+        modifiers = event.modifiers()
+        if modifiers != (Qt.ControlModifier | Qt.ShiftModifier):
+            if self.is_toggled is True:
+                self.parent().toggleItemType()
+                self.is_toggled = False
+
+        return QLineEdit.keyReleaseEvent(self, event)
+
+    @property
+    def is_toggled(self):
+        return self._is_toggled
+
+    @is_toggled.setter
+    def is_toggled(self, is_toggled):
+        self._is_toggled = is_toggled
 
 
 class VariableManagerGSVMenu(AbstractComboBox):
@@ -569,7 +635,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
             self.main_widget.publish_display_widget.display()
 
         self.main_widget.setVariable(variable)
-        if self.main_widget.node_type == '<multi>':
+        if self.main_widget.node_type == 'Group':
             self.main_widget.variable_manager_widget.variable_browser.showMiniNodeGraph()
 
     def createNewGSV(self, gsv):
@@ -656,7 +722,7 @@ class VariableManagerNodeMenu(AbstractComboBox):
         """
 
         model = QStandardItemModel()
-        variable_list = ['', '<multi>'] + NodegraphAPI.GetNodeTypes()
+        variable_list = [''] + NodegraphAPI.GetNodeTypes()
         for i, variable_name in enumerate(variable_list):
             item = QStandardItem(variable_name)
             model.setItem(i, 0, item)
@@ -1372,11 +1438,6 @@ class VariableManagerBrowser(QTreeWidget):
             old_parent_item (VariableManagerBrowserItem): The dropped items
                 old parent (BLOCK_ITEM)
             new_index (int): The current index of the item that has been dropped on
-        TODO:
-            Moves nodes
-            does not delete
-                param reference
-                variable switch ports
         """
         if item_dropped.getItemType() == PATTERN_ITEM:
             # create new block and setup node hierarchy
@@ -1567,11 +1628,7 @@ class VariableManagerBrowser(QTreeWidget):
                 new_parent_item.addChild(item)
                 self.__moveItem(item, 0, new_parent_item, old_parent_item)
 
-
                 # move block to patterns old location
-                # for some reason the move item here is not disconnecting...
-                # leaves it connected to return port...
-                Utils.EventModule.ProcessAllEvents()
                 new_grandparent_item = new_parent_item.parent()
                 self.__moveItem(new_parent_item, index, new_grandparent_item, new_grandparent_item)
 
@@ -1750,7 +1807,7 @@ class VariableManagerBrowser(QTreeWidget):
         """
         if hasattr(self.main_widget, 'variable_manager_widget'):
             self.main_widget.setWorkingItem(self.currentItem())
-            if self.main_widget.getNodeType() == '<multi>':
+            if self.main_widget.getNodeType() == 'Group':
                 self.showMiniNodeGraph()
             else:
                 self.hideMiniNodeGraph()
