@@ -44,6 +44,7 @@ CANCEL_HOVER_COLOR_RGBA = convertToHoverColor(CANCEL_COLOR_RGBA)
 MAYBE_HOVER_COLOR_RGBA = convertToHoverColor(MAYBE_COLOR_RGBA)
 
 GRID_COLOR = (10, 95, 20, 255)
+TEXT_COLOR = (192, 192, 192, 255) # this is hacky... for some reason the QBrush goes =( when using setColor...
 #(255,200, 0, 255) KATANA YELLOW
 
 SPLITTER_STYLE_SHEET = """

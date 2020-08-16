@@ -3,7 +3,7 @@
 
 class MASTER_ITEM(object):
     COLUMN = 0
-    COLOR = (255, 200, 0, 255)
+    COLOR = (200, 160, 0, 255)
 
     def __repr__(self):
         return 'master'
