@@ -14,9 +14,7 @@ TODO
                 -- load live version of
                         pattern
                         block
-        * directory publish
-            VariableManagerBrowserItem --> createPublishDir
-            VariableManagerMainWidget --> changeDirectory
+
     WISH LIST:
         1.) Import/Export?
         2.) Drag/Drop
@@ -575,7 +573,10 @@ class VariableManagerMainWidget(QWidget):
         Creates a teledrop parameter widget
 
         Args:
-            node_name (str): name of node to be referenced
+            *   node_name (str): name of node to be referenced
+            **  hide_title (bool): Determines if the title of the parameter will be hidden.
+                    If there is more than one parameter, the title will not be hidden,
+                    if there is only 1 then it will be hidden.
 
         Returns:
             teledropparam
@@ -806,18 +807,17 @@ but you need this crap in order to save stuff into it.
 
 class VersionsDisplayWidget(AbstractUserBooleanWidget):
     """
-    TODO:
-        clean this up...
-    creates a new widget for the user to view the versions currently available
-    the user can change the version and check the release notes on each version
-    before accepting this version
-    Args:
+    Widget for the user to view all the data for the versions currently available.
+    The user can change the version and check the release notes on each version
+    before accepting this version.
+
+    Attributes:
         column (int): column clicked to determine if it is publishing a pattern (1) or block (2)
         version (str): version to use in string format such as "v000"
         gui (bool): If True, this widget pops up and lets the user choose what version
             they want to use.  If False, this widget is bypassed, and the updates happen
             automatically to the live/latest version.
-        previous_variable (str): the previous GSV.  This is here incase it needs to be reset later?
+        previous_variable (str): the previous GSV.  This is here encase it needs to be reset later?
     """
     def __init__(
         self,
@@ -897,8 +897,10 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         item = self.main_widget.getWorkingItem()
 
         # get publish node
-        """ only look at one thing...
-        only looking at the publish type, not looking at the item type...
+        """
+        why is this note here...
+            only look at one thing...
+            only looking at the publish type, not looking at the item type...
         """
         if item.getItemType() == PATTERN_ITEM:
             publish_type = PATTERN_ITEM

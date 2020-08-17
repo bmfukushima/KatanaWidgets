@@ -9,14 +9,26 @@ TODO:
                 or it reaches the master item
             add
                 see if it exists, if not, then create
+        - Duplicates
+            On Load:
+                check to see if duplicates, ask if they want to keep,
+                if no then delete them... choose which one to delete...
+                or use both...
+            On Create:
+                ask if they're super sure...
     *   Auto create handler needs to go in init function
+    * check duplicates:
+        directory publish
+        VariableManagerBrowserItem --> createPublishDir
+        VariableManagerMainWidget --> changeDirectory
+
+TODO (DONE):
+    *   Convert <multi> --> group
+            change default state to GafferThree
     *   Create New Item Box
         - hotkey to enter
         - hotkey type swap
             pen down = change
-TODO (DONE):
-    *   Convert <multi> --> group
-            change default state to GafferThree
 """
 
 import os
@@ -429,12 +441,6 @@ class VariableManagerCreateNewItemTextWidget(QLineEdit):
     Pressing CTRL+SHIFT will toggle the creation type between
     blocks and patterns.  This will only register while the keys are
     pressed, and will revert back to the original one upon key release.
-
-    TODO
-        *   Toggle on accept happens to fast
-                need to figure out way to make it happen less fast..
-                1.) Release keys on accept
-                2.) Wait timer
     """
     def __init__(self, parent=None):
         super(VariableManagerCreateNewItemTextWidget, self).__init__(parent)
@@ -442,18 +448,21 @@ class VariableManagerCreateNewItemTextWidget(QLineEdit):
 
     """ EVENTS """
     def keyPressEvent(self, event):
+        # toggle
         modifiers = event.modifiers()
         if modifiers == (Qt.ControlModifier | Qt.ShiftModifier):
             if self.is_toggled is False:
                 self.parent().toggleItemType()
                 self.is_toggled = True
 
+        # accept event
         if event.key() in [Qt.Key_Enter, Qt.Key_Return]:
             self.parent().accept()
 
         return QLineEdit.keyPressEvent(self, event)
 
     def keyReleaseEvent(self, event):
+        # release toggle
         modifiers = event.modifiers()
         if modifiers != (Qt.ControlModifier | Qt.ShiftModifier):
             if self.is_toggled is True:
