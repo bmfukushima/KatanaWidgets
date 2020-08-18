@@ -1,6 +1,5 @@
 """
 TODO:
-    *   Floating Params causes Nodegraph to not delete
     *   Multi Pattern
         - update variable switches
         - moving..
@@ -16,19 +15,44 @@ TODO:
                 or use both...
             On Create:
                 ask if they're super sure...
+    *   Undo handler...
+        Utils.UndoStack.OpenGroup("name")
+        Utils.UndoStack.CloseGroup()
+        @Decorators.undogroup('undoozles')
+    *   Expand / Collapse
+            - Default states seem bjorked...
+            - Add menu / hotkey options
+                    - RMB Menu
+                    - Arrow keys or WASD?
     *   Auto create handler needs to go in init function
-    * check duplicates:
-        directory publish
-        VariableManagerBrowserItem --> createPublishDir
-        VariableManagerMainWidget --> changeDirectory
+
 
 TODO (DONE):
+    *   check duplicates:
+            directory publish
+            VariableManagerBrowserItem --> createPublishDir
+            VariableManagerMainWidget --> changeDirectory
     *   Convert <multi> --> group
             change default state to GafferThree
     *   Create New Item Box
         - hotkey to enter
         - hotkey type swap
             pen down = change
+    *   Floating Params causes Nodegraph to not delete
+            Params pane closed, after, using this widget...
+             show in floating pane, and close parameters tab...
+             to bad it doesn't register as a closeEvent...
+    *   Undo's added:
+            *   Drag/drop in Variable Browser
+            *   Delete Item
+            GSV Changed?
+            Node Type Changed
+                still failing
+            - Publish Dir changed?
+            Pattern / Block Create
+            Block Rename
+            Load Live Group
+    *   Fixed block naming convention
 """
 
 import os
@@ -54,7 +78,7 @@ from PyQt5.QtGui import (
 try:
     from Katana import UI4, QT4Widgets, QT4FormWidgets
     from Katana import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
-    from Katana import UniqueName, FormMaster, Utils
+    from Katana import UniqueName, FormMaster, Utils, Decorators
 except ImportError:
     import UI4, QT4Widgets, QT4FormWidgets
     import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
@@ -84,7 +108,10 @@ from Settings import (
 from Utils import (
     AbstractComboBox,
     AbstractUserBooleanWidget,
+    connectInsideGroup,
     convertStringBoolToBool,
+    createNodeReference,
+    disconnectNode,
     getMainWidget,
     getNextVersion,
     goToNode,
@@ -278,6 +305,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
         self.node_type = PATTERN_ITEM
         self.main_widget = getMainWidget(self)
 
+
     def initGUI(self):
         # create widgets
         QHBoxLayout(self)
@@ -338,6 +366,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
         elif self.node_type == BLOCK_ITEM:
             self.node_type = PATTERN_ITEM
 
+    @Decorators.undogroup('Variable Manager --> Create New Item')
     def accept(self):
         """
         Creates a new item based off of what type of item is
@@ -584,6 +613,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
             self.setExistsFlag(True)
             return
 
+    @Decorators.undogroup('Variable Manager --> GSV Changed')
     def gsvChanged(self):
         """
         When the user changes the GSV and accepts the change,
@@ -738,6 +768,27 @@ class VariableManagerNodeMenu(AbstractComboBox):
         self.setModel(model)
         self.setModelColumn(0)
 
+    @Decorators.undogroup('Variable Manager --> Node Type Changed')
+    def accepted(self):
+        if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
+            variable_browser = self.main_widget.variable_manager_widget.variable_browser
+
+            variable = self.main_widget.getVariable()
+            node = self.main_widget.getNode()
+
+            node.getParameter('node_type').setValue(str(self.currentText()), 0)
+            self.main_widget.setNodeType(str(self.currentText()))
+
+            variable_browser.reset()
+            node._reset(variable=variable)
+            variable_browser.populate()
+            self.main_widget.updateOptionsList()
+
+    def cancelled(self):
+        self.setExistsFlag(False)
+        node_type = self.main_widget.node.getParameter('node_type').getValue(0)
+        self.setCurrentIndexToText(node_type)
+
     def indexChanged(self):
         # check to see if user input is valid, if not valid, exit
         """
@@ -749,29 +800,6 @@ class VariableManagerNodeMenu(AbstractComboBox):
             return
 
         if self.getExistsFlag() is True:
-            def accept():
-                if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
-                    variable_browser = self.main_widget.variable_manager_widget.variable_browser
-                    Utils.UndoStack.OpenGroup('Variable Manager | Node Type Changed')
-
-                    variable = self.main_widget.getVariable()
-                    node = self.main_widget.getNode()
-
-                    node.getParameter('node_type').setValue(str(self.currentText()), 0)
-                    self.main_widget.setNodeType(str(self.currentText()))
-
-                    variable_browser.reset()
-                    node._reset(variable=variable)
-                    variable_browser.populate()
-                    self.main_widget.updateOptionsList()
-
-                    Utils.UndoStack.CloseGroup()
-
-            def cancel():
-                self.setExistsFlag(False)
-                node_type = self.main_widget.node.getParameter('node_type').getValue(0)
-                self.setCurrentIndexToText(node_type)
-
             warning_text = "This will delete all of your unsaved work"
             detailed_warning_text = """
 Publish your work if you want to save it, either in a file save,
@@ -783,7 +811,9 @@ continue from here, all unsaved work will be deleted...
                     old_node_type=self.main_widget.node.getParameter('node_type').getValue(0),
                     new_node_type=str(self.currentText())
                 )
-            self.main_widget.showWarningBox(warning_text, accept, cancel, detailed_warning_text)
+            self.main_widget.showWarningBox(
+                warning_text, self.accepted, self.cancelled, detailed_warning_text
+            )
 
 
 class VariableManagerBrowser(QTreeWidget):
@@ -992,11 +1022,26 @@ class VariableManagerBrowser(QTreeWidget):
             for child in block_root_node.getParameter('nodeReference').getChildren():
                 populateBlock(master_item, child)
 
+    @Decorators.undogroup('Variable Manager --> Delete Item')
     def __deleteItem(self, item):
         """
         Deletes an item, removes all of the node referencing,
         and rewires all of the ports.  Hopefully.
+
+        Attributes:
+            item (VariableManagerBrowserItem): Item to be deleted
         """
+        print('testing')
+        # setup undo operation
+
+        """        
+        Utils.UndoStack.OpenGroup(
+            "Removing item {item} from {node}".format(
+                item=item.text(0),
+                node=item.getRootNode().getName()
+            )
+        )"""
+
         # disconnect node
         self.__unwireNode(item, item.parent())
 
@@ -1006,6 +1051,8 @@ class VariableManagerBrowser(QTreeWidget):
         # remove item
         child_index = item.parent().indexOfChild(item)
         item.parent().takeChild(child_index)
+
+        #Utils.UndoStack.CloseGroup()
 
     def __wireNode(self, item, new_parent_item, new_index):
         """
@@ -1033,8 +1080,12 @@ class VariableManagerBrowser(QTreeWidget):
         # add node reference
         self.__addNodeReference(item, new_parent_item, new_index)
 
+        # update variable switches
+        new_root_node = new_parent_item.getRootNode()
+        self.main_widget.updateAllVariableSwitches(new_root_node)
+
         # connect children
-        self.main_widget.getNode().connectInsideGroup(node_list, new_parent_item.getBlockNode())
+        connectInsideGroup(node_list, new_parent_item.getBlockNode())
 
     def __unwireNode(self, item, old_parent_item):
         """
@@ -1073,12 +1124,19 @@ class VariableManagerBrowser(QTreeWidget):
         next_port.connect(previous_port)
 
         # disconnect input ports from node
+        disconnectNode(node, input=True)
+        """
         for input_port in node.getInputPorts():
             output_ports = input_port.getConnectedPorts()
             for port in output_ports:
                 port.disconnect(input_port)
-
+        """
+        #remove references
         self.__removeNodeReference(item, old_parent_item)
+
+        # update variable switch
+        old_root_node = old_parent_item.getRootNode()
+        self.main_widget.updateAllVariableSwitches(old_root_node)
 
     def __removeNodeReference(self, item, old_parent_item):
         """
@@ -1128,7 +1186,7 @@ class VariableManagerBrowser(QTreeWidget):
             name = item.getBlockNode().getParameter('name').getValue(0)
         param_name = '{prefix}{name}'.format(prefix=prefix, name=name)
 
-        self.main_widget.getNode().createNodeReference(
+        createNodeReference(
             node, param_name, param=node_ref_param, index=new_index
         )
 
@@ -1278,31 +1336,31 @@ class VariableManagerBrowser(QTreeWidget):
         parent_node, parent_item, current_pos = self.__getNewItemSetupAttributes()
 
         # create node group
-        block_node = node.createBlockRootNode(parent_node, name=item_text)
+        block_root_node = node.createBlockRootNode(parent_node, name=item_text)
+        block_node_name = block_root_node.getParameter('name').getValue(0)
 
         # connect and align nodes
-        self.__setupNodes(block_node, parent_node, current_pos)
+        self.__setupNodes(block_root_node, parent_node, current_pos)
 
         # Get Nodes
-        new_block_node = NodegraphAPI.GetNode(block_node.getParameter('nodeReference.block_group').getValue(0))
-        pattern_node = NodegraphAPI.GetNode(block_node.getParameter('nodeReference.pattern_node').getValue(0))
+        new_block_node = NodegraphAPI.GetNode(block_root_node.getParameter('nodeReference.block_group').getValue(0))
+        pattern_node = NodegraphAPI.GetNode(block_root_node.getParameter('nodeReference.pattern_node').getValue(0))
 
         # Create Item
-
         block_item = VariableManagerBrowserItem(
             parent_item,
             block_node=new_block_node,
             expanded=False,
             item_type=BLOCK_ITEM,
-            name=block_node.getName(),
+            name=block_node_name,
             pattern_node=pattern_node,
             veg_node=pattern_node.getChildByIndex(0),
-            root_node=block_node
+            root_node=block_root_node
         )
 
         # Set Parameters
-        block_node.getParameter('version').setValue(block_item.block_version, 0)
-        block_node.getParameter('hash').setValue(str(block_item.getHash()), 0)
+        block_root_node.getParameter('version').setValue(block_item.block_version, 0)
+        block_root_node.getParameter('hash').setValue(str(block_item.getHash()), 0)
 
         return block_item
 
@@ -1396,8 +1454,8 @@ class VariableManagerBrowser(QTreeWidget):
         """
         # get nodes
         node = item.getRootNode()
-        old_parent_node = old_parent_item.getRootNode()
-        new_parent_node = new_parent_item.getRootNode()
+        #old_parent_node = old_parent_item.getRootNode()
+        #new_parent_node = new_parent_item.getRootNode()
         new_block_node = new_parent_item.getBlockNode()
 
         # reset node parent
@@ -1406,9 +1464,10 @@ class VariableManagerBrowser(QTreeWidget):
         self.__wireNode(item, new_parent_item, new_index)
 
         # update variable switches
-        self.main_widget.updateAllVariableSwitches(old_parent_node)
-        self.main_widget.updateAllVariableSwitches(new_parent_node)
+        #self.main_widget.updateAllVariableSwitches(old_parent_node)
+        #self.main_widget.updateAllVariableSwitches(new_parent_node)
 
+    @Decorators.undogroup('Variable Manager --> Drop Event')
     def __dropOnBlockEvent(self, item_dropped, new_index, new_parent_item, old_parent_item):
         """
         This is what happens when the user drops an item
@@ -1432,6 +1491,7 @@ class VariableManagerBrowser(QTreeWidget):
             expanded = convertStringBoolToBool(string_expanded)
             item_dropped.setExpanded(expanded)
 
+    @Decorators.undogroup('Variable Manager --> Drop Event')
     def __dropOnPatternEvent(self, item_dropped, item_dropped_on, new_index, new_parent_item, old_parent_item):
         """
         This is what happens when the user drops an item
@@ -1755,6 +1815,7 @@ class VariableManagerBrowser(QTreeWidget):
             return QTreeWidget.dragMoveEvent(self, event, *args, **kwargs)
         return QTreeWidget.dragMoveEvent(self, event, *args, **kwargs)
 
+    @Decorators.undogroup('Variable Manager --> Changed block name')
     def itemNameChanged(self, item):
         """
         Updates the node name and parameter name for BLOCK ITEMS
@@ -1906,23 +1967,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
                 | Qt.ItemIsDropEnabled
                 | Qt.ItemIsDragEnabled
             )
-        """
-            self.setFlags(
-                self.flags()
-                & ~Qt.ItemIsDropEnabled
-                | Qt.ItemIsDragEnabled
-            )
-        """
 
-        # TODO: Enable pattern dropping ( flag )
-        """
-        elif item_type == PATTERN_ITEM:
-            self.setFlags(
-                self.flags()
-                | Qt.ItemIsDropEnabled
-                | Qt.ItemIsDragEnabled
-        )
-        """
         # update text
         self.setText(0, name)
         self.setText(1, pattern_version)

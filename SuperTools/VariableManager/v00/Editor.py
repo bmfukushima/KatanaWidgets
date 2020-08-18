@@ -93,7 +93,7 @@ from PyQt5 import QtCore, QtGui
 try:
     from Katana import UI4, QT4Widgets, QT4FormWidgets
     from Katana import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
-    from Katana import UniqueName, FormMaster, Utils
+    from Katana import UniqueName, FormMaster, Utils, Decorators
 except ImportError:
     import UI4, QT4Widgets, QT4FormWidgets
     import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
@@ -123,7 +123,10 @@ from VariableManagerWidget import VariableManagerWidget as VariableManagerWidget
 from Utils import (
     AbstractComboBox,
     AbstractUserBooleanWidget,
+    connectInsideGroup,
     convertStringBoolToBool,
+    createNodeReference,
+    disconnectNode,
     getMainWidget,
     getNextVersion,
     goToNode,
@@ -146,16 +149,76 @@ class VariableManagerEditor(QWidget):
         self.layout().addWidget(self.main_widget)
         self.layout().addWidget(resize_widget)
         self.setFixedHeight(500)
+        self.setupDestroyNodegraphEvent()
 
-        # register node delete handler...
-        # attempting to destroy the nodegraph lol
+        # setup redo event
+
+        self._update_on_idle = False
+        Utils.EventModule.RegisterCollapsedHandler(
+            self.test, 'event_idle'
+        )
+
+        Utils.EventModule.RegisterCollapsedHandler(self.testa, 'undo_end')
+        Utils.EventModule.RegisterCollapsedHandler(self.__redoEvent, 'port_connect')
+        Utils.EventModule.RegisterCollapsedHandler(self.__redoEvent, 'port_disconnect')
+        Utils.EventModule.RegisterCollapsedHandler(self.__redoEvent, 'parameter_finalizeValue')
+
+    def testa(self, args):
+        print ('laksjfdlkasjf')
+
+    def __redoEvent(self, args):
+        if self._update_on_idle:
+            return
+        for arg in args:
+            if arg[0] in ('port_connect', 'port_disconnect'):
+                for nodeNameKey in ('nodeNameA', 'nodeNameB'):
+                    nodeName = arg[2][nodeNameKey]
+                    node = NodegraphAPI.GetNode(nodeName)
+                    self._update_on_idle = True
+                    return
+
+            if arg[0] in 'parameter_finalizeValue':
+                node = arg[2].get('node')
+                param = arg[2].get('param')
+                if node.getParent() == self.node and param == node.getParameter('name'):
+                    self._update_on_idle = True
+                    return
+
+        return
+
+    def test(self, args):
+        #a = Utils.UndoStack.IsUndoInProgress()
+        #print(a)
+
+        if self._update_on_idle:
+            self._update_on_idle = False
+
+    """ SETUP NODEGRAPH DESTRUCTION HANDLER """
+    def setupDestroyNodegraphEvent(self):
+        """
+        Sets up all of the handlers for when the Nodegraph is destroyed.
+
+        """
+        # node delete
         Utils.EventModule.RegisterCollapsedHandler(
             self.nodeDelete, 'node_delete', None
         )
 
+        # new scene
         Utils.EventModule.RegisterCollapsedHandler(
             self.loadBegin, 'nodegraph_loadBegin', None
         )
+
+        # destroy on param close
+        # let us never speak of this hack
+        self.parent().parent().parent().parent().parent().parent().installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        event_type = event.type()
+        if event_type == QtCore.QEvent.Close:
+            self.destroyNodegraph()
+            obj.removeEventFilter(self)
+        return True
 
     def nodeDelete(self, args):
         if args[0][2]['node'] == self.node:
@@ -390,49 +453,6 @@ class VariableManagerMainWidget(QWidget):
                 if child.childCount() > 0:
                     self.getAllChildItems(child)
         return self.item_list
-
-    def connectInsideGroup(self, node_list, parent_node):
-        """
-        Connects all of the nodes inside of a specific node in a linear fashion
-
-        TODO:
-            len equal to 2 and more
-            than n+2 can be combined
-            into one function...
-
-        Args:
-            node_list (list): list of nodes to be connected together, the order
-                of the nodes in this list, will be the order that they are connected in
-            parent_node (node): node have the nodes from the node_list
-                wired into.
-        """
-        # get parent send / receive ports
-        send_port = parent_node.getSendPort('in')
-        return_port = parent_node.getReturnPort('out')
-        # 0 nodes to connect
-        if len(node_list) == 0:
-            send_port.connect(return_port)
-
-        # 1 node to connect
-        elif len(node_list) == 1:
-            node_list[0].getOutputPortByIndex(0).connect(return_port)
-            node_list[0].getInputPortByIndex(0).connect(send_port)
-
-        # 2 nodes to connect
-        elif len(node_list) == 2:
-            node_list[0].getInputPortByIndex(0).connect(send_port)
-            node_list[1].getOutputPortByIndex(0).connect(return_port)
-            node_list[0].getOutputPortByIndex(0).connect(node_list[1].getInputPortByIndex(0))
-            NodegraphAPI.SetNodePosition(node_list[0], (0, 100))
-
-        # n+2 nodes to connect
-        elif len(node_list) > 2:
-            for index, node in enumerate(node_list[:-1]):
-                node.getOutputPortByIndex(0).connect(node_list[index+1].getInputPortByIndex(0))
-                NodegraphAPI.SetNodePosition(node, (0, index * -100))
-            node_list[0].getInputPortByIndex(0).connect(send_port)
-            node_list[-1].getOutputPortByIndex(0).connect(return_port)
-            NodegraphAPI.SetNodePosition(node_list[-1], (0, len(node_list) * -100))
 
     def getItemPublishDir(self, include_publish_type=None):
         """
@@ -879,6 +899,57 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
                 version = item.text(self.column)
         return version
 
+    def __loadLiveGroupHack(self, publish_node, publish_dir):
+        """
+        START MASSIVE DISGUSTING HACK TO CIRCUMVENT BUGGY STUFF.
+        When the Live Group is converted back/forth from a group and what not...
+        it deletes the node, this is a bug in the undo stack which causes it so that
+        it cannot be undone =(
+
+        """
+        # loading load group
+        # massive hack to get around LG load bug on undo stack
+        # load temp live group
+        temp_live_group = NodegraphAPI.CreateNode("LiveGroup", publish_node.getParent())
+        temp_live_group.getParameter('source').setValue(publish_dir, 0)
+        temp_live_group.load()
+        temp_live_group = temp_live_group.convertToGroup()
+
+        # remove all internal nodes from publish_node
+        for child_node in publish_node.getChildren():
+            child_node.delete()
+
+        # delete old parms
+        current_node_ref_group = publish_node.getParameter('nodeReference')
+        for param in current_node_ref_group.getChildren():
+            current_node_ref_group.deleteChild(param)
+
+        # transfer node refs
+        for param in temp_live_group.getParameter('nodeReference').getChildren():
+            param_name = param.getName()
+            node_ref = NodegraphAPI.GetNode(param.getValue(0))
+            createNodeReference(
+                node_ref, param_name, param=current_node_ref_group
+            )
+
+        for param_name in ['type', 'version', 'hash', 'expanded', 'name']:
+            new_value = temp_live_group.getParameter(param_name).getValue(0)
+            publish_node.getParameter(param_name).setValue(new_value, 0)
+
+        # disconnect / move all nodes
+        node_list = []
+        for child_node in temp_live_group.getChildren():
+            disconnectNode(child_node, input=True, output=True)
+            child_node.setParent(publish_node)
+            node_list.append(child_node)
+
+        # reconnect nodes
+        connectInsideGroup(node_list, publish_node)
+
+        # delete proxy node
+        temp_live_group.delete()
+
+    @Decorators.undogroup('Variable Manager --> Load Live Group')
     def loadLiveGroup(
         self,
         version=None
@@ -922,7 +993,18 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
             version=version
         )
 
-        # loading load group
+        # massive hack... commented out lines below show
+        # the kinda sorta realish code
+        self.__loadLiveGroupHack(publish_node, publish_dir)
+
+        # update item attributes
+        if item.getItemType() == PATTERN_ITEM:
+            item.setVEGNode(publish_node.getChildByIndex(0))
+        elif item.getItemType() in BLOCK_PUBLISH_GROUP:
+            if self.column == PATTERN_ITEM.COLUMN:
+                item.setVEGNode(publish_node.getChildByIndex(0))
+
+        """
         live_group = NodegraphAPI.ConvertGroupToLiveGroup(publish_node)
         live_group.getParameter('source').setValue(publish_dir, 0)
         live_group.load()
@@ -940,7 +1022,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
                 item.setVEGNode(loaded_publish_node.getChildByIndex(0))
             elif self.column == BLOCK_ITEM.COLUMN:
                 item.setBlockNode(loaded_publish_node)
-
+        """
         # update browser widget
         self.main_widget.variable_manager_widget.variable_browser.reset()
         self.main_widget.variable_manager_widget.variable_browser.populate()
@@ -1484,6 +1566,7 @@ BESTEREST
         """
         If the user accepts the publish.
         """
+        Utils.UndoStack.DisableCapture()
         # choose publish type
         if self.publish_type == PATTERN_ITEM:
             self.publishPattern()
@@ -1496,6 +1579,8 @@ BESTEREST
 
         #
         self.main_widget.variable_manager_widget.variable_browser.showItemParameters()
+
+        Utils.UndoStack.EnableCapture()
 
     def __cancelled(self):
         self.goToNode()

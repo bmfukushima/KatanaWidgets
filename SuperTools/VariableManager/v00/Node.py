@@ -8,7 +8,11 @@ from Settings import (
     BLOCK_PREFIX,
     PATTERN_PREFIX
 )
-from Utils import mkdirRecursive, updateNodeName
+from Utils import (
+    connectInsideGroup,
+    createNodeReference,
+    mkdirRecursive
+)
 
 log = logging.getLogger("Test.Node")
 
@@ -65,8 +69,8 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         self.publish_dir = self.getParameter('publish_dir')
 
         self.variable_root_node = self.getChildByIndex(0)
-        block_node_name = self.variable_root_node.getParameter('nodeReference.block_group').getValue(0)
-        self.block_group = NodegraphAPI.GetNode(block_node_name)
+        block_root_node_name = self.variable_root_node.getParameter('nodeReference.block_group').getValue(0)
+        self.block_group = NodegraphAPI.GetNode(block_root_node_name)
 
     def setupDefaultNodeState(self):
         """
@@ -96,13 +100,13 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         # create parameter node references
         self.variable_root_node.getParameter('hash').setValue('master', 0)
 
-        self.createNodeReference(self.variable_root_node, 'variable_root_node', node=self)
-        self.createNodeReference(self.block_group, 'block_node', node=self)
+        createNodeReference(self.variable_root_node, 'variable_root_node', node=self)
+        createNodeReference(self.block_group, 'block_node', node=self)
 
         Utils.EventModule.ProcessAllEvents()
 
         # wire node
-        self.connectInsideGroup([self.variable_root_node], self)
+        connectInsideGroup([self.variable_root_node], self)
 
         if not os.path.exists(PUBLISH_DIR):
             os.mkdir(PUBLISH_DIR)
@@ -129,13 +133,13 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         self.vs_node = NodegraphAPI.GetNode(self.variable_root_node.getParameter('nodeReference.vs_node').getValue(0))
 
         # Update references to nodes
-        self.createNodeReference(self.variable_root_node, 'variable_root_node', node=self)
-        self.createNodeReference(self.block_group, 'block_node', node=self)
+        createNodeReference(self.variable_root_node, 'variable_root_node', node=self)
+        createNodeReference(self.block_group, 'block_node', node=self)
         node_list.append(self.variable_root_node)
         Utils.EventModule.ProcessAllEvents()
 
         # wire nodes
-        self.connectInsideGroup(node_list, self)
+        connectInsideGroup(node_list, self)
 
         # set GSV
         self.variable = variable
@@ -152,28 +156,6 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         self.variable_param.setValue(self.variable, 0)
         self.populateShots(self.variable)
 
-    def createNodeReference(self, node_ref, param_name, param=None, node=None, index=-1):
-        """
-        Creates a new string parameter whose expression value
-        returns a reference to a node.
-
-        Args:
-            node_ref (node): the node to be referenced
-            param_name (str): the name of the new parameter to create
-        Kwargs:
-            node (node): node to create parameter on if param kwarg
-                param is not provided
-            param (group param): the param to create the new parameter as
-                a child of
-        Returns (string param)
-        """
-        if not param:
-            param = node.getParameters()
-        new_param = param.createChildString(param_name, '', index)
-        new_param.setExpressionFlag(True)
-        new_param.setExpression('@%s' % node_ref.getName())
-        return new_param
-
     def populateShots(self, variable):
         root = NodegraphAPI.GetRootNode()
         node_list = []
@@ -186,28 +168,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                     node_list.append(group_node)
                     # connect VS NODE
 
-                self.connectInsideGroup(node_list, self.block_group)
-
-    def connectInsideGroup(self, node_list, parent_node):
-        send_port = parent_node.getSendPort('in')
-        return_port = parent_node.getReturnPort('out')
-        if len(node_list) == 0:
-            send_port.connect(return_port)
-        elif len(node_list) == 1:
-            node_list[0].getOutputPortByIndex(0).connect(return_port)
-            node_list[0].getInputPortByIndex(0).connect(send_port)
-        elif len(node_list) == 2:
-            node_list[0].getInputPortByIndex(0).connect(send_port)
-            node_list[1].getOutputPortByIndex(0).connect(return_port)
-            node_list[0].getOutputPortByIndex(0).connect(node_list[1].getInputPortByIndex(0))
-            NodegraphAPI.SetNodePosition(node_list[0], (0, 100))
-        elif len(node_list) > 2:
-            for index, node in enumerate(node_list[:-1]):
-                node.getOutputPortByIndex(0).connect(node_list[index+1].getInputPortByIndex(0))
-                NodegraphAPI.SetNodePosition(node, (0, index * -100))
-            node_list[0].getInputPortByIndex(0).connect(send_port)
-            node_list[-1].getOutputPortByIndex(0).connect(return_port)
-            NodegraphAPI.SetNodePosition(node_list[-1], (0, len(node_list) * -100))
+                connectInsideGroup(node_list, self.block_group)
 
     """ NODE CREATION """
     def createVariableSwitch(self, parent_node):
@@ -303,11 +264,11 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
 
         # create parameter node references
         group_params = block_root_node.getParameter('nodeReference')
-        self.createNodeReference(pattern_group, 'pattern_node', param=group_params)
-        self.createNodeReference(block_group, 'block_group', param=group_params)
-        self.createNodeReference(vs_node, 'vs_node', param=group_params)
+        createNodeReference(pattern_group, 'pattern_node', param=group_params)
+        createNodeReference(block_group, 'block_group', param=group_params)
+        createNodeReference(vs_node, 'vs_node', param=group_params)
         param_name = '%s_%s' % (BLOCK_PREFIX, block_root_node.getName())
-        self.createNodeReference(block_root_node, param_name, node=self)
+        createNodeReference(block_root_node, param_name, node=self)
 
         # create reference if parent is a block node...
         if parent_node != self:
@@ -317,14 +278,11 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                     block_prefix=BLOCK_PREFIX,
                     block_name=block_root_node.getName()
                 )
-                self.createNodeReference(block_root_node, block_string, param=parent_node.getParameter('nodeReference'))
+                createNodeReference(block_root_node, block_string, param=parent_node.getParameter('nodeReference'))
 
         # connect
-        self.connectInsideGroup([pattern_group, block_group, vs_node], block_root_node)
+        connectInsideGroup([pattern_group, block_group, vs_node], block_root_node)
         block_root_node.getSendPort('in').connect(vs_node.getInputPortByIndex(0))
-
-        # finalize block root node params
-        updateNodeName(block_root_node)
 
         return block_root_node
 
@@ -351,7 +309,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         # create reference to pattern
         parent_node_type = parent_node.getParameter('type').getValue(0)
         if parent_node_type == 'block':
-            self.createNodeReference(pattern_root_node, pattern_string, param=parent_node.getParameter('nodeReference'))
+            createNodeReference(pattern_root_node, pattern_string, param=parent_node.getParameter('nodeReference'))
 
         # create parameters
         pattern_root_node.getParameters().createChildString('version', '')
