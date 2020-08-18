@@ -112,6 +112,26 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         if not os.path.exists(PUBLISH_DIR):
             os.mkdir(PUBLISH_DIR)
 
+    def __cleanBlockRootNode(self, block_root_node):
+        """
+        Removes all everything on this node, returning it to a default state.
+
+        Args:
+                block_root_node (Root Node): The node to restore
+                    to a default state of a group node.
+        """
+        # delete parameters
+        params = block_root_node.getParameters()
+        for param in block_root_node.getParameters().getChildren():
+            params.deleteChild(param)
+
+        # delete children
+        for child_node in block_root_node.getChildren():
+            child_node.delete()
+
+        # add node reference back
+        params.createChildGroup('nodeReference')
+
     def _reset(self, variable=''):
         """
         Deletes the entire inner working structure of this node, and resets
@@ -124,26 +144,16 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         Kwargs:
             variable (str): name of the new GSV that this node will be using
         """
-        # reset node references
-        node_ref_group = self.variable_root_node.getParameter('nodeReference')
-        for child in node_ref_group.getChildren():
-            node_ref_group.deleteChild(child)
 
+        self.__cleanBlockRootNode(self.variable_root_node)
         # Get references
-        temp_root_node = self.createBlockRootNode(self, 'master')
-        temp_node_ref_group = temp_root_node.getParameter('nodeReference')
-        self.block_group = NodegraphAPI.GetNode(temp_node_ref_group.getChild('block_group').getValue(0))
-        self.vs_node = NodegraphAPI.GetNode(temp_node_ref_group.getChild('vs_node').getValue(0))
-
-        # Update references to nodes
-        self.getParameter('block_node').setExpression(
-            '@{name}'.format(name=self.block_group.getName())
-        )
-        # root
-        transferNodeReferences(temp_node_ref_group, node_ref_group)
+        self.createBlockRootNode(self, 'master', block_root_node=self.variable_root_node)
+        self.block_group = NodegraphAPI.GetNode(self.variable_root_node.getParameter('nodeReference.block_group').getValue(0))
+        self.vs_node = NodegraphAPI.GetNode(self.variable_root_node.getParameter('nodeReference.vs_node').getValue(0))
 
         # set GSV
         self.variable = variable
+        self.variable_param.setValue(self.variable, 0)
 
         # make directores
         if not os.path.exists(PUBLISH_DIR):
@@ -154,14 +164,13 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             os.mkdir(PUBLISH_DIR + '/%s/blocks' % self.variable)
             os.mkdir(PUBLISH_DIR + '/%s/patterns' % self.variable)
 
-        self.variable_param.setValue(self.variable, 0)
-        self.populateShots(self.variable)
+        # create internal node structure
+        self.populateVariable(self.variable)
 
-    '''   
     # old less hacky method but doesn't work with the UndoStack..
-    def _reset(self, variable=''):
+    def _reset_old(self, variable=''):
         """
-        Deletes the entire inner working strucutre of this node, and resets
+        Deletes the entire inner working structure of this node, and resets
         the master root item.
 
         Kwargs:
@@ -202,10 +211,12 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             os.mkdir(PUBLISH_DIR + '/%s/patterns' % self.variable)
 
         self.variable_param.setValue(self.variable, 0)
-        self.populateShots(self.variable)
-        '''
+        self.populateVariable(self.variable)
 
-    def populateShots(self, variable):
+    def populateVariable(self, variable):
+        """
+        Creates all of the pattern groups on initialization
+        """
         root = NodegraphAPI.GetRootNode()
         node_list = []
         if root.getParameter('variables.%s' % variable):
@@ -216,7 +227,6 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                     group_node = self.createPatternGroupNode(self.block_group, pattern=child.getValue(0))
                     node_list.append(group_node)
                     # connect VS NODE
-
                 connectInsideGroup(node_list, self.block_group)
 
     """ NODE CREATION """
@@ -280,7 +290,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         group_node = self.createGroupNode(block_root_node, name=name)
         return group_node
 
-    def createBlockRootNode(self, parent_node, name='block_01'):
+    def createBlockRootNode(self, parent_node, name='block_01', block_root_node=None):
         """
         Creates a new block or container for holding patterns.
 
@@ -292,9 +302,15 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                 This should be another block node.
             name (str):
                 The name of this block
+        Kwargs:
+            block_root_node (Root Node): Container root node.  If this is provided
+                then it will be used as the container node.  This will not clear the
+                existing params/nodes of the existing container.  That will need to be
+                done with __cleanBlockRootNode()
         """
         # Create Nodes
-        block_root_node = self.createGroupNode(parent_node, name=name)
+        if not block_root_node:
+            block_root_node = self.createGroupNode(parent_node, name=name)
         block_root_node.getParameters().createChildString('type', 'root')
         pattern_group = self.createPatternGroupNode(block_root_node, pattern='master')
         block_group = self.createBlockGroupNode(block_root_node, name='block')

@@ -1,10 +1,6 @@
 """
 TODO:
-
-    *   Undo handler...
-        Utils.UndoStack.OpenGroup("name")
-        Utils.UndoStack.CloseGroup()
-        @Decorators.undogroup('undoozles')
+    * Add redo / undo display updates...
     *   Expand / Collapse
             - Default states seem bjorked...
             - Add menu / hotkey options
@@ -43,11 +39,15 @@ TODO (DONE):
             Params pane closed, after, using this widget...
              show in floating pane, and close parameters tab...
              to bad it doesn't register as a closeEvent...
+    *   Undo handler...
+        Utils.UndoStack.OpenGroup("name")
+        Utils.UndoStack.CloseGroup()
+        @Decorators.undogroup('undoozles')
     *   Undo's added:
             *   Drag/drop in Variable Browser
             *   Delete Item
             *   GSV Changed?
-            Node Type Changed
+            *   Node Type Changed
                 still failing
             - Publish Dir changed?
             *   Pattern / Block Create
