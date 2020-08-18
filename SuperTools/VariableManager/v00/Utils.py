@@ -554,6 +554,25 @@ def getNextVersion(location):
     return next_version
 
 
+# HACK
+def transferNodeReferences(xfer_from, xfer_to):
+    """
+    Transfer the node references from one node to another.
+
+    xfer_from (param): the nodeReference param to transfer FROM
+    xfer_to  (param): the nodeReference param to transfer TO
+
+    """
+    import NodegraphAPI
+    # transfer node refs
+    for param in xfer_from.getChildren():
+        param_name = param.getName()
+        node_ref = NodegraphAPI.GetNode(param.getValue(0))
+        createNodeReference(
+            node_ref, param_name, param=xfer_to
+        )
+
+
 def updateNodeName(node, name=None):
     """
     updates the nodes name.  If a name is provided

@@ -1,6 +1,20 @@
 """
 TODO:
-    *   Multi Pattern
+
+    *   Undo handler...
+        Utils.UndoStack.OpenGroup("name")
+        Utils.UndoStack.CloseGroup()
+        @Decorators.undogroup('undoozles')
+    *   Expand / Collapse
+            - Default states seem bjorked...
+            - Add menu / hotkey options
+                    - RMB Menu
+                    - Arrow keys or WASD?
+    *   Auto create handler needs to go in init function
+
+
+TODO (DONE):
+    *   Multi Pattern | SEEMS TO WORK? Guess I did that right the first time...
         - update variable switches
         - moving..
             remove
@@ -15,19 +29,6 @@ TODO:
                 or use both...
             On Create:
                 ask if they're super sure...
-    *   Undo handler...
-        Utils.UndoStack.OpenGroup("name")
-        Utils.UndoStack.CloseGroup()
-        @Decorators.undogroup('undoozles')
-    *   Expand / Collapse
-            - Default states seem bjorked...
-            - Add menu / hotkey options
-                    - RMB Menu
-                    - Arrow keys or WASD?
-    *   Auto create handler needs to go in init function
-
-
-TODO (DONE):
     *   check duplicates:
             directory publish
             VariableManagerBrowserItem --> createPublishDir
@@ -45,13 +46,13 @@ TODO (DONE):
     *   Undo's added:
             *   Drag/drop in Variable Browser
             *   Delete Item
-            GSV Changed?
+            *   GSV Changed?
             Node Type Changed
                 still failing
             - Publish Dir changed?
-            Pattern / Block Create
-            Block Rename
-            Load Live Group
+            *   Pattern / Block Create
+            *   Block Rename
+            *   Load Live Group
     *   Fixed block naming convention
 """
 
@@ -775,9 +776,10 @@ class VariableManagerNodeMenu(AbstractComboBox):
 
             variable = self.main_widget.getVariable()
             node = self.main_widget.getNode()
+            node_type = str(self.currentText())
 
-            node.getParameter('node_type').setValue(str(self.currentText()), 0)
-            self.main_widget.setNodeType(str(self.currentText()))
+            node.getParameter('node_type').setValue(node_type, 0)
+            self.main_widget.setNodeType(node_type)
 
             variable_browser.reset()
             node._reset(variable=variable)

@@ -131,6 +131,7 @@ from Utils import (
     getNextVersion,
     goToNode,
     mkdirRecursive,
+    transferNodeReferences,
     updateNodeName
 )
 
@@ -924,13 +925,19 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         for param in current_node_ref_group.getChildren():
             current_node_ref_group.deleteChild(param)
 
+
         # transfer node refs
+        transferNodeReferences(
+            temp_live_group.getParameter('nodeReference'),
+            current_node_ref_group
+        )
+        '''        
         for param in temp_live_group.getParameter('nodeReference').getChildren():
             param_name = param.getName()
             node_ref = NodegraphAPI.GetNode(param.getValue(0))
             createNodeReference(
                 node_ref, param_name, param=current_node_ref_group
-            )
+            )'''
 
         for param_name in ['type', 'version', 'hash', 'expanded', 'name']:
             new_value = temp_live_group.getParameter(param_name).getValue(0)

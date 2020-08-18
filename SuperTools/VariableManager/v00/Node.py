@@ -11,7 +11,8 @@ from Settings import (
 from Utils import (
     connectInsideGroup,
     createNodeReference,
-    mkdirRecursive
+    mkdirRecursive,
+    transferNodeReferences
 )
 
 log = logging.getLogger("Test.Node")
@@ -113,6 +114,53 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
 
     def _reset(self, variable=''):
         """
+        Deletes the entire inner working structure of this node, and resets
+        the master root item.
+
+        This has a hack in it to bypass the delete bug in Katana.  Which
+        will keep the same root node... and modify it, rather than recreating
+        the entire node hierarchy (which is what I want it to do...).
+
+        Kwargs:
+            variable (str): name of the new GSV that this node will be using
+        """
+        # reset node references
+        node_ref_group = self.variable_root_node.getParameter('nodeReference')
+        for child in node_ref_group.getChildren():
+            node_ref_group.deleteChild(child)
+
+        # Get references
+        temp_root_node = self.createBlockRootNode(self, 'master')
+        temp_node_ref_group = temp_root_node.getParameter('nodeReference')
+        self.block_group = NodegraphAPI.GetNode(temp_node_ref_group.getChild('block_group').getValue(0))
+        self.vs_node = NodegraphAPI.GetNode(temp_node_ref_group.getChild('vs_node').getValue(0))
+
+        # Update references to nodes
+        self.getParameter('block_node').setExpression(
+            '@{name}'.format(name=self.block_group.getName())
+        )
+        # root
+        transferNodeReferences(temp_node_ref_group, node_ref_group)
+
+        # set GSV
+        self.variable = variable
+
+        # make directores
+        if not os.path.exists(PUBLISH_DIR):
+            os.mkdir(PUBLISH_DIR)
+
+        if not os.path.exists(PUBLISH_DIR + '/%s' % self.variable):
+            os.mkdir(PUBLISH_DIR + '/%s' % self.variable)
+            os.mkdir(PUBLISH_DIR + '/%s/blocks' % self.variable)
+            os.mkdir(PUBLISH_DIR + '/%s/patterns' % self.variable)
+
+        self.variable_param.setValue(self.variable, 0)
+        self.populateShots(self.variable)
+
+    '''   
+    # old less hacky method but doesn't work with the UndoStack..
+    def _reset(self, variable=''):
+        """
         Deletes the entire inner working strucutre of this node, and resets
         the master root item.
 
@@ -155,6 +203,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
 
         self.variable_param.setValue(self.variable, 0)
         self.populateShots(self.variable)
+        '''
 
     def populateShots(self, variable):
         root = NodegraphAPI.GetRootNode()
