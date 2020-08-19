@@ -159,6 +159,8 @@ class VariableManagerEditor(QWidget):
         Utils.EventModule.RegisterCollapsedHandler(
             self.__undoEventUpdate, 'event_idle'
         )
+        # delete
+        # bypass
 
         #Utils.EventModule.RegisterCollapsedHandler(self.testa, 'undo_end')
         #Utils.EventModule.RegisterCollapsedHandler(self.__redoEvent, 'port_connect')
@@ -203,9 +205,14 @@ class VariableManagerEditor(QWidget):
 
         # check to see if one of the params was updated..
         for arg in args:
-            for param_name in param_name_list:
-                if self.__check_parameter_finalizeValue(arg, param):
-                    self._should_update = True
+            if arg[0] in 'parameter_finalizeValue':
+                for param_name in param_name_list:
+                    if self.__check_parameter_finalizeValue(arg, param):
+                        self._should_update = True
+            if arg[0] in 'node_delete':
+                pass
+            if arg[0] in 'node_setBypassed':
+                pass
 
     def __undoGUIUpdate(self, args):
         """

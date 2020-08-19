@@ -1,11 +1,5 @@
-import Katana
-import v00 as VariableManager
+from Node import VariableManagerNode
 
-if VariableManager:
-    PluginRegistry = [(
-        "SuperTool", 2, "VariableManager",
-        (
-            VariableManager.VariableManagerNode,
-            VariableManager.GetEditor
-        )
-    ), ]
+def GetEditor():
+    from Editor import VariableManagerEditor
+    return VariableManagerEditor
