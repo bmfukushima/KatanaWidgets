@@ -130,6 +130,7 @@ from Utils import (
     getMainWidget,
     getNextVersion,
     goToNode,
+    makeUndoozable,
     mkdirRecursive,
     updateNodeName
 )
@@ -1038,7 +1039,7 @@ class VariableManagerBrowser(QTreeWidget):
             for child in block_root_node.getParameter('nodeReference').getChildren():
                 populateBlock(master_item, child)
 
-    @Decorators.undogroup('Variable Manager --> Delete Item')
+    #@Decorators.undogroup('Variable Manager --> Delete Item')
     def __deleteItem(self, item):
         """
         Deletes an item, removes all of the node referencing,
@@ -1047,8 +1048,6 @@ class VariableManagerBrowser(QTreeWidget):
         Attributes:
             item (VariableManagerBrowserItem): Item to be deleted
         """
-        print('testing')
-        # setup undo operation
 
         """        
         Utils.UndoStack.OpenGroup(
@@ -1860,7 +1859,9 @@ class VariableManagerBrowser(QTreeWidget):
         if event.key() in [Qt.Key_Delete, Qt.Key_Backspace]:
             item = self.currentItem()
             if item.getItemType() != MASTER_ITEM:
-                self.__deleteItem(item)
+                undo_string = "Variable Manager --> Deleting {item}".format(item=item.text(0))
+                makeUndoozable(self.__deleteItem, undo_string, self.main_widget.node, item)
+                #self.__deleteItem(item)
         elif event.key() == Qt.Key_D:
             self.__toggleItemDisabledState()
         return QTreeWidget.keyPressEvent(self, event, *args, **kwargs)

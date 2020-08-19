@@ -554,6 +554,28 @@ def getNextVersion(location):
     return next_version
 
 
+def makeUndoozable(func, undo_string, node, *args, **kwargs):
+    """
+    This will encapsulate the function as an undo stack.
+
+    Args:
+        func (function): the function to encapsulate as an undoable operation
+        undo_string (str): the name of the undo operation to be displayed
+        node (node): the main node ie self.node
+            This is a massive hack to register undo operations
+
+    """
+    Utils.UndoStack.OpenGroup(undo_string)
+
+    node.getParameter('undoozable').setValue('my oh my what a hack', 0)
+    func(*args, **kwargs)
+    node.getParameter('undoozable').setValue('my oh my what a hack', 0)
+
+    Utils.UndoStack.CloseGroup()
+    Utils.UndoStack.DisableCapture()
+    Utils.EventModule.ProcessAllEvents()
+    Utils.UndoStack.EnableCapture()
+
 # HACK
 def transferNodeReferences(xfer_from, xfer_to):
     """
@@ -591,3 +613,7 @@ def updateNodeName(node, name=None):
         # update name
         node.setName(node.getName())
         node.getParameter('name').setValue(node.getName(), 0)
+
+
+from Katana import Utils
+Utils.EventModule.RegisterEventHandler(updateNodeName, '_update_node_name')

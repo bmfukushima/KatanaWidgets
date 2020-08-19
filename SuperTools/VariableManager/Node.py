@@ -78,6 +78,8 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         Sets up the default node state.  This will create all of the parameters,
         internal nodes, and wire everything up for a default working state.
         """
+        # undo hack param
+        self.getParameters().createChildString('undoozable', 'you like my hack?')
 
         # setup node
         NodegraphAPI.SetNodeShapeAttr(self, 'basicDisplay', 1)

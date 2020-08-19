@@ -154,39 +154,13 @@ class VariableManagerEditor(QWidget):
         self.setFixedHeight(500)
         self.setupDestroyNodegraphEvent()
         self._should_update = False
-        # self._is_undoozing = False
-        # setup redo event
+
+        # setup undo event filters
         Utils.EventModule.RegisterCollapsedHandler(
             self.__undoEventUpdate, 'event_idle'
         )
-        # delete
-        # bypass
 
-        #Utils.EventModule.RegisterCollapsedHandler(self.testa, 'undo_end')
-        #Utils.EventModule.RegisterCollapsedHandler(self.__redoEvent, 'port_connect')
-        #Utils.EventModule.RegisterCollapsedHandler(self.__redoEvent, 'port_disconnect')
         Utils.EventModule.RegisterCollapsedHandler(self.__undoSetUpdateStatus, 'parameter_finalizeValue')
-
-    def __check_parameter_finalizeValue(self, arg, param_name):
-        """
-        Checks to see whether or not a parameter finalization event was
-        equivalent to one of our nice amazingly awesome def the best params.
-
-        Args:
-            arg (katana event): Katana arg containing the meta data for what is happening
-                in the current event
-            param_name (str): The string name of the parameter to check to see if
-                the change is happening on.
-
-        Returns (bool)
-        """
-        if arg[0] in 'parameter_finalizeValue':
-            node = arg[2]['node']
-            param = arg[2]['param']
-            if node == self.node and param.getName() == param_name:
-                if Utils.UndoStack.IsUndoInProgress() is True:
-                    return True
-        return False
 
     def __undoSetUpdateStatus(self, args):
         """
@@ -197,29 +171,23 @@ class VariableManagerEditor(QWidget):
         There has to be a better way...
         """
         # get list of param names to check
-        param_name_list = []
-        for param in self.node.getParameters().getChildren():
-            name = param.getName()
-            if name != 'nodeReference':
-                param_name_list.append(name)
-
-        # check to see if one of the params was updated..
         for arg in args:
             if arg[0] in 'parameter_finalizeValue':
-                for param_name in param_name_list:
-                    if self.__check_parameter_finalizeValue(arg, param):
-                        self._should_update = True
-            if arg[0] in 'node_delete':
-                pass
-            if arg[0] in 'node_setBypassed':
-                pass
+                node = arg[2]['node']
+                param = arg[2]['param']
+                if node == self.node and param.getName() == 'undoozable':
+                    self._should_update = True
 
     def __undoGUIUpdate(self, args):
         """
         Synchronizes the GUI, and anything else in the nodes that is not updated
         """
         if self._should_update is False: return
-
+        """
+        variable browser
+        gsv menu
+        node menu
+        """
         variable_manager = self.main_widget.variable_manager_widget
 
         # update variable menu
@@ -240,27 +208,13 @@ class VariableManagerEditor(QWidget):
         self.main_widget.setWorkingItem(item)
 
 
-
-        '''            
-        # update node type changer
-        should_update_node_type = self.__check_parameter_finalizeValue(arg, 'node_type')
-        if should_update_node_type is True:
-            variable = self.node.getParameter('node_type').getValue(0)
-            variable_manager.node_type_menu.setCurrentIndexToText(variable)
-
-        # update browser
-        variable_manager.variable_browser_widget
-
-        # update publish dir
-        variable_manager.publish_dir'''
-
-        # prepare for next update
-        #self._should_update = True
-
     def __undoEventUpdate(self, args):
         if self._should_update:
+            Utils.UndoStack.DisableCapture()
             self.__undoGUIUpdate(args)
             self._should_update = False
+            Utils.EventModule.ProcessAllEvents()
+            Utils.UndoStack.EnableCapture()
 
     """ SETUP NODEGRAPH DESTRUCTION HANDLER """
     def setupDestroyNodegraphEvent(self):
