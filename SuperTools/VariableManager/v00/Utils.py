@@ -591,17 +591,3 @@ def updateNodeName(node, name=None):
         # update name
         node.setName(node.getName())
         node.getParameter('name').setValue(node.getName(), 0)
-
-
-"""
-nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
-
-nodegraph_tab.getNodeGraphWidget()
-
-nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
-help(nodegraph_widget.frameGeometry)
-nodegraph_widget.frameNodes(nodegraph_tab.getEnteredGroupNode().getChildren())
-for x in dir(nodegraph_widget):
-    if 'rame' in x:
-        print x
-"""

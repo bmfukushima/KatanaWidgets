@@ -112,9 +112,12 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         if not os.path.exists(PUBLISH_DIR):
             os.mkdir(PUBLISH_DIR)
 
-    def __cleanBlockRootNode(self, block_root_node):
+    def cleanBlockRootNode(self, block_root_node):
         """
         Removes all everything on this node, returning it to a default state.
+
+        TODO
+            Needs to be modified to live group loading for block types...
 
         Args:
                 block_root_node (Root Node): The node to restore
@@ -132,6 +135,11 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         # add node reference back
         params.createChildGroup('nodeReference')
 
+        # create new temp block root node
+        self.createBlockRootNode(self, 'master', block_root_node=self.variable_root_node)
+        self.block_group = NodegraphAPI.GetNode(self.variable_root_node.getParameter('nodeReference.block_group').getValue(0))
+        self.vs_node = NodegraphAPI.GetNode(self.variable_root_node.getParameter('nodeReference.vs_node').getValue(0))
+
     def _reset(self, variable=''):
         """
         Deletes the entire inner working structure of this node, and resets
@@ -145,11 +153,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             variable (str): name of the new GSV that this node will be using
         """
 
-        self.__cleanBlockRootNode(self.variable_root_node)
-        # Get references
-        self.createBlockRootNode(self, 'master', block_root_node=self.variable_root_node)
-        self.block_group = NodegraphAPI.GetNode(self.variable_root_node.getParameter('nodeReference.block_group').getValue(0))
-        self.vs_node = NodegraphAPI.GetNode(self.variable_root_node.getParameter('nodeReference.vs_node').getValue(0))
+        self.cleanBlockRootNode(self.variable_root_node)
 
         # set GSV
         self.variable = variable
@@ -306,7 +310,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             block_root_node (Root Node): Container root node.  If this is provided
                 then it will be used as the container node.  This will not clear the
                 existing params/nodes of the existing container.  That will need to be
-                done with __cleanBlockRootNode()
+                done with cleanBlockRootNode()
         """
         # Create Nodes
         if not block_root_node:

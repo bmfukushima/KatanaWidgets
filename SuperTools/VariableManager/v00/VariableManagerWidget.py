@@ -1,14 +1,28 @@
 """
 TODO:
     * Add redo / undo display updates...
+            - undo_end
+                arrives in 3.6v3...
+            - check for param changes... to specific things that were undo'd...
+                    can potentially set an undo parm lol...
     *   Expand / Collapse
             - Default states seem bjorked...
             - Add menu / hotkey options
                     - RMB Menu
                     - Arrow keys or WASD?
     *   Auto create handler needs to go in init function
-
-
+    *   Node Type Change
+            - needs to honor current hierarchy.
+            - recursive search through tree, update all pattern nodes?
+            - change directory to add node type
+                might get a free win here on publish_dir change with node types...
+                if you add the publish dir update to the node type change
+    *   GSV Index Changed Bug
+            Repo:
+                Change node type, undo that change, and then click on the
+                gsv drop down.  This will overlay the GSV dropdown + the
+                load window, which will cause corrupted data...
+                index == index... so... its changing it.. but not really... womp womp...
 TODO (DONE):
     *   Multi Pattern | SEEMS TO WORK? Guess I did that right the first time...
         - update variable switches
@@ -709,9 +723,9 @@ class VariableManagerGSVMenu(AbstractComboBox):
         if self.getExistsFlag() is True:
             if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
                 def cancel():
-                    self.setExistsFlag(False)
+                    #self.setExistsFlag(False)
                     self.setCurrentIndexToText(self.main_widget.getVariable())
-                    self.setExistsFlag(True)
+                    #self.setExistsFlag(True)
                 warning_text = "Changing the GSV will delete all of your unsaved work..."
                 detailed_warning_text = """
 Publish your work if you want to save it, either in a file save,
@@ -729,7 +743,7 @@ If you choose to accept you will change the GSV:
 
         elif self.getExistsFlag() is False:
             self.setCurrentIndexToText(self.main_widget.getVariable())
-            self.setExistsFlag(True)
+            #self.setExistsFlag(True)
 
 
 class VariableManagerNodeMenu(AbstractComboBox):
@@ -749,10 +763,10 @@ class VariableManagerNodeMenu(AbstractComboBox):
         """
         does_node_variable_exist = self.isUserInputValid()
         if does_node_variable_exist is False:
-            self.setExistsFlag(False)
+            #self.setExistsFlag(False)
             node_type = self.main_widget.node.getParameter('node_type').getValue(0)
             self.setCurrentIndexToText(node_type)
-            self.setExistsFlag(True)
+            #self.setExistsFlag(True)
             return
 
     def populate(self):
