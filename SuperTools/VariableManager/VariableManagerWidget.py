@@ -10,6 +10,7 @@ TODO:
                     - RMB Menu
                     - Arrow keys or WASD?
     *   Auto create handler needs to go in init function
+            - double creating?
     *   Node Type Change
             - needs to honor current hierarchy.
             - recursive search through tree, update all pattern nodes?
@@ -983,6 +984,9 @@ class VariableManagerBrowser(QTreeWidget):
         try:
             old_parent_item.takeChild(old_parent_item.indexOfChild(item))
         except AttributeError:
+            # check to see if this was a top level item drop bug...
+            index = self.indexOfTopLevelItem(item)
+            self.takeTopLevelItem(index)
             # if the item does not have a parent, we will duck out
             pass
         new_parent_item.insertChild(index, item)
@@ -1645,10 +1649,17 @@ class VariableManagerBrowser(QTreeWidget):
 
         # Dropped in between items
         else:
+            old_index = old_parent_item.indexOfChild(item_dropped)
             return_val = super(VariableManagerBrowser, self).dropEvent(event, *args, **kwargs)
             new_parent_item = item_dropped.parent()
+
+        # move item
+        if new_parent_item:
             new_index = new_parent_item.indexOfChild(item_dropped)
             self.__dropOnBlockWrapper(item_dropped, new_index, new_parent_item, old_parent_item)
+        # fix weird magical drop spot in the tree inbetween items...
+        else:
+            self.reparentItem(item_dropped, old_parent_item, index=old_index)
 
         # return drop event
         return return_val
@@ -1740,13 +1751,23 @@ class VariableManagerBrowser(QTreeWidget):
             self.main_widget.populateParameters(node_list=[node])
 
     """ RMB EVENTS """
-    def __createUserBlockItemWrapper(self,):
+    def __createUserBlockItemWrapper(self):
+        """
+        Wrapper function for the horribly named function
+        __createUseBlockItem.
+        """
+        if not self.main_widget.variable:
+            return
         item = self.currentItem()
         makeUndoozable(self.__createUserBlockItem, self.main_widget.node, 'Block', 'Create Block Item', item=item)
 
     def __createUserBlockItem(self, item=None):
         """
-        Creates a new user block item.
+        Creates a new user block item.  This is triggered from the
+        Context Menu, and header clicked.
+
+        TODO:
+            Merge this with the __createNewBlockItem method
 
         Kwargs:
             item (VariableManagerBrowserItem): If the item is given,
@@ -1781,7 +1802,6 @@ class VariableManagerBrowser(QTreeWidget):
                 # move VariableManagerBrowserItem
                 new_index = new_grandparent_item.indexOfChild(new_parent_item)
                 new_grandparent_item.takeChild(new_index)
-                #new_grandparent_item.takeChild(new_grandparent_item.childCount()-1)
                 new_grandparent_item.insertChild(index, new_parent_item)
 
                 # expand new group

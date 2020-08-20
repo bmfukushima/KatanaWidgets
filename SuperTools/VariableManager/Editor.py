@@ -144,7 +144,7 @@ class VariableManagerEditor(QWidget):
     """
     def __init__(self, parent, node):
         super(VariableManagerEditor, self).__init__(parent)
-        #Utils.UndoStack.DisableCapture()
+        Utils.UndoStack.DisableCapture()
         self.node = node
         QVBoxLayout(self)
         self.main_widget = VariableManagerMainWidget(self, node)
@@ -162,7 +162,7 @@ class VariableManagerEditor(QWidget):
 
         Utils.EventModule.RegisterCollapsedHandler(self.__undoSetUpdateStatus, 'parameter_setValue')
 
-        #Utils.UndoStack.EnableCapture()
+        Utils.UndoStack.EnableCapture()
 
     def __undoSetUpdateStatus(self, args):
         """
@@ -191,9 +191,9 @@ class VariableManagerEditor(QWidget):
         node menu
         """
         print('congrats! you have done an update!')
-        Utils.EventModule.ProcessAllEvents()
+        #Utils.EventModule.ProcessAllEvents()
         variable_manager = self.main_widget.variable_manager_widget
-        '''        
+
         # update variable menu
         variable = self.node.getParameter('variable').getValue(0)
         self.main_widget.variable = variable
@@ -203,7 +203,7 @@ class VariableManagerEditor(QWidget):
         node_type = self.node.getParameter('node_type').getValue(0)
         self.main_widget.node_type = node_type
         variable_manager.node_type_menu.setCurrentIndexToText(node_type)
-
+        '''        
         # update variable browser
         ## repopulate
 
@@ -1744,3 +1744,26 @@ class WarningWidget(AbstractUserBooleanWidget):
         self.setCancelEvent(cancel_pressed)
         self.warning_text.setText(warning_text)
         self.detailed_warning_text.setText(detailed_warning_text)
+
+
+# TODO ERROR
+"""''
+    Can't seem to repro this...
+        happens sometimes in a GSV change?
+
+    [ERROR python.root]: An AttributeError occurred in "Editor.py": 'NoneType' object has no attribute 'getChildren'
+    Traceback (most recent call last):
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 72, in mousePressEvent
+        self._action()
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 218, in acceptPressed
+        self._accept()
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 1156, in __accepted
+        'Load {item_type}'.format(item_type=item_type)
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 579, in makeUndoozable
+        func(*args, **kwargs)
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 1038, in loadLiveGroup
+        self.__loadLiveGroupHack(publish_node, publish_dir)
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 956, in __loadLiveGroupHack
+        for param in current_node_ref_group.getChildren():
+    AttributeError: 'NoneType' object has no attribute 'getChildren'
+"""
