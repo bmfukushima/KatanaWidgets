@@ -15,6 +15,7 @@ class PATTERN_ITEM(object):
     BACKGROUND_COLOR = 0
 
     def __repr__(self):
+        print('TREPPRRPRPRPPRPRPREEE??')
         return 'pattern'
 
 

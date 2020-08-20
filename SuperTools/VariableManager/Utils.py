@@ -554,7 +554,7 @@ def getNextVersion(location):
     return next_version
 
 
-def makeUndoozable(func, undo_string, node, *args, **kwargs):
+def makeUndoozable(func, node, _action_string, _undo_type, *args, **kwargs):
     """
     This will encapsulate the function as an undo stack.
 
@@ -565,13 +565,24 @@ def makeUndoozable(func, undo_string, node, *args, **kwargs):
             This is a massive hack to register undo operations
 
     """
-    Utils.UndoStack.OpenGroup(undo_string)
-
+    # start recording undo operation
+    Utils.UndoStack.OpenGroup(
+        "{node} | {undo_type} | {action}".format(
+            node=node.getName(),
+            undo_type=_undo_type,
+            action=_action_string
+        )
+    )
     node.getParameter('undoozable').setValue('my oh my what a hack', 0)
+
+    # do stuff
     func(*args, **kwargs)
-    node.getParameter('undoozable').setValue('my oh my what a hack', 0)
 
+    # stop recording
+    node.getParameter('undoozable').setValue('my oh my what a hack', 0)
     Utils.UndoStack.CloseGroup()
+
+    # disable capture for remaining updates
     Utils.UndoStack.DisableCapture()
     Utils.EventModule.ProcessAllEvents()
     Utils.UndoStack.EnableCapture()

@@ -1,10 +1,14 @@
 """
 TODO:
+    * Publish system some how broke... patterns?
+        blocks broke once... but never again...
+        patterns... 457... trying to get the block node from the block node?
     * Add redo / undo display updates...
-            - undo_end
-                arrives in 3.6v3...
-            - check for param changes... to specific things that were undo'd...
-                    can potentially set an undo parm lol...
+            - set up new undo for all methods... see list below...
+                    only setup for delete atm
+            - move event handler to only register/unregister on hide/show
+            - finish update GUI
+            - update GUI on viewing parameters
     *   Expand / Collapse
             - Default states seem bjorked...
             - Add menu / hotkey options
@@ -58,15 +62,16 @@ TODO (DONE):
         Utils.UndoStack.CloseGroup()
         @Decorators.undogroup('undoozles')
     *   Undo's added:
-            *   Drag/drop in Variable Browser
+            *Drag/drop in Variable Browser
             *   Delete Item
+            *   Disable Item
+            *   Pattern / Block Create
             *   GSV Changed?
             *   Node Type Changed
                 still failing
             - Publish Dir changed?
-            *   Pattern / Block Create
             *   Block Rename
-            *   Load Live Group
+            Load Live Group
     *   Fixed block naming convention
 """
 
@@ -318,9 +323,8 @@ class VariableManagerCreateNewItemWidget(QWidget):
         super(VariableManagerCreateNewItemWidget, self).__init__(parent)
         self.spacing = 5
         self.initGUI()
-        self.node_type = PATTERN_ITEM
+        self.item_type = PATTERN_ITEM
         self.main_widget = getMainWidget(self)
-
 
     def initGUI(self):
         # create widgets
@@ -377,13 +381,25 @@ class VariableManagerCreateNewItemWidget(QWidget):
         Switches the item type that is going to be created
         between Patterns and Blocks
         """
-        if self.node_type == PATTERN_ITEM:
-            self.node_type = BLOCK_ITEM
-        elif self.node_type == BLOCK_ITEM:
-            self.node_type = PATTERN_ITEM
+        if self.item_type == PATTERN_ITEM:
+            self.item_type = BLOCK_ITEM
+        elif self.item_type == BLOCK_ITEM:
+            self.item_type = PATTERN_ITEM
 
-    @Decorators.undogroup('Variable Manager --> Create New Item')
     def accept(self):
+        """
+        Wrapper for creating new item and placing it in the undo stack
+        """
+        item_type = repr(self.item_type)
+        print(item_type)
+        makeUndoozable(
+            self.createNewItem,
+            self.main_widget.node,
+            str(self.item_text_field.text()),
+            'Create New asdf{item_type}'.format(item_type=item_type)
+        )
+
+    def createNewItem(self):
         """
         Creates a new item based off of what type of item is
         set in the item_type_button.
@@ -395,10 +411,10 @@ class VariableManagerCreateNewItemWidget(QWidget):
             if current_text:
                 # create item
                 browser_widget = self.main_widget.variable_manager_widget.variable_browser
-                browser_widget.createNewBrowserItem(self.node_type, item_text=current_text)
+                browser_widget.createNewBrowserItem(self.item_type, item_text=current_text)
 
                 # check parameters if pattern
-                if self.node_type == PATTERN_ITEM:
+                if self.item_type == PATTERN_ITEM:
                     self.createNewPattern()
 
                 # reset text
@@ -441,11 +457,11 @@ class VariableManagerCreateNewItemWidget(QWidget):
         """
         style_sheet = self.item_type_button.styleSheet()
         # setup pattern
-        if self.node_type == PATTERN_ITEM:
+        if self.item_type == PATTERN_ITEM:
             self.item_type_button.setText('P')
             color = repr(PATTERN_ITEM.COLOR)
         # set up block
-        elif self.node_type == BLOCK_ITEM:
+        elif self.item_type == BLOCK_ITEM:
             self.item_type_button.setText('B')
             color = repr(BLOCK_ITEM.COLOR)
 
@@ -461,12 +477,12 @@ class VariableManagerCreateNewItemWidget(QWidget):
 
     """ PROPERTIES """
     @property
-    def node_type(self):
-        return self._node_type
+    def item_type(self):
+        return self._item_type
 
-    @node_type.setter
-    def node_type(self, node_type):
-        self._node_type = node_type
+    @item_type.setter
+    def item_type(self, item_type):
+        self._item_type = item_type
         self.__updateItemTypeButton()
 
     @property
@@ -629,7 +645,6 @@ class VariableManagerGSVMenu(AbstractComboBox):
             self.setExistsFlag(True)
             return
 
-    @Decorators.undogroup('Variable Manager --> GSV Changed')
     def gsvChanged(self):
         """
         When the user changes the GSV and accepts the change,
@@ -693,6 +708,14 @@ class VariableManagerGSVMenu(AbstractComboBox):
         if self.main_widget.node_type == 'Group':
             self.main_widget.variable_manager_widget.variable_browser.showMiniNodeGraph()
 
+    def accept(self):
+        makeUndoozable(
+            self.gsvChanged,
+            self.main_widget.node,
+            str(self.currentText()),
+            'Change GSV'
+        )
+
     def createNewGSV(self, gsv):
         """
         Creates a new GSV in the project settings.
@@ -740,7 +763,7 @@ If you choose to accept you will change the GSV:
                     old_variable=self.main_widget.getVariable(),
                     new_variable=str(self.currentText())
                 )
-                self.main_widget.showWarningBox(warning_text, self.gsvChanged, cancel, detailed_warning_text)
+                self.main_widget.showWarningBox(warning_text, self.accept, cancel, detailed_warning_text)
 
         elif self.getExistsFlag() is False:
             self.setCurrentIndexToText(self.main_widget.getVariable())
@@ -784,8 +807,19 @@ class VariableManagerNodeMenu(AbstractComboBox):
         self.setModel(model)
         self.setModelColumn(0)
 
-    @Decorators.undogroup('Variable Manager --> Node Type Changed')
     def accepted(self):
+        makeUndoozable(
+            self.changeNodeType,
+            self.main_widget.node,
+            str(self.currentText()),
+            'Change Node Type'
+        )
+
+    def changeNodeType(self):
+        """
+        Changes the node type of this node.  This will update also update everything
+        including node creation, and UI updates.
+        """
         if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
             variable_browser = self.main_widget.variable_manager_widget.variable_browser
 
@@ -829,7 +863,7 @@ continue from here, all unsaved work will be deleted...
                     new_node_type=str(self.currentText())
                 )
             self.main_widget.showWarningBox(
-                warning_text, self.accepted, self.cancelled, detailed_warning_text
+                warning_text, self.accept, self.cancelled, detailed_warning_text
             )
 
 
@@ -1039,7 +1073,6 @@ class VariableManagerBrowser(QTreeWidget):
             for child in block_root_node.getParameter('nodeReference').getChildren():
                 populateBlock(master_item, child)
 
-    #@Decorators.undogroup('Variable Manager --> Delete Item')
     def __deleteItem(self, item):
         """
         Deletes an item, removes all of the node referencing,
@@ -1478,11 +1511,18 @@ class VariableManagerBrowser(QTreeWidget):
         node.setParent(new_block_node)
         self.__wireNode(item, new_parent_item, new_index)
 
-        # update variable switches
-        #self.main_widget.updateAllVariableSwitches(old_parent_node)
-        #self.main_widget.updateAllVariableSwitches(new_parent_node)
+    def __dropOnBlockWrapper(self, item_dropped, new_index, new_parent_item, old_parent_item):
+        makeUndoozable(
+            self.__dropOnBlockEvent,
+            self.main_widget.node,
+            item_dropped.text(0),
+            'Drop Event',
+            item_dropped,
+            new_index,
+            new_parent_item,
+            old_parent_item
+        )
 
-    @Decorators.undogroup('Variable Manager --> Drop Event')
     def __dropOnBlockEvent(self, item_dropped, new_index, new_parent_item, old_parent_item):
         """
         This is what happens when the user drops an item
@@ -1506,7 +1546,19 @@ class VariableManagerBrowser(QTreeWidget):
             expanded = convertStringBoolToBool(string_expanded)
             item_dropped.setExpanded(expanded)
 
-    @Decorators.undogroup('Variable Manager --> Drop Event')
+    def __dropOnPatternWrapper(self, item_dropped, item_dropped_on, new_index, new_parent_item, old_parent_item):
+        makeUndoozable(
+            self.__dropOnPatternEvent,
+            self.main_widget.node,
+            item_dropped.text(0),
+            'Drop Event',
+            item_dropped,
+            item_dropped_on,
+            new_index,
+            new_parent_item,
+            old_parent_item
+        )
+
     def __dropOnPatternEvent(self, item_dropped, item_dropped_on, new_index, new_parent_item, old_parent_item):
         """
         This is what happens when the user drops an item
@@ -1573,7 +1625,7 @@ class VariableManagerBrowser(QTreeWidget):
             if item_dropped_on.getItemType() == PATTERN_ITEM:
                 new_parent_item = item_dropped_on.parent()
                 new_index = new_parent_item.indexOfChild(item_dropped_on)
-                self.__dropOnPatternEvent(item_dropped, item_dropped_on, new_index, new_parent_item,  old_parent_item)
+                self.__dropOnPatternWrapper(item_dropped, item_dropped_on, new_index, new_parent_item,  old_parent_item)
 
                 return
             # dropped on block
@@ -1583,14 +1635,14 @@ class VariableManagerBrowser(QTreeWidget):
                 new_index = new_parent_item.indexOfChild(item_dropped)
                 # drop on block item
                 if new_parent_item == item_dropped_on:
-                    self.__dropOnBlockEvent(item_dropped, new_index, new_parent_item, old_parent_item)
+                    self.__dropOnBlockWrapper(item_dropped, new_index, new_parent_item, old_parent_item)
 
         # Dropped in between items
         else:
             return_val = super(VariableManagerBrowser, self).dropEvent(event, *args, **kwargs)
             new_parent_item = item_dropped.parent()
             new_index = new_parent_item.indexOfChild(item_dropped)
-            self.__dropOnBlockEvent(item_dropped, new_index, new_parent_item, old_parent_item)
+            self.__dropOnBlockWrapper(item_dropped, new_index, new_parent_item, old_parent_item)
 
         # return drop event
         return return_val
@@ -1830,7 +1882,6 @@ class VariableManagerBrowser(QTreeWidget):
             return QTreeWidget.dragMoveEvent(self, event, *args, **kwargs)
         return QTreeWidget.dragMoveEvent(self, event, *args, **kwargs)
 
-    @Decorators.undogroup('Variable Manager --> Changed block name')
     def itemNameChanged(self, item):
         """
         Updates the node name and parameter name for BLOCK ITEMS
@@ -1845,7 +1896,15 @@ class VariableManagerBrowser(QTreeWidget):
                 if index.column() == 0:
                     name = item.text(0)
                     root_node = item.getRootNode()
-                    updateNodeName(root_node, name=name)
+
+                    makeUndoozable(
+                        updateNodeName,
+                        self.main_widget.node,
+                        item.text(0),
+                        'Change Name',
+                        root_node,
+                        name=name
+                    )
 
     def itemCollapsedEvent(self, item, *args, **kwargs):
         if item.getRootNode().getParameter('expanded'):
@@ -1856,14 +1915,19 @@ class VariableManagerBrowser(QTreeWidget):
             item.getRootNode().getParameter('expanded').setValue('True', 0)
 
     def keyPressEvent(self, event, *args, **kwargs):
+        item = self.currentItem()
         if event.key() in [Qt.Key_Delete, Qt.Key_Backspace]:
-            item = self.currentItem()
             if item.getItemType() != MASTER_ITEM:
-                undo_string = "Variable Manager --> Deleting {item}".format(item=item.text(0))
-                makeUndoozable(self.__deleteItem, undo_string, self.main_widget.node, item)
-                #self.__deleteItem(item)
+                makeUndoozable(self.__deleteItem, self.main_widget.node, item.text(0), 'Delete', item)
+
         elif event.key() == Qt.Key_D:
-            self.__toggleItemDisabledState()
+            makeUndoozable(
+                self.__toggleItemDisabledState,
+                self.main_widget.node,
+                item.text(0),
+                'Disable'
+            )
+
         return QTreeWidget.keyPressEvent(self, event, *args, **kwargs)
 
     def mouseReleaseEvent(self, event, *args, **kwargs):

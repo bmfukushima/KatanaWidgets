@@ -132,6 +132,7 @@ from Utils import (
     getMainWidget,
     getNextVersion,
     goToNode,
+    makeUndoozable,
     mkdirRecursive,
     transferNodeReferences,
     updateNodeName
@@ -145,6 +146,7 @@ class VariableManagerEditor(QWidget):
     """
     def __init__(self, parent, node):
         super(VariableManagerEditor, self).__init__(parent)
+        Utils.UndoStack.DisableCapture()
         self.node = node
         QVBoxLayout(self)
         self.main_widget = VariableManagerMainWidget(self, node)
@@ -161,6 +163,8 @@ class VariableManagerEditor(QWidget):
         )
 
         Utils.EventModule.RegisterCollapsedHandler(self.__undoSetUpdateStatus, 'parameter_finalizeValue')
+
+        Utils.UndoStack.EnableCapture()
 
     def __undoSetUpdateStatus(self, args):
         """
@@ -188,6 +192,8 @@ class VariableManagerEditor(QWidget):
         gsv menu
         node menu
         """
+        print('congrats! you have done an update!')
+        '''       
         variable_manager = self.main_widget.variable_manager_widget
 
         # update variable menu
@@ -205,8 +211,7 @@ class VariableManagerEditor(QWidget):
         variable_manager.variable_browser.setCurrentItem(item)
 
         self.main_widget.updateOptionsList()
-        self.main_widget.setWorkingItem(item)
-
+        self.main_widget.setWorkingItem(item)'''
 
     def __undoEventUpdate(self, args):
         if self._should_update:
@@ -962,9 +967,12 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
             )'''
 
         for param_name in ['type', 'version', 'hash', 'expanded', 'name']:
-            new_value = temp_live_group.getParameter(param_name).getValue(0)
-            publish_node.getParameter(param_name).setValue(new_value, 0)
-
+            try:
+                new_value = temp_live_group.getParameter(param_name).getValue(0)
+                publish_node.getParameter(param_name).setValue(new_value, 0)
+            except AttributeError:
+                # kill it if its on a pattern because it doesnt have expanded
+                pass
         # disconnect / move all nodes
         node_list = []
         for child_node in temp_live_group.getChildren():
@@ -978,7 +986,6 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         # delete proxy node
         temp_live_group.delete()
 
-    @Decorators.undogroup('Variable Manager --> Load Live Group')
     def loadLiveGroup(
         self,
         version=None
@@ -1057,7 +1064,12 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.variable_manager_widget.variable_browser.populate()
 
         # update variable switch...
-        root_node = item.getPatternNode().getParent()
+        if item.getItemType() == PATTERN_ITEM:
+            # whatever
+            root_node = item.getPatternNode().getParent().getParent()
+        elif item.getItemType() in BLOCK_PUBLISH_GROUP:
+            root_node = item.getPatternNode().getParent()
+        # needs to go 2 parents for patterns...
         self.main_widget.updateAllVariableSwitches(root_node)
         self.main_widget.updateOptionsList()
 
@@ -1128,7 +1140,14 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         """
         load block selected and set the publish dir
         """
-        self.loadLiveGroup()
+        item = self.main_widget.getWorkingItem()
+        makeUndoozable(
+            self.loadLiveGroup,
+            self.main_widget.node,
+            item.text(0),
+            'Load {type}'.format(type=repr(item.getItemType()))
+        )
+        #self.loadLiveGroup()
 
     """ PROPERTIES """
     @property
