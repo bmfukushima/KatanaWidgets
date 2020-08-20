@@ -191,23 +191,24 @@ class VariableManagerEditor(QWidget):
         gsv menu
         node menu
         """
-        print('===> congrats! you have done an update! <===')
-        variable_manager = self.main_widget.variable_manager_widget
 
-        # update variable menu
-        variable = self.node.getParameter('variable').getValue(0)
-        self.main_widget.variable = variable
-        variable_manager.variable_menu.setCurrentIndexToText(variable)
+        if Utils.UndoStack.IsUndoInProgress():
+            variable_manager = self.main_widget.variable_manager_widget
 
-        # update node menu
-        node_type = self.node.getParameter('node_type').getValue(0)
-        self.main_widget.node_type = node_type
-        variable_manager.node_type_menu.setCurrentIndexToText(node_type)
+            # update variable menu
+            variable = self.node.getParameter('variable').getValue(0)
+            self.main_widget.variable = variable
+            variable_manager.variable_menu.setCurrentIndexToText(variable)
 
-        # update variable browser
-        ## repopulate
-        variable_manager.variable_browser.reset()
-        variable_manager.variable_browser.populate()
+            # update node menu
+            node_type = self.node.getParameter('node_type').getValue(0)
+            self.main_widget.node_type = node_type
+            variable_manager.node_type_menu.setCurrentIndexToText(node_type)
+
+            # update variable browser
+            ## repopulate
+            variable_manager.variable_browser.reset()
+            variable_manager.variable_browser.populate()
 
         '''
         # update item attrs on browser / main widget
