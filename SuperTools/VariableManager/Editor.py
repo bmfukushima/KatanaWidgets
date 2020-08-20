@@ -373,15 +373,15 @@ class VariableManagerMainWidget(QWidget):
             # init GSV menu
             variable = self.node.getParameter('variable').getValue(0)
             self.setVariable(variable)
+
             # setup gsv change
             self.variable_manager_widget.variable_menu.setCurrentIndexToText(variable)
-
             self.updateOptionsList()
 
             # initialize node type menu
             node_type = self.node.getParameter('node_type').getValue(0)
+            self.setNodeType(node_type)
             node_type_menu = self.variable_manager_widget.node_type_menu
-            # node_type_menu.setExistsFlag(False)
             node_type_menu.setCurrentIndexToText(node_type)
 
     """ UTILS """

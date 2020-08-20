@@ -587,6 +587,50 @@ class VariableManagerGSVMenu(AbstractComboBox):
         will ensure that an indexChanged event is not registered thus
         updating the UI.
         """
+        self.setExistsFlag(False)
+        variable = self.currentText()
+        variables = NodegraphAPI.GetNode('rootNode').getParameter('variables').getChildren()
+        variable_list = [x.getName() for x in variables]
+        model = self.model()
+        """
+        # remove all items
+        for i in reversed(range(model.rowCount())):
+            item = model.item(i, 0)
+            model.takeRow(item.row())
+
+        # add items
+        for variable in variable_list:
+            item = QStandardItem(variable)
+            model.insertRow(model.rowCount(), item)
+
+        # remove blank space...
+        if str(self.currentText()) != '':
+            item = model.findItems('', Qt.MatchExactly)
+            if len(item) > 0:
+                    current_row = model.indexFromItem(item[0]).row()
+                    model.takeRow(current_row)
+
+        # set current item
+        self.setExistsFlag(False)
+        self.setCurrentIndexToText(variable)
+        # add items
+        """
+        # remove all items except current one
+        for i in reversed(range(model.rowCount())):
+            print(self.getExistsFlag())
+            item = model.item(i, 0)
+            model.takeRow(item.row())
+            self.setExistsFlag(False)
+
+        # add items
+        for variable in variable_list:
+            item = QStandardItem(variable)
+            model.insertRow(model.rowCount(), item)
+            self.setExistsFlag(False)
+
+        self.setCurrentIndexToText(variable)
+        self.setExistsFlag(True)
+        '''     
         variable = self.currentText()
         variables = NodegraphAPI.GetNode('rootNode').getParameter('variables').getChildren()
         variable_list = [x.getName() for x in variables]
@@ -627,12 +671,14 @@ class VariableManagerGSVMenu(AbstractComboBox):
                 item = QStandardItem(variable)
                 model.insertRow(model.rowCount(), item)
 
+  
         # remove blank space...
         if str(self.currentText()) != '':
             item = model.findItems('', Qt.MatchExactly)
             if len(item) > 0:
                     current_row = model.indexFromItem(item[0]).row()
                     model.takeRow(current_row)
+        '''
 
     """ UTILS """
     def checkUserInput(self):
@@ -754,6 +800,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         this event is run.  It will first ask the user if they wish to proceed,
         as doing so will essentially reinstantiate this node back to an initial setting.
         """
+        print('index changed some how?')
         # pop up warning box to ask user if they wish to change the variable
         if self.getExistsFlag() is True:
             if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
@@ -762,6 +809,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
                     self.setCurrentIndexToText(self.main_widget.getVariable())
                     self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.main_widget.variable)
                     #self.setExistsFlag(True)
+                print('showing this some how?')
                 warning_text = "Changing the GSV will delete all of your unsaved work..."
                 detailed_warning_text = """
 Publish your work if you want to save it, either in a file save,
