@@ -71,7 +71,8 @@ TODO (DONE):
                 still failing
             - Publish Dir changed?
             *   Block Rename
-            Load Live Group
+            *   Create user block item
+            *   Load Live Group
     *   Fixed block naming convention
 """
 
@@ -896,7 +897,7 @@ class VariableManagerBrowser(QTreeWidget):
         # set up header
         self.head = self.header()
         self.head.setSectionsClickable(True)
-        self.head.sectionClicked.connect(self.__createUserBlockItem)
+        self.head.sectionClicked.connect(self.__createUserBlockItemWrapper)
         self.setHeaderItem(QTreeWidgetItem([variable, 'pattern', 'block']))
         self.head.setStretchLastSection(False)
         self.head.setSectionResizeMode(0, QHeaderView.Stretch)
@@ -1734,6 +1735,10 @@ class VariableManagerBrowser(QTreeWidget):
             self.main_widget.populateParameters(node_list=[node])
 
     """ RMB EVENTS """
+    def __createUserBlockItemWrapper(self,):
+        item = self.currentItem()
+        makeUndoozable(self.__createUserBlockItem, self.main_widget.node, 'Block', 'Create Block Item', item=item)
+
     def __createUserBlockItem(self, item=None):
         """
         Creates a new user block item.
@@ -1803,8 +1808,10 @@ class VariableManagerBrowser(QTreeWidget):
             # Create new item
             elif 'Create' in action.text():
                 if action.text() == 'Create Block':
-                    item = self.currentItem()
-                    self.__createUserBlockItem(item=item)
+                    #item = self.currentItem()
+                    self.__createUserBlockItemWrapper()
+                    #makeUndoozable(self.__createUserBlockItem, self.main_widget.node, 'Block', 'Create Block Item', item=item)
+
 
             # Publish item
             elif 'Publish' in action.text():
