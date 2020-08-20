@@ -573,13 +573,13 @@ def makeUndoozable(func, node, _action_string, _undo_type, *args, **kwargs):
             action=_action_string
         )
     )
-    node.getParameter('undoozable').setValue('my oh my what a hack', 0)
+    node.getParameter('undoozable').setValue('my oh my what a hack1', 0)
 
     # do stuff
     func(*args, **kwargs)
 
     # stop recording
-    node.getParameter('undoozable').setValue('my oh my what a hack', 0)
+    node.getParameter('undoozable').setValue('my oh my what a hack2', 0)
     Utils.UndoStack.CloseGroup()
 
     # disable capture for remaining updates

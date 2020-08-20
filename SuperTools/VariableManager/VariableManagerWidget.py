@@ -390,7 +390,6 @@ class VariableManagerCreateNewItemWidget(QWidget):
         Wrapper for creating new item and placing it in the undo stack
         """
         item_type = self.item_type.TYPE
-
         makeUndoozable(
             self.createNewItem,
             self.main_widget.node,

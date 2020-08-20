@@ -144,7 +144,7 @@ class VariableManagerEditor(QWidget):
     """
     def __init__(self, parent, node):
         super(VariableManagerEditor, self).__init__(parent)
-        Utils.UndoStack.DisableCapture()
+        #Utils.UndoStack.DisableCapture()
         self.node = node
         QVBoxLayout(self)
         self.main_widget = VariableManagerMainWidget(self, node)
@@ -160,9 +160,9 @@ class VariableManagerEditor(QWidget):
             self.__undoEventUpdate, 'event_idle'
         )
 
-        Utils.EventModule.RegisterCollapsedHandler(self.__undoSetUpdateStatus, 'parameter_finalizeValue')
+        Utils.EventModule.RegisterCollapsedHandler(self.__undoSetUpdateStatus, 'parameter_setValue')
 
-        Utils.UndoStack.EnableCapture()
+        #Utils.UndoStack.EnableCapture()
 
     def __undoSetUpdateStatus(self, args):
         """
@@ -174,7 +174,7 @@ class VariableManagerEditor(QWidget):
         """
         # get list of param names to check
         for arg in args:
-            if arg[0] in 'parameter_finalizeValue':
+            if arg[0] in 'parameter_setValue':
                 node = arg[2]['node']
                 param = arg[2]['param']
                 if node == self.node and param.getName() == 'undoozable':
