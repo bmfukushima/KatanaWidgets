@@ -154,12 +154,13 @@ class VariableManagerEditor(QWidget):
         self.setFixedHeight(500)
         self.setupDestroyNodegraphEvent()
         self._should_update = False
-
+        self._is_updating = False
         # setup undo event filters
         Utils.EventModule.RegisterCollapsedHandler(
             self.__undoEventUpdate, 'event_idle'
         )
-
+        #
+        #parameter_setValue
         Utils.EventModule.RegisterCollapsedHandler(self.__undoSetUpdateStatus, 'parameter_setValue')
 
         Utils.UndoStack.EnableCapture()
@@ -190,8 +191,7 @@ class VariableManagerEditor(QWidget):
         gsv menu
         node menu
         """
-        print('congrats! you have done an update!')
-        #Utils.EventModule.ProcessAllEvents()
+        print('===> congrats! you have done an update! <===')
         variable_manager = self.main_widget.variable_manager_widget
 
         # update variable menu
@@ -203,20 +203,20 @@ class VariableManagerEditor(QWidget):
         node_type = self.node.getParameter('node_type').getValue(0)
         self.main_widget.node_type = node_type
         variable_manager.node_type_menu.setCurrentIndexToText(node_type)
-        '''        
+
         # update variable browser
         ## repopulate
-
         variable_manager.variable_browser.reset()
         variable_manager.variable_browser.populate()
-        print ('yataa!')'''
+
         '''
         # update item attrs on browser / main widget
         item = variable_manager.variable_browser.topLevelItem(0)
         variable_manager.variable_browser.setCurrentItem(item)
 
         self.main_widget.updateOptionsList()
-        self.main_widget.setWorkingItem(item)'''
+        self.main_widget.setWorkingItem(item)
+        '''
 
     def __undoEventUpdate(self, args):
         if self._should_update:
@@ -294,6 +294,7 @@ class VariableManagerMainWidget(QWidget):
             param / tree widget / editor class
         working_item (item): this attribute is the current selection in the
             VariableManagerBrowser TreeWidget
+
     """
 
     def __name__(self):
@@ -331,6 +332,7 @@ class VariableManagerMainWidget(QWidget):
         """
 
         self.setNode(node)
+        self.undostack_frozen = False
         self.node.__init__(populate=False)
         self.variable = self.node.getParameter('variable').getValue(0)
         self.node_type = self.node.getParameter('node_type').getValue(0)

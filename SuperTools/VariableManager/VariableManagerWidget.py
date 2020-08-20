@@ -390,34 +390,38 @@ class VariableManagerCreateNewItemWidget(QWidget):
         """
         Wrapper for creating new item and placing it in the undo stack
         """
-        item_type = self.item_type.TYPE
-        makeUndoozable(
-            self.createNewItem,
-            self.main_widget.node,
-            str(self.item_text_field.text()),
-            'Create New {item_type}'.format(item_type=item_type)
-        )
+        # get current item
+        item = self.main_widget.getWorkingItem()
+        current_text = str(self.item_text_field.text())
+        # browser_widget = self.main_widget.variable_manager_widget.variable_browser
+        if item:
+            if current_text:
+                if self.main_widget.variable:
+                    item_type = self.item_type.TYPE
+                    makeUndoozable(
+                        self.createNewItem,
+                        self.main_widget.node,
+                        str(self.item_text_field.text()),
+                        'Create New {item_type}'.format(item_type=item_type)
+                    )
 
     def createNewItem(self):
         """
         Creates a new item based off of what type of item is
         set in the item_type_button.
         """
-        # get current item
-        item = self.main_widget.getWorkingItem()
+
+        # create item
         current_text = str(self.item_text_field.text())
-        if item:
-            if current_text:
-                # create item
-                browser_widget = self.main_widget.variable_manager_widget.variable_browser
-                browser_widget.createNewBrowserItem(self.item_type, item_text=current_text)
+        browser_widget = self.main_widget.variable_manager_widget.variable_browser
+        browser_widget.createNewBrowserItem(self.item_type, item_text=current_text)
 
-                # check parameters if pattern
-                if self.item_type == PATTERN_ITEM:
-                    self.createNewPattern()
+        # check parameters if pattern
+        if self.item_type == PATTERN_ITEM:
+            self.createNewPattern()
 
-                # reset text
-                self.item_text_field.setText('')
+        # reset text
+        self.item_text_field.setText('')
 
     def resizeEvent(self, event):
         height = self.height()
@@ -2056,6 +2060,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
     ):
         super(VariableManagerBrowserItem, self).__init__(parent)
 
+        Utils.UndoStack.DisableCapture()
         self.setItemType(item_type)
         self.pattern_node = pattern_node
         self.root_node = root_node
@@ -2090,6 +2095,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         # set initial disabled
         self.setDisabled(is_disabled)
+        Utils.UndoStack.EnableCapture()
 
     def createPublishDir(self, unique_hash=None):
         """
