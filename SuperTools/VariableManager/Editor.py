@@ -180,7 +180,7 @@ class VariableManagerEditor(QWidget):
                 if node == self.node and param.getName() == 'undoozable':
                     self._should_update = True
 
-    def __undoGUIUpdate(self, args):
+    def __updateGUI(self, args):
         """
         Synchronizes the GUI, and anything else in the nodes that is not updated
         """
@@ -191,19 +191,28 @@ class VariableManagerEditor(QWidget):
         node menu
         """
         print('congrats! you have done an update!')
-        '''       
+        Utils.EventModule.ProcessAllEvents()
         variable_manager = self.main_widget.variable_manager_widget
 
         # update variable menu
         variable = self.node.getParameter('variable').getValue(0)
+        print('setting variable to == %s'%variable)
         self.main_widget.variable = variable
         variable_manager.variable_menu.setCurrentIndexToText(variable)
 
+        # update node menu
+        node_type = self.node.getParameter('node_type').getValue(0)
+        print('setting node_type to == %s' % node_type)
+        self.main_widget.node_type = node_type
+        variable_manager.node_type_menu.setCurrentIndexToText(node_type)
+
         # update variable browser
         ## repopulate
+        '''        
         variable_manager.variable_browser.reset()
         variable_manager.variable_browser.populate()
-
+        print ('yataa!')'''
+        '''
         # update item attrs on browser / main widget
         item = variable_manager.variable_browser.topLevelItem(0)
         variable_manager.variable_browser.setCurrentItem(item)
@@ -214,7 +223,7 @@ class VariableManagerEditor(QWidget):
     def __undoEventUpdate(self, args):
         if self._should_update:
             Utils.UndoStack.DisableCapture()
-            self.__undoGUIUpdate(args)
+            self.__updateGUI(args)
             self._should_update = False
             Utils.EventModule.ProcessAllEvents()
             Utils.UndoStack.EnableCapture()
@@ -1062,12 +1071,14 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.variable_manager_widget.variable_browser.populate()
 
         # update variable switch...
+        # get the parent root node of the item
         if item.getItemType() == PATTERN_ITEM:
             # whatever
             root_node = item.getPatternNode().getParent().getParent()
         elif item.getItemType() in BLOCK_PUBLISH_GROUP:
             root_node = item.getPatternNode().getParent()
-        # needs to go 2 parents for patterns...
+
+        #root_node = item.getRootNode()
         self.main_widget.updateAllVariableSwitches(root_node)
         self.main_widget.updateOptionsList()
 
@@ -1146,7 +1157,6 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
             item.text(0),
             'Load {item_type}'.format(item_type=item_type)
         )
-        #self.loadLiveGroup()
 
     """ PROPERTIES """
     @property

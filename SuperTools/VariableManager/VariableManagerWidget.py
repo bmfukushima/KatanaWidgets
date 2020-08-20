@@ -552,6 +552,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         '''
         super(VariableManagerGSVMenu, self).__init__(parent)
         self.main_widget = getMainWidget(self)
+        self.variable_browser = self.main_widget.variable_manager_widget.variable_browser
         self.populate()
         self.setSelectionChangedEmitEvent(self.checkUserInput)
         self.currentIndexChanged.connect(self.indexChanged)
@@ -650,7 +651,6 @@ class VariableManagerGSVMenu(AbstractComboBox):
         this function will be triggered.
         """
         # get attributes
-        variable_browser = self.main_widget.variable_manager_widget.variable_browser
         variable = str(self.currentText())
         previous_variable = self.main_widget.getVariable()
         node = self.main_widget.getNode()
@@ -665,8 +665,15 @@ class VariableManagerGSVMenu(AbstractComboBox):
 
         # if the directory exists
         if os.path.exists(publish_loc) is True:
+            # update variables
             self.main_widget.setVariable(variable)
             node.getParameter('variable').setValue(variable, 0)
+
+            # reset item selection to root
+            item = self.variable_browser.topLevelItem(0)
+            self.variable_browser.setCurrentItem(item)
+            self.main_widget.setWorkingItem(item)
+
             # need to update / create master item here...
             self.main_widget.versions_display_widget.update(
                 column=2, gui=True, previous_variable=previous_variable
@@ -688,24 +695,25 @@ class VariableManagerGSVMenu(AbstractComboBox):
                 os.mkdir(publish_dir + '/%s/patterns' % variable)
 
             # populate
-            variable_browser.reset()
+            self.variable_browser.reset()
             node._reset(variable=variable)
-            variable_browser.populate()
+            self.variable_browser.populate()
             self.main_widget.updateOptionsList()
 
-            # set attributes
-            item = variable_browser.topLevelItem(0)
-            variable_browser.setCurrentItem(item)
+            # reset item selection to root
+            item = self.variable_browser.topLevelItem(0)
+            self.variable_browser.setCurrentItem(item)
             self.main_widget.setWorkingItem(item)
-            variable_browser.showMiniNodeGraph()
+            self.variable_browser.showMiniNodeGraph()
 
+            # Publish
             initial_publish_display_text = "BLOCK  (  {variable}  |  v000  )".format(variable=variable)
             self.main_widget.publish_display_widget.update(name=initial_publish_display_text, publish_type=BLOCK_ITEM)
             self.main_widget.publish_display_widget.display()
 
         self.main_widget.setVariable(variable)
         if self.main_widget.node_type == 'Group':
-            self.main_widget.variable_manager_widget.variable_browser.showMiniNodeGraph()
+            self.variable_browser.showMiniNodeGraph()
 
     def accept(self):
         makeUndoozable(
@@ -862,7 +870,7 @@ continue from here, all unsaved work will be deleted...
                     new_node_type=str(self.currentText())
                 )
             self.main_widget.showWarningBox(
-                warning_text, self.accept, self.cancelled, detailed_warning_text
+                warning_text, self.accepted, self.cancelled, detailed_warning_text
             )
 
 
