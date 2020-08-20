@@ -1,11 +1,6 @@
 """
 TODO:
-    * Publish system some how broke... patterns?
-        blocks broke once... but never again...
-        patterns... 457... trying to get the block node from the block node?
     * Add redo / undo display updates...
-            - set up new undo for all methods... see list below...
-                    only setup for delete atm
             - move event handler to only register/unregister on hide/show
             - finish update GUI
             - update GUI on viewing parameters
@@ -28,6 +23,9 @@ TODO:
                 load window, which will cause corrupted data...
                 index == index... so... its changing it.. but not really... womp womp...
 TODO (DONE):
+    * Publish system some how broke... patterns?
+        blocks broke once... but never again...
+        patterns... 457... trying to get the block node from the block node?
     *   Multi Pattern | SEEMS TO WORK? Guess I did that right the first time...
         - update variable switches
         - moving..
@@ -391,13 +389,13 @@ class VariableManagerCreateNewItemWidget(QWidget):
         """
         Wrapper for creating new item and placing it in the undo stack
         """
-        item_type = repr(self.item_type)
-        print(item_type)
+        item_type = self.item_type.TYPE
+
         makeUndoozable(
             self.createNewItem,
             self.main_widget.node,
             str(self.item_text_field.text()),
-            'Create New asdf{item_type}'.format(item_type=item_type)
+            'Create New {item_type}'.format(item_type=item_type)
         )
 
     def createNewItem(self):
@@ -1808,10 +1806,7 @@ class VariableManagerBrowser(QTreeWidget):
             # Create new item
             elif 'Create' in action.text():
                 if action.text() == 'Create Block':
-                    #item = self.currentItem()
                     self.__createUserBlockItemWrapper()
-                    #makeUndoozable(self.__createUserBlockItem, self.main_widget.node, 'Block', 'Create Block Item', item=item)
-
 
             # Publish item
             elif 'Publish' in action.text():

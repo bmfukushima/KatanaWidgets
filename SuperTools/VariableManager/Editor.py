@@ -10,10 +10,6 @@ TODO
                 display with notes.
     Cleanup
         *    checkHash repeats...
-        *    gsv change
-                -- load live version of
-                        pattern
-                        block
 
     WISH LIST:
         1.) Import/Export?
@@ -26,6 +22,8 @@ TODO
         4.) Filterable versions in advanced menu
         5.) Hover over node in Nodegraph Displays overlay of this nodes structure
         6.) RMB On Node --> Convert To Variable Manager
+        7.) Support for Lookdev
+                input/output ports exposed, or ability to choose I/O
 - bugs...
     *  Node Type change
             This needs to be linked to publishing system...
@@ -1141,11 +1139,12 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         load block selected and set the publish dir
         """
         item = self.main_widget.getWorkingItem()
+        item_type = item.getItemType().TYPE
         makeUndoozable(
             self.loadLiveGroup,
             self.main_widget.node,
             item.text(0),
-            'Load {type}'.format(type=repr(item.getItemType()))
+            'Load {item_type}'.format(item_type=item_type)
         )
         #self.loadLiveGroup()
 
