@@ -193,22 +193,20 @@ class VariableManagerEditor(QWidget):
         print('congrats! you have done an update!')
         Utils.EventModule.ProcessAllEvents()
         variable_manager = self.main_widget.variable_manager_widget
-
+        '''        
         # update variable menu
         variable = self.node.getParameter('variable').getValue(0)
-        print('setting variable to == %s'%variable)
         self.main_widget.variable = variable
         variable_manager.variable_menu.setCurrentIndexToText(variable)
 
         # update node menu
         node_type = self.node.getParameter('node_type').getValue(0)
-        print('setting node_type to == %s' % node_type)
         self.main_widget.node_type = node_type
         variable_manager.node_type_menu.setCurrentIndexToText(node_type)
 
         # update variable browser
         ## repopulate
-        '''        
+
         variable_manager.variable_browser.reset()
         variable_manager.variable_browser.populate()
         print ('yataa!')'''
@@ -303,7 +301,6 @@ class VariableManagerMainWidget(QWidget):
 
     """ INIT """
     def __init__(self, parent, node):
-        print("init edit")
         # initialize
         super(VariableManagerMainWidget, self).__init__(parent)
 
@@ -1144,6 +1141,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.node.getParameter('publish_dir').setValue(root_publish_dir, 0)
         self.main_widget.setVariable(self.previous_variable)
         self.main_widget.variable_manager_widget.variable_menu.setCurrentIndexToText(self.previous_variable)
+        self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.previous_variable)
 
     def __accepted(self):
         """

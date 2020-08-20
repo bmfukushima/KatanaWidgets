@@ -54,7 +54,6 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             variable_root_node (node): The top most node that is not
                 this node.  Can also be called with self.getChildByIndex(0)
         """
-        print('init node')
         if populate is True:
             self.setupDefaultNodeState()
         else:
@@ -154,8 +153,9 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         Kwargs:
             variable (str): name of the new GSV that this node will be using
         """
-
+        # clean up root node
         self.cleanBlockRootNode(self.variable_root_node)
+        self.variable_root_node.getParameter('hash').setValue('master', 0)
 
         # set GSV
         self.variable = variable
