@@ -156,15 +156,16 @@ class VariableManagerEditor(QWidget):
         self.setupDestroyNodegraphEvent()
         self._should_update = False
         self._is_updating = False
+        Utils.UndoStack.EnableCapture()
         # setup undo event filters
         Utils.EventModule.RegisterCollapsedHandler(
             self.__undoEventUpdate, 'event_idle'
         )
-        #
+
         #parameter_setValue
         Utils.EventModule.RegisterCollapsedHandler(self.__undoSetUpdateStatus, 'parameter_setValue')
 
-        Utils.UndoStack.EnableCapture()
+
 
     def __undoSetUpdateStatus(self, args):
         """
@@ -175,6 +176,8 @@ class VariableManagerEditor(QWidget):
         There has to be a better way...
         """
         # get list of param names to check
+        if self.main_widget.suppress_updates is True:
+            return
         for arg in args:
             if arg[0] in 'parameter_setValue':
                 node = arg[2]['node']
@@ -186,32 +189,39 @@ class VariableManagerEditor(QWidget):
         """
         Synchronizes the GUI, and anything else in the nodes that is not updated
         """
+        # condition checks
         if self._should_update is False: return
-        """
-        variable browser
-        gsv menu
-        node menu
-        """
+        if self.main_widget.suppress_updates is True: return
 
-        if Utils.UndoStack.IsUndoInProgress():
-            variable_manager = self.main_widget.variable_manager_widget
+        # update UI
+        variable_manager = self.main_widget.variable_manager_widget
+        variable_browser = variable_manager.variable_browser
+        item = variable_browser.currentItem()
 
-            # update variable menu
-            variable = self.node.getParameter('variable').getValue(0)
-            self.main_widget.variable = variable
-            variable_manager.variable_menu.setCurrentIndexToText(variable)
+        # update variable menu
+        variable = self.node.getParameter('variable').getValue(0)
+        self.main_widget.variable = variable
+        variable_manager.variable_menu.setCurrentIndexToText(variable)
 
-            # update node menu
-            node_type = self.node.getParameter('node_type').getValue(0)
-            self.main_widget.node_type = node_type
-            variable_manager.node_type_menu.setCurrentIndexToText(node_type)
+        # update node menu
+        node_type = self.node.getParameter('node_type').getValue(0)
+        self.main_widget.node_type = node_type
+        variable_manager.node_type_menu.setCurrentIndexToText(node_type)
 
-            # update variable browser
-            ## repopulate
-            variable_manager.variable_browser.reset()
-            variable_manager.variable_browser.populate()
+        # update variable browser
+        variable_browser.reset()
+        variable_browser.populate()
 
+        # reset selected item
         '''
+        items = variable_browser.model().findItems(item.text(0), QtCore.Qt.MatchExactly)
+        print(items)
+        if len(items) > 0:
+            new_item = items[0]
+            variable_browser.setCurrentItem(new_item)
+            self.main_widget.setWorkingItem(new_item)
+
+
         # update item attrs on browser / main widget
         item = variable_manager.variable_browser.topLevelItem(0)
         variable_manager.variable_browser.setCurrentItem(item)
@@ -292,6 +302,9 @@ class VariableManagerMainWidget(QWidget):
         pattern
         node_type (str): type of node that this Variable Manager is set by
             default to.
+        suppress_updates (bool): When True, the UI will be told not to
+            update.  This is to suppress some triggers from updating
+            and sending this into recursion...
         variable (str): sets the variable for the node
             param / tree widget / editor class
         working_item (item): this attribute is the current selection in the
@@ -334,7 +347,7 @@ class VariableManagerMainWidget(QWidget):
         """
 
         self.setNode(node)
-        self.undostack_frozen = False
+        self.suppress_updates = False
         self.node.__init__(populate=False)
         self.variable = self.node.getParameter('variable').getValue(0)
         self.node_type = self.node.getParameter('node_type').getValue(0)
@@ -860,6 +873,14 @@ but you need this crap in order to save stuff into it.
     def setRootPublishDir(self, root_publish_dir):
         self.root_publish_dir = root_publish_dir
 
+    @property
+    def suppress_updates(self):
+        return self._suppress_updates
+
+    @suppress_updates.setter
+    def suppress_updates(self, suppress_updates):
+        self._suppress_updates = suppress_updates
+
 
 class VersionsDisplayWidget(AbstractUserBooleanWidget):
     """
@@ -1156,7 +1177,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         item_type = item.getItemType().TYPE
         makeUndoozable(
             self.loadLiveGroup,
-            self.main_widget.node,
+            self.main_widget,
             item.text(0),
             'Load {item_type}'.format(item_type=item_type)
         )

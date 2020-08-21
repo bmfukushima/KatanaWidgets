@@ -554,17 +554,21 @@ def getNextVersion(location):
     return next_version
 
 
-def makeUndoozable(func, node, _action_string, _undo_type, *args, **kwargs):
+def makeUndoozable(func, main_widget, _action_string, _undo_type, *args, **kwargs):
     """
     This will encapsulate the function as an undo stack.
 
     Args:
         func (function): the function to encapsulate as an undoable operation
-        undo_string (str): the name of the undo operation to be displayed
-        node (node): the main node ie self.node
-            This is a massive hack to register undo operations
+        _action_string (str): the name of the item acted on to be displayed
+        _undo_type (str): The type of undo operation that just happened
+        main_widget (VariableManagerWidget): The main widget called
+            with the getMainWidget() util...
 
     """
+    main_widget.suppress_updates = True
+    node = main_widget.node
+
     # start recording undo operation
     Utils.UndoStack.OpenGroup(
         "{node} | {undo_type} | {action}".format(
@@ -574,16 +578,16 @@ def makeUndoozable(func, node, _action_string, _undo_type, *args, **kwargs):
         )
     )
 
-    # register operation hack...
-    if Utils.UndoStack.IsUndoEnabled():
-        node.getParameter('undoozable').setValue('my oh my what a hack1', 0)
-
-    # do stuff
-    func(*args, **kwargs)
-
-    # register operation hack...
+    # register undo hack...
     if Utils.UndoStack.IsUndoEnabled():
         node.getParameter('undoozable').setValue('my oh my what a hack2', 0)
+
+    # All of this shit so I can literally do this...
+    func(*args, **kwargs)
+
+    # register undo hack...
+    if Utils.UndoStack.IsUndoEnabled():
+        node.getParameter('undoozable').setValue('my oh my what a hack1', 0)
 
     # stop recording
     Utils.UndoStack.CloseGroup()
@@ -592,6 +596,8 @@ def makeUndoozable(func, node, _action_string, _undo_type, *args, **kwargs):
     Utils.UndoStack.DisableCapture()
     Utils.EventModule.ProcessAllEvents()
     Utils.UndoStack.EnableCapture()
+
+    main_widget.suppress_updates = False
 
 
 def suppressUndooz(func, *args, **kwargs):

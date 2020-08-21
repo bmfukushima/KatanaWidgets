@@ -401,7 +401,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
                     item_type = self.item_type.TYPE
                     makeUndoozable(
                         self.createNewItem,
-                        self.main_widget.node,
+                        self.main_widget,
                         str(self.item_text_field.text()),
                         'Create New {item_type}'.format(item_type=item_type)
                     )
@@ -762,13 +762,14 @@ class VariableManagerGSVMenu(AbstractComboBox):
             self.main_widget.publish_display_widget.display()
 
         self.main_widget.setVariable(variable)
+        #Utils.EventModule.ProcessAllEvents()
         if self.main_widget.node_type == 'Group':
             variable_browser.showMiniNodeGraph()
 
     def accepted(self):
         makeUndoozable(
             self.gsvChanged,
-            self.main_widget.node,
+            self.main_widget,
             str(self.currentText()),
             'Change GSV'
         )
@@ -776,7 +777,6 @@ class VariableManagerGSVMenu(AbstractComboBox):
     def cancelled(self):
         self.setCurrentIndexToText(self.main_widget.getVariable())
         self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.main_widget.variable)
-        #makeUndoozDisappear()
 
     def createNewGSV(self, gsv):
         """
@@ -870,7 +870,7 @@ class VariableManagerNodeMenu(AbstractComboBox):
     def accepted(self):
         makeUndoozable(
             self.changeNodeType,
-            self.main_widget.node,
+            self.main_widget,
             str(self.currentText()),
             'Change Node Type'
         )
@@ -1576,7 +1576,7 @@ class VariableManagerBrowser(QTreeWidget):
     def __dropOnBlockWrapper(self, item_dropped, new_index, new_parent_item, old_parent_item):
         makeUndoozable(
             self.__dropOnBlockEvent,
-            self.main_widget.node,
+            self.main_widget,
             item_dropped.text(0),
             'Drop Event',
             item_dropped,
@@ -1611,7 +1611,7 @@ class VariableManagerBrowser(QTreeWidget):
     def __dropOnPatternWrapper(self, item_dropped, item_dropped_on, new_index, new_parent_item, old_parent_item):
         makeUndoozable(
             self.__dropOnPatternEvent,
-            self.main_widget.node,
+            self.main_widget,
             item_dropped.text(0),
             'Drop Event',
             item_dropped,
@@ -1811,7 +1811,7 @@ class VariableManagerBrowser(QTreeWidget):
         if not self.main_widget.variable:
             return
         item = self.currentItem()
-        makeUndoozable(self.__createUserBlockItem, self.main_widget.node, 'Block', 'Create Block Item', item=item)
+        makeUndoozable(self.__createUserBlockItem, self.main_widget, 'Block', 'Create Block Item', item=item)
 
     def __createUserBlockItem(self, item=None):
         """
@@ -1971,6 +1971,8 @@ class VariableManagerBrowser(QTreeWidget):
         Args:
             item (VariableManagerBrowserItem): item whose name has just been changed.
         """
+        if self.main_widget.suppress_updates is True: return
+
         if item:
             if item.getItemType() == BLOCK_ITEM:
                 index = self.currentIndex()
@@ -1980,7 +1982,7 @@ class VariableManagerBrowser(QTreeWidget):
 
                     makeUndoozable(
                         updateNodeName,
-                        self.main_widget.node,
+                        self.main_widget,
                         item.text(0),
                         'Change Name',
                         root_node,
@@ -1999,12 +2001,12 @@ class VariableManagerBrowser(QTreeWidget):
         item = self.currentItem()
         if event.key() in [Qt.Key_Delete, Qt.Key_Backspace]:
             if item.getItemType() != MASTER_ITEM:
-                makeUndoozable(self.__deleteItem, self.main_widget.node, item.text(0), 'Delete', item)
+                makeUndoozable(self.__deleteItem, self.main_widget, item.text(0), 'Delete', item)
 
         elif event.key() == Qt.Key_D:
             makeUndoozable(
                 self.__toggleItemDisabledState,
-                self.main_widget.node,
+                self.main_widget,
                 item.text(0),
                 'Disable'
             )
