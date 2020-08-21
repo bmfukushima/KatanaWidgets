@@ -219,7 +219,7 @@ You can also hit <ESCAPE> to go back...
 
     def cancelPressed(self):
         self.main_widget.layout().setCurrentIndex(0)
-        self._cancel()
+        suppressUndooz(self._cancel)
 
     def keyPressEvent(self, event, *args, **kwargs):
         if event.key() == QtCore.Qt.Key_Escape:
@@ -590,6 +590,18 @@ def makeUndoozable(func, node, _action_string, _undo_type, *args, **kwargs):
 
     # disable capture for remaining updates
     Utils.UndoStack.DisableCapture()
+    Utils.EventModule.ProcessAllEvents()
+    Utils.UndoStack.EnableCapture()
+
+
+def suppressUndooz(func, *args, **kwargs):
+    """
+    Suppresses the undo stack for the function provided:
+
+    func (function): function to have the undo stack disable
+    """
+    Utils.UndoStack.DisableCapture()
+    func(*args, **kwargs)
     Utils.EventModule.ProcessAllEvents()
     Utils.UndoStack.EnableCapture()
 

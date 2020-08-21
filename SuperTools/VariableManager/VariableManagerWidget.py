@@ -17,13 +17,13 @@ TODO:
             - change directory to add node type
                 might get a free win here on publish_dir change with node types...
                 if you add the publish dir update to the node type change
+TODO (DONE):
     *   GSV Index Changed Bug
             Repo:
                 Change node type, undo that change, and then click on the
                 gsv drop down.  This will overlay the GSV dropdown + the
                 load window, which will cause corrupted data...
                 index == index... so... its changing it.. but not really... womp womp...
-TODO (DONE):
     * Publish system some how broke... patterns?
         blocks broke once... but never again...
         patterns... 457... trying to get the block node from the block node?
@@ -335,7 +335,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
 
         # connect signals to buttons
         self.item_type_button.clicked.connect(self.toggleItemType)
-        self.enter_button.clicked.connect(self.accept)
+        self.enter_button.clicked.connect(self.accepted)
 
         # add widgets to layout
         self.layout().addWidget(self.item_type_button)
@@ -386,7 +386,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
         elif self.item_type == BLOCK_ITEM:
             self.item_type = PATTERN_ITEM
 
-    def accept(self):
+    def accepted(self):
         """
         Wrapper for creating new item and placing it in the undo stack
         """
@@ -521,7 +521,7 @@ class VariableManagerCreateNewItemTextWidget(QLineEdit):
 
         # accept event
         if event.key() in [Qt.Key_Enter, Qt.Key_Return]:
-            self.parent().accept()
+            self.parent().accepted()
 
         return QLineEdit.keyPressEvent(self, event)
 
@@ -765,13 +765,17 @@ class VariableManagerGSVMenu(AbstractComboBox):
         if self.main_widget.node_type == 'Group':
             variable_browser.showMiniNodeGraph()
 
-    def accept(self):
+    def accepted(self):
         makeUndoozable(
             self.gsvChanged,
             self.main_widget.node,
             str(self.currentText()),
             'Change GSV'
         )
+
+    def cancelled(self):
+        self.setCurrentIndexToText(self.main_widget.getVariable())
+        self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.main_widget.variable)
 
     def createNewGSV(self, gsv):
         """
@@ -800,16 +804,10 @@ class VariableManagerGSVMenu(AbstractComboBox):
         this event is run.  It will first ask the user if they wish to proceed,
         as doing so will essentially reinstantiate this node back to an initial setting.
         """
-        print('index changed some how?')
         # pop up warning box to ask user if they wish to change the variable
         if self.getExistsFlag() is True:
             if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
-                def cancel():
-                    #self.setExistsFlag(False)
-                    self.setCurrentIndexToText(self.main_widget.getVariable())
-                    self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.main_widget.variable)
-                    #self.setExistsFlag(True)
-                print('showing this some how?')
+
                 warning_text = "Changing the GSV will delete all of your unsaved work..."
                 detailed_warning_text = """
 Publish your work if you want to save it, either in a file save,
@@ -823,11 +821,12 @@ If you choose to accept you will change the GSV:
                     old_variable=self.main_widget.getVariable(),
                     new_variable=str(self.currentText())
                 )
-                self.main_widget.showWarningBox(warning_text, self.accept, cancel, detailed_warning_text)
+                self.main_widget.showWarningBox(
+                    warning_text, self.accepted, self.cancelled, detailed_warning_text
+                )
 
         elif self.getExistsFlag() is False:
             self.setCurrentIndexToText(self.main_widget.getVariable())
-            #self.setExistsFlag(True)
 
 
 class VariableManagerNodeMenu(AbstractComboBox):
