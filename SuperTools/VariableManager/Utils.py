@@ -605,6 +605,19 @@ def suppressUndooz(func, *args, **kwargs):
     Utils.EventModule.ProcessAllEvents()
     Utils.UndoStack.EnableCapture()
 
+
+def makeUndoozDisappear(index=0):
+    """
+    Clears an undo event from the undo stack.  This will most
+    notably be used in the cancel events for the gsv menus.
+
+    Note:
+        The undo stack is popped in the reverse order.  So the index 0
+        will actually remove the last undo operation
+    """
+    Utils.UndoStack._UndoStack.pop(index)
+    Utils.UndoStack._TriggerUndoCallbacks()
+
 # HACK
 def transferNodeReferences(xfer_from, xfer_to):
     """

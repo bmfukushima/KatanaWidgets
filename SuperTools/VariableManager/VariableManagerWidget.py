@@ -136,6 +136,7 @@ from Utils import (
     getNextVersion,
     goToNode,
     makeUndoozable,
+    makeUndoozDisappear,
     mkdirRecursive,
     updateNodeName
 )
@@ -617,7 +618,6 @@ class VariableManagerGSVMenu(AbstractComboBox):
         """
         # remove all items except current one
         for i in reversed(range(model.rowCount())):
-            print(self.getExistsFlag())
             item = model.item(i, 0)
             model.takeRow(item.row())
             self.setExistsFlag(False)
@@ -776,6 +776,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
     def cancelled(self):
         self.setCurrentIndexToText(self.main_widget.getVariable())
         self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.main_widget.variable)
+        #makeUndoozDisappear()
 
     def createNewGSV(self, gsv):
         """
