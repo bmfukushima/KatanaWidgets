@@ -9,7 +9,7 @@ If you wish to use this library there are a few things to note:
     do w/e tf you want to do with it.
   * If you are using this in a commercial setting, it would be nice if you let me know
     what company is using it to try and atleast track if people are using these tools in
-    production.
+    production, and might be nice to stick companies on here that are using it #marketing.
   * The [cgwidgets] (https://github.com/bmfukushima/cgwidgets) is not currently published,
     however at this point in time it is not required, but will be for future releases.  Please
     note that this library will not be released under as free of a license ( because reasons ).
@@ -33,11 +33,11 @@ This repo contains a small collection of my personal tools which have been creat
   * [qtpy](https://pypi.org/project/QtPy/) is a small abstraction layer that lets you write applications using a single API call to either PyQt or PySide.
   * [cgwidgets] (https://github.com/bmfukushima/cgwidgets) small PyQt5/PySide agnostic widgets to be used between multiple DCCs
  
-## Written in:
-  * Python 2.7.12
-  * PyQt 5.12
-
-## Compatibility
-This library is written for [VFX Reference Platform 2020](https://vfxplatform.com/)
+## Written In:
   * Python 3.7.7
-    * PyQt 5.12.1
+  * PyQt 5.15.0
+
+## Tested In:
+This library is written for [VFX Reference Platform 2021](https://vfxplatform.com/), however I have intentionally left some things in the ancient Python 2.7.x so that you can still enjoy it... but seriously, fstrings... hurry up.
+  * Python 2.7.blah
+  * PyQt 5.12.1
