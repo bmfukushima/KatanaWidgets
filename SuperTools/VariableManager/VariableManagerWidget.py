@@ -983,6 +983,13 @@ class VariableManagerBrowser(QTreeWidget):
         self.populate()
 
     """ UTILS """
+    @classmethod
+    def getFullItemPath(cls, item, path):
+        if item:
+            path = '{text}/{path}'.format(text=item.text(0), path=path)
+            return cls.getFullItemPath(item.parent(), path)
+        return path
+
     def getAllRootNodes(self, item, vs_node_list=[]):
         if item:
             if item.getRootNode().getParameter('nodeReference.vs_node'):

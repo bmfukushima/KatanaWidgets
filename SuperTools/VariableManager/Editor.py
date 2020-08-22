@@ -82,13 +82,16 @@ import os
 import math
 
 from PyQt5.QtWidgets import (
-    QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout,
-    QScrollArea, QSplitter, QPlainTextEdit,
-    QTreeWidget, QHeaderView, QAbstractItemView, QLineEdit,
-    QSizePolicy, QMenu, QTreeWidgetItem, QStackedLayout,
-    QSpacerItem
+    QWidget, QPushButton, QLabel, QVBoxLayout, QPlainTextEdit,
+    QSizePolicy, QStackedLayout,QSpacerItem
 )
-from PyQt5 import QtCore, QtGui
+from PyQt5.QtCore import Qt, QEvent
+from PyQt5.QtGui import (
+    QStandardItemModel, QStandardItem,
+    QBrush, QColor
+)
+#from PyQt5 import QtCore, QtGui
+
 
 try:
     from Katana import UI4, QT4Widgets, QT4FormWidgets
@@ -119,6 +122,7 @@ from Settings import (
     )
 
 from VariableManagerWidget import VariableManagerWidget as VariableManagerWidget
+from VariableManagerWidget import VariableManagerBrowser
 
 from Utils import (
     AbstractComboBox,
@@ -165,8 +169,6 @@ class VariableManagerEditor(QWidget):
         #parameter_setValue
         Utils.EventModule.RegisterCollapsedHandler(self.__undoSetUpdateStatus, 'parameter_setValue')
 
-
-
     def __undoSetUpdateStatus(self, args):
         """
         Checks the args coming in to determine if an undo operation
@@ -187,16 +189,19 @@ class VariableManagerEditor(QWidget):
 
     def __updateGUI(self, args):
         """
-        Synchronizes the GUI, and anything else in the nodes that is not updated
+        Synchronizes the GUI, and anything else in the nodes that is not updated.
+
         """
         # condition checks
         if self._should_update is False: return
         if self.main_widget.suppress_updates is True: return
 
-        # update UI
+        # get attrs
         variable_manager = self.main_widget.variable_manager_widget
         variable_browser = variable_manager.variable_browser
         item = variable_browser.currentItem()
+        item_name = variable_browser.currentItem().text(0)
+        item_path = VariableManagerBrowser.getFullItemPath(item, '')
 
         # update variable menu
         variable = self.node.getParameter('variable').getValue(0)
@@ -213,22 +218,19 @@ class VariableManagerEditor(QWidget):
         variable_browser.populate()
 
         # reset selected item
-        '''
-        items = variable_browser.model().findItems(item.text(0), QtCore.Qt.MatchExactly)
-        print(items)
-        if len(items) > 0:
-            new_item = items[0]
-            variable_browser.setCurrentItem(new_item)
-            self.main_widget.setWorkingItem(new_item)
+        items = variable_browser.findItems(item_name, Qt.MatchExactly | Qt.MatchRecursive)
+        for item in items:
+            full_path = VariableManagerBrowser.getFullItemPath(item, '')
+            if full_path == item_path:
+                variable_browser.setCurrentItem(item)
+                self.main_widget.setWorkingItem(item)
+                return
 
-
-        # update item attrs on browser / main widget
-        item = variable_manager.variable_browser.topLevelItem(0)
-        variable_manager.variable_browser.setCurrentItem(item)
-
-        self.main_widget.updateOptionsList()
-        self.main_widget.setWorkingItem(item)
-        '''
+        # if none found, set to top level item
+        new_item = variable_manager.variable_browser.topLevelItem(0)
+        variable_manager.variable_browser.setCurrentItem(new_item)
+        variable_browser.setCurrentItem(new_item)
+        self.main_widget.setWorkingItem(new_item)
 
     def __undoEventUpdate(self, args):
         if self._should_update:
@@ -260,7 +262,7 @@ class VariableManagerEditor(QWidget):
 
     def eventFilter(self, obj, event):
         event_type = event.type()
-        if event_type == QtCore.QEvent.Close:
+        if event_type == QEvent.Close:
             self.destroyNodegraph()
             obj.removeEventFilter(self)
         return True
@@ -913,7 +915,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         # Create main layout
         central_widget = QWidget()
         central_layout = QVBoxLayout(central_widget)
-        central_layout.setAlignment(QtCore.Qt.AlignTop)
+        central_layout.setAlignment(Qt.AlignTop)
 
         # Create Widgets
         notes_label = QLabel()
@@ -1284,18 +1286,18 @@ class VersionsDisplayMenu(AbstractComboBox):
         adds all of the items to the model widget
         adds color to the items
         """
-        model = QtGui.QStandardItemModel()
+        model = QStandardItemModel()
         live_item = None
         version_list = sorted(os.listdir(self.publish_dir))
         for i, version in enumerate(reversed(version_list)):
-            item = QtGui.QStandardItem(version)
+            item = QStandardItem(version)
             # setup colors
             if os.path.exists('%s/%s/live.csv' % (self.publish_dir, version)):
-                color = QtGui.QColor(60, 94, 60, 255)
+                color = QColor(60, 94, 60, 255)
                 if live_item:
-                    color = QtGui.QColor(94, 94, 60, 255)
-                    brush = QtGui.QBrush(color)
-                brush = QtGui.QBrush(color)
+                    color = QColor(94, 94, 60, 255)
+                    brush = QBrush(color)
+                brush = QBrush(color)
                 item.setBackground(brush)
                 live_item = item
             model.setItem(i, 0, item)
@@ -1345,7 +1347,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
         # create display label
         self.label = QLabel(self.name)
-        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        self.label.setAlignment(Qt.AlignCenter)
         font = self.label.font()
         font.setBold(True)
         font.setPointSize(font.pointSize() * 5)
@@ -1743,7 +1745,7 @@ class WarningWidget(AbstractUserBooleanWidget):
         super(WarningWidget, self).__init__(parent)
         central_widget = QWidget()
         self.text_layout = QVBoxLayout(central_widget)
-        self.text_layout.setAlignment(QtCore.Qt.AlignTop)
+        self.text_layout.setAlignment(Qt.AlignTop)
         self.warning_text = QLabel()
         self.detailed_warning_text = QLabel()
         self.text_layout.addWidget(self.warning_text)
@@ -1770,26 +1772,3 @@ class WarningWidget(AbstractUserBooleanWidget):
         self.setCancelEvent(cancel_pressed)
         self.warning_text.setText(warning_text)
         self.detailed_warning_text.setText(detailed_warning_text)
-
-
-# TODO ERROR
-"""''
-    Can't seem to repro this...
-        happens sometimes in a GSV change?
-
-    [ERROR python.root]: An AttributeError occurred in "Editor.py": 'NoneType' object has no attribute 'getChildren'
-    Traceback (most recent call last):
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 72, in mousePressEvent
-        self._action()
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 218, in acceptPressed
-        self._accept()
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 1156, in __accepted
-        'Load {item_type}'.format(item_type=item_type)
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 579, in makeUndoozable
-        func(*args, **kwargs)
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 1038, in loadLiveGroup
-        self.__loadLiveGroupHack(publish_node, publish_dir)
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 956, in __loadLiveGroupHack
-        for param in current_node_ref_group.getChildren():
-    AttributeError: 'NoneType' object has no attribute 'getChildren'
-"""
