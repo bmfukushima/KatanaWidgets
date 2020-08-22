@@ -31,7 +31,7 @@ This repo contains a small collection of my personal tools which have been creat
 
 ## Prerequisites
   * [qtpy](https://pypi.org/project/QtPy/) is a small abstraction layer that lets you write applications using a single API call to either PyQt or PySide.
-  * [cgwidgets] (https://github.com/bmfukushima/cgwidgets) small PyQt5/PySide agnostic widgets to be used between multiple DCCs
+  * [cgwidgets](https://github.com/bmfukushima/cgwidgets) small PyQt5/PySide agnostic widgets to be used between multiple DCCs
  
 ## Written In:
   * Python 3.7.7
