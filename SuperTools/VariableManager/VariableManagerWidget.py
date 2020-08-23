@@ -194,18 +194,6 @@ class VariableManagerWidget(QWidget):
         self.variable_splitter.addWidget(self.nodegraph_widget)
         vbox.addWidget(self.variable_splitter)
 
-        # determine if this widget should be hidden/shown on init
-        if self.main_widget.getNodeType() == 'Group':
-            # TODO
-            """
-            When the widget is repopulated / displayed.  The Nodegraph
-            widget is not automagically being expanded... I assume
-            because its not shown yet? Maybe? 
-            """
-            self.nodegraph_widget.show()
-            self.variable_splitter.moveSplitter(self.width() * 0.7, 1)
-        else:
-            self.nodegraph_widget.hide()
         return widget
 
     def createNodeGraphWidget(self):
@@ -1740,7 +1728,15 @@ class VariableManagerBrowser(QTreeWidget):
         # return drop event
         return return_val
 
-    """ DISPLAY EVENTS """
+    """ DISPLAY PARAMETERS EVENTS """
+    def displayItemParameters(self):
+        self.main_widget.setWorkingItem(self.currentItem())
+        if self.main_widget.getNodeType() == 'Group':
+            self.showMiniNodeGraph()
+        else:
+            self.hideMiniNodeGraph()
+            self.showItemParameters()
+
     def hideMiniNodeGraph(self):
         variable_manager_widget = self.main_widget.variable_manager_widget
         variable_manager_widget.nodegraph_widget.hide()
@@ -1791,7 +1787,7 @@ class VariableManagerBrowser(QTreeWidget):
     def showItemParameters(self):
         """
         Shows the parameters of the current item if it
-        is not of type <multi>.
+        is not of type Group.
         """
         if self.currentItem():
             node = self.currentItem().getVEGNode().getChildByIndex(0)
@@ -1933,6 +1929,14 @@ class VariableManagerBrowser(QTreeWidget):
             actionPicker(action)
 
     """ EVENTS """
+    def enterEvent(self, QEvent):
+        """
+        Need to set focus when entering widget in order to
+        register the hotkey hits...
+        """
+        self.setFocus()
+        return QTreeWidget.enterEvent(self, QEvent)
+
     def dragMoveEvent(self, event, *args, **kwargs):
         """
         handlers to determine if an item is droppable or not
@@ -2038,12 +2042,13 @@ class VariableManagerBrowser(QTreeWidget):
         displays the current group that is editable in a mini-node graph
         """
         if hasattr(self.main_widget, 'variable_manager_widget'):
-            self.main_widget.setWorkingItem(self.currentItem())
-            if self.main_widget.getNodeType() == 'Group':
-                self.showMiniNodeGraph()
-            else:
-                self.hideMiniNodeGraph()
-                self.showItemParameters()
+            self.displayItemParameters()
+            # self.main_widget.setWorkingItem(self.currentItem())
+            # if self.main_widget.getNodeType() == 'Group':
+            #     self.showMiniNodeGraph()
+            # else:
+            #     self.hideMiniNodeGraph()
+            #     self.showItemParameters()
         return QTreeWidget.selectionChanged(self, *args, **kwargs)
 
 

@@ -378,6 +378,10 @@ class VariableManagerMainWidget(QWidget):
         self.layout().addWidget(self.publish_display_widget)
         self.layout().addWidget(self.warning_display_widget)
 
+        # setup initial display state of parameters
+        self.variable_manager_widget.variable_browser.displayItemParameters()
+        self.variable_manager_widget.variable_splitter.setSizes([700, 300])
+
     def loadUserParameters(self):
         """
         If this node is not being instantiated and already has
