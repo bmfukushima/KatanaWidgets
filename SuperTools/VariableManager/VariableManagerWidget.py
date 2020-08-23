@@ -243,12 +243,12 @@ class VariableManagerWidget(QWidget):
         )
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
-        self.node_graph_widget = self.createNodeGraphWidget()
+        self.nodegraph_widget = self.createNodeGraphWidget()
         # self.variable_browser.showMiniNodeGraph()
 
         # Setup Layouts
         self.variable_splitter.addWidget(self.variable_browser_widget)
-        self.variable_splitter.addWidget(self.node_graph_widget)
+        self.variable_splitter.addWidget(self.nodegraph_widget)
         vbox.addWidget(self.variable_splitter)
         return widget
 
@@ -1785,6 +1785,10 @@ class VariableManagerBrowser(QTreeWidget):
 
     """ DISPLAY EVENTS """
     def hideMiniNodeGraph(self):
+        variable_manager_widget = self.main_widget.variable_manager_widget
+        variable_manager_widget.nodegraph_widget.hide()
+
+    def hideMiniNodeGrapha(self):
         """
         When the user sets the Node Type to anything but <multi>
         this will hide the mini nodegraph.
@@ -1825,6 +1829,8 @@ class VariableManagerBrowser(QTreeWidget):
         to the left of the GSV manager will automatically go to that
         node.
         """
+
+
         try:
             if self.currentItem():
                 # setup attrs
@@ -1852,8 +1858,10 @@ class VariableManagerBrowser(QTreeWidget):
                     SPLITTER_STYLE_SHEET
                 )
                 if nodegraph_tab.isVisible() is False:
+                    variable_manager_widget = self.main_widget.variable_manager_widget
+                    variable_manager_widget.nodegraph_widget.show()
                     variable_manager_widget.variable_splitter.moveSplitter(self.width() * 0.7, 1)
-                    nodegraph_tab.show()
+                    #nodegraph_tab.show()
 
         except AttributeError:
             # On init of the node, pass because the
