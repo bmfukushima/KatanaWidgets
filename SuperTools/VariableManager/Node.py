@@ -90,7 +90,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         self.variable_param = self.getParameters().createChildString('variable', '')
         self.variable_param.setHintString(repr({'readOnly': 'True'}))
 
-        self.node_type_param = self.getParameters().createChildString('node_type', 'Group')
+        self.node_type_param = self.getParameters().createChildString('node_type', 'Dot')
         self.publish_dir = self.getParameters().createChildString('publish_dir', PUBLISH_DIR)
         self.publish_dir.setHintString(repr({'widget': 'fileInput'}))
 

@@ -244,12 +244,24 @@ class VariableManagerWidget(QWidget):
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
         self.nodegraph_widget = self.createNodeGraphWidget()
-        # self.variable_browser.showMiniNodeGraph()
 
         # Setup Layouts
         self.variable_splitter.addWidget(self.variable_browser_widget)
         self.variable_splitter.addWidget(self.nodegraph_widget)
         vbox.addWidget(self.variable_splitter)
+
+        # determine if this widget should be hidden/shown on init
+        if self.main_widget.getNodeType() == 'Group':
+            # TODO
+            """
+            When the widget is repopulated / displayed.  The Nodegraph
+            widget is not automagically being expanded... I assume
+            because its not shown yet? Maybe? 
+            """
+            self.nodegraph_widget.show()
+            self.variable_splitter.moveSplitter(self.width() * 0.7, 1)
+        else:
+            self.nodegraph_widget.hide()
         return widget
 
     def createNodeGraphWidget(self):
@@ -258,8 +270,8 @@ class VariableManagerWidget(QWidget):
         This is essentially a mini nodegraph that is embedded
         inside of the parameters.
         """
-        node_graph_widget = QWidget()
-        layout = QVBoxLayout(node_graph_widget)
+        nodegraph_widget = QWidget()
+        layout = QVBoxLayout(nodegraph_widget)
         tab_with_timeline = UI4.App.Tabs.CreateTab('Node Graph', None)
 
         self.nodegraph_tab = tab_with_timeline.getWidget()
@@ -269,7 +281,7 @@ class VariableManagerWidget(QWidget):
         self.nodegraph_tab.layout().itemAt(0).widget().hide()
         layout.addWidget(self.nodegraph_tab)
 
-        return node_graph_widget
+        return nodegraph_widget
 
     def createParamsWidget(self):
         """
@@ -1788,40 +1800,6 @@ class VariableManagerBrowser(QTreeWidget):
         variable_manager_widget = self.main_widget.variable_manager_widget
         variable_manager_widget.nodegraph_widget.hide()
 
-    def hideMiniNodeGrapha(self):
-        """
-        When the user sets the Node Type to anything but <multi>
-        this will hide the mini nodegraph.
-
-        Currently this is a massive hack... because Katana explodes
-        when I try to do a proper widget create/destroy event... =(
-        """
-        # kinda hacky... to fix copy/paste error
-        """
-        To Do:
-            Figure out what's going on with copy/paste.  When <multi>
-            is note used as the node_type, for some reason the
-            variable_manager_widget does not exist... potentially it is
-            either destroyed or never created?
-        """
-        variable_manager_widget = self.main_widget.variable_manager_widget
-        variable_manager_widget.variable_splitter.setStyleSheet(
-            SPLITTER_STYLE_SHEET_HIDE
-        )
-        # this is really stupid
-        variable_manager_widget.variable_splitter.moveSplitter(100000, 1)
-        """ disabling this for now... because it breaks when setting """
-        # variable_manager_widget.variable_splitter.setHandleWidth(0)
-        '''
-        variable_manager_widget.variable_splitter.setHandleWidth(
-            settings.SPLITTER_HANDLE_WIDTH
-        )
-        '''
-        nodegraph_tab = variable_manager_widget.nodegraph_tab
-
-        # nodegraph_tab.setFixedWidth(0)
-        nodegraph_tab.hide()
-
     def showMiniNodeGraph(self):
         """
         If the Node Type is set to <multi> by the user.  This will enable it
@@ -1829,8 +1807,6 @@ class VariableManagerBrowser(QTreeWidget):
         to the left of the GSV manager will automatically go to that
         node.
         """
-
-
         try:
             if self.currentItem():
                 # setup attrs
