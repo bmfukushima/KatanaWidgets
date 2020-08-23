@@ -10,7 +10,7 @@ If you wish to use this library there are a few things to note:
   * If you are using this in a commercial setting, it would be nice if you let me know
     what company is using it to try and atleast track if people are using these tools in
     production, and might be nice to stick companies on here that are using it #marketing.
-  * The [cgwidgets] (https://github.com/bmfukushima/cgwidgets) is not currently published,
+  * The [cgwidgets](https://github.com/bmfukushima/cgwidgets) is not currently published,
     however at this point in time it is not required, but will be for future releases.  Please
     note that this library will not be released under as free of a license ( because reasons ).
    
