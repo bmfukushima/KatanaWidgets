@@ -2,7 +2,6 @@
 TODO:
     * Add redo / undo display updates...
             - move event handler to only register/unregister on hide/show
-            - finish update GUI
             - update GUI on viewing parameters
     *   Expand / Collapse
             - Default states seem bjorked...
@@ -79,14 +78,13 @@ import os
 import math
 
 from PyQt5.QtWidgets import (
-    QWidget, QPushButton, QVBoxLayout, QHBoxLayout,
-    QScrollArea, QSplitter,
-    QTreeWidget, QHeaderView, QAbstractItemView, QLineEdit,
-    QApplication, QMenu, QTreeWidgetItem, QStackedLayout,
-    QSpacerItem
+    qApp, QWidget,  QVBoxLayout, QHBoxLayout,
+    QScrollArea, QSplitter, QPushButton, QLineEdit, QTreeWidget,
+    QHeaderView, QAbstractItemView,
+    QMenu, QTreeWidgetItem
 )
 from PyQt5.QtCore import (
-    Qt, QAbstractItemModel
+    Qt
 )
 
 from PyQt5.QtGui import (
@@ -190,6 +188,7 @@ class VariableManagerWidget(QWidget):
         self.r2_hbox.addWidget(self.publish_dir)
 
         self.splitter = QSplitter(Qt.Vertical)
+        self.splitter.setObjectName('main_splitter')
         self.splitter.setStyleSheet(SPLITTER_STYLE_SHEET)
 
         # row 2.1
@@ -222,10 +221,7 @@ class VariableManagerWidget(QWidget):
 
             self.variable_browser = VariableManagerBrowser(self, variable=self.parent().getVariable())
 
-            """
-            TODO:
-                Create item creation widget here...
-            """
+            # item creation widget
             item_create_widget = VariableManagerCreateNewItemWidget(self)
             variable_browser_vbox.addWidget(self.variable_browser)
             variable_browser_vbox.addWidget(item_create_widget)
@@ -296,6 +292,58 @@ class VariableManagerWidget(QWidget):
         locationPolicy = UI4.FormMaster.CreateParameterPolicy(None, self.node.getParameter(name))
         w = factory.buildWidget(self, locationPolicy)
         return w
+
+    @staticmethod
+    def toggleFullView(splitter):
+        """
+        Toggles between the full view of either the parameters
+        or the creation portion of this widget.  This is to help
+        to try and provide more screen real estate to this widget
+        which already does not have enough
+        """
+        def getSplitterIndexOfWidget(widget, splitter):
+            """
+            Recursive function to find the index of this widget's parent widget
+            that is a child of the main splitter, and then return that widgets index
+            under the main splitter.
+
+            Args:
+                widget (QWidget): Widget to set searching from, this is set
+                    to the current widget under the cursor
+            Returns (int):
+                if returns None, then bypass everything.
+            """
+            if widget.parent():
+                if widget.parent() == splitter:
+                    return splitter.indexOf(widget)
+                    return widget.parent()
+                else:
+                    return getSplitterIndexOfWidget(widget.parent(), splitter)
+            else:
+                return None
+
+        pos1 = QCursor.pos()
+        widget = qApp.widgetAt(pos1)
+        current_index = getSplitterIndexOfWidget(widget, splitter)
+        if current_index is not None:
+            unused_index = math.fabs(current_index - 1)
+            unused_widget = splitter.widget(unused_index)
+            if unused_widget.isHidden() is True:
+                unused_widget.show()
+            elif unused_widget.isHidden() is False:
+                splitter.widget(unused_index).hide()
+
+    def enterEvent(self, QEvent):
+        """
+        Need to set focus when entering widget in order to
+        register the hotkey hits...
+        """
+        self.setFocus()
+        return QWidget.enterEvent(self, QEvent)
+
+    def keyPressEvent(self, event):
+        if event.key() == 96:
+            VariableManagerWidget.toggleFullView(self.splitter)
 
 
 class VariableManagerCreateNewItemWidget(QWidget):
@@ -2017,6 +2065,9 @@ class VariableManagerBrowser(QTreeWidget):
                 item.text(0),
                 'Disable'
             )
+
+        elif event.key() == 96:
+            VariableManagerWidget.toggleFullView(self.main_widget.variable_manager_widget.splitter)
 
         return QTreeWidget.keyPressEvent(self, event, *args, **kwargs)
 
