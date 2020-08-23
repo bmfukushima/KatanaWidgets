@@ -175,7 +175,8 @@ class VariableManagerWidget(QWidget):
 
         QVBoxLayout(self)
         # row 1
-        self.r1_hbox = QHBoxLayout()
+        self.r1_widget = QWidget()
+        self.r1_hbox = QHBoxLayout(self.r1_widget)
         self.variable_menu = VariableManagerGSVMenu(self)
         self.publish_dir = self.createValueParam('publish_dir')
         self.node_type_menu = VariableManagerNodeMenu(self)
@@ -184,7 +185,8 @@ class VariableManagerWidget(QWidget):
         self.r1_hbox.addWidget(self.node_type_menu)
 
         # row 2
-        self.r2_hbox = QHBoxLayout()
+        self.r2_widget = QWidget()
+        self.r2_hbox = QHBoxLayout(self.r2_widget)
         self.r2_hbox.addWidget(self.publish_dir)
 
         self.splitter = QSplitter(Qt.Vertical)
@@ -201,8 +203,8 @@ class VariableManagerWidget(QWidget):
         self.splitter.setSizes([200, 600])
 
         #
-        self.layout().addLayout(self.r1_hbox)
-        self.layout().addLayout(self.r2_hbox)
+        self.layout().addWidget(self.r1_widget)
+        self.layout().addWidget(self.r2_widget)
         self.layout().addWidget(self.splitter)
 
     def createVariableStack(self):
@@ -322,16 +324,26 @@ class VariableManagerWidget(QWidget):
             else:
                 return None
 
+        # do checks
         pos1 = QCursor.pos()
         widget = qApp.widgetAt(pos1)
         current_index = getSplitterIndexOfWidget(widget, splitter)
+
         if current_index is not None:
             unused_index = math.fabs(current_index - 1)
             unused_widget = splitter.widget(unused_index)
+            # Return to default view
             if unused_widget.isHidden() is True:
                 unused_widget.show()
+                splitter.parent().r1_widget.show()
+                splitter.parent().r2_widget.show()
+
+            # Make full screen
             elif unused_widget.isHidden() is False:
+                # hide unused widget
                 splitter.widget(unused_index).hide()
+                splitter.parent().r1_widget.hide()
+                splitter.parent().r2_widget.hide()
 
     def enterEvent(self, QEvent):
         """
