@@ -16,62 +16,6 @@ TODO:
             - change directory to add node type
                 might get a free win here on publish_dir change with node types...
                 if you add the publish dir update to the node type change
-TODO (DONE):
-    *   GSV Index Changed Bug
-            Repo:
-                Change node type, undo that change, and then click on the
-                gsv drop down.  This will overlay the GSV dropdown + the
-                load window, which will cause corrupted data...
-                index == index... so... its changing it.. but not really... womp womp...
-    * Publish system some how broke... patterns?
-        blocks broke once... but never again...
-        patterns... 457... trying to get the block node from the block node?
-    *   Multi Pattern | SEEMS TO WORK? Guess I did that right the first time...
-        - update variable switches
-        - moving..
-            remove
-                search up hierarchy until a duplicate is found
-                or it reaches the master item
-            add
-                see if it exists, if not, then create
-        - Duplicates
-            On Load:
-                check to see if duplicates, ask if they want to keep,
-                if no then delete them... choose which one to delete...
-                or use both...
-            On Create:
-                ask if they're super sure...
-    *   check duplicates:
-            directory publish
-            VariableManagerBrowserItem --> createPublishDir
-            VariableManagerMainWidget --> changeDirectory
-    *   Convert <multi> --> group
-            change default state to GafferThree
-    *   Create New Item Box
-        - hotkey to enter
-        - hotkey type swap
-            pen down = change
-    *   Floating Params causes Nodegraph to not delete
-            Params pane closed, after, using this widget...
-             show in floating pane, and close parameters tab...
-             to bad it doesn't register as a closeEvent...
-    *   Undo handler...
-        Utils.UndoStack.OpenGroup("name")
-        Utils.UndoStack.CloseGroup()
-        @Decorators.undogroup('undoozles')
-    *   Undo's added:
-            *Drag/drop in Variable Browser
-            *   Delete Item
-            *   Disable Item
-            *   Pattern / Block Create
-            *   GSV Changed?
-            *   Node Type Changed
-                still failing
-            - Publish Dir changed?
-            *   Block Rename
-            *   Create user block item
-            *   Load Live Group
-    *   Fixed block naming convention
 """
 
 import os
@@ -91,7 +35,7 @@ from PyQt5.QtGui import (
     QColor, QPixmap, QIcon, QStandardItemModel, QStandardItem, QCursor,
     QBrush
 )
-#from PyQt5 import QtGui
+
 
 try:
     from Katana import UI4, QT4Widgets, QT4FormWidgets
@@ -796,6 +740,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
             variable_browser.setCurrentItem(item)
             self.main_widget.setWorkingItem(item)
             item.setText(0, str(self.currentText()))
+
             # need to update / create master item here...
             self.main_widget.versions_display_widget.update(
                 column=2, gui=True, previous_variable=previous_variable
@@ -834,7 +779,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
             self.main_widget.publish_display_widget.display()
 
         self.main_widget.setVariable(variable)
-        #Utils.EventModule.ProcessAllEvents()
+
         if self.main_widget.node_type == 'Group':
             variable_browser.showMiniNodeGraph()
 
@@ -1837,7 +1782,6 @@ class VariableManagerBrowser(QTreeWidget):
                     variable_manager_widget = self.main_widget.variable_manager_widget
                     variable_manager_widget.nodegraph_widget.show()
                     variable_manager_widget.variable_splitter.moveSplitter(self.width() * 0.7, 1)
-                    #nodegraph_tab.show()
 
         except AttributeError:
             # On init of the node, pass because the
