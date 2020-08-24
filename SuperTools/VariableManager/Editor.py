@@ -244,21 +244,12 @@ class VariableManagerEditor(QWidget):
             # Publish dir changed
             if arg[2]['node'] == self.node:
                 param = arg[2]['param']
-                if param.getName() == "publish_dir":
-                    new_publish_dir = arg[2]['param'].getValue(0)
-                    self.__directoryChanged(new_publish_dir)
+                if param:
+                    if param.getName() == "publish_dir":
+                        new_publish_dir = arg[2]['param'].getValue(0)
+                        self.__directoryChanged(new_publish_dir)
 
     """ DIRECTORY CHANGED """
-    # def __directoryChangedUndoWrapper(self, arg):
-    #     new_publish_dir = arg[2]['param'].getValue(0)
-    #     makeUndoozable(
-    #         self.__directoryChanged,
-    #         self.main_widget,
-    #         new_publish_dir,
-    #         "Publish Directory",
-    #         new_publish_dir
-    #     )
-
     def __directoryChanged(self, new_publish_dir):
         """
         If publish_dir parameter is changed, this will ask the user if they
@@ -364,13 +355,12 @@ class VariableManagerEditor(QWidget):
             self.node.getParameter('publish_dir').setValue(self._new_publish_dir, 0)
             self.__createDirectories(self._new_publish_dir, self.main_widget.getVariable())
 
-            makeUndoozable(
-                accept,
-                self.main_widget,
-                self._new_publish_dir,
-                "Publish Directory",
-                self._new_publish_dir
-            )
+        makeUndoozable(
+            accept,
+            self.main_widget,
+            self._new_publish_dir,
+            "Publish Directory"
+        )
 
     def __cancelDirectoryChange(self):
         root_publish_dir = self.main_widget.getRootPublishDir()
