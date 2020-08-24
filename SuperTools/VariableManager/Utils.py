@@ -499,30 +499,6 @@ def mkdirRecursive(path):
         os.mkdir(path)
 
 
-def goToNode(node, frame=False, nodegraph_tab=None):
-    """
-    Changes the nodegraph to the selected items node,
-    if it is not a group node, then it goes to its parent
-    as the parent must be a group... (hopefully)
-
-    Args:
-        node (node): node to go to
-
-    Kwargs:
-        frame (bool): if True will frame all of the nodes inside of the "node" arg
-        nodegraph_tab (nodegraph_panel): if exists, will frame in this node graph, if there is no
-            node graph tab.  Then it will search for the default node graph.
-    """
-    from Katana import UI4
-    if not nodegraph_tab:
-        nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
-    nodegraph_tab._NodegraphPanel__navigationToolbarCallback(node.getName(), 'useless')
-
-    if frame is True:
-        nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
-        nodegraph_widget.frameNodes(nodegraph_tab.getEnteredGroupNode().getChildren())
-
-
 def getMainWidget(widget):
     try:
         name = widget.__name__()
@@ -552,6 +528,30 @@ def getNextVersion(location):
         next_version = 'v'+str(sorted(versions)[-1] + 1).zfill(3)
 
     return next_version
+
+
+def goToNode(node, frame=False, nodegraph_tab=None):
+    """
+    Changes the nodegraph to the selected items node,
+    if it is not a group node, then it goes to its parent
+    as the parent must be a group... (hopefully)
+
+    Args:
+        node (node): node to go to
+
+    Kwargs:
+        frame (bool): if True will frame all of the nodes inside of the "node" arg
+        nodegraph_tab (nodegraph_panel): if exists, will frame in this node graph, if there is no
+            node graph tab.  Then it will search for the default node graph.
+    """
+    from Katana import UI4
+    if not nodegraph_tab:
+        nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
+    nodegraph_tab._NodegraphPanel__navigationToolbarCallback(node.getName(), 'useless')
+
+    if frame is True:
+        nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+        nodegraph_widget.frameNodes(nodegraph_tab.getEnteredGroupNode().getChildren())
 
 
 def makeUndoozable(func, main_widget, _action_string, _undo_type, *args, **kwargs):

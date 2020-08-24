@@ -3,6 +3,7 @@ TODO:
     * Add redo / undo display updates...
             - move event handler to only register/unregister on hide/show
             - update GUI on viewing parameters
+    * Clear params when node_type changed to Group
     *   Expand / Collapse
             - Default states seem bjorked...
             - Add menu / hotkey options
@@ -276,6 +277,7 @@ class VariableManagerWidget(QWidget):
         if current_index is not None:
             unused_index = math.fabs(current_index - 1)
             unused_widget = splitter.widget(unused_index)
+
             # Return to default view
             if unused_widget.isHidden() is True:
                 unused_widget.show()

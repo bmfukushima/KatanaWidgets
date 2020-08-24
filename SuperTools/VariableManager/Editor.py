@@ -10,6 +10,9 @@ TODO
                 display with notes.
     Cleanup
         *    checkHash repeats...
+        *   send all widget calls to getters /setters on the main widget
+        * <multi> needs to be removed from docs...
+        * "Wrapper" maybe moved to "Undo"
 
     WISH LIST:
         1.) Import/Export?
@@ -144,29 +147,161 @@ class VariableManagerEditor(QWidget):
     """
     The top level widget for the editor.  This is here to encapsulate
     the main widget with a stretch box...
+
+    Attributes:
+        is_frozen (bool): determines if the event handlers are
+            frozen or not.
+        should_update (bool): determines if this tool should have
+            its GUI updated or not during the next event idle process.
     """
     def __init__(self, parent, node):
         super(VariableManagerEditor, self).__init__(parent)
+
         Utils.UndoStack.DisableCapture()
+
+        # setup attrs
         self.node = node
+        self._should_update = False
+        self._is_frozen = False
+
+        # init GUI
         QVBoxLayout(self)
         self.main_widget = VariableManagerMainWidget(self, node)
         resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
         self.layout().addWidget(self.main_widget)
         self.layout().addWidget(resize_widget)
         self.setFixedHeight(500)
+
+        # set up node graph destruction handler
         self.setupDestroyNodegraphEvent()
-        self._should_update = False
-        self._is_updating = False
+
+
         Utils.UndoStack.EnableCapture()
+
+    """ SETUP EVENT HANDLERS """
+    def __setupEventHandlers(self, enabled):
+        """
+        Registers / unregisters all of the events based off of the
+        enabled argument.
+
+        Args:
+            enabled (bool): If True, the event handlers will be enabled, if False
+                the event handlers will be disabled.
+        """
         # setup undo event filters
         Utils.EventModule.RegisterCollapsedHandler(
-            self.__undoEventUpdate, 'event_idle'
+            self.__undoEventUpdate, 'event_idle', enabled=enabled
         )
 
-        #parameter_setValue
-        Utils.EventModule.RegisterCollapsedHandler(self.__undoSetUpdateStatus, 'parameter_setValue')
+        Utils.EventModule.RegisterCollapsedHandler(
+            self.__undoSetUpdateStatus, 'parameter_setValue', enabled=enabled
+        )
 
+        # gsv changed
+        Utils.EventModule.RegisterCollapsedHandler(
+            self.gsvChanged, 'parameter_finalizeValue', enabled=enabled
+        )
+
+        # select if group node
+        Utils.EventModule.RegisterCollapsedHandler(
+            self.selectNodePopulateParameter, 'node_setSelected', enabled=enabled
+        )
+
+    def hideEvent(self, event):
+        self.__setupEventHandlers(False)
+        self.is_frozen = True
+
+    def showEvent(self, event):
+        self.__setupEventHandlers(True)
+        self.is_frozen = False
+        self.__updateGUI(event)
+
+    @property
+    def is_frozen(self):
+        return self._is_frozen
+
+    @is_frozen.setter
+    def is_frozen(self, is_frozen):
+        self._is_frozen = is_frozen
+
+    """ GSV CHANGE """
+    def __addGSVPatternWrapper(self, param):
+        """
+        Undo wrapper for the __addGSVPattern.  This will handle
+        all of the preflight checks to ensure that we actually want
+        to add a new pattern.
+        """
+        if param.getName() == 'value':
+            options_list = self.main_widget.getOptionsList()
+            pattern_name = param.getValue(0)
+
+            if pattern_name not in options_list:
+                pattern_name = param.getValue(0)
+                makeUndoozable(
+                    self.__addGSVPattern,
+                    self.main_widget,
+                    pattern_name,
+                    "Create GSV",
+                    pattern_name
+                )
+
+    def __addGSVPattern(self, pattern_name):
+        """
+        Adds an item to the available graph state variables in the dropdown menu
+
+        Args:
+            pattern_name (string): the name of the new GSV Pattern to be added
+        """
+        # create new browser item and nodes
+        self.main_widget.variable_manager_widget.variable_browser.createNewBrowserItem(
+            item_type=PATTERN_ITEM, item_text=str(pattern_name)
+        )
+
+        self.main_widget.updateOptionsList()
+
+    def gsvChanged(self, args):
+        """
+        Looks for user parameter changes, and registers a function
+        for specific events such as:
+            Current publish dir changed --> self.changeDirectory()
+            User adds new pattern to current GSV --> __addGSVPattern()
+        """
+        root_node = NodegraphAPI.GetRootNode()
+        # NEW
+        try:
+            if args[2][2]:
+                if args[2][2]['node'] == root_node and args[2][2]['param'].getParent().getName() == self.main_widget.getVariable():
+                    self.__addGSVPatternWrapper(args[2][2]['param'])
+        except:
+            pass
+
+        # =======================================================================
+        # publish_dir updated
+        # check to see if it should create new directories
+        # =======================================================================
+        # MUTATED
+        try:
+            if args[0][2]:
+                if args[0][2]['node'] == self.node and args[0][2]['param'].getName() == 'publish_dir':
+                    if args[0][2]['param'].getName() == 'publish_dir':
+                        self.changeDirectory(args)
+                if args[0][2]['node'] == root_node and args[0][2]['param'].getParent().getName() == self.main_widget.getVariable():
+                    self.__addGSVPatternWrapper(args[0][2]['param'])
+        except:
+            pass
+
+    """ SELECTION CHANGED """
+    def selectNodePopulateParameter(self, args):
+        """
+        Displays the meta parameters when the user selects a node.
+        However this will only work IF the node_type is set to Group.
+        As this is the parameter display handler for inside for the special
+        Group case..
+        """
+        if self.main_widget.node_type == 'Group':
+            self.main_widget.populateParameters(node_list=NodegraphAPI.GetAllSelectedNodes())
+
+    """ UNDO HANDLER"""
     def __undoSetUpdateStatus(self, args):
         """
         Checks the args coming in to determine if an undo operation
@@ -327,15 +462,6 @@ class VariableManagerMainWidget(QWidget):
         # Set up initial values if this node is not being instantiated
         # for the first time
         self.loadUserParameters()
-
-        # Signals / Slots
-        Utils.EventModule.RegisterCollapsedHandler(
-            self.gsvChanged, 'parameter_finalizeValue', None
-        )
-
-        Utils.EventModule.RegisterCollapsedHandler(
-            self.selectNodePopulateParameter, 'node_setSelected', None
-        )
 
     def initDefaultAttributes(self, node):
         """
@@ -579,68 +705,6 @@ class VariableManagerMainWidget(QWidget):
         self.layout().setCurrentIndex(3)
 
     """ EVENTS """
-    def addGSVPattern(self, param):
-        """
-        Adds an item to the available graph state variables in the dropdown menu
-
-        Args:
-            param (parameter): the GSV parameter that has been changed or updated
-        """
-        if param.getName() == 'value':
-            options_list = self.getOptionsList()
-            pattern_name = param.getValue(0)
-
-            if pattern_name in options_list:
-                pass
-            else:
-                # create new browser item and nodes
-                self.variable_manager_widget.variable_browser.createNewBrowserItem(
-                    item_type=PATTERN_ITEM, item_text=str(pattern_name)
-                )
-
-                self.updateOptionsList()
-
-    def gsvChanged(self, args):
-        """
-        Looks for user parameter changes, and registers a function
-        for specific events such as:
-            Current publish dir changed --> self.changeDirectory()
-            User adds new pattern to current GSV --> addGSVPattern()
-        """
-        root_node = NodegraphAPI.GetRootNode()
-        # NEW
-        try:
-            if args[2][2]:
-                if args[2][2]['node'] == root_node and args[2][2]['param'].getParent().getName() == self.getVariable():
-                    self.addGSVPattern(args[2][2]['param'])
-        except:
-            pass
-
-        # =======================================================================
-        # publish_dir updated
-        # check to see if it should create new directories
-        # =======================================================================
-        # MUTATED
-        try:
-            if args[0][2]:
-                if args[0][2]['node'] == self.node and args[0][2]['param'].getName() == 'publish_dir':
-                    if args[0][2]['param'].getName() == 'publish_dir':
-                        self.changeDirectory(args)
-                if args[0][2]['node'] == root_node and args[0][2]['param'].getParent().getName() == self.getVariable():
-                    self.addGSVPattern(args[0][2]['param'])
-        except:
-            pass
-
-    def selectNodePopulateParameter(self, args):
-        """
-        Displays the meta parameters when the user selects a node.
-        However this will only work IF the node_type is set to "<multi>".
-        As this is the parameter display handler for inside for the special
-        <multi> case..
-        """
-        if self.node_type == 'Group':
-            self.populateParameters(node_list=NodegraphAPI.GetAllSelectedNodes())
-
     def createParamReference(self, node_name, hide_title=False):
         """
         Creates a teledrop parameter widget
