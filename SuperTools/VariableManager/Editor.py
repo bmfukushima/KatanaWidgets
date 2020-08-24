@@ -163,6 +163,7 @@ class VariableManagerEditor(QWidget):
         self.node = node
         self._should_update = False
         self._is_frozen = False
+        self._item_list = None
 
         # init GUI
         QVBoxLayout(self)
@@ -174,7 +175,6 @@ class VariableManagerEditor(QWidget):
 
         # set up node graph destruction handler
         self.setupDestroyNodegraphEvent()
-
 
         Utils.UndoStack.EnableCapture()
 
@@ -199,12 +199,12 @@ class VariableManagerEditor(QWidget):
 
         # gsv changed
         Utils.EventModule.RegisterCollapsedHandler(
-            self.gsvChanged, 'parameter_finalizeValue', enabled=enabled
+            self.__paramChanged, 'parameter_finalizeValue', enabled=enabled
         )
 
         # select if group node
         Utils.EventModule.RegisterCollapsedHandler(
-            self.selectNodePopulateParameter, 'node_setSelected', enabled=enabled
+            self.__selectNodePopulateParameter, 'node_setSelected', enabled=enabled
         )
 
     def hideEvent(self, event):
@@ -224,7 +224,176 @@ class VariableManagerEditor(QWidget):
     def is_frozen(self, is_frozen):
         self._is_frozen = is_frozen
 
-    """ GSV CHANGE """
+    """ PARAM CHANGED """
+    def __paramChanged(self, args):
+        """
+        Looks for user parameter changes, and registers a function
+        for specific events such as:
+            Current publish dir changed --> self.changeDirectory()
+            User adds new pattern to current GSV --> __addGSVPattern()
+        """
+        root_node = NodegraphAPI.GetRootNode()
+
+        for arg in args:
+            # GSV Changed
+            if arg[2]['node'] == root_node:
+                param = arg[2]['param']
+                if param.getParent().getName() == self.main_widget.getVariable():
+                    self.__addGSVPatternWrapper(param)
+
+            # Publish dir changed
+            if arg[2]['node'] == self.node:
+                param = arg[2]['param']
+                if param.getName() == "publish_dir":
+                    new_publish_dir = arg[2]['param'].getValue(0)
+                    self.__directoryChanged(new_publish_dir)
+
+    """ DIRECTORY CHANGED """
+    # def __directoryChangedUndoWrapper(self, arg):
+    #     new_publish_dir = arg[2]['param'].getValue(0)
+    #     makeUndoozable(
+    #         self.__directoryChanged,
+    #         self.main_widget,
+    #         new_publish_dir,
+    #         "Publish Directory",
+    #         new_publish_dir
+    #     )
+
+    def __directoryChanged(self, new_publish_dir):
+        """
+        If publish_dir parameter is changed, this will ask the user if they
+        are sure they'd like to continue if the user decides to continue,
+        it will create all of the new directories, but will NOT move over
+        the current publishes
+
+        Args:
+            new_publish_dir (str): The path on disk to the new publish dir
+        TODO:
+            change return values from ints to keywords
+        """
+        # if no variable set, create the root dir
+        if self.main_widget.getVariable() == '':
+            mkdirRecursive(new_publish_dir)
+            self.main_widget.setRootPublishDir(new_publish_dir)
+            self.node.getParameter('publish_dir').setValue(new_publish_dir, 0)
+            return
+
+        # ask user to confirm directory change...
+        if not os.path.exists(new_publish_dir):
+            warning_text = 'Do you wish to create new directories?'
+            detailed_warning_text = """
+    Accepting this event will create a bunch of new crap on your file system,
+    but you need this crap in order to save stuff into it.
+                """
+            self._new_publish_dir = new_publish_dir
+            self.main_widget.showWarningBox(
+                warning_text,
+                self.__acceptDirectoryChange,
+                self.__cancelDirectoryChange,
+                detailed_warning_text
+            )
+        else:
+            """
+            check if the dir has actually changed or if it was a
+            cancellation of a dir changed to avoid recursion
+
+            I have no idea how this works anymore and I'm to lazy
+            to look at it and figure it out...
+            """
+            if self.main_widget.getRootPublishDir() == new_publish_dir:
+                return
+            self.main_widget.setRootPublishDir(new_publish_dir)
+            # set master item
+            master_item = self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0)
+            self.main_widget.setWorkingItem(master_item)
+
+            # set version
+            self.main_widget.versions_display_widget.update(column=2, gui=True)
+
+    def __createDirectories(self, new_publish_dir, variable):
+        """
+        Creates all necessary directories / subdirectories
+
+        Args:
+            new_publish_dir (str): path on disk to the new publish directory
+            variable (str): name of the current variable
+        """
+
+        variable_dir = '{publish_dir}/{variable}'.format(
+            publish_dir=new_publish_dir,
+            variable=variable
+        )
+
+        # make directories
+        mkdirRecursive(variable_dir + '/blocks')
+        mkdirRecursive(variable_dir + '/patterns')
+
+        master_item = self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0)
+        self._item_list = [master_item]
+        self.__getAllChildItems(master_item)
+
+        dir_list = ['pattern', 'block']
+        for item in self._item_list:
+            unique_hash = item.getHash()
+            if item.getItemType() == BLOCK_ITEM:
+                item_type = 'blocks'
+            elif item.getItemType() in [PATTERN_ITEM, MASTER_ITEM]:
+                if item.getItemType() == PATTERN_ITEM:
+                    hash_string = unique_hash[unique_hash.rindex('_') + 1:]
+                    unique_hash = '%s_%s' % (variable, hash_string)
+                    item.getRootNode().getParameter('hash').setValue(unique_hash, 0)
+                item.setHash(unique_hash)
+                item_type = 'patterns'
+
+            item_dir = '%s/%s/%s' % (variable_dir, item_type, unique_hash)
+            os.mkdir(item_dir)
+            item.setPublishDir(item_dir)
+            for dir_item in dir_list:
+                if not os.path.exists(item_dir + '/%s' % dir_item):
+                    os.mkdir(item_dir + '/%s' % dir_item)
+                    os.mkdir(item_dir + '/%s/live' % dir_item)
+
+        # publish v000 directories
+        item = master_item
+        self.main_widget.publish_display_widget.publish_type = BLOCK_ITEM
+        self.main_widget.publish_display_widget.publishBlock(item=item)
+
+    def __acceptDirectoryChange(self):
+        def accept():
+            self.main_widget.setRootPublishDir(self._new_publish_dir)
+            self.node.getParameter('publish_dir').setValue(self._new_publish_dir, 0)
+            self.__createDirectories(self._new_publish_dir, self.main_widget.getVariable())
+
+            makeUndoozable(
+                accept,
+                self.main_widget,
+                self._new_publish_dir,
+                "Publish Directory",
+                self._new_publish_dir
+            )
+
+    def __cancelDirectoryChange(self):
+        root_publish_dir = self.main_widget.getRootPublishDir()
+        self.node.getParameter('publish_dir').setValue(root_publish_dir, 0)
+
+    def __getAllChildItems(self, item):
+        """
+        returns all children underneath a specific item
+
+        CLEANUP: self.item_list needs to be removed... this recursion is bad...
+
+        Args:
+            item (VariableManagerBrowserItem): item to search below for all children
+        """
+        if item.childCount() > 0:
+            for index in range(item.childCount()):
+                child = item.child(index)
+                self._item_list.append(child)
+                if child.childCount() > 0:
+                    self.__getAllChildItems(child)
+        return self._item_list
+
+    """ GSV CHANGED """
     def __addGSVPatternWrapper(self, param):
         """
         Undo wrapper for the __addGSVPattern.  This will handle
@@ -259,39 +428,8 @@ class VariableManagerEditor(QWidget):
 
         self.main_widget.updateOptionsList()
 
-    def gsvChanged(self, args):
-        """
-        Looks for user parameter changes, and registers a function
-        for specific events such as:
-            Current publish dir changed --> self.changeDirectory()
-            User adds new pattern to current GSV --> __addGSVPattern()
-        """
-        root_node = NodegraphAPI.GetRootNode()
-        # NEW
-        try:
-            if args[2][2]:
-                if args[2][2]['node'] == root_node and args[2][2]['param'].getParent().getName() == self.main_widget.getVariable():
-                    self.__addGSVPatternWrapper(args[2][2]['param'])
-        except:
-            pass
-
-        # =======================================================================
-        # publish_dir updated
-        # check to see if it should create new directories
-        # =======================================================================
-        # MUTATED
-        try:
-            if args[0][2]:
-                if args[0][2]['node'] == self.node and args[0][2]['param'].getName() == 'publish_dir':
-                    if args[0][2]['param'].getName() == 'publish_dir':
-                        self.changeDirectory(args)
-                if args[0][2]['node'] == root_node and args[0][2]['param'].getParent().getName() == self.main_widget.getVariable():
-                    self.__addGSVPatternWrapper(args[0][2]['param'])
-        except:
-            pass
-
     """ SELECTION CHANGED """
-    def selectNodePopulateParameter(self, args):
+    def __selectNodePopulateParameter(self, args):
         """
         Displays the meta parameters when the user selects a node.
         However this will only work IF the node_type is set to Group.
@@ -457,7 +595,6 @@ class VariableManagerMainWidget(QWidget):
 
         self.initDefaultAttributes(node)
         self.initGUI()
-        self.item_list = None
 
         # Set up initial values if this node is not being instantiated
         # for the first time
@@ -616,23 +753,6 @@ class VariableManagerMainWidget(QWidget):
             new_root_node = root_node.getParent().getParent()
             self.updateAllVariableSwitches(new_root_node, new_pattern=new_pattern)
 
-    def getAllChildItems(self, item):
-        """
-        returns all children underneath a specific item
-
-        CLEANUP: self.item_list needs to be removed... this recursion is bad...
-
-        Args:
-            item (VariableManagerBrowserItem): item to search below for all children
-        """
-        if item.childCount() > 0:
-            for index in range(item.childCount()):
-                child = item.child(index)
-                self.item_list.append(child)
-                if child.childCount() > 0:
-                    self.getAllChildItems(child)
-        return self.item_list
-
     def getItemPublishDir(self, include_publish_type=None):
         """
         returns the directory which holds the livegroups for the pattern/block
@@ -771,112 +891,6 @@ class VariableManagerMainWidget(QWidget):
 
             splitter.addWidget(self.variable_manager_widget.params_scroll)
         self.variable_manager_widget.params_widget.show()
-
-    def changeDirectory(self, args):
-        """
-        If publish_dir parameter is changed, this will ask the user if they
-        are sure they'd like to continue if the user decides to continue,
-        it will create all of the new directories, but will NOT move over
-        the current publishes
-
-        TODO:
-            change return values from ints to keywords
-        """
-        def createDirectories(publish_dir, variable):
-            """
-            Creates all necessary directories / subdirectories
-            """
-
-            variable_dir = '{publish_dir}/{variable}'.format(
-                publish_dir=publish_dir,
-                variable=variable
-            )
-
-            dir_list = [
-                new_publish_dir,
-                variable_dir,
-                variable_dir + '/blocks',
-                variable_dir + '/patterns'
-            ]
-            for dir_item in dir_list:
-                if not os.path.exists(dir_item):
-                    os.mkdir(dir_item)
-            master_item = self.variable_manager_widget.variable_browser.topLevelItem(0)
-            self.item_list = [master_item]
-            self.getAllChildItems(master_item)
-
-            dir_list = ['pattern', 'block']
-            for item in self.item_list:
-                unique_hash = item.getHash()
-                if item.getItemType() == BLOCK_ITEM:
-                    item_type = 'blocks'
-                elif item.getItemType() in [PATTERN_ITEM, MASTER_ITEM]:
-                    if item.getItemType() == PATTERN_ITEM:
-                        hash_string = unique_hash[unique_hash.rindex('_') + 1:]
-                        unique_hash = '%s_%s' % (variable, hash_string)
-                        item.getRootNode().getParameter('hash').setValue(unique_hash, 0)
-                    item.setHash(unique_hash)
-                    item_type = 'patterns'
-
-                item_dir = '%s/%s/%s' % (variable_dir, item_type, unique_hash)
-                os.mkdir(item_dir)
-                item.setPublishDir(item_dir)
-                for dir_item in dir_list:
-                    if not os.path.exists(item_dir + '/%s' % dir_item):
-                        os.mkdir(item_dir + '/%s' % dir_item)
-                        os.mkdir(item_dir + '/%s/live' % dir_item)
-
-            # publish v000 directories
-            item = master_item
-            self.publish_display_widget.publish_type = BLOCK_ITEM
-            self.publish_display_widget.publishBlock(item=item)
-
-        new_publish_dir = args[0][2]['param'].getValue(0)
-
-        # if no variable set, create the root dir
-        if self.variable == '':
-            mkdirRecursive(new_publish_dir)
-            self.setRootPublishDir(new_publish_dir)
-            self.node.getParameter('publish_dir').setValue(new_publish_dir, 0)
-            return
-
-        # ask user to confirm directory change...
-        if not os.path.exists(new_publish_dir):
-            def accept():
-                self.setRootPublishDir(new_publish_dir)
-                self.node.getParameter('publish_dir').setValue(new_publish_dir, 0)
-                createDirectories(new_publish_dir, self.getVariable())
-
-            def cancel():
-                root_publish_dir = self.getRootPublishDir()
-                self.node.getParameter('publish_dir').setValue(root_publish_dir, 0)
-
-            warning_text = 'Do you wish to create new directories?'
-            detailed_warning_text = """
-Accepting this event will create a bunch of new crap on your file system,
-but you need this crap in order to save stuff into it.
-            """
-
-            self.showWarningBox(
-                warning_text, accept, cancel, detailed_warning_text
-            )
-        else:
-            """
-            check if the dir has actually changed or if it was a
-            cancellation of a dir changed to avoid recursion
-
-            I have no idea how this works anymore and I'm to lazy
-            to look at it and figure it out...
-            """
-            if self.getRootPublishDir() == new_publish_dir:
-                return
-            self.setRootPublishDir(new_publish_dir)
-            # set master item
-            master_item = self.variable_manager_widget.variable_browser.topLevelItem(0)
-            self.setWorkingItem(master_item)
-
-            # set version
-            self.versions_display_widget.update(column=2, gui=True)
 
     """ PROPERTIES """
     def getNode(self):
