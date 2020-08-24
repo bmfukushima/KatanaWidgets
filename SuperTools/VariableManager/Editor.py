@@ -39,12 +39,10 @@ TODO
     *    Hotkey return to last nodegraph display location?
 
 FEATURES:
-    *   Enable / Disable
     *    Delete GSV / Block
             a.) Drag / Drop in/out of Tree Widget.
                 - If exists tree widget and direction is horizontal-ish.. or not vertical
                     then delete the location
-            b.) Delete key
     *    Import into nodegraph
             a.) Drag / Drop into Nodegraph
                 - reparents the node(s) to that node graph, and removes them
