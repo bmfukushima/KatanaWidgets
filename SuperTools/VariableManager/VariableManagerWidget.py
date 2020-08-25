@@ -564,7 +564,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         super(VariableManagerGSVMenu, self).__init__(parent)
         self.main_widget = getMainWidget(self)
         self.populate()
-        self.setSelectionChangedEmitEvent(self.checkUserInput)
+        #self.setSelectionChangedEmitEvent(self.checkUserInput)
         self.currentIndexChanged.connect(self.indexChanged)
 
     def populate(self):
@@ -705,6 +705,9 @@ class VariableManagerGSVMenu(AbstractComboBox):
         When the user changes the GSV and accepts the change,
         this function will be triggered.
         """
+        # check to make sure variable exists... if not, create it
+        self.checkUserInput()
+
         # get attributes
         variable_browser = self.main_widget.variable_manager_widget.variable_browser
         variable = str(self.currentText())
@@ -755,7 +758,6 @@ class VariableManagerGSVMenu(AbstractComboBox):
             # Publish
             initial_publish_display_text = "BLOCK  (  {variable}  |  v000  )".format(variable=variable)
             self.main_widget.publish_display_widget.update(name=initial_publish_display_text, publish_type=BLOCK_ITEM)
-            #self.main_widget.publish_display_widget.display()
             self.main_widget.publish_display_widget.publishBlock()
 
         self.main_widget.setVariable(variable)
