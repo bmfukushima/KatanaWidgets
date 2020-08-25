@@ -2028,7 +2028,8 @@ class VariableManagerBrowser(QTreeWidget):
                     previous_variable = main_widget.getVariable()
                     main_widget.versions_display_widget.update(
                         column=index.column(),
-                        previous_variable=previous_variable
+                        previous_variable=previous_variable,
+                        gui=True
                     )
 
             return QTreeWidget.mouseReleaseEvent(self, event, *args, **kwargs)
