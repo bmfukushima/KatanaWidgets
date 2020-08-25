@@ -606,8 +606,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         """
         self.setExistsFlag(False)
         variable = self.currentText()
-        variables = NodegraphAPI.GetNode('rootNode').getParameter('variables').getChildren()
-        variable_list = [x.getName() for x in variables]
+        variable_list = self.__getAllVariables()
         model = self.model()
         """
         # remove all items
@@ -697,14 +696,26 @@ class VariableManagerGSVMenu(AbstractComboBox):
         '''
 
     """ UTILS """
+    @staticmethod
+    def __getAllVariables():
+        """
+        Gets all of the current graph state variables available
+
+        returns (list): list of variable names as strings
+        """
+        variables = NodegraphAPI.GetNode('rootNode').getParameter('variables').getChildren()
+        variable_list = [x.getName() for x in variables]
+        return variable_list
+
     def checkUserInput(self):
         """
         Checks the user input to determine if it is a valid option
         in the current model.  If it is not this will create a brand
         spanking new GSV for the user.
         """
-        does_node_variable_exist = self.isUserInputValid()
-        if does_node_variable_exist is False:
+        variables_list = self.__getAllVariables()
+        variable = self.currentText()
+        if variable not in variables_list:
             self.setExistsFlag(False)
             self.createNewGSV(str(self.currentText()))
             self.setExistsFlag(True)
@@ -738,6 +749,11 @@ class VariableManagerGSVMenu(AbstractComboBox):
 
         # if the directory exists
         if os.path.exists(publish_loc) is True:
+            #TODO
+            """
+            TODO:
+                Move this to the versions display widget as a loadLatest
+            """
             # get version
             version = self.main_widget.versions_display_widget.getCurrentVersion()
 
@@ -751,24 +767,11 @@ class VariableManagerGSVMenu(AbstractComboBox):
 
         # if directory does not exist
         else:
-            # create new directories
-            new_dir = '{root_dir}/{variable}'.format(
-                root_dir=publish_dir, variable=variable
-            )
-
-            mkdirRecursive(new_dir + '/blocks')
-            mkdirRecursive(new_dir + '/patterns')
-
-            # populate
-            variable_browser.reset()
-            node._reset(variable=variable)
-            variable_browser.populate()
-            self.main_widget.updateOptionsList()
-
             # Publish
-            initial_publish_display_text = "BLOCK  (  {variable}  |  v000  )".format(variable=variable)
-            self.main_widget.publish_display_widget.update(name=initial_publish_display_text, publish_type=BLOCK_ITEM)
-            self.main_widget.publish_display_widget.publishBlock()
+            variable_browser.reset()
+            self.main_widget.publish_display_widget.publishNewItem(
+                publish_pattern=True, publish_block=True
+            )
 
         self.main_widget.setVariable(variable)
 
@@ -890,19 +893,22 @@ class VariableManagerNodeMenu(AbstractComboBox):
         including node creation, and UI updates.
         """
         if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
+            # get attrs
             variable_browser = self.main_widget.variable_manager_widget.variable_browser
-
             variable = self.main_widget.getVariable()
             node = self.main_widget.getNode()
             node_type = str(self.currentText())
 
+            # set attrs
             node.getParameter('node_type').setValue(node_type, 0)
             self.main_widget.setNodeType(node_type)
 
+
+            # Publish
             variable_browser.reset()
-            node._reset(variable=variable)
-            variable_browser.populate()
-            self.main_widget.updateOptionsList()
+            self.main_widget.publish_display_widget.publishNewItem(
+                publish_pattern=True, publish_block=True
+            )
 
     def cancelled(self):
         self.setExistsFlag(False)
@@ -1028,13 +1034,25 @@ class VariableManagerBrowser(QTreeWidget):
                 for dir_item in dir_list:
                     mkdirRecursive(publish_dir + '/%s/live' % dir_item)
 
+    def clear(self):
+        """
+        Overriding this functionality so that it won't explode in my face
+        """
+        for index in reversed(range(self.topLevelItemCount())):
+            self.takeTopLevelItem(index)
+        return
+
     def reset(self):
         """
         Deletes all of the top level items in.  This is essentially
         clearing the state of the browser so that it can be repopulated.
         """
-        for index in reversed(range(self.topLevelItemCount())):
-                self.takeTopLevelItem(index)
+        self.clear()
+        variable = self.main_widget.getVariable()
+        node = self.main_widget.getNode()
+        node._reset(variable=variable)
+        self.populate()
+        self.main_widget.updateOptionsList()
 
     def reparentItem(self, item, new_parent_item, index=0):
         """

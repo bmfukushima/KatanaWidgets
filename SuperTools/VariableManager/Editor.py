@@ -477,7 +477,8 @@ class VariableManagerEditor(QWidget):
         variable_manager.node_type_menu.setCurrentIndexToText(node_type)
 
         # update variable browser
-        variable_browser.reset()
+        #variable_browser.reset()
+        variable_browser.clear()
         variable_browser.populate()
 
         # reset selected item
@@ -559,7 +560,7 @@ class VariableManagerMainWidget(QWidget):
     Main editor widget for the Variable Manager.
 
     Attributes:
-        options_list (list): a list of all of the graph state variables
+        options_list (list): a list of all of the patterns for a specific graph state variable
         root_publish_dir (str): path on disk to internal publish directory
             This is the root location for publishing that is displayed to the
             user in the second row titled "publish dir"
@@ -1163,7 +1164,8 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
                 item.setBlockNode(loaded_publish_node)
         """
         # update browser widget
-        self.main_widget.variable_manager_widget.variable_browser.reset()
+        #self.main_widget.variable_manager_widget.variable_browser.reset()
+        self.main_widget.variable_manager_widget.variable_browser.clear()
         self.main_widget.variable_manager_widget.variable_browser.populate()
 
         # update variable switch...
@@ -1551,6 +1553,22 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         with open(publish_loc + '/notes.csv', 'w') as filehandle:
             filehandle.write(note)
 
+    def publishNewItem(self, publish_pattern=False, publish_block=False):
+        """
+        Creates the v000 publish when a new item is created.
+        Kwargs provided determine what should be published,
+
+        Kwargs:
+            publish_pattern (bool): if true this will publish a pattern
+            publish_block (bool): if true this will publish a block
+        """
+        if publish_block is True:
+            self.publish_type = BLOCK_ITEM
+            self.publishBlock()
+        if publish_pattern is True:
+            self.publish_type = PATTERN_ITEM
+            self.publishPattern()
+
     def publishAllGroups(self, item, orig_item):
         """
         start of recursive function to run through each subgroup and publish them
@@ -1627,7 +1645,8 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
         orig_item = item
         self.publishAllGroups(item, orig_item)
-        self.main_widget.variable_manager_widget.variable_browser.reset()
+        #self.main_widget.variable_manager_widget.variable_browser.reset()
+        self.main_widget.variable_manager_widget.variable_browser.clear()
         self.main_widget.variable_manager_widget.variable_browser.populate()
 
     def publishPattern(self, item=None):
@@ -1710,13 +1729,6 @@ BESTEREST
         self._publish_state += 1
         self.__setBesterestButtonStyle()
 
-    def setPublishState(self, publish_state):
-        self._publish_state = publish_state
-        self.__setBesterestButtonStyle()
-
-    def getPublishState(self):
-        return self._publish_state % 2
-
     """ EVENTS """
     def __accepted(self):
         """
@@ -1762,6 +1774,13 @@ BESTEREST
     def setBesterestButtonHeight(self, besterest_button_height):
         self.besterest_button.setFixedHeight(besterest_button_height)
         self.besterest_button_height = besterest_button_height
+
+    def setPublishState(self, publish_state):
+        self._publish_state = publish_state
+        self.__setBesterestButtonStyle()
+
+    def getPublishState(self):
+        return self._publish_state % 2
 
     @property
     def name(self):
