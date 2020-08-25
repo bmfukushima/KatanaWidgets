@@ -711,45 +711,40 @@ class VariableManagerGSVMenu(AbstractComboBox):
         previous_variable = self.main_widget.getVariable()
         node = self.main_widget.getNode()
         publish_dir = node.getParameter('publish_dir').getValue(0)
-        """
-        add items
-        display versions to load
-        determine if this should display the versions popup for the user
-        or if this should automatically create the v000
-        """
         publish_loc = '%s/%s/%s' % (publish_dir, variable, 'patterns/master/block/v000')
+
+        # update variables
+        self.main_widget.setVariable(variable)
+        node.getParameter('variable').setValue(variable, 0)
+
+        # reset item selection to root
+        item = variable_browser.topLevelItem(0)
+        variable_browser.setCurrentItem(item)
+        self.main_widget.setWorkingItem(item)
+        item.setText(0, str(self.currentText()))
 
         # if the directory exists
         if os.path.exists(publish_loc) is True:
-            # update variables
-            self.main_widget.setVariable(variable)
-            node.getParameter('variable').setValue(variable, 0)
+            # get version
+            version = self.main_widget.versions_display_widget.getCurrentVersion()
 
-            # reset item selection to root
-            item = variable_browser.topLevelItem(0)
-            variable_browser.setCurrentItem(item)
-            self.main_widget.setWorkingItem(item)
-            item.setText(0, str(self.currentText()))
-
-            # need to update / create master item here...
+            # update versions display widget
             self.main_widget.versions_display_widget.update(
-                column=2, gui=True, previous_variable=previous_variable
+                column=2, gui=False, previous_variable=previous_variable, version=version
             )
-            # if not cancelled...
+
+            # load latest version
+            self.main_widget.versions_display_widget.loadLiveGroup(version=version)
+
+        # if directory does not exist
         else:
-            # if doesnt exist
-            # publish
-            self.main_widget.setVariable(variable)
-            node.getParameter('variable').setValue(variable, 0)
-
             # create new directories
-            if not os.path.exists(publish_dir):
-                os.mkdir(publish_dir)
+            new_dir = '{root_dir}/{variable}'.format(
+                root_dir=publish_dir, variable=variable
+            )
 
-            if not os.path.exists(publish_dir + '/%s' % variable):
-                os.mkdir(publish_dir + '/%s' % variable)
-                os.mkdir(publish_dir + '/%s/blocks' % variable)
-                os.mkdir(publish_dir + '/%s/patterns' % variable)
+            mkdirRecursive(new_dir + '/blocks')
+            mkdirRecursive(new_dir + '/patterns')
 
             # populate
             variable_browser.reset()
@@ -757,16 +752,11 @@ class VariableManagerGSVMenu(AbstractComboBox):
             variable_browser.populate()
             self.main_widget.updateOptionsList()
 
-            # reset item selection to root
-            item = variable_browser.topLevelItem(0)
-            variable_browser.setCurrentItem(item)
-            self.main_widget.setWorkingItem(item)
-            item.setText(0, str(self.currentText()))
-
             # Publish
             initial_publish_display_text = "BLOCK  (  {variable}  |  v000  )".format(variable=variable)
             self.main_widget.publish_display_widget.update(name=initial_publish_display_text, publish_type=BLOCK_ITEM)
-            self.main_widget.publish_display_widget.display()
+            #self.main_widget.publish_display_widget.display()
+            self.main_widget.publish_display_widget.publishBlock()
 
         self.main_widget.setVariable(variable)
 

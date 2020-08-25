@@ -14,6 +14,7 @@ TODO
         * <multi> needs to be removed from docs...
         * "Wrapper" maybe moved to "Undo"
 
+main_widget.showWarningBox(self, warning_text, accept, cancel, detailed_warning_text=''):
     WISH LIST:
         1.) Import/Export?
         2.) Drag/Drop
@@ -1192,7 +1193,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         the widget will update and be displayed to the user.
         """
         # change widget to versions display
-        self.display()
+
         if column:
             self.column = column
         if version:
@@ -1208,6 +1209,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
 
         # get/display latest version if there is no gui
         if self.gui is True:
+            self.display()
             root_publish_dir = self.main_widget.getRootPublishDir()
             variable_dir = '%s/%s' % (root_publish_dir, self.main_widget.getVariable())
 
