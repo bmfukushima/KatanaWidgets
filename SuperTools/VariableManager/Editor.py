@@ -1180,6 +1180,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.updateAllVariableSwitches(root_node)
         self.main_widget.updateOptionsList()
 
+
     """ EVENTS """
     def display(self):
         self.main_widget.layout().setCurrentIndex(1)
@@ -1563,9 +1564,22 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             publish_block (bool): if true this will publish a block
         """
         if publish_block is True:
+            # create block publish dir
+            root_dir = self.main_widget.getRootPublishDir()
+            variable = self.main_widget.getVariable()
+            blocks_publish_dir = '{root_dir}/{variable}/blocks'.format(
+                root_dir=root_dir,
+                variable=variable
+            )
+            mkdirRecursive(blocks_publish_dir)
+
+            # publish block
             self.publish_type = BLOCK_ITEM
             self.publishBlock()
         if publish_pattern is True:
+            # TODO
+            # apparently patterns auto create during the init process
+            # of something new... so... maybe I should track that down...
             self.publish_type = PATTERN_ITEM
             self.publishPattern()
 
@@ -1645,7 +1659,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
         orig_item = item
         self.publishAllGroups(item, orig_item)
-        #self.main_widget.variable_manager_widget.variable_browser.reset()
+
         self.main_widget.variable_manager_widget.variable_browser.clear()
         self.main_widget.variable_manager_widget.variable_browser.populate()
 
