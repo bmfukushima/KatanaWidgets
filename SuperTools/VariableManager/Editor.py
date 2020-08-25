@@ -467,7 +467,7 @@ class VariableManagerEditor(QWidget):
 
         # update variable menu
         variable = self.node.getParameter('variable').getValue(0)
-        self.main_widget.variable = variable
+        self.main_widget.setVariable(variable)
         variable_manager.variable_menu.setCurrentIndexToText(variable)
 
         # update node menu
