@@ -306,8 +306,8 @@ class VariableManagerWidget(QWidget):
         from PyQt5.QtWidgets import QApplication
         QApplication.processEvents()
         resolved_pos = QCursor.pos()
-        w = qApp.widgetAt(resolved_pos)
-        w.setFocus()
+        new_widget = qApp.widgetAt(resolved_pos)
+        new_widget.setFocus()
 
     def keyPressEvent(self, event):
         if event.key() == 96:
