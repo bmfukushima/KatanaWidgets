@@ -165,6 +165,7 @@ class VariableManagerEditor(QWidget):
         self._should_update = False
         self._is_frozen = False
         self._item_list = None
+        self.setObjectName("Variable Manager Editor")
 
         # init GUI
         QVBoxLayout(self)

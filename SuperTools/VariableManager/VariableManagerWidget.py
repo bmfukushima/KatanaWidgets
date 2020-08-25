@@ -115,6 +115,10 @@ class VariableManagerWidget(QWidget):
         self.main_widget = getMainWidget(self)
         self.node = node
         self.initGUI()
+        self.setObjectName("Variable Manager Widget")
+
+    def __name__(self):
+        return "Variable Manager Widget"
 
     def initGUI(self):
 
@@ -122,6 +126,7 @@ class VariableManagerWidget(QWidget):
         # row 1
         self.r1_widget = QWidget()
         self.r1_hbox = QHBoxLayout(self.r1_widget)
+
         self.variable_menu = VariableManagerGSVMenu(self)
         self.publish_dir = self.createValueParam('publish_dir')
         self.node_type_menu = VariableManagerNodeMenu(self)
@@ -131,6 +136,7 @@ class VariableManagerWidget(QWidget):
 
         # row 2
         self.r2_widget = QWidget()
+
         self.r2_hbox = QHBoxLayout(self.r2_widget)
         self.r2_hbox.addWidget(self.publish_dir)
 
@@ -151,6 +157,9 @@ class VariableManagerWidget(QWidget):
         self.layout().addWidget(self.r1_widget)
         self.layout().addWidget(self.r2_widget)
         self.layout().addWidget(self.splitter)
+
+        self.r1_widget.setObjectName('r1 widget')
+        self.r2_widget.setObjectName('r2 widget')
 
     def createVariableStack(self):
         """
@@ -188,6 +197,7 @@ class VariableManagerWidget(QWidget):
         )
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
+        self.variable_browser_widget.setObjectName("Variable Browser Widget")
         self.nodegraph_widget = self.createNodeGraphWidget()
 
         # Setup Layouts
@@ -222,6 +232,7 @@ class VariableManagerWidget(QWidget):
         back to the user when a node is selected in the mini nodegraph.
         """
         params_widget = QWidget()
+        params_widget.setObjectName("params widget")
         self.params_layout = QVBoxLayout()
         self.params_layout.setAlignment(Qt.AlignTop)
 
@@ -291,13 +302,12 @@ class VariableManagerWidget(QWidget):
                 splitter.parent().r1_widget.hide()
                 splitter.parent().r2_widget.hide()
 
-    def enterEvent(self, QEvent):
-        """
-        Need to set focus when entering widget in order to
-        register the hotkey hits...
-        """
-        self.setFocus()
-        return QWidget.enterEvent(self, QEvent)
+        # reset focus
+        from PyQt5.QtWidgets import QApplication
+        QApplication.processEvents()
+        resolved_pos = QCursor.pos()
+        w = qApp.widgetAt(resolved_pos)
+        w.setFocus()
 
     def keyPressEvent(self, event):
         if event.key() == 96:
@@ -1923,14 +1933,6 @@ class VariableManagerBrowser(QTreeWidget):
             actionPicker(action)
 
     """ EVENTS """
-    def enterEvent(self, QEvent):
-        """
-        Need to set focus when entering widget in order to
-        register the hotkey hits...
-        """
-        self.setFocus()
-        return QTreeWidget.enterEvent(self, QEvent)
-
     def dragMoveEvent(self, event, *args, **kwargs):
         """
         handlers to determine if an item is droppable or not
