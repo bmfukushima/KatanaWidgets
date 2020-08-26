@@ -5,10 +5,14 @@ from PyQt5.QtWidgets import (
     QHBoxLayout, QPushButton, QSizePolicy,
     QLabel, QVBoxLayout
 )
+
 from PyQt5.QtGui import (
     QMovie
 )
-from PyQt5 import QtCore
+
+from PyQt5.QtCore import (
+    QEvent, Qt, QByteArray, QSize, QSortFilterProxyModel
+)
 
 from Settings import (
     ACCEPT_GIF,
@@ -30,7 +34,7 @@ class GifPlayer(QWidget):
         super(GifPlayer, self).__init__(parent)
 
         QVBoxLayout(self)
-        self.layout().setAlignment(QtCore.Qt.AlignTop)
+        self.layout().setAlignment(Qt.AlignTop)
         self.hover_color = repr(hover_color)
         self.style_sheet = self.styleSheet()
 
@@ -38,10 +42,10 @@ class GifPlayer(QWidget):
         self.movie_widget = QLabel()
         self.layout().addWidget(self.movie_widget)
 
-        self.movie_widget.movie = QMovie(gifFile, QtCore.QByteArray(), self.movie_widget)
-        self.movie_widget.movie.setScaledSize(QtCore.QSize(100, 300))
+        self.movie_widget.movie = QMovie(gifFile, QByteArray(), self.movie_widget)
+        self.movie_widget.movie.setScaledSize(QSize(100, 300))
         self.movie_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.movie_widget.setAlignment(QtCore.Qt.AlignTop)
+        self.movie_widget.setAlignment(Qt.AlignTop)
         # start movie
         self.movie_widget.movie.setCacheMode(QMovie.CacheAll)
         self.movie_widget.setMovie(self.movie_widget.movie)
@@ -157,7 +161,7 @@ class AbstractUserBooleanWidget(QWidget):
         self.layout().addWidget(self.central_widget)
         self.layout().addWidget(self.accept_button, 1)
 
-        self.layout().setAlignment(QtCore.Qt.AlignTop)
+        self.layout().setAlignment(Qt.AlignTop)
 
         # set default button size
         if not button_width:
@@ -222,9 +226,9 @@ You can also hit <ESCAPE> to go back...
         suppressUndooz(self._cancel)
 
     def keyPressEvent(self, event, *args, **kwargs):
-        if event.key() == QtCore.Qt.Key_Escape:
+        if event.key() == Qt.Key_Escape:
             self.cancelPressed()
-        elif event.key() in [QtCore.Qt.Key_Enter, QtCore.Qt.Key_Return]:
+        elif event.key() in [Qt.Key_Enter, Qt.Key_Return]:
             self.acceptPressed()
         return QWidget.keyPressEvent(self, event, *args, **kwargs)
 
@@ -261,10 +265,10 @@ class AbstractComboBox(QComboBox):
         # setup completer
         self.completer = QCompleter(self)
         self.completer.setCompletionMode(QCompleter.PopupCompletion)
-        self.completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
         self.completer.setPopup(self.view())
         self.setCompleter(self.completer)
-        self.pFilterModel = QtCore.QSortFilterProxyModel(self)
+        self.pFilterModel = QSortFilterProxyModel(self)
 
     def userFinishedEditing(self):
         is_input_valid = self.isUserInputValid()
@@ -285,7 +289,7 @@ class AbstractComboBox(QComboBox):
         self.setExistsFlag(False)
 
         # get all matches
-        items = self.model().findItems(text, QtCore.Qt.MatchExactly)
+        items = self.model().findItems(text, Qt.MatchExactly)
 
         # set to index of match
         if len(items) > 0:
@@ -324,7 +328,7 @@ class AbstractComboBox(QComboBox):
         Returns True if this is an existing item, Returns
         false if it is not.
         """
-        items = self.model().findItems(self.currentText(), QtCore.Qt.MatchExactly)
+        items = self.model().findItems(self.currentText(), Qt.MatchExactly)
         if len(items) > 0:
             return True
         else:
@@ -344,25 +348,42 @@ class AbstractComboBox(QComboBox):
         self.__selectionChangedEmit = method
 
     """ EVENTS """
+    def resizeEvent(self, event):
+        width = self.width()
+        dropdown_width = int(width * 0.35)
+        style_sheet = """
+        QComboBox {
+            border: 1px solid;
+            border-color: rgba(0,0,0,0);
+            }
+            QComboBox::drop-down {
+                width: %spx;
+            }
+        """ % (dropdown_width)
+        self.setStyleSheet(style_sheet)
+        return QComboBox.resizeEvent(self, event)
+
     def event(self, event, *args, **kwargs):
         """
         Registering key presses in here as for some reason
         they don't work in the keyPressEvent method...
         """
-        if event.type() == QtCore.QEvent.KeyPress:
-            modifiers = QApplication.keyboardModifiers()
-            if event.key() == QtCore.Qt.Key_Tab:
-                if modifiers == QtCore.Qt.ShiftModifier:
-                    self.previous_completion()
-                else:
-                    self.next_completion()
-
+        if event.type() == QEvent.KeyPress:
+            # tab
+            if event.key() == Qt.Key_Tab:
+                self.next_completion()
                 return True
 
+            # shift tab
+            elif event.key() == Qt.Key_Tab + 1:
+                self.previous_completion()
+                return True
+
+            # enter pressed
             elif event.key() in [
-                QtCore.Qt.Key_Return,
-                QtCore.Qt.Key_Enter,
-                QtCore.Qt.Key_Down
+                Qt.Key_Return,
+                Qt.Key_Enter,
+                Qt.Key_Down
             ]:
                 self.__selectionChangedEmit()
 
@@ -370,16 +391,29 @@ class AbstractComboBox(QComboBox):
 
     def next_completion(self):
         row = self.completer.currentRow()
+
+        # if does not exist reset
         if not self.completer.setCurrentRow(row + 1):
             self.completer.setCurrentRow(0)
+
+        # if initializing
+        if self.completer.popup().currentIndex().row() == -1:
+            self.completer.setCurrentRow(0)
+
         index = self.completer.currentIndex()
         self.completer.popup().setCurrentIndex(index)
 
     def previous_completion(self):
         row = self.completer.currentRow()
         numRows = self.completer.completionCount()
+
+        # if wrapping
         if not self.completer.setCurrentRow(row - 1):
-            self.completer.setCurrentRow(numRows-1)
+            self.completer.setCurrentRow(numRows - 1)
+        # if initializing
+        if self.completer.popup().currentIndex().row() == -1:
+            self.completer.setCurrentRow(numRows - 1)
+
         index = self.completer.currentIndex()
         self.completer.popup().setCurrentIndex(index)
 

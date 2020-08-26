@@ -1,8 +1,6 @@
 """
 TODO
     Publish
-        *   change publish dir to
-                $ROOT_DIR / GSV / <node type>
         *   publish root
                 combined pattern + block
     Versions
@@ -12,13 +10,16 @@ TODO
         *    checkHash repeats...
         *   send all widget calls to getters /setters on the main widget
         * "Wrapper" maybe moved to "Undo"
-        *   I prob used this code like 9 times..
+        *   Clean up Directory Creation... This is done like 90000 times
+            I prob used this code like 9 times..
                 mkdirRecursive(item_dir + '/block/live')
                 mkdirRecursive(item_dir + '/pattern/live')
         *   What this nasty thing is to reset the top level item...
                 item = self.topLevelItem(0)
                 self.setCurrentItem(item)
                 self.main_widget.setWorkingItem(item)
+        *   VersionsDisplayWidget.gui
+                This flag is being toggled in some really awkward ways...
 
 main_widget.showWarningBox(self, warning_text, accept, cancel, detailed_warning_text=''):
     WISH LIST:
