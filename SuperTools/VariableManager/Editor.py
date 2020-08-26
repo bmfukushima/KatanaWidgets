@@ -11,11 +11,14 @@ TODO
     Cleanup
         *    checkHash repeats...
         *   send all widget calls to getters /setters on the main widget
-        * <multi> needs to be removed from docs...
         * "Wrapper" maybe moved to "Undo"
         *   I prob used this code like 9 times..
                 mkdirRecursive(item_dir + '/block/live')
                 mkdirRecursive(item_dir + '/pattern/live')
+        *   What this nasty thing is to reset the top level item...
+                item = self.topLevelItem(0)
+                self.setCurrentItem(item)
+                self.main_widget.setWorkingItem(item)
 
 main_widget.showWarningBox(self, warning_text, accept, cancel, detailed_warning_text=''):
     WISH LIST:
@@ -1253,6 +1256,9 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         """
         This is the show command, when this is triggered,
         the widget will update and be displayed to the user.
+
+        TODO:
+            self.gui needs an overhaul... right now the triggers make this really messy
         """
         # change widget to versions display
 
@@ -1291,6 +1297,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.setVariable(self.previous_variable)
         self.main_widget.variable_manager_widget.variable_menu.setCurrentIndexToText(self.previous_variable)
         self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.previous_variable)
+        self.gui = False
 
     def __accepted(self):
         """
@@ -1304,6 +1311,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
             item.text(0),
             'Load {item_type}'.format(item_type=item_type)
         )
+        self.gui = False
 
     """ PROPERTIES """
     @property

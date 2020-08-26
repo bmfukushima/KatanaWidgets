@@ -14,9 +14,6 @@ TODO:
     *   Node Type Change
             - needs to honor current hierarchy.
             - recursive search through tree, update all pattern nodes?
-            - change directory to add node type
-                might get a free win here on publish_dir change with node types...
-                if you add the publish dir update to the node type change
 """
 
 import os
@@ -104,7 +101,7 @@ class VariableManagerWidget(QWidget):
                 $HOME/.katana/<node_name>
         params_widget (QWidget): An internal parameters display window for this
             node.  If the node_type is set to a Katana node type, it will automagically
-            set this to display that nodes parameters.  If it is set to <multi> a special
+            set this to display that nodes parameters.  If it is set to Group a special
             hotkey will need to be hit to display the parameters in this window,
             by default it is Alt+W
     """
@@ -462,11 +459,15 @@ class VariableManagerCreateNewItemWidget(QWidget):
             'variables.{variable}.options'.format(variable=variable)
         )
         variables_list = [child.getName() for child in variables_list_parm.getChildren()]
-        print(variables_list)
-        print(self.main_widget.getOptionsList())
-        """        
-        variables list ['i0', 'i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'i7', 'i8', 'i9', 'i10', 'i11', 'i12', 'i13']
-        options list ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'asdf', 'sfsfs', 'asfas', 'asfasf']
+        # TODO
+        # Pattern Create
+        """
+        TODO:
+            print(variables_list)
+            print(self.main_widget.getOptionsList())
+    
+            variables list ['i0', 'i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'i7', 'i8', 'i9', 'i10', 'i11', 'i12', 'i13']
+            options list ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'asdf', 'sfsfs', 'asfas', 'asfasf']
         """
 
         # suppress callback...
@@ -747,7 +748,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         node.getParameter('variable').setValue(variable, 0)
 
         publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
-        publish_loc = '%s/%s/%s' % (publish_dir, variable, 'patterns/master/block/v000')
+        publish_loc = '%s/%s' % (publish_dir, 'patterns/master/block/v000')
 
         # if node type is not set yet, then return
         if self.main_widget.variable_manager_widget.node_type_menu.currentText() == '':
@@ -774,6 +775,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
 
         self.main_widget.setVariable(variable)
 
+        # TODO
         if self.main_widget.node_type == 'Group':
             variable_browser.showMiniNodeGraph()
 
@@ -899,7 +901,6 @@ class VariableManagerNodeMenu(AbstractComboBox):
             variable_browser = self.main_widget.variable_manager_widget.variable_browser
             variable = self.main_widget.getVariable()
             node = self.main_widget.getNode()
-            #publish_dir = node.getParameter('publish_dir').getValue(0)
             node_type = str(self.currentText())
 
             # set attrs
@@ -907,12 +908,11 @@ class VariableManagerNodeMenu(AbstractComboBox):
             self.main_widget.setNodeType(node_type)
 
             publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
-            publish_loc = '%s/%s/%s' % (publish_dir, variable, 'patterns/master/block/v000')
+            publish_loc = '%s/%s' % (publish_dir, 'patterns/master/block/v000')
 
             if os.path.exists(publish_loc) is True:
                 self.main_widget.versions_display_widget.loadBesterestVersion()
             else:
-                pass
                 # Publish
                 variable_browser.reset()
 
@@ -926,7 +926,6 @@ class VariableManagerNodeMenu(AbstractComboBox):
         self.setCurrentIndexToText(node_type)
 
     def indexChanged(self):
-        # check to see if user input is valid, if not valid, exit
         """
         # without this it randomly allows the user to change to a
         # new node type =\
@@ -1762,6 +1761,8 @@ class VariableManagerBrowser(QTreeWidget):
         self.main_widget.setWorkingItem(self.currentItem())
         if self.main_widget.getNodeType() == 'Group':
             self.showMiniNodeGraph()
+            self.main_widget.populateParameters()
+            # clear item parameters...
         else:
             self.hideMiniNodeGraph()
             self.showItemParameters()
@@ -1772,7 +1773,7 @@ class VariableManagerBrowser(QTreeWidget):
 
     def showMiniNodeGraph(self):
         """
-        If the Node Type is set to <multi> by the user.  This will enable it
+        If the Node Type is set to Group by the user.  This will enable it
         so that when a user clicks on a new item, the mini node graph
         to the left of the GSV manager will automatically go to that
         node.
@@ -1793,6 +1794,11 @@ class VariableManagerBrowser(QTreeWidget):
                 nodegraph_tab = variable_manager_widget.nodegraph_tab
 
                 # go to node
+                #self.main_widget.variable_manager_widget.variable_browser
+                # variable_browser = variable_manager_widget.variable_browser
+                # item = variable_browser.topLevelItem(0)
+                # variable_browser.setCurrentItem(item)
+                # self.main_widget.setWorkingItem(item)
                 goToNode(node, frame=True, nodegraph_tab=nodegraph_tab)
 
                 # resize splitter to let user know that they can do this now...
@@ -2064,13 +2070,14 @@ class VariableManagerBrowser(QTreeWidget):
         displays the current group that is editable in a mini-node graph
         """
         if hasattr(self.main_widget, 'variable_manager_widget'):
+            item = self.currentItem()
+            if not item:
+                item = self.topLevelItem(0)
+                self.setCurrentItem(item)
+                self.main_widget.setWorkingItem(item)
+
             self.displayItemParameters()
-            # self.main_widget.setWorkingItem(self.currentItem())
-            # if self.main_widget.getNodeType() == 'Group':
-            #     self.showMiniNodeGraph()
-            # else:
-            #     self.hideMiniNodeGraph()
-            #     self.showItemParameters()
+
         return QTreeWidget.selectionChanged(self, *args, **kwargs)
 
 
@@ -2213,7 +2220,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
                 not sure if I need publish...
             """
 
-            block_location = '%s/%s/%s' % (location, self.hash)
+            block_location = '%s/%s' % (location, self.hash)
             mkdirRecursive(block_location + '/pattern/live')
             mkdirRecursive(block_location + '/block/live')
 
