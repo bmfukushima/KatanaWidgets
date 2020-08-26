@@ -110,8 +110,10 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         # wire node
         connectInsideGroup([self.variable_root_node], self)
 
-        if not os.path.exists(PUBLISH_DIR):
-            os.mkdir(PUBLISH_DIR)
+        # create default publish dir
+        mkdirRecursive(PUBLISH_DIR)
+
+
 
     def cleanBlockRootNode(self, block_root_node):
         """
@@ -211,14 +213,16 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         # set GSV
         self.variable = variable
 
-        # make directores
-        if not os.path.exists(PUBLISH_DIR):
-            os.mkdir(PUBLISH_DIR)
+        # make directories
+        publish_dir = self.getParameter('publish_dir').getValue(0)
+        base_publish_dir = '{root_dir}/{variable}/{node_type}'.format(
+            root_dir=publish_dir,
+            variable=self.variable,
+            node_type=self.node_type
+        )
 
-        if not os.path.exists(PUBLISH_DIR + '/%s' % self.variable):
-            os.mkdir(PUBLISH_DIR + '/%s' % self.variable)
-            os.mkdir(PUBLISH_DIR + '/%s/blocks' % self.variable)
-            os.mkdir(PUBLISH_DIR + '/%s/patterns' % self.variable)
+        mkdirRecursive(base_publish_dir + '/blocks')
+        mkdirRecursive(base_publish_dir + '/patterns')
 
         self.variable_param.setValue(self.variable, 0)
         self.populateVariable(self.variable)
@@ -422,13 +426,8 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                 pattern=pattern,
                 node_type=node_type
             )
-            if not os.path.exists(publish_dir):
-                dir_list = ['pattern', 'block']
-                mkdirRecursive(publish_dir)
-                for dir_item in dir_list:
-                    os.mkdir(publish_dir + '/%s' % dir_item)
-                    os.mkdir(publish_dir + '/%s/live' % dir_item)
-
+            mkdirRecursive(publish_dir + '/pattern/live')
+            mkdirRecursive(publish_dir + '/block/live')
         # create node of specific type
         if node_type != 'Group':
             self.createNodeOfType(veg_node)

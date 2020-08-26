@@ -2212,14 +2212,10 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
             TODO:
                 not sure if I need publish...
             """
-            # dir_list = ['pattern', 'block', 'publish']
-            dir_list = ['pattern', 'block']
-            block_location = '%s/%s' % (location, self.hash)
-            os.mkdir(block_location)
 
-            for dir_item in dir_list:
-                os.mkdir(block_location + '/%s' % dir_item)
-                os.mkdir(block_location + '/%s/live' % dir_item)
+            block_location = '%s/%s/%s' % (location, self.hash)
+            mkdirRecursive(block_location + '/pattern/live')
+            mkdirRecursive(block_location + '/block/live')
 
         self.publish_dir = '%s/%s' % (location, self.hash)
 
@@ -2328,31 +2324,3 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
     def setPublishDir(self, publish_dir):
         self.publish_dir = publish_dir
 
-
-"""
-TODO:
-    This quest.. to find wtf I did...
-[ERROR python.root]: An OSError occurred in "Utils.py": [Errno 2] No such file or directory: '/home/brian/.katana/VariableManager//Prune/patterns/master/block'
-    Traceback (most recent call last):
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 228, in keyPressEvent
-        self.acceptPressed()
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 218, in acceptPressed
-        self._accept()
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/VariableManagerWidget.py", line 889, in accepted
-        'Change Node Type'
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 586, in makeUndoozable
-        func(*args, **kwargs)
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/VariableManagerWidget.py", line 918, in changeNodeType
-        publish_pattern=True, publish_block=True
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 1631, in publishNewItem
-        self.publishBlock()
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 1715, in publishBlock
-        self.publishAllGroups(item, orig_item)
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 1650, in publishAllGroups
-        version = getNextVersion(publish_loc)
-      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 520, in getNextVersion
-        versions = os.listdir(location)
-    OSError: [Errno 2] No such file or directory: '/home/brian/.katana/VariableManager//Prune/patterns/master/block
-    
-    No VARIABLE TYPE???
-    '"""

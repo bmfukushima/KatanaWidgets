@@ -13,6 +13,9 @@ TODO
         *   send all widget calls to getters /setters on the main widget
         * <multi> needs to be removed from docs...
         * "Wrapper" maybe moved to "Undo"
+        *   I prob used this code like 9 times..
+                mkdirRecursive(item_dir + '/block/live')
+                mkdirRecursive(item_dir + '/pattern/live')
 
 main_widget.showWarningBox(self, warning_text, accept, cancel, detailed_warning_text=''):
     WISH LIST:
@@ -321,8 +324,8 @@ class VariableManagerEditor(QWidget):
         self._item_list = [master_item]
         self.__getAllChildItems(master_item)
 
-        dir_list = ['pattern', 'block']
         for item in self._item_list:
+            # get data
             unique_hash = item.getHash()
             if item.getItemType() == BLOCK_ITEM:
                 item_type = 'blocks'
@@ -334,14 +337,12 @@ class VariableManagerEditor(QWidget):
                 item.setHash(unique_hash)
                 item_type = 'patterns'
 
+            # make dir
             item_dir = '%s/%s/%s' % (base_publish_dir, item_type, unique_hash)
-
-            os.mkdir(item_dir)
             item.setPublishDir(item_dir)
-            for dir_item in dir_list:
-                if not os.path.exists(item_dir + '/%s' % dir_item):
-                    os.mkdir(item_dir + '/%s' % dir_item)
-                    os.mkdir(item_dir + '/%s/live' % dir_item)
+
+            mkdirRecursive(item_dir + '/block/live')
+            mkdirRecursive(item_dir + '/pattern/live')
 
         # publish v000 directories
         item = master_item
@@ -1271,27 +1272,15 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         # get/display latest version if there is no gui
         if self.gui is True:
             self.display()
-            #root_publish_dir = self.main_widget.getRootPublishDir()
-            #variable_dir = '%s/%s' % (root_publish_dir, self.main_widget.getVariable())
-            base_publish_dir = self.main_widget.getBasePublishDir()
-            master_dir = base_publish_dir + '/patterns/master/block'
+            item = self.main_widget.getWorkingItem()
+            if column == 1:
+                publish_type = PATTERN_ITEM
+            elif column == 2:
+                publish_type = BLOCK_ITEM
 
-            versions = sorted(os.listdir(master_dir))
-            versions.remove('live')
-            versions_dir_list = []
+            besterest_version = self.getBesterestVersion(item, publish_type)
 
-            for version in versions:
-                live_file = '/'.join([master_dir, version, 'live.csv'])
-                if os.path.exists(live_file) is True:
-                    versions_dir_list.append(version)
-            if len(versions_dir_list) > 0:
-                latest_version = versions_dir_list[-1]
-            elif len(versions) > 0:
-                latest_version = versions[-1]
-            else:
-                latest_version = 'live'
-
-            self.version_combobox.setCurrentIndexToText(latest_version)
+            self.version_combobox.setCurrentIndexToText(besterest_version)
 
     def __cancelled(self):
         """
@@ -1592,7 +1581,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             version (str): the new version to publish
         """
 
-        os.mkdir(publish_loc)
+        mkdirRecursive(publish_loc)
         Utils.EventModule.ProcessAllEvents()
         live_group = NodegraphAPI.ConvertGroupToLiveGroup(node)
         if not live_group.getParameter('version'):
