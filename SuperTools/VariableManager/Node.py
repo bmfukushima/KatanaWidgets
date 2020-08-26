@@ -141,7 +141,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         self.block_group = NodegraphAPI.GetNode(self.variable_root_node.getParameter('nodeReference.block_group').getValue(0))
         self.vs_node = NodegraphAPI.GetNode(self.variable_root_node.getParameter('nodeReference.vs_node').getValue(0))
 
-    def _reset(self, variable=''):
+    def _reset(self, variable='', node_type=''):
         """
         Deletes the entire inner working structure of this node, and resets
         the master root item.
@@ -160,15 +160,19 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         # set GSV
         self.variable = variable
         self.variable_param.setValue(self.variable, 0)
+        self.node_type = node_type
+        self.node_type_param.setValue(self.node_type, 0)
 
-        # make directores
-        if not os.path.exists(PUBLISH_DIR):
-            os.mkdir(PUBLISH_DIR)
+        # make directories
+        publish_dir = self.getParameter('publish_dir').getValue(0)
+        base_publish_dir = '{root_dir}/{variable}/{node_type}'.format(
+            root_dir=publish_dir,
+            variable=self.variable,
+            node_type=self.node_type
+        )
 
-        if not os.path.exists(PUBLISH_DIR + '/%s' % self.variable):
-            os.mkdir(PUBLISH_DIR + '/%s' % self.variable)
-            os.mkdir(PUBLISH_DIR + '/%s/blocks' % self.variable)
-            os.mkdir(PUBLISH_DIR + '/%s/patterns' % self.variable)
+        mkdirRecursive(base_publish_dir + '/blocks')
+        mkdirRecursive(base_publish_dir + '/patterns')
 
         # create internal node structure
         self.populateVariable(self.variable)
@@ -369,6 +373,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         """
 
         variable = self.getParameter('variable').getValue(0)
+        node_type = self.getParameter('node_type').getValue(0)
         pattern_string = '%s%s' % (PATTERN_PREFIX, pattern)
         # create the pattern root node
         if not name:
@@ -411,10 +416,11 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
 
         # create publish dirs
         if variable != '':
-            publish_dir = '{publish_dir}/{variable}/patterns/{variable}_{pattern}'.format(
+            publish_dir = '{publish_dir}/{variable}/{node_type}/patterns/{variable}_{pattern}'.format(
                 publish_dir=self.getParameter('publish_dir').getValue(0),
                 variable=variable,
-                pattern=pattern
+                pattern=pattern,
+                node_type=node_type
             )
             if not os.path.exists(publish_dir):
                 dir_list = ['pattern', 'block']
@@ -424,7 +430,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                     os.mkdir(publish_dir + '/%s/live' % dir_item)
 
         # create node of specific type
-        if self.getParameter('node_type').getValue(0) != 'Group':
+        if node_type != 'Group':
             self.createNodeOfType(veg_node)
 
         return pattern_root_node

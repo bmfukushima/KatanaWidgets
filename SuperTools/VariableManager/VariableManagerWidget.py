@@ -462,6 +462,12 @@ class VariableManagerCreateNewItemWidget(QWidget):
             'variables.{variable}.options'.format(variable=variable)
         )
         variables_list = [child.getName() for child in variables_list_parm.getChildren()]
+        print(variables_list)
+        print(self.main_widget.getOptionsList())
+        """        
+        variables list ['i0', 'i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'i7', 'i8', 'i9', 'i10', 'i11', 'i12', 'i13']
+        options list ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'asdf', 'sfsfs', 'asfas', 'asfasf']
+        """
 
         # suppress callback...
         # create new variable if doesn't exist
@@ -726,6 +732,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         When the user changes the GSV and accepts the change,
         this function will be triggered.
         """
+
         # check to make sure variable exists... if not, create it
         self.checkUserInput()
 
@@ -734,12 +741,17 @@ class VariableManagerGSVMenu(AbstractComboBox):
         variable = str(self.currentText())
         previous_variable = self.main_widget.getVariable()
         node = self.main_widget.getNode()
-        publish_dir = node.getParameter('publish_dir').getValue(0)
-        publish_loc = '%s/%s/%s' % (publish_dir, variable, 'patterns/master/block/v000')
 
         # update variables
         self.main_widget.setVariable(variable)
         node.getParameter('variable').setValue(variable, 0)
+
+        publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
+        publish_loc = '%s/%s/%s' % (publish_dir, variable, 'patterns/master/block/v000')
+
+        # if node type is not set yet, then return
+        if self.main_widget.variable_manager_widget.node_type_menu.currentText() == '':
+            return
 
         # reset item selection to root
         item = variable_browser.topLevelItem(0)
@@ -839,8 +851,7 @@ class VariableManagerNodeMenu(AbstractComboBox):
         self.currentIndexChanged.connect(self.indexChanged)
 
     def focusOutEvent(self, event):
-        print ('un focus')
-        return QComboBox.focusOutEvent(event)
+        return QComboBox.focusOutEvent(self, event)
 
     def checkUserInput(self):
         """
@@ -888,19 +899,23 @@ class VariableManagerNodeMenu(AbstractComboBox):
             variable_browser = self.main_widget.variable_manager_widget.variable_browser
             variable = self.main_widget.getVariable()
             node = self.main_widget.getNode()
-            publish_dir = node.getParameter('publish_dir').getValue(0)
+            #publish_dir = node.getParameter('publish_dir').getValue(0)
             node_type = str(self.currentText())
 
             # set attrs
             node.getParameter('node_type').setValue(node_type, 0)
             self.main_widget.setNodeType(node_type)
 
+            publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
             publish_loc = '%s/%s/%s' % (publish_dir, variable, 'patterns/master/block/v000')
+
             if os.path.exists(publish_loc) is True:
                 self.main_widget.versions_display_widget.loadBesterestVersion()
             else:
+                pass
                 # Publish
                 variable_browser.reset()
+
                 self.main_widget.publish_display_widget.publishNewItem(
                     publish_pattern=True, publish_block=True
                 )
@@ -916,10 +931,15 @@ class VariableManagerNodeMenu(AbstractComboBox):
         # without this it randomly allows the user to change to a
         # new node type =\
         """
+        # preflight checks
         # return if this node type does not exist
-        if self.currentText() not in NodegraphAPI.GetNodeTypes():
+        if self.currentText() not in NodegraphAPI.GetNodeTypes(): return
+        # check gsv to exist...
+        variable_menu = self.main_widget.variable_manager_widget.variable_menu
+        if variable_menu.currentText() == '':
             return
 
+        # pass preflight do stuff
         if self.getExistsFlag() is True:
             warning_text = "This will delete all of your unsaved work"
             detailed_warning_text = """
@@ -1008,26 +1028,21 @@ class VariableManagerBrowser(QTreeWidget):
         else:
             return vs_node_list
 
-    def createDirectories(self, variable_dir=None, publish_dir=None):
+    def createMasterPublishDir(self):
         """
         Creates the directories associated with a specific item.
         This should probably accept the arg <item> instead of
         the strings...
         """
         # create null directories
-        if variable_dir:
-            if not os.path.exists(variable_dir):
-                os.mkdir(variable_dir)
-                os.mkdir(variable_dir+'/patterns')
-                os.mkdir(variable_dir+'/blocks')
+        base_publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
+        mkdirRecursive(base_publish_dir + '/patterns')
+        mkdirRecursive(base_publish_dir + '/blocks')
 
         # create default master dirs
-        if publish_dir:
-            if not os.path.exists(publish_dir):
-                dir_list = ['pattern', 'block']
-                mkdirRecursive(publish_dir)
-                for dir_item in dir_list:
-                    mkdirRecursive(publish_dir + '/%s/live' % dir_item)
+        publish_dir = base_publish_dir + '/patterns/master'
+        mkdirRecursive(publish_dir + '/pattern/live')
+        mkdirRecursive(publish_dir + '/block/live')
 
     def clear(self):
         """
@@ -1044,8 +1059,9 @@ class VariableManagerBrowser(QTreeWidget):
         """
         self.clear()
         variable = self.main_widget.getVariable()
+        node_type = self.main_widget.getNodeType()
         node = self.main_widget.getNode()
-        node._reset(variable=variable)
+        node._reset(variable=variable, node_type=node_type)
         self.populate()
         self.main_widget.updateOptionsList()
 
@@ -1139,8 +1155,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         # get publish dir...
         variable = self.main_widget.getVariable()
-        root_dir = self.main_widget.getRootPublishDir()
-
+        node_type = self.main_widget.getNodeType()
         """
         TODO:
             variable != ''
@@ -1149,12 +1164,9 @@ class VariableManagerBrowser(QTreeWidget):
                 this?
         """
         # do stuff if variable is empty/unassigned/initializing
-        if variable != '':
-            variable_dir = '{root_dir}/{variable}'.format(root_dir=root_dir, variable=variable)
-            publish_dir = variable_dir + '/patterns/master'
-
+        if variable != '' and node_type != '':
             # create directories
-            self.createDirectories(variable_dir=variable_dir, publish_dir=publish_dir)
+            self.createMasterPublishDir()
 
         # create master item
         master_item = self.createNewBrowserItem(MASTER_ITEM, variable)
@@ -2172,16 +2184,24 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
                 thash = int(math.fabs(hash(str(thash))))
                 return checkHash(str(thash), location)
             return thash
+
         main_widget = getMainWidget(self.treeWidget())
         root_node = main_widget.node
 
         variable = main_widget.getVariable()
+        node_type = main_widget.getNodeType()
+
+        root_location = root_node.getParameter('publish_dir').getValue(0)
 
         if self.getItemType() == BLOCK_ITEM:
-            location = root_node.getParameter('publish_dir').getValue(0) + '/%s/blocks'%variable
+            location = '{root_location}/{variable}/{node_type}/blocks'.format(
+                root_location=root_location, variable=variable, node_type=node_type
+            )
 
         elif self.getItemType() in [MASTER_ITEM, PATTERN_ITEM]:
-            location = root_node.getParameter('publish_dir').getValue(0) + '/%s/patterns'%variable
+            location = '{root_location}/{variable}/{node_type}/patterns'.format(
+                root_location=root_location, variable=variable, node_type=node_type
+            )
 
         if unique_hash:
             self.hash = unique_hash
@@ -2196,11 +2216,13 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
             dir_list = ['pattern', 'block']
             block_location = '%s/%s' % (location, self.hash)
             os.mkdir(block_location)
+
             for dir_item in dir_list:
                 os.mkdir(block_location + '/%s' % dir_item)
                 os.mkdir(block_location + '/%s/live' % dir_item)
 
         self.publish_dir = '%s/%s' % (location, self.hash)
+
         return self.hash
 
     def setDisabled(self, is_disabled):
@@ -2305,3 +2327,32 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
     def setPublishDir(self, publish_dir):
         self.publish_dir = publish_dir
+
+
+"""
+TODO:
+    This quest.. to find wtf I did...
+[ERROR python.root]: An OSError occurred in "Utils.py": [Errno 2] No such file or directory: '/home/brian/.katana/VariableManager//Prune/patterns/master/block'
+    Traceback (most recent call last):
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 228, in keyPressEvent
+        self.acceptPressed()
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 218, in acceptPressed
+        self._accept()
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/VariableManagerWidget.py", line 889, in accepted
+        'Change Node Type'
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 586, in makeUndoozable
+        func(*args, **kwargs)
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/VariableManagerWidget.py", line 918, in changeNodeType
+        publish_pattern=True, publish_block=True
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 1631, in publishNewItem
+        self.publishBlock()
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 1715, in publishBlock
+        self.publishAllGroups(item, orig_item)
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Editor.py", line 1650, in publishAllGroups
+        version = getNextVersion(publish_loc)
+      File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/VariableManager/Utils.py", line 520, in getNextVersion
+        versions = os.listdir(location)
+    OSError: [Errno 2] No such file or directory: '/home/brian/.katana/VariableManager//Prune/patterns/master/block
+    
+    No VARIABLE TYPE???
+    '"""

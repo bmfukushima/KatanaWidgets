@@ -303,7 +303,7 @@ class VariableManagerEditor(QWidget):
             # set version
             self.main_widget.versions_display_widget.update(column=2, gui=True)
 
-    def __createDirectories(self, new_publish_dir, variable):
+    def __createDirectories(self):
         """
         Creates all necessary directories / subdirectories
 
@@ -311,17 +311,13 @@ class VariableManagerEditor(QWidget):
             new_publish_dir (str): path on disk to the new publish directory
             variable (str): name of the current variable
         """
-
-        variable_dir = '{publish_dir}/{variable}'.format(
-            publish_dir=new_publish_dir,
-            variable=variable
-        )
-
+        base_publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
         # make directories
-        mkdirRecursive(variable_dir + '/blocks')
-        mkdirRecursive(variable_dir + '/patterns')
+        mkdirRecursive(base_publish_dir + '/blocks')
+        mkdirRecursive(base_publish_dir + '/patterns')
 
         master_item = self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0)
+        variable = self.main_widget.getVariable()
         self._item_list = [master_item]
         self.__getAllChildItems(master_item)
 
@@ -338,7 +334,8 @@ class VariableManagerEditor(QWidget):
                 item.setHash(unique_hash)
                 item_type = 'patterns'
 
-            item_dir = '%s/%s/%s' % (variable_dir, item_type, unique_hash)
+            item_dir = '%s/%s/%s' % (base_publish_dir, item_type, unique_hash)
+
             os.mkdir(item_dir)
             item.setPublishDir(item_dir)
             for dir_item in dir_list:
@@ -355,7 +352,7 @@ class VariableManagerEditor(QWidget):
         def accept():
             self.main_widget.setRootPublishDir(self._new_publish_dir)
             self.node.getParameter('publish_dir').setValue(self._new_publish_dir, 0)
-            self.__createDirectories(self._new_publish_dir, self.main_widget.getVariable())
+            self.__createDirectories()
 
         makeUndoozable(
             accept,
@@ -759,8 +756,6 @@ class VariableManagerMainWidget(QWidget):
         """
         if not item:
             item = self.getWorkingItem()
-        variable = self.getVariable()
-        publish_dir = self.getRootPublishDir()
 
         # attribute checks
         try:
@@ -783,8 +778,8 @@ class VariableManagerMainWidget(QWidget):
             publish_type = 'blocks'
 
         # set location
-        location = publish_dir + '/{variable}/{publish_type}/{unique_hash}'.format(
-            variable=variable,
+        base_publish_dir = self.getBasePublishDir(include_node_type=True)
+        location = base_publish_dir + '/{publish_type}/{unique_hash}'.format(
             publish_type=publish_type,
             unique_hash=unique_hash
         )
@@ -942,6 +937,39 @@ class VariableManagerMainWidget(QWidget):
             return self.working_item
         else:
             return None
+
+    def getBasePublishDir(self, include_variable=False, include_node_type=False):
+        """
+        Gets the base publish dir.  This is the root publish dir with the
+        variable and/or node type directories added on depending on
+        the args provided.
+
+        Kwargs:
+            variable (bool): If True, this will return a truncated base
+                publish dir of {root_dir}/{variable}
+            node_type (bool): If True, this will return the full base
+                publish dir of {root_dir}/{variable}/{node_type}
+        """
+        # get attrs
+        root_dir = self.getRootPublishDir()
+        variable = self.getVariable()
+        node_type = self.getNodeType()
+
+        # if variable
+        if include_variable is True:
+            base_publish_dir = '{root_dir}/{variable}'.format(
+                root_dir=root_dir,
+                variable=variable
+            )
+
+        # if node_type
+        if include_node_type is True:
+            base_publish_dir = '{root_dir}/{variable}/{node_type}'.format(
+                root_dir=root_dir,
+                variable=variable,
+                node_type=node_type
+            )
+        return base_publish_dir
 
     def getRootPublishDir(self):
         return self.root_publish_dir
@@ -1243,10 +1271,10 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         # get/display latest version if there is no gui
         if self.gui is True:
             self.display()
-            root_publish_dir = self.main_widget.getRootPublishDir()
-            variable_dir = '%s/%s' % (root_publish_dir, self.main_widget.getVariable())
-
-            master_dir = variable_dir + '/patterns/master/block'
+            #root_publish_dir = self.main_widget.getRootPublishDir()
+            #variable_dir = '%s/%s' % (root_publish_dir, self.main_widget.getVariable())
+            base_publish_dir = self.main_widget.getBasePublishDir()
+            master_dir = base_publish_dir + '/patterns/master/block'
 
             versions = sorted(os.listdir(master_dir))
             versions.remove('live')
@@ -1563,6 +1591,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
                 be the root of either a BLOCK or PATTERN.
             version (str): the new version to publish
         """
+
         os.mkdir(publish_loc)
         Utils.EventModule.ProcessAllEvents()
         live_group = NodegraphAPI.ConvertGroupToLiveGroup(node)
@@ -1594,17 +1623,13 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         """
         if publish_block is True:
             # create block publish dir
-            root_dir = self.main_widget.getRootPublishDir()
-            variable = self.main_widget.getVariable()
-            blocks_publish_dir = '{root_dir}/{variable}/blocks'.format(
-                root_dir=root_dir,
-                variable=variable
-            )
+            blocks_publish_dir = self.main_widget.getBasePublishDir(include_node_type=True) + '/blocks'
             mkdirRecursive(blocks_publish_dir)
 
             # publish block
             self.publish_type = BLOCK_ITEM
             self.publishBlock()
+
         if publish_pattern is True:
             # TODO
             # apparently patterns auto create during the init process
