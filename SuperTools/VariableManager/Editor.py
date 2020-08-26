@@ -746,7 +746,7 @@ class VariableManagerMainWidget(QWidget):
             new_root_node = root_node.getParent().getParent()
             self.updateAllVariableSwitches(new_root_node, new_pattern=new_pattern)
 
-    def getItemPublishDir(self, include_publish_type=None):
+    def getItemPublishDir(self, item=None, include_publish_type=None):
         """
         returns the directory which holds the livegroups for the pattern/block
 
@@ -757,7 +757,8 @@ class VariableManagerMainWidget(QWidget):
                     BLOCK_ITEM
                     MASTER_ITEM
         """
-        item = self.getWorkingItem()
+        if not item:
+            item = self.getWorkingItem()
         variable = self.getVariable()
         publish_dir = self.getRootPublishDir()
 
@@ -1018,17 +1019,34 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         )
         return publish_dir
 
-    def getCurrentVersion(self):
+    def getBesterestVersion(self, item, publish_type):
         """
+        Finds the current publish that has been marked as besterest.
+
+        Args:
+            item (VariableManagerBrowserItem): item to get the besterest version of,
+                if no besterest version is available, it will return the high version number.
+            publish_type (ItemType): What type of publish to get
+                BLOCK_ITEM | PATTERN_ITEM
+
         returns (str): the current version available.  This
             will be displayed as the default version.
+
         """
-        item = self.main_widget.getWorkingItem()
-        if not hasattr(self, 'version'):
-            if item is None:
-                version = 'live'
-            else:
-                version = item.text(self.column)
+
+        publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=publish_type)
+
+        version_list = sorted(os.listdir(publish_dir))
+
+        # remove live
+        "Issue with live version being last object... if live version does not exist..."
+        if 'live' in version_list:
+            version_list.remove('live')
+
+        # search for besterest
+        for version in reversed(version_list):
+            if os.path.exists('%s/%s/live.csv' % (publish_dir, version)):
+                return version
         return version
 
     def __loadLiveGroupHack(self, publish_node, publish_dir):
@@ -1180,6 +1198,17 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.updateAllVariableSwitches(root_node)
         self.main_widget.updateOptionsList()
 
+    def loadBesterestVersion(self):
+        item = self.main_widget.getWorkingItem()
+        version = self.getBesterestVersion(item, BLOCK_ITEM)
+        previous_variable = self.main_widget.getVariable()
+        # update versions display widget
+        self.update(
+            column=2, gui=False, previous_variable=previous_variable, version=version
+        )
+
+        # load latest version
+        self.loadLiveGroup(version=version)
 
     """ EVENTS """
     def display(self):

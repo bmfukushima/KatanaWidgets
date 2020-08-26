@@ -25,7 +25,7 @@ import math
 from PyQt5.QtWidgets import (
     qApp, QWidget,  QVBoxLayout, QHBoxLayout,
     QScrollArea, QSplitter, QPushButton, QLineEdit, QTreeWidget,
-    QHeaderView, QAbstractItemView,
+    QComboBox, QHeaderView, QAbstractItemView,
     QMenu, QTreeWidgetItem
 )
 from PyQt5.QtCore import (
@@ -749,21 +749,8 @@ class VariableManagerGSVMenu(AbstractComboBox):
 
         # if the directory exists
         if os.path.exists(publish_loc) is True:
-            #TODO
-            """
-            TODO:
-                Move this to the versions display widget as a loadLatest
-            """
-            # get version
-            version = self.main_widget.versions_display_widget.getCurrentVersion()
-
-            # update versions display widget
-            self.main_widget.versions_display_widget.update(
-                column=2, gui=False, previous_variable=previous_variable, version=version
-            )
-
-            # load latest version
-            self.main_widget.versions_display_widget.loadLiveGroup(version=version)
+            # Load besterest version
+            self.main_widget.versions_display_widget.loadBesterestVersion()
 
         # if directory does not exist
         else:
@@ -851,6 +838,10 @@ class VariableManagerNodeMenu(AbstractComboBox):
         self.setSelectionChangedEmitEvent(self.checkUserInput)
         self.currentIndexChanged.connect(self.indexChanged)
 
+    def focusOutEvent(self, event):
+        print ('un focus')
+        return QComboBox.focusOutEvent(event)
+
     def checkUserInput(self):
         """
         Checks the user input to determine if it is a valid option
@@ -897,18 +888,22 @@ class VariableManagerNodeMenu(AbstractComboBox):
             variable_browser = self.main_widget.variable_manager_widget.variable_browser
             variable = self.main_widget.getVariable()
             node = self.main_widget.getNode()
+            publish_dir = node.getParameter('publish_dir').getValue(0)
             node_type = str(self.currentText())
 
             # set attrs
             node.getParameter('node_type').setValue(node_type, 0)
             self.main_widget.setNodeType(node_type)
 
-
-            # Publish
-            variable_browser.reset()
-            self.main_widget.publish_display_widget.publishNewItem(
-                publish_pattern=True, publish_block=True
-            )
+            publish_loc = '%s/%s/%s' % (publish_dir, variable, 'patterns/master/block/v000')
+            if os.path.exists(publish_loc) is True:
+                self.main_widget.versions_display_widget.loadBesterestVersion()
+            else:
+                # Publish
+                variable_browser.reset()
+                self.main_widget.publish_display_widget.publishNewItem(
+                    publish_pattern=True, publish_block=True
+                )
 
     def cancelled(self):
         self.setExistsFlag(False)
