@@ -1291,7 +1291,6 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.setVariable(self.previous_variable)
         self.main_widget.variable_manager_widget.variable_menu.setCurrentIndexToText(self.previous_variable)
         self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.previous_variable)
-        makeUndoozDisappear()
 
     def __accepted(self):
         """
