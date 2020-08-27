@@ -150,7 +150,7 @@ class VariableManagerWidget(QWidget):
         self.splitter.addWidget(self.params_scroll)
         self.splitter.setSizes([200, 600])
 
-        #
+        # setup layout
         self.layout().addWidget(self.r1_widget)
         self.layout().addWidget(self.r2_widget)
         self.layout().addWidget(self.splitter)
@@ -834,9 +834,7 @@ class VariableManagerNodeMenu(AbstractComboBox):
         self.update()
         #self.setSelectionChangedEmitEvent(self.checkUserInput)
         self.currentIndexChanged.connect(self.indexChanged)
-
-    def focusOutEvent(self, event):
-        return QComboBox.focusOutEvent(self, event)
+        self.setMinimumWidth(10)
 
     def checkUserInput(self):
         """
@@ -856,12 +854,12 @@ class VariableManagerNodeMenu(AbstractComboBox):
         adds all of the items to the model widget
         adds color to the items
         """
-
         model = QStandardItemModel()
         variable_list = [''] + NodegraphAPI.GetNodeTypes()
         for i, variable_name in enumerate(variable_list):
             item = QStandardItem(variable_name)
             model.setItem(i, 0, item)
+
         self.setModel(model)
         self.setModelColumn(0)
 

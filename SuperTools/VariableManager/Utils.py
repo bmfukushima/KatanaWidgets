@@ -270,6 +270,10 @@ class AbstractComboBox(QComboBox):
         self.setCompleter(self.completer)
         self.pFilterModel = QSortFilterProxyModel(self)
 
+        # set size policy ( this will ignore the weird resizing effects)
+        size_policy = QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        self.setSizePolicy(size_policy)
+
     def userFinishedEditing(self):
         is_input_valid = self.isUserInputValid()
         if is_input_valid:
@@ -307,6 +311,7 @@ class AbstractComboBox(QComboBox):
         return self._exists
 
     def setModel(self, model):
+        # somehow this super makes the node type not resize...
         super(AbstractComboBox, self).setModel(model)
         self.pFilterModel.setSourceModel(model)
         self.completer.setModel(self.pFilterModel)

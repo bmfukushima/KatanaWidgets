@@ -531,6 +531,8 @@ class VariableManagerEditor(QWidget):
         if event_type == QEvent.Close:
             self.destroyNodegraph()
             obj.removeEventFilter(self)
+        elif event_type == QEvent.Resize:
+            print('resizing!')
         return True
 
     def nodeDelete(self, args):
