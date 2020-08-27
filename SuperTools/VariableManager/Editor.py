@@ -180,7 +180,8 @@ class VariableManagerEditor(QWidget):
         resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
         self.layout().addWidget(self.main_widget)
         self.layout().addWidget(resize_widget)
-        self.setFixedHeight(500)
+
+        self.setFixedHeight(self.main_widget.getKatanaParamsWidgetArea().height())
 
         # set up node graph destruction handler
         self.setupDestroyNodegraphEvent()
@@ -223,6 +224,8 @@ class VariableManagerEditor(QWidget):
     def showEvent(self, event):
         self.__setupEventHandlers(True)
         self.is_frozen = False
+        if self.height() < self.main_widget.getKatanaParamsWidgetArea().height():
+            self.setFixedHeight(self.main_widget.getKatanaParamsWidgetArea().height())
         self.__updateGUI(event)
 
     @property
@@ -479,7 +482,6 @@ class VariableManagerEditor(QWidget):
         variable_manager.node_type_menu.setCurrentIndexToText(node_type)
 
         # update variable browser
-        #variable_browser.reset()
         variable_browser.clear()
         variable_browser.populate()
 
@@ -539,10 +541,10 @@ class VariableManagerEditor(QWidget):
             drives me borderline insane.
             """
             # widget below the scroll area...
-            width = self.parent().parent().parent().parent().width()
+            width = self.main_widget.getKatanaParamsWidgetArea().width()
 
             # remove scroll bar
-            panel_scroll_area = self.parent().parent().parent().parent().parent()
+            panel_scroll_area =self.main_widget.getKatanaParamsWidgetArea().parent()
             vscroll_bar = panel_scroll_area.verticalScrollBar()
             vscroll_bar_width = vscroll_bar.width()
             width -= vscroll_bar_width
@@ -679,6 +681,13 @@ class VariableManagerMainWidget(QWidget):
             node_type_menu.setCurrentIndexToText(node_type)
 
     """ UTILS """
+    def getKatanaParamsWidgetArea(self):
+        """
+        Returns the params widget that is central widget of the scroll area
+        so that we can properly set width/height.
+        """
+        return self.parent().parent().parent().parent().parent()
+
     """ UPDATE VARIABLE SWITCH"""
     def updateVariableSwitch(self, root_node, variable_list):
         """
