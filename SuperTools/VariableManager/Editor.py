@@ -127,20 +127,25 @@ from Settings import (
 from VariableManagerWidget import VariableManagerWidget as VariableManagerWidget
 from VariableManagerWidget import VariableManagerBrowser
 
-from Utils import (
-    AbstractComboBox,
-    AbstractUserBooleanWidget,
+from .Utils import (
     connectInsideGroup,
     disconnectNode,
-    getMainWidget,
-    getNextVersion,
     goToNode,
-    makeUndoozable,
+    getNextVersion,
     mkdirRecursive,
     transferNodeReferences
 )
 
-from Widgets2 import AbstractSuperToolEditor
+from Utils2 import(
+    getMainWidget,
+    makeUndoozable,
+)
+
+from Widgets2 import (
+    AbstractSuperToolEditor,
+    AbstractComboBox,
+    AbstractUserBooleanWidget
+)
 
 
 # class VariableManagerEditor(QWidget):
@@ -176,7 +181,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
 
         Utils.UndoStack.EnableCapture()
 
-        #self.initializeAbstractSuperToolEditor()
 
     """ SETUP EVENT HANDLERS """
     def __setupEventHandlers(self, enabled):
@@ -591,6 +595,7 @@ class VariableManagerMainWidget(QWidget):
         # for the first time
         self.loadUserParameters()
 
+
     def initDefaultAttributes(self, node):
         """
         reinitialize default attributes on the node, so that they
@@ -620,10 +625,10 @@ class VariableManagerMainWidget(QWidget):
 
         # create widgets
         self.variable_manager_widget = VariableManagerWidget(self, node=self.node)
-
         self.versions_display_widget = VersionsDisplayWidget(self)
         self.publish_display_widget = PublishDisplayWidget(self)
         self.warning_display_widget = WarningWidget(self)
+
         # setup layouts
         self.layout().addWidget(self.variable_manager_widget)
         self.layout().addWidget(self.versions_display_widget)
@@ -1924,3 +1929,14 @@ class WarningWidget(AbstractUserBooleanWidget):
         self.setCancelEvent(cancel_pressed)
         self.warning_text.setText(warning_text)
         self.detailed_warning_text.setText(detailed_warning_text)
+
+
+if __name__ == '__main__':
+    from PyQt5.QtWidgets import QApplication
+    import sys
+    app = QApplication(sys.argv)
+    w = VariableManagerEditor()
+    w.show()
+    sys.exit(app.exec_())
+
+

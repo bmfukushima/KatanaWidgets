@@ -64,23 +64,27 @@ from Settings import (
     MAYBE_HOVER_COLOR_RGBA
     )
 
-
-from Utils import (
-    AbstractComboBox,
-    AbstractUserBooleanWidget,
+from .Utils import (
     connectInsideGroup,
     convertStringBoolToBool,
     createNodeReference,
     disconnectNode,
-    getMainWidget,
-    getNextVersion,
     goToNode,
-    makeUndoozable,
-    makeUndoozDisappear,
+    getNextVersion,
     mkdirRecursive,
     updateNodeName
 )
 
+from Utils2 import (
+    getMainWidget,
+    makeUndoozable,
+    makeUndoozDisappear
+)
+
+from Widgets2 import (
+    AbstractComboBox,
+    AbstractUserBooleanWidget
+)
 
 class VariableManagerWidget(QWidget):
     """

@@ -2,7 +2,7 @@
 import sys
 import os
 import inspect
-
+print ('starting up!!')
 CURRENT_DIR = (
     os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 )
