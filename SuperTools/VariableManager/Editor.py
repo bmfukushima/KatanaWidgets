@@ -532,7 +532,23 @@ class VariableManagerEditor(QWidget):
             self.destroyNodegraph()
             obj.removeEventFilter(self)
         elif event_type == QEvent.Resize:
-            print('resizing!')
+            # resize to fill here...
+            """
+            This is a horrible function that is going to implode later...
+            but removes the horrid fixed size of the params pane which
+            drives me borderline insane.
+            """
+            # widget below the scroll area...
+            width = self.parent().parent().parent().parent().width()
+
+            # remove scroll bar
+            panel_scroll_area = self.parent().parent().parent().parent().parent()
+            vscroll_bar = panel_scroll_area.verticalScrollBar()
+            vscroll_bar_width = vscroll_bar.width()
+            width -= vscroll_bar_width
+
+            self.main_widget.setFixedWidth(width)
+            # needs to include the scroll bar...
         return True
 
     def nodeDelete(self, args):
