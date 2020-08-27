@@ -88,7 +88,6 @@ BUGS:
 """
 
 import os
-import math
 
 from PyQt5.QtWidgets import (
     QWidget, QPushButton, QLabel, QVBoxLayout, QPlainTextEdit,
@@ -99,7 +98,6 @@ from PyQt5.QtGui import (
     QStandardItemModel, QStandardItem,
     QBrush, QColor
 )
-#from PyQt5 import QtCore, QtGui
 
 
 try:
@@ -120,10 +118,6 @@ from ItemTypes import (
 from Settings import (
     PATTERN_PREFIX,
     BLOCK_PREFIX,
-    GRID_COLOR,
-    SPLITTER_STYLE_SHEET,
-    SPLITTER_STYLE_SHEET_HIDE,
-    SPLITTER_HANDLE_WIDTH,
     ACCEPT_COLOR_RGBA,
     MAYBE_COLOR_RGBA,
     ACCEPT_HOVER_COLOR_RGBA,
@@ -137,21 +131,22 @@ from Utils import (
     AbstractComboBox,
     AbstractUserBooleanWidget,
     connectInsideGroup,
-    convertStringBoolToBool,
-    createNodeReference,
     disconnectNode,
     getMainWidget,
     getNextVersion,
     goToNode,
     makeUndoozable,
-    makeUndoozDisappear,
     mkdirRecursive,
-    transferNodeReferences,
-    updateNodeName
+    transferNodeReferences
 )
 
+from Widgets2 import test, AbstractSuperToolEditor
 
-class VariableManagerEditor(QWidget):
+test()
+
+
+# class VariableManagerEditor(QWidget):
+class VariableManagerEditor(AbstractSuperToolEditor):
     """
     The top level widget for the editor.  This is here to encapsulate
     the main widget with a stretch box...
