@@ -140,9 +140,7 @@ from Utils import (
     transferNodeReferences
 )
 
-from Widgets2 import test, AbstractSuperToolEditor
-
-test()
+from Widgets2 import AbstractSuperToolEditor
 
 
 # class VariableManagerEditor(QWidget):
@@ -158,14 +156,11 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             its GUI updated or not during the next event idle process.
     """
     def __init__(self, parent, node):
-        super(VariableManagerEditor, self).__init__(parent)
-
+        super(VariableManagerEditor, self).__init__(parent, node)
         Utils.UndoStack.DisableCapture()
+        self._should_update = False
 
         # setup attrs
-        self.node = node
-        self._should_update = False
-        self._is_frozen = False
         self._item_list = None
         self.setObjectName("Variable Manager Editor")
 
@@ -176,12 +171,12 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         self.layout().addWidget(self.main_widget)
         self.layout().addWidget(resize_widget)
 
-        self.setFixedHeight(self.main_widget.getKatanaParamsWidgetArea().height())
-
         # set up node graph destruction handler
         self.setupDestroyNodegraphEvent()
 
         Utils.UndoStack.EnableCapture()
+
+        #self.initializeAbstractSuperToolEditor()
 
     """ SETUP EVENT HANDLERS """
     def __setupEventHandlers(self, enabled):
@@ -212,24 +207,26 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             self.__selectNodePopulateParameter, 'node_setSelected', enabled=enabled
         )
 
-    def hideEvent(self, event):
-        self.__setupEventHandlers(False)
-        self.is_frozen = True
-
+    # def hideEvent(self, event):
+    #     self.__setupEventHandlers(False)
+    #     self.is_frozen = True
+    #
+    # def showEvent(self, event):
+    #     self.__setupEventHandlers(True)
+    #     self.is_frozen = False
+    #     if self.height() < self.main_widget.getKatanaParamsScrollAreaWidget().height():
+    #         self.setFixedHeight(self.main_widget.getKatanaParamsScrollAreaWidget().height())
     def showEvent(self, event):
-        self.__setupEventHandlers(True)
-        self.is_frozen = False
-        if self.height() < self.main_widget.getKatanaParamsWidgetArea().height():
-            self.setFixedHeight(self.main_widget.getKatanaParamsWidgetArea().height())
         self.__updateGUI(event)
+        return AbstractSuperToolEditor.showEvent(self, event)
 
-    @property
-    def is_frozen(self):
-        return self._is_frozen
-
-    @is_frozen.setter
-    def is_frozen(self, is_frozen):
-        self._is_frozen = is_frozen
+    # @property
+    # def is_frozen(self):
+    #     return self._is_frozen
+    #
+    # @is_frozen.setter
+    # def is_frozen(self, is_frozen):
+    #     self._is_frozen = is_frozen
 
     """ PARAM CHANGED """
     def __paramChanged(self, args):
@@ -528,25 +525,9 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         if event_type == QEvent.Close:
             self.destroyNodegraph()
             obj.removeEventFilter(self)
-        elif event_type == QEvent.Resize:
-            # resize to fill here...
-            """
-            This is a horrible function that is going to implode later...
-            but removes the horrid fixed size of the params pane which
-            drives me borderline insane.
-            """
-            # widget below the scroll area...
-            width = self.main_widget.getKatanaParamsWidgetArea().width()
+            return True
 
-            # remove scroll bar
-            panel_scroll_area =self.main_widget.getKatanaParamsWidgetArea().parent()
-            vscroll_bar = panel_scroll_area.verticalScrollBar()
-            vscroll_bar_width = vscroll_bar.width()
-            width -= vscroll_bar_width
-
-            self.main_widget.setFixedWidth(width)
-            # needs to include the scroll bar...
-        return True
+        return super(VariableManagerEditor, self).eventFilter(obj, event)
 
     def nodeDelete(self, args):
         if args[0][2]['node'] == self.node:
@@ -674,14 +655,6 @@ class VariableManagerMainWidget(QWidget):
             self.setNodeType(node_type)
             node_type_menu = self.variable_manager_widget.node_type_menu
             node_type_menu.setCurrentIndexToText(node_type)
-
-    """ UTILS """
-    def getKatanaParamsWidgetArea(self):
-        """
-        Returns the params widget that is central widget of the scroll area
-        so that we can properly set width/height.
-        """
-        return self.parent().parent().parent().parent().parent()
 
     """ UPDATE VARIABLE SWITCH"""
     def updateVariableSwitch(self, root_node, variable_list):

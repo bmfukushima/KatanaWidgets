@@ -12,4 +12,4 @@ MULTITOOLS_DIR = '{KATANA_RESOURCES_DIR}/MultiTools'.format(
     KATANA_RESOURCES_DIR=KATANA_RESOURCES_DIR
 )
 sys.path.append(KATANA_RESOURCES_DIR)
-print('/'.join(KATANA_RESOURCES_DIR.split('/')[:-1]))
+#print('/'.join(KATANA_RESOURCES_DIR.split('/')[:-1]))
