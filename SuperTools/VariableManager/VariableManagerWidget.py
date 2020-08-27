@@ -612,44 +612,27 @@ class VariableManagerGSVMenu(AbstractComboBox):
         updating the UI.
         """
         self.setExistsFlag(False)
-        variable = self.currentText()
+        variable = self.main_widget.getVariable()
         variable_list = self.__getAllVariables()
         model = self.model()
-        """
+
+        # check initial state
+        if variable == '':
+            variable_list.insert(0, '')
+
         # remove all items
         for i in reversed(range(model.rowCount())):
             item = model.item(i, 0)
             model.takeRow(item.row())
-
-        # add items
-        for variable in variable_list:
-            item = QStandardItem(variable)
-            model.insertRow(model.rowCount(), item)
-
-        # remove blank space...
-        if str(self.currentText()) != '':
-            item = model.findItems('', Qt.MatchExactly)
-            if len(item) > 0:
-                    current_row = model.indexFromItem(item[0]).row()
-                    model.takeRow(current_row)
-
-        # set current item
-        self.setExistsFlag(False)
-        self.setCurrentIndexToText(variable)
-        # add items
-        """
-        # remove all items except current one
-        for i in reversed(range(model.rowCount())):
-            item = model.item(i, 0)
-            model.takeRow(item.row())
             self.setExistsFlag(False)
 
         # add items
-        for variable in variable_list:
-            item = QStandardItem(variable)
+        for gsv in variable_list:
+            item = QStandardItem(gsv)
             model.insertRow(model.rowCount(), item)
             self.setExistsFlag(False)
 
+        # set selected item
         self.setCurrentIndexToText(variable)
         self.setExistsFlag(True)
         '''     
@@ -775,7 +758,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
 
         self.main_widget.setVariable(variable)
 
-        # TODO
+        # TODO do I need this?
         if self.main_widget.node_type == 'Group':
             variable_browser.showMiniNodeGraph()
 
@@ -838,9 +821,9 @@ If you choose to accept you will change the GSV:
                 self.main_widget.showWarningBox(
                     warning_text, self.accepted, self.cancelled, detailed_warning_text
                 )
-
-        elif self.getExistsFlag() is False:
-            self.setCurrentIndexToText(self.main_widget.getVariable())
+        # TODO do I need this?
+        # elif self.getExistsFlag() is False:
+        #     self.setCurrentIndexToText(self.main_widget.getVariable())
 
 
 class VariableManagerNodeMenu(AbstractComboBox):
@@ -849,7 +832,7 @@ class VariableManagerNodeMenu(AbstractComboBox):
         self.main_widget = getMainWidget(self)
         self.populate()
         self.update()
-        self.setSelectionChangedEmitEvent(self.checkUserInput)
+        #self.setSelectionChangedEmitEvent(self.checkUserInput)
         self.currentIndexChanged.connect(self.indexChanged)
 
     def focusOutEvent(self, event):
@@ -866,7 +849,6 @@ class VariableManagerNodeMenu(AbstractComboBox):
             #self.setExistsFlag(False)
             node_type = self.main_widget.node.getParameter('node_type').getValue(0)
             self.setCurrentIndexToText(node_type)
-            #self.setExistsFlag(True)
             return
 
     def populate(self):

@@ -276,7 +276,7 @@ class AbstractComboBox(QComboBox):
             self.__selectionChangedEmit()
             self._previous_text = self.currentText()
         else:
-            self.setCurrentIndexToText(self.currentText())
+            self.setCurrentIndexToText(self._previous_text)
 
     def setCurrentIndexToText(self, text):
         """
