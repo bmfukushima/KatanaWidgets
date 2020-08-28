@@ -1,9 +1,7 @@
 """
 TODO:
     * Add redo / undo display updates...
-            - move event handler to only register/unregister on hide/show
-            - update GUI on viewing parameters
-    * Clear params when node_type changed to Group
+        - Need to check to make sure this all works...
     *   Expand / Collapse
             - Default states seem bjorked...
             - Add menu / hotkey options
@@ -14,6 +12,11 @@ TODO:
     *   Node Type Change
             - needs to honor current hierarchy.
             - recursive search through tree, update all pattern nodes?
+            * Bug in update...
+                Not properly displaying versions...
+                Displays for a split second then clears...
+                Pattern doesn't set versions...
+
 """
 
 import os
@@ -44,14 +47,14 @@ except ImportError:
     import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
     import UniqueName, FormMaster, Utils
 
-from ItemTypes import (
+from .ItemTypes import (
     MASTER_ITEM,
     PATTERN_ITEM,
     BLOCK_ITEM,
     BLOCK_PUBLISH_GROUP,
 )
 
-from Settings import (
+from .Settings import (
     PATTERN_PREFIX,
     BLOCK_PREFIX,
     GRID_COLOR,
@@ -92,9 +95,9 @@ class VariableManagerWidget(QWidget):
     the main layout.
 
     Widgets:
-        variable_menu (AbstractComboBox): QCombobox that contains an
+        variable_menu (VariableManagerComboBox): QCombobox that contains an
             editable list of GSVs that the user can change to.
-        node_type_menu (AbstractComboBox): QCombobox that contains an
+        node_type_menu (VariableManagerComboBox): QCombobox that contains an
             editable list of Node Types that the user can change to.
         publish_dir (Katana Widget): str value that returns the current root
             directory for publishing.By default this is set to
@@ -638,55 +641,6 @@ class VariableManagerGSVMenu(VariableManagerComboBox):
         # set selected item
         self.setCurrentIndexToText(variable)
         self.setExistsFlag(True)
-        '''     
-        variable = self.currentText()
-        variables = NodegraphAPI.GetNode('rootNode').getParameter('variables').getChildren()
-        variable_list = [x.getName() for x in variables]
-        model = self.model()
-        """
-        # remove all items
-        for i in reversed(range(model.rowCount())):
-            item = model.item(i, 0)
-            model.takeRow(item.row())
-
-        # add items
-        for variable in variable_list:
-            item = QStandardItem(variable)
-            model.insertRow(model.rowCount(), item)
-
-        # remove blank space...
-        if str(self.currentText()) != '':
-            item = model.findItems('', Qt.MatchExactly)
-            if len(item) > 0:
-                    current_row = model.indexFromItem(item[0]).row()
-                    model.takeRow(current_row)
-
-        # set current item
-        self.setExistsFlag(False)
-        self.setCurrentIndexToText(variable)
-        # add items
-        """
-        # remove all items except current one
-        for i in reversed(range(model.rowCount())):
-            item = model.item(i, 0)
-            variable = item.text()
-            if variable != str(self.currentText()):
-                model.takeRow(item.row())
-
-        # add items
-        for variable in variable_list:
-            if variable != str(self.currentText()):
-                item = QStandardItem(variable)
-                model.insertRow(model.rowCount(), item)
-
-  
-        # remove blank space...
-        if str(self.currentText()) != '':
-            item = model.findItems('', Qt.MatchExactly)
-            if len(item) > 0:
-                    current_row = model.indexFromItem(item[0]).row()
-                    model.takeRow(current_row)
-        '''
 
     """ UTILS """
     @staticmethod
@@ -748,6 +702,7 @@ class VariableManagerGSVMenu(VariableManagerComboBox):
         self.checkBesterestVersion()
 
         # TODO CLEAN UP HERE
+        # DISPLAY CORRECT VERSIONS??!?!?
         variable_browser.reset()
         variable_browser.clear()
         variable_browser.populate()
@@ -788,7 +743,7 @@ class VariableManagerGSVMenu(VariableManagerComboBox):
         self.setExistsFlag(False)
         self.update()
         self.setExistsFlag(True)
-        return AbstractComboBox.mousePressEvent(self, *args, **kwargs)
+        return VariableManagerComboBox.mousePressEvent(self, *args, **kwargs)
 
     def indexChanged(self, event):
         """
@@ -885,9 +840,10 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
             self.checkBesterestVersion()
 
             # TODO CLEAN UP HERE
+            # DISPLAY CORRECT VERSIONS??!?!?
             variable_browser.reset()
-            variable_browser.clear()
-            variable_browser.populate()
+            #variable_browser.clear()
+            #variable_browser.populate()
             #variable_browser.reset()
 
     def cancelled(self):

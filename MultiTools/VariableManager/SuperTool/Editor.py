@@ -104,13 +104,13 @@ except ImportError:
     import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
     import UniqueName, FormMaster, Utils
 
-from ItemTypes import (
+from .ItemTypes import (
     MASTER_ITEM,
     PATTERN_ITEM,
     BLOCK_ITEM,
     BLOCK_PUBLISH_GROUP,
 )
-from Settings import (
+from .Settings import (
     PATTERN_PREFIX,
     BLOCK_PREFIX,
     ACCEPT_COLOR_RGBA,
@@ -119,8 +119,7 @@ from Settings import (
     MAYBE_HOVER_COLOR_RGBA
     )
 
-from VariableManagerWidget import VariableManagerWidget as VariableManagerWidget
-from VariableManagerWidget import VariableManagerBrowser
+from .VariableManagerWidget import VariableManagerWidget, VariableManagerBrowser
 
 from .Utils import (
     connectInsideGroup,

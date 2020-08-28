@@ -1,6 +1,6 @@
 import os
 
-from ItemTypes import (
+from .ItemTypes import (
     BLOCK_ITEM,
     PATTERN_ITEM
 )
@@ -20,12 +20,12 @@ class VariableManagerComboBox(AbstractComboBox):
             publish_loc = '{publish_dir}/patterns/master/{item_type}/v000'.format(
                 publish_dir=publish_dir, item_type=item_type.TYPE
             )
-            print(publish_loc)
+            # LOAD
             if os.path.exists(publish_loc) is True:
                 # Load besterest version
                 self.main_widget.versions_display_widget.loadBesterestVersion(item_type=item_type)
 
-            # if directory does not exist
+            # CREATE
             else:
                 # Publish
                 #variable_browser.reset()
