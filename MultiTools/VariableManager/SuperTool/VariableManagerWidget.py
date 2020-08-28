@@ -573,19 +573,27 @@ class VariableManagerCreateNewItemTextWidget(QLineEdit):
 
 
 class VariableManagerGSVMenu(VariableManagerComboBox):
-    '''
+    """
     Drop down menu with autocomplete for the user to select
     what GSV that they wish for the Variable Manager to control
-    '''
+    """
     def __init__(self, parent=None):
-        '''
+        """
         @exists: flag used to determine whether or not the popup menu for the GSV change
                             should register or not (specific to copy/paste of a node)
-        '''
+        """
         super(VariableManagerGSVMenu, self).__init__(parent)
+        # setup attrs
         self.main_widget = getMainWidget(self)
+        self.previous_text = self.main_widget.node.getVariable()
+
+        # setup signals
         self.currentIndexChanged.connect(self.indexChanged)
         self.setCleanItemsFunction(self.__getAllVariables)
+
+        # populate
+        self.populate(self.getCleanItems())
+        self.setCurrentIndexToText(self.previous_text)
 
     """ UTILS """
     @staticmethod
@@ -714,14 +722,25 @@ If you choose to accept you will change the GSV:
 
 
 class VariableManagerNodeMenu(VariableManagerComboBox):
+    """
+    Drop down menu with autocomplete for the user to select
+    what Node Type that they wish for the Variable Manager to control
+    """
     def __init__(self, parent=None):
         super(VariableManagerNodeMenu, self).__init__(parent)
         self.main_widget = getMainWidget(self)
+        self.previous_text = self.main_widget.node.getNodeType()
+
+        # setup signals
         self.currentIndexChanged.connect(self.indexChanged)
         self.setCleanItemsFunction(self.__getAllNodes)
 
+        # populate
+        self.populate(self.getCleanItems())
+        self.setCurrentIndexToText(self.previous_text)
+
     @staticmethod
-    def __getAllNodes(self):
+    def __getAllNodes():
         return NodegraphAPI.GetNodeTypes()
 
     def checkUserInput(self):
@@ -732,7 +751,6 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
         """
         does_node_variable_exist = self.isUserInputValid()
         if does_node_variable_exist is False:
-            #self.setExistsFlag(False)
             node_type = self.main_widget.node.getParameter('node_type').getValue(0)
             self.setCurrentIndexToText(node_type)
             return
@@ -2053,47 +2071,6 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         # set initial disabled
         self.setDisabled(is_disabled)
         Utils.UndoStack.EnableCapture()
-
-    # def createPublishDir(self, unique_hash=None):
-    #     """
-    #     creates all directories on disk to be used when
-    #     a new item is created (pattern) returns the unique hash
-    #     """
-    #     #main_widget = getMainWidget(self.treeWidget())
-    #     root_node = main_widget.node
-    #
-    #     variable = main_widget.getVariable()
-    #     node_type = main_widget.getNodeType()
-    #
-    #     root_location = root_node.getParameter('publish_dir').getValue(0)
-    #
-    #     if self.getItemType() == BLOCK_ITEM:
-    #         location = '{root_location}/{variable}/{node_type}/blocks'.format(
-    #             root_location=root_location, variable=variable, node_type=node_type
-    #         )
-    #
-    #     elif self.getItemType() in [MASTER_ITEM, PATTERN_ITEM]:
-    #         location = '{root_location}/{variable}/{node_type}/patterns'.format(
-    #             root_location=root_location, variable=variable, node_type=node_type
-    #         )
-    #
-    #     if unique_hash:
-    #         self.hash = unique_hash
-    #     else:
-    #         self.hash = createUniqueHash(hash(self.pattern_node.getName()), location)
-    #         """
-    #         TODO:
-    #             not sure if I need publish...
-    #         """
-    #
-    #         block_location = '%s/%s' % (location, self.hash)
-    #         print(block_location)
-    #         mkdirRecursive(block_location + '/pattern/live')
-    #         mkdirRecursive(block_location + '/block/live')
-    #
-    #     self.publish_dir = '%s/%s' % (location, self.hash)
-    #
-    #     return self.hash
 
     def setDisabled(self, is_disabled):
         # get initial styles

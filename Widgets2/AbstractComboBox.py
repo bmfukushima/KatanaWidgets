@@ -76,7 +76,7 @@ class AbstractComboBox(QComboBox):
         """
         Updates the model items with all of the graph state variables.
 
-        This is very similair to the populate call, except that with this, it
+        This is very similar to the populate call, except that with this, it
         will remove all of the items except for the current one.  Which
         will ensure that an indexChanged event is not registered thus
         updating the UI.
@@ -104,22 +104,6 @@ class AbstractComboBox(QComboBox):
         return self.completer.popup()
 
     """ UTILS """
-    def setCleanItemsFunction(self, function):
-        """
-        Sets the function to get the list of strings to populate the model
-
-        function (function): function to return a list of strings to be shown
-            to the user
-        """
-        self._getCleanItems = function
-
-    def getCleanItems(self):
-        """
-        Returns a list of strings based off of the function set with
-        setCleanItemsFunction
-        """
-        return self._getCleanItems()
-
     def next_completion(self):
         row = self.completer.currentRow()
 
@@ -184,6 +168,7 @@ class AbstractComboBox(QComboBox):
         else:
             return False
 
+    """ API """
     def __selectionChangedEmit(self):
         pass
 
@@ -196,6 +181,25 @@ class AbstractComboBox(QComboBox):
         input changed event...
         """
         self.__selectionChangedEmit = method
+
+    def __getCleanItems(self):
+        return []
+
+    def setCleanItemsFunction(self, function):
+        """
+        Sets the function to get the list of strings to populate the model
+
+        function (function): function to return a list of strings to be shown
+            to the user
+        """
+        self.__getCleanItems = function
+
+    def getCleanItems(self):
+        """
+        Returns a list of strings based off of the function set with
+        setCleanItemsFunction
+        """
+        return self.__getCleanItems()
 
     """ EVENTS """
     def userFinishedEditing(self):
@@ -258,7 +262,7 @@ class AbstractComboBox(QComboBox):
         return self._item_list
 
     def setItemList(self, item_list):
-        if self.currentText() == '':
+        if self.previous_text == '':
             item_list.insert(0, '')
         self._item_list = item_list
 
