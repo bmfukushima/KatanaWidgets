@@ -584,61 +584,8 @@ class VariableManagerGSVMenu(VariableManagerComboBox):
         '''
         super(VariableManagerGSVMenu, self).__init__(parent)
         self.main_widget = getMainWidget(self)
-        self.populate()
-        #self.setSelectionChangedEmitEvent(self.checkUserInput)
         self.currentIndexChanged.connect(self.indexChanged)
-
-    def populate(self):
-        """
-        Populate the model with all of the graph state variables.
-
-        This will add the additional value of an empty string to start the list.
-        This empty string is meant to be the default value when a user
-        creates a VariableManager so that it can start at a default state,
-        rather than selecting the first GSV and populating that.
-        """
-        model = QStandardItemModel()
-        variable_list = [''] + [x.getName() for x in NodegraphAPI.GetNode('rootNode').getParameter('variables').getChildren()]
-        for i, variable_name in enumerate(variable_list):
-            item = QStandardItem(variable_name)
-            model.setItem(i, 0, item)
-
-        self.setModel(model)
-        self.setModelColumn(0)
-
-    def update(self):
-        """
-        Updates the model items with all of the graph state variables.
-
-        This is very similair to the populate call, except that with this, it
-        will remove all of the items except for the current one.  Which
-        will ensure that an indexChanged event is not registered thus
-        updating the UI.
-        """
-        self.setExistsFlag(False)
-        variable = self.main_widget.getVariable()
-        variable_list = self.__getAllVariables()
-        model = self.model()
-
-        # check initial state
-        if variable == '':
-            variable_list.insert(0, '')
-
-        # remove all items
-        for i in reversed(range(model.rowCount())):
-            item = model.item(i, 0)
-            model.takeRow(item.row())
-            self.setExistsFlag(False)
-
-        # add items
-        for gsv in variable_list:
-            item = QStandardItem(gsv)
-            model.insertRow(model.rowCount(), item)
-            self.setExistsFlag(False)
-
-        # set selected item
-        self.setCurrentIndexToText(variable)
-        self.setExistsFlag(True)
+        self.setCleanItemsFunction(self.__getAllVariables)
 
     """ UTILS """
     @staticmethod
@@ -770,11 +717,12 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
     def __init__(self, parent=None):
         super(VariableManagerNodeMenu, self).__init__(parent)
         self.main_widget = getMainWidget(self)
-        self.populate()
-        self.update()
-        #self.setSelectionChangedEmitEvent(self.checkUserInput)
         self.currentIndexChanged.connect(self.indexChanged)
-        self.setMinimumWidth(10)
+        self.setCleanItemsFunction(self.__getAllNodes)
+
+    @staticmethod
+    def __getAllNodes(self):
+        return NodegraphAPI.GetNodeTypes()
 
     def checkUserInput(self):
         """
@@ -788,20 +736,6 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
             node_type = self.main_widget.node.getParameter('node_type').getValue(0)
             self.setCurrentIndexToText(node_type)
             return
-
-    def populate(self):
-        """
-        adds all of the items to the model widget
-        adds color to the items
-        """
-        model = QStandardItemModel()
-        variable_list = [''] + NodegraphAPI.GetNodeTypes()
-        for i, variable_name in enumerate(variable_list):
-            item = QStandardItem(variable_name)
-            model.setItem(i, 0, item)
-
-        self.setModel(model)
-        self.setModelColumn(0)
 
     def accepted(self):
         makeUndoozable(
@@ -839,48 +773,13 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
         self.setExistsFlag(False)
         node_type = self.main_widget.node.getParameter('node_type').getValue(0)
         self.setCurrentIndexToText(node_type)
+
     """ EVENTS """
     def mousePressEvent(self, *args, **kwargs):
         self.setExistsFlag(False)
         self.update()
         self.setExistsFlag(True)
         return VariableManagerComboBox.mousePressEvent(self, *args, **kwargs)
-
-    def update(self):
-        """
-        Updates the model items with all of the graph state variables.
-
-        This is very similair to the populate call, except that with this, it
-        will remove all of the items except for the current one.  Which
-        will ensure that an indexChanged event is not registered thus
-        updating the UI.
-        """
-        self.setExistsFlag(False)
-        current_node_type = self.main_widget.getNodeType()
-        node_type_list = NodegraphAPI.GetNodeTypes()
-        model = self.model()
-
-        # check initial state
-        if current_node_type == '':
-            node_type_list.insert(0, '')
-
-        # remove all items
-        model.clear()
-
-        # for i in reversed(range(model.rowCount())):
-        #     item = model.item(i, 0)
-        #     model.takeRow(item.row())
-        #     self.setExistsFlag(False)
-
-        # add items
-        for node_type in sorted(node_type_list):
-            item = QStandardItem(node_type)
-            model.insertRow(model.rowCount(), item)
-            self.setExistsFlag(False)
-
-        # set selected item
-        self.setCurrentIndexToText(current_node_type)
-        self.setExistsFlag(True)
 
     def indexChanged(self):
         """

@@ -2,6 +2,9 @@ from PyQt5.QtWidgets import (
     QComboBox, QLineEdit, QCompleter, QSizePolicy
 )
 
+from PyQt5.QtGui import(
+    QStandardItem, QStandardItemModel
+)
 from PyQt5.QtCore import (
     QEvent, Qt, QSortFilterProxyModel
 )
@@ -20,13 +23,15 @@ class AbstractComboBox(QComboBox):
 
             In plain english... this flag is toggled to hide the Warning PopUp Box
             from displaying to the user in some events.
+        item_list (list): string list of all of the items in the list.  Updating this
+            will auto update the default settings for blank setups
         previous_text (str): the previous items text.  This is stored for cancel events
             and allowing the user to return to the previous item after cancelling.
     """
     def __init__(self, parent=None):
         super(AbstractComboBox, self).__init__(parent)
         self.main_widget = self.parent()
-        self.current_text = ''
+        self.previous_text = ''
         self.setExistsFlag(True)
 
         # setup line edit
@@ -48,13 +53,100 @@ class AbstractComboBox(QComboBox):
         size_policy = QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         self.setSizePolicy(size_policy)
 
-    def userFinishedEditing(self):
-        is_input_valid = self.isUserInputValid()
-        if is_input_valid:
-            self.__selectionChangedEmit()
-            self._previous_text = self.currentText()
-        else:
-            self.setCurrentIndexToText(self._previous_text)
+        # initialize model...
+        model = QStandardItemModel()
+        self.setModel(model)
+        self.setModelColumn(0)
+
+    def populate(self, item_list):
+        """
+        Creates all of the items from the item list and
+        appends them to the model.
+
+        item_list (list): list of strings to be displayed to the user
+            this should be set with the setCleanItemsFunction.
+        """
+        self.setItemList(item_list)
+        for i, item_name in enumerate(self.getItemList()):
+            item = QStandardItem(item_name)
+            self.model().setItem(i, 0, item)
+            self.setExistsFlag(False)
+
+    def update(self):
+        """
+        Updates the model items with all of the graph state variables.
+
+        This is very similair to the populate call, except that with this, it
+        will remove all of the items except for the current one.  Which
+        will ensure that an indexChanged event is not registered thus
+        updating the UI.
+        """
+        self.setExistsFlag(False)
+
+        self.model().clear()
+        self.populate(self.getCleanItems())
+        self.setCurrentIndexToText(self.previous_text)
+
+        self.setExistsFlag(True)
+
+    def setModel(self, model):
+        # somehow this super makes the node type not resize...
+        super(AbstractComboBox, self).setModel(model)
+        self.pFilterModel.setSourceModel(model)
+        self.completer.setModel(self.pFilterModel)
+
+    def setModelColumn(self, column):
+        self.completer.setCompletionColumn(column)
+        self.pFilterModel.setFilterKeyColumn(column)
+        super(AbstractComboBox, self).setModelColumn(column)
+
+    def view(self):
+        return self.completer.popup()
+
+    """ UTILS """
+    def setCleanItemsFunction(self, function):
+        """
+        Sets the function to get the list of strings to populate the model
+
+        function (function): function to return a list of strings to be shown
+            to the user
+        """
+        self._getCleanItems = function
+
+    def getCleanItems(self):
+        """
+        Returns a list of strings based off of the function set with
+        setCleanItemsFunction
+        """
+        return self._getCleanItems()
+
+    def next_completion(self):
+        row = self.completer.currentRow()
+
+        # if does not exist reset
+        if not self.completer.setCurrentRow(row + 1):
+            self.completer.setCurrentRow(0)
+
+        # if initializing
+        if self.completer.popup().currentIndex().row() == -1:
+            self.completer.setCurrentRow(0)
+
+        index = self.completer.currentIndex()
+        self.completer.popup().setCurrentIndex(index)
+
+    def previous_completion(self):
+        row = self.completer.currentRow()
+        numRows = self.completer.completionCount()
+
+        # if wrapping
+        if not self.completer.setCurrentRow(row - 1):
+            self.completer.setCurrentRow(numRows - 1)
+        # if initializing
+        if self.completer.popup().currentIndex().row() == -1:
+            self.completer.setCurrentRow(numRows - 1)
+
+        index = self.completer.currentIndex()
+        self.completer.popup().setCurrentIndex(index)
 
     def setCurrentIndexToText(self, text):
         """
@@ -75,30 +167,9 @@ class AbstractComboBox(QComboBox):
             self.setCurrentIndex(index)
         else:
             self.setCurrentIndex(0)
-        self._previous_text = self.currentText()
+        self.previous_text = self.currentText()
         self.setExistsFlag(True)
 
-    def setExistsFlag(self, exists):
-        self._exists = exists
-
-    def getExistsFlag(self):
-        return self._exists
-
-    def setModel(self, model):
-        # somehow this super makes the node type not resize...
-        super(AbstractComboBox, self).setModel(model)
-        self.pFilterModel.setSourceModel(model)
-        self.completer.setModel(self.pFilterModel)
-
-    def setModelColumn(self, column):
-        self.completer.setCompletionColumn(column)
-        self.pFilterModel.setFilterKeyColumn(column)
-        super(AbstractComboBox, self).setModelColumn(column)
-
-    def view(self):
-        return self.completer.popup()
-
-    """ UTILS """
     def isUserInputValid(self):
         """
         Determines if the new user input is currently
@@ -127,6 +198,14 @@ class AbstractComboBox(QComboBox):
         self.__selectionChangedEmit = method
 
     """ EVENTS """
+    def userFinishedEditing(self):
+        is_input_valid = self.isUserInputValid()
+        if is_input_valid:
+            self.__selectionChangedEmit()
+            self.previous_text = self.currentText()
+        else:
+            self.setCurrentIndexToText(self.previous_text)
+
     def resizeEvent(self, event):
         width = self.width()
         dropdown_width = int(width * 0.35)
@@ -168,30 +247,25 @@ class AbstractComboBox(QComboBox):
 
         return QComboBox.event(self, event, *args, **kwargs)
 
-    def next_completion(self):
-        row = self.completer.currentRow()
+    """ PROPERTIES """
+    def getExistsFlag(self):
+        return self._exists
 
-        # if does not exist reset
-        if not self.completer.setCurrentRow(row + 1):
-            self.completer.setCurrentRow(0)
+    def setExistsFlag(self, exists):
+        self._exists = exists
 
-        # if initializing
-        if self.completer.popup().currentIndex().row() == -1:
-            self.completer.setCurrentRow(0)
+    def getItemList(self):
+        return self._item_list
 
-        index = self.completer.currentIndex()
-        self.completer.popup().setCurrentIndex(index)
+    def setItemList(self, item_list):
+        if self.currentText() == '':
+            item_list.insert(0, '')
+        self._item_list = item_list
 
-    def previous_completion(self):
-        row = self.completer.currentRow()
-        numRows = self.completer.completionCount()
+    @property
+    def previous_text(self):
+        return self._previous_text
 
-        # if wrapping
-        if not self.completer.setCurrentRow(row - 1):
-            self.completer.setCurrentRow(numRows - 1)
-        # if initializing
-        if self.completer.popup().currentIndex().row() == -1:
-            self.completer.setCurrentRow(numRows - 1)
-
-        index = self.completer.currentIndex()
-        self.completer.popup().setCurrentIndex(index)
+    @previous_text.setter
+    def previous_text(self, previous_text):
+        self._previous_text = previous_text
