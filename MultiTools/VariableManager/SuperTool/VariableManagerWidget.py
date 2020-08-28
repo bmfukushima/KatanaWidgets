@@ -8,15 +8,11 @@ TODO:
                     - RMB Menu
                     - Arrow keys or WASD?
     *   Auto create handler needs to go in init function
-            - double creating?
+            - Check to see if the variable exists, if it does bypass.
+                If it does not, create the pattern as the last item in the group...
     *   Node Type Change
             - needs to honor current hierarchy.
             - recursive search through tree, update all pattern nodes?
-            * Bug in update...
-                Not properly displaying versions...
-                Displays for a split second then clears...
-                Pattern doesn't set versions...
-
 """
 
 import os

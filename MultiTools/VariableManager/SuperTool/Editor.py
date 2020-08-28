@@ -1,31 +1,42 @@
 """
 TODO
+    BUGS:
+        *   Publish_dir does something... bad, can't remember
+                oh yeah
+                    It does not do the check on the GSV / Node Type Menu
+                    to make sure its a valid dir change...
+        *   Defocus events when changing between widgets loses
+            ability to focus in on Line Edits?
     Potential Bugs:
-        Pattern Item Duplicates
+        *   Pattern Item Duplicates
             This could cause a bug with loading the versions due to not
             having a unique hash...
+        *   Item naming conventions
+                cant name pattern 'block__' or block 'pattern__'
+                will break... due to string search
     Publish
         *   publish root
                 combined pattern + block
     Versions
         *   Create simple display of menu, vs the advanced
                 display with notes.
-    Cleanup
-        *    checkHash repeats...
+    Tech Debt:
+        *   MainLayout change indexes
+                - move this to class attributes of integers...
+                - set class integers based off of population order
+        *   checkHash repeats...
         *   send all widget calls to getters /setters on the main widget
-        * "Wrapper" maybe moved to "Undo"
+        *   "Wrapper" maybe moved to "Undo"
         *   Clean up Directory Creation... This is done like 90000 times
-            I prob used this code like 9 times..
-                mkdirRecursive(item_dir + '/block/live')
-                mkdirRecursive(item_dir + '/pattern/live')
+                I prob used this code like 9 times..
+                    mkdirRecursive(item_dir + '/block/live')
+                    mkdirRecursive(item_dir + '/pattern/live')
         *   What this nasty thing is to reset the top level item...
                 item = self.topLevelItem(0)
                 self.setCurrentItem(item)
                 self.main_widget.setWorkingItem(item)
         *   VersionsDisplayWidget.gui
                 This flag is being toggled in some really awkward ways...
-
-main_widget.showWarningBox(self, warning_text, accept, cancel, detailed_warning_text=''):
     WISH LIST:
         1.) Import/Export?
         2.) Drag/Drop
@@ -39,50 +50,26 @@ main_widget.showWarningBox(self, warning_text, accept, cancel, detailed_warning_
         6.) RMB On Node --> Convert To Variable Manager
         7.) Support for Lookdev
                 input/output ports exposed, or ability to choose I/O
-
-- bad
-    *    adding GSV's when auto created...
-            this is probably bad... will need some sort of function to ask to add to all or not?
-                addGSVPattern
-
-- maybe
-    *    Hotkey return to last nodegraph display location?
-
-FEATURES:
-    *    Delete GSV / Block
+        8.) Delete GSV / Block
             a.) Drag / Drop in/out of Tree Widget.
                 - If exists tree widget and direction is horizontal-ish.. or not vertical
                     then delete the location
-    *    Import into nodegraph
+        9.) Import into nodegraph
             a.) Drag / Drop into Nodegraph
                 - reparents the node(s) to that node graph, and removes them
                     from the variable manager stack...
+- maybe
+    *    Hotkey return to last nodegraph display location?
 
 # ===============================================================================
 # OLD NOTES
 # ===============================================================================
-BUG
-
-Node Type Change
-    Don't repopulate the variableBrowser... just change node type...
-        will need to repopulate the meta data though
-
-Should a Block also save/load the pattern for that location?
-    - It would load an entire container... rather than a user having
-        to load 2 containers...
-
 
 SuperTool --> group (shot/variable)
             --> block --> group (pattern/shot) [shot] --> block/shots --> LG --> Nodes
 PATTERN    :    LG --> VEG --> NODES
 BLOCK        :    LG --> ROOT NODES
 MASTER: Top most group
-
-
-BUGS:
-    1.) cant name pattern 'block__' or block 'pattern__' will break... due to string search
-
-
 
 """
 
