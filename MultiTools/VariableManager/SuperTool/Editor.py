@@ -1931,13 +1931,3 @@ class WarningWidget(AbstractUserBooleanWidget):
         self.warning_text.setText(warning_text)
         self.detailed_warning_text.setText(detailed_warning_text)
 
-
-if __name__ == '__main__':
-    from PyQt5.QtWidgets import QApplication
-    import sys
-    app = QApplication(sys.argv)
-    w = VariableManagerEditor()
-    w.show()
-    sys.exit(app.exec_())
-
-
