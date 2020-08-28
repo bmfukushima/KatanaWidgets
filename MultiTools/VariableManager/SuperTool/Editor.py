@@ -35,18 +35,13 @@ main_widget.showWarningBox(self, warning_text, accept, cancel, detailed_warning_
         6.) RMB On Node --> Convert To Variable Manager
         7.) Support for Lookdev
                 input/output ports exposed, or ability to choose I/O
-- bugs...
-    *  Node Type change
-            This needs to be linked to publishing system...
+
 - bad
     *    adding GSV's when auto created...
             this is probably bad... will need some sort of function to ask to add to all or not?
                 addGSVPattern
 
 - maybe
-    *    publish to node name?
-            ie $HOME/.katana/<node name>
-    *    Align top for display/publish widgets
     *    Hotkey return to last nodegraph display location?
 
 FEATURES:
@@ -155,8 +150,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
     the main widget with a stretch box...
 
     Attributes:
-        is_frozen (bool): determines if the event handlers are
-            frozen or not.
         should_update (bool): determines if this tool should have
             its GUI updated or not during the next event idle process.
     """
@@ -181,9 +174,8 @@ class VariableManagerEditor(AbstractSuperToolEditor):
 
         Utils.UndoStack.EnableCapture()
 
-
     """ SETUP EVENT HANDLERS """
-    def __setupEventHandlers(self, enabled):
+    def setupEventHandlers(self, enabled):
         """
         Registers / unregisters all of the events based off of the
         enabled argument.
@@ -211,26 +203,23 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             self.__selectNodePopulateParameter, 'node_setSelected', enabled=enabled
         )
 
-    # def hideEvent(self, event):
-    #     self.__setupEventHandlers(False)
-    #     self.is_frozen = True
-    #
-    # def showEvent(self, event):
-    #     self.__setupEventHandlers(True)
-    #     self.is_frozen = False
-    #     if self.height() < self.main_widget.getKatanaParamsScrollAreaWidget().height():
-    #         self.setFixedHeight(self.main_widget.getKatanaParamsScrollAreaWidget().height())
+    def hideEvent(self, event):
+        # if the user is in the middle of an event, cancel that event
+        current_index = self.main_widget.layout().currentIndex()
+        if current_index == 1:
+            self.main_widget.self.versions_display_widget.cancelPressed()
+        elif current_index == 2:
+            self.main_widget.publish_display_widget.cancelPressed()
+        elif current_index == 3:
+            self.main_widget.warning_display_widget.cancelPressed()
+        return AbstractSuperToolEditor.hideEvent(self, event)
+
     def showEvent(self, event):
         self.__updateGUI(event)
         return AbstractSuperToolEditor.showEvent(self, event)
 
-    # @property
-    # def is_frozen(self):
-    #     return self._is_frozen
-    #
-    # @is_frozen.setter
-    # def is_frozen(self, is_frozen):
-    #     self._is_frozen = is_frozen
+    def checkWarningBox(self):
+        self.main_widget.warning_display_widget
 
     """ PARAM CHANGED """
     def __paramChanged(self, args):

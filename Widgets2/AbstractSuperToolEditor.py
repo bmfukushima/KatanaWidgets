@@ -9,7 +9,10 @@ class AbstractSuperToolEditor(QWidget):
     * Auto Resizing
         Forces all widgets to automatically constrain to the correct dimensions
         inside of the parameters pane.
-
+    Attributes:
+        is_frozen (bool): determines if the event handlers are
+            frozen or not.
+        node (node): the current node
     """
     def __init__(self, parent, node):
         super(AbstractSuperToolEditor, self).__init__(parent)
@@ -27,7 +30,7 @@ class AbstractSuperToolEditor(QWidget):
         """
         return self.parent().parent().parent().parent()
 
-    def __setupEventHandlers(self, bool):
+    def setupEventHandlers(self, bool):
         """
         Interface to determine where the event handlers will
         be setup.
@@ -35,12 +38,12 @@ class AbstractSuperToolEditor(QWidget):
         pass
 
     def hideEvent(self, event):
-        self.__setupEventHandlers(False)
+        self.setupEventHandlers(False)
         self.is_frozen = True
         return QWidget.hideEvent(self, event)
 
     def showEvent(self, event):
-        self.__setupEventHandlers(True)
+        self.setupEventHandlers(True)
         self.is_frozen = False
         if self.height() < self.getKatanaParamsScrollAreaWidget().height():
             self.setFixedHeight(self.getKatanaParamsScrollAreaWidget().height())
