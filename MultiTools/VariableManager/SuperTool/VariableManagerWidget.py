@@ -81,11 +81,9 @@ from .Utils import (
 )
 
 from Utils2 import (
-    createUniqueHash,
     getMainWidget,
     makeUndoozable
 )
-
 
 
 class VariableManagerWidget(QWidget):
@@ -680,7 +678,6 @@ class VariableManagerGSVMenu(VariableManagerComboBox):
         # get attributes
         variable_browser = self.main_widget.variable_manager_widget.variable_browser
         variable = str(self.currentText())
-        previous_variable = self.main_widget.getVariable()
         node = self.main_widget.getNode()
 
         # update variables
@@ -697,15 +694,9 @@ class VariableManagerGSVMenu(VariableManagerComboBox):
         self.main_widget.setWorkingItem(item)
         item.setText(0, str(self.currentText()))
 
-        # if the directory exists
-        # do BLOCK stuff
+        # update
         self.checkBesterestVersion()
-
-        # TODO CLEAN UP HERE
-        # DISPLAY CORRECT VERSIONS??!?!?
         variable_browser.reset()
-        variable_browser.clear()
-        variable_browser.populate()
         self.main_widget.setVariable(variable)
 
         # TODO do I need this?
@@ -828,7 +819,6 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
         if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
             # get attrs
             variable_browser = self.main_widget.variable_manager_widget.variable_browser
-            #variable = self.main_widget.getVariable()
             node = self.main_widget.getNode()
             node_type = str(self.currentText())
 
@@ -836,20 +826,61 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
             node.getParameter('node_type').setValue(node_type, 0)
             self.main_widget.setNodeType(node_type)
 
+            # check variable menu
+            variable_menu = self.main_widget.variable_manager_widget.variable_menu
+            if variable_menu.currentText() == '':
+                return
+
+            # update
             self.checkBesterestVersion()
-
-            # TODO CLEAN UP HERE
-            # DISPLAY CORRECT VERSIONS??!?!?
             variable_browser.reset()
-
-            #variable_browser.clear()
-            #variable_browser.populate()
-            #variable_browser.reset()
 
     def cancelled(self):
         self.setExistsFlag(False)
         node_type = self.main_widget.node.getParameter('node_type').getValue(0)
         self.setCurrentIndexToText(node_type)
+    """ EVENTS """
+    def mousePressEvent(self, *args, **kwargs):
+        self.setExistsFlag(False)
+        self.update()
+        self.setExistsFlag(True)
+        return VariableManagerComboBox.mousePressEvent(self, *args, **kwargs)
+
+    def update(self):
+        """
+        Updates the model items with all of the graph state variables.
+
+        This is very similair to the populate call, except that with this, it
+        will remove all of the items except for the current one.  Which
+        will ensure that an indexChanged event is not registered thus
+        updating the UI.
+        """
+        self.setExistsFlag(False)
+        current_node_type = self.main_widget.getNodeType()
+        node_type_list = NodegraphAPI.GetNodeTypes()
+        model = self.model()
+
+        # check initial state
+        if current_node_type == '':
+            node_type_list.insert(0, '')
+
+        # remove all items
+        model.clear()
+
+        # for i in reversed(range(model.rowCount())):
+        #     item = model.item(i, 0)
+        #     model.takeRow(item.row())
+        #     self.setExistsFlag(False)
+
+        # add items
+        for node_type in sorted(node_type_list):
+            item = QStandardItem(node_type)
+            model.insertRow(model.rowCount(), item)
+            self.setExistsFlag(False)
+
+        # set selected item
+        self.setCurrentIndexToText(current_node_type)
+        self.setExistsFlag(True)
 
     def indexChanged(self):
         """
@@ -860,9 +891,6 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
         # return if this node type does not exist
         if self.currentText() not in NodegraphAPI.GetNodeTypes(): return
         # check gsv to exist...
-        variable_menu = self.main_widget.variable_manager_widget.variable_menu
-        if variable_menu.currentText() == '':
-            return
 
         # pass preflight do stuff
         if self.getExistsFlag() is True:
@@ -1415,7 +1443,7 @@ class VariableManagerBrowser(QTreeWidget):
         # create node group
         block_root_node = node.createBlockRootNode(parent_node, name=item_text)
         block_node_name = block_root_node.getParameter('name').getValue(0)
-        block_node_hash = block_node_name.getParameter('hash').getValue(0)
+        block_node_hash = block_root_node.getParameter('hash').getValue(0)
         # connect and align nodes
         self.__setupNodes(block_root_node, parent_node, current_pos)
 
