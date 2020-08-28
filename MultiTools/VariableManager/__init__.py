@@ -1,1 +1,1 @@
-from Startup.init import createNewPatternEvent
+#from Startup.init import createNewPatternEvent
