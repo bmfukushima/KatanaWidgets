@@ -5,3 +5,4 @@
     AttributeError: 'VariableManagerGSVMenu' object has no attribute '_previous_text'
 [ERROR python.Utils.EventModule]: Error in collapsed event handler __paramChanged(): AttributeError: 'NoneType' object has no attribute 'getName'
 
+[ERROR python.Utils.EventModule]: Error in collapsed event handler __paramChanged(): AttributeError: 'NoneType' object has no attribute 'getName'

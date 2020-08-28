@@ -1,9 +1,17 @@
-
+import math
+import os
 try:
     from Katana import Utils, UI4
 except ImportError:
     import Utils, UI4
 
+
+def createUniqueHash(thash, location):
+    thash = int(math.fabs(hash(str(thash))))
+    if str(thash) in os.listdir(location):
+        thash = int(math.fabs(hash(str(thash))))
+        return createUniqueHash(str(thash), location)
+    return thash
 
 def getMainWidget(widget):
     try:

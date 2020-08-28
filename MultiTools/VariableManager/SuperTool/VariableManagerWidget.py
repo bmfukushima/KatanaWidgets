@@ -81,9 +81,9 @@ from .Utils import (
 )
 
 from Utils2 import (
+    createUniqueHash,
     getMainWidget,
-    makeUndoozable,
-    makeUndoozDisappear
+    makeUndoozable
 )
 
 
@@ -1415,7 +1415,7 @@ class VariableManagerBrowser(QTreeWidget):
         # create node group
         block_root_node = node.createBlockRootNode(parent_node, name=item_text)
         block_node_name = block_root_node.getParameter('name').getValue(0)
-
+        block_node_hash = block_node_name.getParameter('hash').getValue(0)
         # connect and align nodes
         self.__setupNodes(block_root_node, parent_node, current_pos)
 
@@ -1434,12 +1434,9 @@ class VariableManagerBrowser(QTreeWidget):
             name=block_node_name,
             pattern_node=pattern_node,
             veg_node=pattern_node.getChildByIndex(0),
-            root_node=block_root_node
+            root_node=block_root_node,
+            unique_hash=block_node_hash
         )
-
-        # Set Parameters
-        #block_root_node.getParameter('version').setValue(block_item.block_version, 0)
-        block_root_node.getParameter('hash').setValue(str(block_item.getHash()), 0)
 
         return block_item
 
@@ -1476,7 +1473,6 @@ class VariableManagerBrowser(QTreeWidget):
         current_root_node = item.parent().getRootNode()
         new_pattern = PATTERN_PREFIX+pattern
         self.main_widget.updateAllVariableSwitches(current_root_node, new_pattern=new_pattern)
-
 
         return item
 
@@ -2081,7 +2077,29 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.block_version = block_version
         self.pattern_version = pattern_version
         self.setExpanded(expanded)
-        self.hash = self.createPublishDir(unique_hash=unique_hash)
+        self.hash = unique_hash
+        # TODO
+        # how to pass location from .node to here...
+        main_widget = getMainWidget(self.treeWidget())
+        root_node = main_widget.node
+
+        variable = main_widget.getVariable()
+        node_type = main_widget.getNodeType()
+        root_location = root_node.getParameter('publish_dir').getValue(0)
+
+        if self.getItemType() == BLOCK_ITEM:
+            location = '{root_location}/{variable}/{node_type}/blocks'.format(
+                root_location=root_location, variable=variable, node_type=node_type
+            )
+
+        elif self.getItemType() in [MASTER_ITEM, PATTERN_ITEM]:
+            location = '{root_location}/{variable}/{node_type}/patterns'.format(
+                root_location=root_location, variable=variable, node_type=node_type
+            )
+
+        self.publish_dir = '%s/%s' % (location, self.hash)
+
+        # END TO DO
 
         if item_type == BLOCK_ITEM:
             self.setFlags(
@@ -2109,54 +2127,46 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.setDisabled(is_disabled)
         Utils.UndoStack.EnableCapture()
 
-    def createPublishDir(self, unique_hash=None):
-        """
-        creates all directories on disk to be used when
-        a new item is created (pattern) returns the unique hash
-        """
-        def checkHash(thash, location):
-            thash = int(math.fabs(hash(str(thash))))
-
-            if str(thash) in os.listdir(location):
-                thash = int(math.fabs(hash(str(thash))))
-                return checkHash(str(thash), location)
-            return thash
-
-        main_widget = getMainWidget(self.treeWidget())
-        root_node = main_widget.node
-
-        variable = main_widget.getVariable()
-        node_type = main_widget.getNodeType()
-
-        root_location = root_node.getParameter('publish_dir').getValue(0)
-
-        if self.getItemType() == BLOCK_ITEM:
-            location = '{root_location}/{variable}/{node_type}/blocks'.format(
-                root_location=root_location, variable=variable, node_type=node_type
-            )
-
-        elif self.getItemType() in [MASTER_ITEM, PATTERN_ITEM]:
-            location = '{root_location}/{variable}/{node_type}/patterns'.format(
-                root_location=root_location, variable=variable, node_type=node_type
-            )
-
-        if unique_hash:
-            self.hash = unique_hash
-        else:
-            self.hash = hash(self.pattern_node.getName())
-            self.hash = checkHash(self.hash, location)
-            """
-            TODO:
-                not sure if I need publish...
-            """
-
-            block_location = '%s/%s' % (location, self.hash)
-            mkdirRecursive(block_location + '/pattern/live')
-            mkdirRecursive(block_location + '/block/live')
-
-        self.publish_dir = '%s/%s' % (location, self.hash)
-
-        return self.hash
+    # def createPublishDir(self, unique_hash=None):
+    #     """
+    #     creates all directories on disk to be used when
+    #     a new item is created (pattern) returns the unique hash
+    #     """
+    #     #main_widget = getMainWidget(self.treeWidget())
+    #     root_node = main_widget.node
+    #
+    #     variable = main_widget.getVariable()
+    #     node_type = main_widget.getNodeType()
+    #
+    #     root_location = root_node.getParameter('publish_dir').getValue(0)
+    #
+    #     if self.getItemType() == BLOCK_ITEM:
+    #         location = '{root_location}/{variable}/{node_type}/blocks'.format(
+    #             root_location=root_location, variable=variable, node_type=node_type
+    #         )
+    #
+    #     elif self.getItemType() in [MASTER_ITEM, PATTERN_ITEM]:
+    #         location = '{root_location}/{variable}/{node_type}/patterns'.format(
+    #             root_location=root_location, variable=variable, node_type=node_type
+    #         )
+    #
+    #     if unique_hash:
+    #         self.hash = unique_hash
+    #     else:
+    #         self.hash = createUniqueHash(hash(self.pattern_node.getName()), location)
+    #         """
+    #         TODO:
+    #             not sure if I need publish...
+    #         """
+    #
+    #         block_location = '%s/%s' % (location, self.hash)
+    #         print(block_location)
+    #         mkdirRecursive(block_location + '/pattern/live')
+    #         mkdirRecursive(block_location + '/block/live')
+    #
+    #     self.publish_dir = '%s/%s' % (location, self.hash)
+    #
+    #     return self.hash
 
     def setDisabled(self, is_disabled):
         # get initial styles

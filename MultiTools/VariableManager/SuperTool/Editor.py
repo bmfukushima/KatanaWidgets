@@ -1,5 +1,9 @@
 """
 TODO
+    Potential Bugs:
+        Pattern Item Duplicates
+            This could cause a bug with loading the versions due to not
+            having a unique hash...
     Publish
         *   publish root
                 combined pattern + block

@@ -3,16 +3,26 @@ import os
 
 from Katana import NodegraphAPI, Utils, UniqueName, DrawingModule
 
-from Settings import (
+from .Settings import (
     PUBLISH_DIR,
     BLOCK_PREFIX,
     PATTERN_PREFIX
 )
-from Utils import (
+from .Utils import (
     connectInsideGroup,
     createNodeReference,
     mkdirRecursive,
     transferNodeReferences
+)
+
+from .ItemTypes import (
+    BLOCK_ITEM,
+    MASTER_ITEM,
+    PATTERN_ITEM
+)
+
+from Utils2 import (
+    createUniqueHash
 )
 
 log = logging.getLogger("Test.Node")
@@ -90,7 +100,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         self.variable_param = self.getParameters().createChildString('variable', '')
         self.variable_param.setHintString(repr({'readOnly': 'True'}))
 
-        self.node_type_param = self.getParameters().createChildString('node_type', 'Dot')
+        self.node_type_param = self.getParameters().createChildString('node_type', '')
         self.publish_dir = self.getParameters().createChildString('publish_dir', PUBLISH_DIR)
         self.publish_dir.setHintString(repr({'widget': 'fileInput'}))
 
@@ -112,8 +122,6 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
 
         # create default publish dir
         mkdirRecursive(PUBLISH_DIR)
-
-
 
     def cleanBlockRootNode(self, block_root_node):
         """
@@ -267,9 +275,9 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                 node under.  This will always be a "pattern" node.
         """
         node_type = self.getParameter('node_type').getValue(0)
-
+        # pre flight
+        if node_type == '' or node_type == 'Group': return
         child_node = NodegraphAPI.CreateNode(node_type, parent_node)
-
         if len(child_node.getInputPorts()) == 0:
             child_node.addInputPort('i0')
         child_node.getInputPortByIndex(0).connect(parent_node.getSendPort('in'))
@@ -321,6 +329,8 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                 then it will be used as the container node.  This will not clear the
                 existing params/nodes of the existing container.  That will need to be
                 done with cleanBlockRootNode()
+        Returns (node):
+            The new container node that has been created.
         """
         # Create Nodes
         if not block_root_node:
@@ -332,12 +342,12 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         vs_node = self.createVariableSwitch(block_root_node)
 
         # initialize default parameters
-
+        unique_hash = self.__createHash(block_root_node.getName(), BLOCK_ITEM)
         add_params_node_list = [block_root_node, block_group]
         for node in add_params_node_list:
             params = node.getParameters()
             params.createChildString('version', 'v000')
-            params.createChildString('hash', '')
+            params.createChildString('hash', unique_hash)
             params.createChildString('expanded', 'False')
             params.createChildString('name', name)
 
@@ -362,6 +372,9 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         # connect
         connectInsideGroup([pattern_group, block_group, vs_node], block_root_node)
         block_root_node.getSendPort('in').connect(vs_node.getInputPortByIndex(0))
+
+        # create directories
+        self.__createPublishDirectories(unique_hash, BLOCK_ITEM)
 
         return block_root_node
 
@@ -392,9 +405,12 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             createNodeReference(pattern_root_node, pattern_string, param=parent_node.getParameter('nodeReference'))
 
         # create parameters
+        unique_hash = '{variable}_{pattern}'.format(
+            variable=variable, pattern=pattern
+        )
         pattern_root_node.getParameters().createChildString('version', 'v000')
-        pattern_root_node.getParameters().createChildString('hash', '%s_%s' % (variable, pattern))
-        pattern_root_node.getParameters().createChildString('pattern', '%s' % (pattern))
+        pattern_root_node.getParameters().createChildString('hash', unique_hash)
+        pattern_root_node.getParameters().createChildString('pattern', pattern)
         pattern_root_node.getParameters().createChildString('type', 'pattern')
 
         # wire node
@@ -419,18 +435,10 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         veg_node.setName(pattern_string)
 
         # create publish dirs
-        if variable != '':
-            publish_dir = '{publish_dir}/{variable}/{node_type}/patterns/{variable}_{pattern}'.format(
-                publish_dir=self.getParameter('publish_dir').getValue(0),
-                variable=variable,
-                pattern=pattern,
-                node_type=node_type
-            )
-            mkdirRecursive(publish_dir + '/pattern/live')
-            mkdirRecursive(publish_dir + '/block/live')
-        # create node of specific type
-        if node_type != 'Group':
-            self.createNodeOfType(veg_node)
+        self.__createPublishDirectories(unique_hash, PATTERN_ITEM)
+
+        # create child node
+        self.createNodeOfType(veg_node)
 
         return pattern_root_node
 
@@ -441,6 +449,73 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         """
         variable_root_node = NodegraphAPI.GetNode(self.getParameter('variable_root_node').getValue(0))
         self.variable_root_node = variable_root_node
+
+    def __getPublishLoc(self, item_type):
+        """
+        Gets the current publish location as
+
+        Attributes:
+            item_type: Which publish directory to get BLOCK_ITEM or PATTERN_ITEM
+
+        Returns (str):
+            {root_location}/{variable}/{node_type}/{item_type}
+        """
+        variable = self.getVariable()
+        node_type = self.getNodeType()
+        root_location = self.getParameter('publish_dir').getValue(0)
+
+        if item_type == BLOCK_ITEM:
+            location = '{root_location}/{variable}/{node_type}/blocks'.format(
+                root_location=root_location, variable=variable, node_type=node_type
+            )
+
+        elif item_type in [MASTER_ITEM, PATTERN_ITEM]:
+            location = '{root_location}/{variable}/{node_type}/patterns'.format(
+                root_location=root_location, variable=variable, node_type=node_type
+            )
+
+        return location
+
+    def __createHash(self, node_name, item_type):
+        """
+        Creates a unique hash based off of the nodes name
+
+        Attributes:
+            node_name (str): base string to create a hash from
+            item_type: What type of item to create the hash for...
+                This is not really necessary right now, as we are only
+                hashing out the Blocks... however, in theory if you wanted
+                to hash out the patterns this would support that aswell...
+        """
+        location = self.__getPublishLoc(item_type)
+        if os.path.exists(location):
+            unique_hash = createUniqueHash(hash(node_name), location)
+        else:
+            unique_hash = 'master'
+        return str(unique_hash)
+
+    def __createPublishDirectories(self, unique_hash, item_type):
+        """
+        creates all directories on disk to be used when
+        a new item is created (pattern) returns the unique hash
+
+        Args:
+            unique_hash (str): The items current unique hash
+            item_type (ITEM_TYPE): The item type whose
+                directory should be created
+        """
+        # pre flight checks
+        variable = self.getParameter('variable').getValue(0)
+        node_type = self.getParameter('node_type').getValue(0)
+        if variable == '': return
+        if node_type == '': return
+
+        # create directories
+        location = self.__getPublishLoc(item_type)
+        publish_loc = '%s/%s' % (location, unique_hash)
+
+        mkdirRecursive(publish_loc + '/pattern/live')
+        mkdirRecursive(publish_loc + '/block/live')
 
     """ PROPERTIES """
     @property
@@ -453,3 +528,15 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
     @variable_root_node.setter
     def variable_root_node(self, variable_root_node):
         self._variable_root_node = variable_root_node
+
+    def getVariable(self):
+        return self.getParameter('variable').getValue(0)
+
+    def setVariable(self, variable):
+        self.getParameter('variable').setValue(variable, 0)
+
+    def getNodeType(self):
+        return self.getParameter('node_type').getValue(0)
+
+    def setNodeType(self, node_type):
+        self.getParameter('node_type').setValue(node_type, 0)
