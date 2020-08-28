@@ -1,27 +1,37 @@
 import os
 
-from PyQt5.QtWidgets import (
-    QComboBox, QLineEdit, QCompleter, QWidget,
-    QHBoxLayout, QPushButton, QSizePolicy,
-    QLabel, QVBoxLayout
+from ItemTypes import (
+    BLOCK_ITEM,
+    PATTERN_ITEM
 )
 
-from PyQt5.QtGui import (
-    QMovie
+from Widgets2 import (
+    AbstractComboBox
 )
 
-from PyQt5.QtCore import (
-    QEvent, Qt, QByteArray, QSize, QSortFilterProxyModel
-)
 
-from Settings import (
-    ACCEPT_GIF,
-    CANCEL_GIF,
-    MAYBE_COLOR_RGBA,
-    ACCEPT_COLOR_RGBA,
-    CANCEL_COLOR_RGBA
-)
-from PyQt5.Qt import QApplication
+class VariableManagerComboBox(AbstractComboBox):
+    def __init__(self, parent=None):
+        super(VariableManagerComboBox, self).__init__(parent)
+
+    def checkBesterestVersion(self):
+        publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
+        for item_type in [BLOCK_ITEM, PATTERN_ITEM]:
+            publish_loc = '{publish_dir}/patterns/master/{item_type}/v000'.format(
+                publish_dir=publish_dir, item_type=item_type.TYPE
+            )
+            print(publish_loc)
+            if os.path.exists(publish_loc) is True:
+                # Load besterest version
+                self.main_widget.versions_display_widget.loadBesterestVersion(item_type=item_type)
+
+            # if directory does not exist
+            else:
+                # Publish
+                #variable_browser.reset()
+                self.main_widget.publish_display_widget.publishNewItem(
+                    item_type=item_type
+                )
 
 
 def connectInsideGroup(node_list, parent_node):
@@ -153,6 +163,7 @@ def goToNode(node, frame=False, nodegraph_tab=None):
         nodegraph_tab (nodegraph_panel): if exists, will frame in this node graph, if there is no
             node graph tab.  Then it will search for the default node graph.
     """
+    from Katana import UI4
     if not nodegraph_tab:
         nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
     nodegraph_tab._NodegraphPanel__navigationToolbarCallback(node.getName(), 'useless')
@@ -169,6 +180,10 @@ def getNextVersion(location):
 
     return (str): A string of the next version with the format of v000
     """
+    # if it dir doesn't exist return init version
+    if not os.path.exists(location): return 'v000'
+
+    # find version
     versions = os.listdir(location)
     if 'live' in versions:
         versions.remove('live')

@@ -1069,7 +1069,10 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         for version in reversed(version_list):
             if os.path.exists('%s/%s/live.csv' % (publish_dir, version)):
                 return version
-        return version
+        # TODO Auto Pattern Load
+        # if not any... create a new one and return v000
+        # I feel like I've already written this before...
+        return version_list[-1]
 
     def __loadLiveGroupHack(self, publish_node, publish_dir):
         """
@@ -1220,13 +1223,21 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.updateAllVariableSwitches(root_node)
         self.main_widget.updateOptionsList()
 
-    def loadBesterestVersion(self):
+    def loadBesterestVersion(self, item_type=BLOCK_ITEM):
+        """
+        Loads the current besterest version available.  If no besterest
+        version is available then this will default to the highest version
+        number.  If there are no versions, then I did something wrong.
+
+        item_type: the type of item to load the besterest version of
+            by default this is BLOCK_ITEM but will also accept PATTERN_ITEMs
+        """
         item = self.main_widget.getWorkingItem()
-        version = self.getBesterestVersion(item, BLOCK_ITEM)
+        version = self.getBesterestVersion(item, item_type)
         previous_variable = self.main_widget.getVariable()
         # update versions display widget
         self.update(
-            column=2, gui=False, previous_variable=previous_variable, version=version
+            column=item_type.COLUMN, gui=False, previous_variable=previous_variable, version=version
         )
 
         # load latest version
@@ -1598,16 +1609,16 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         with open(publish_loc + '/notes.csv', 'w') as filehandle:
             filehandle.write(note)
 
-    def publishNewItem(self, publish_pattern=False, publish_block=False):
+    def publishNewItem(self, item_type=BLOCK_ITEM):
         """
         Creates the v000 publish when a new item is created.
         Kwargs provided determine what should be published,
 
         Kwargs:
-            publish_pattern (bool): if true this will publish a pattern
-            publish_block (bool): if true this will publish a block
+            item_type: the type of item to be published.  This accepts either
+                BLOCK_ITEM or PATTERN_ITEM
         """
-        if publish_block is True:
+        if item_type == BLOCK_ITEM:
             # create block publish dir
             blocks_publish_dir = self.main_widget.getBasePublishDir(include_node_type=True) + '/blocks'
             mkdirRecursive(blocks_publish_dir)
@@ -1616,7 +1627,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             self.publish_type = BLOCK_ITEM
             self.publishBlock()
 
-        if publish_pattern is True:
+        if item_type == PATTERN_ITEM:
             # TODO
             # apparently patterns auto create during the init process
             # of something new... so... maybe I should track that down...
@@ -1633,6 +1644,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         """
         # get publish dir
         publish_loc = self.main_widget.getItemPublishDir(include_publish_type=self.publish_type)
+
         version = getNextVersion(publish_loc)
         publish_loc += '/{version}'.format(version=version)
         note = self.text_edit.toPlainText()

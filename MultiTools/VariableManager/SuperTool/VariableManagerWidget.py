@@ -72,7 +72,8 @@ from .Utils import (
     goToNode,
     getNextVersion,
     mkdirRecursive,
-    updateNodeName
+    updateNodeName,
+    VariableManagerComboBox
 )
 
 from Utils2 import (
@@ -81,10 +82,7 @@ from Utils2 import (
     makeUndoozDisappear
 )
 
-from Widgets2 import (
-    AbstractComboBox,
-    AbstractUserBooleanWidget
-)
+
 
 class VariableManagerWidget(QWidget):
     """
@@ -572,7 +570,7 @@ class VariableManagerCreateNewItemTextWidget(QLineEdit):
         self._is_toggled = is_toggled
 
 
-class VariableManagerGSVMenu(AbstractComboBox):
+class VariableManagerGSVMenu(VariableManagerComboBox):
     '''
     Drop down menu with autocomplete for the user to select
     what GSV that they wish for the Variable Manager to control
@@ -734,9 +732,6 @@ class VariableManagerGSVMenu(AbstractComboBox):
         self.main_widget.setVariable(variable)
         node.getParameter('variable').setValue(variable, 0)
 
-        publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
-        publish_loc = '%s/%s' % (publish_dir, 'patterns/master/block/v000')
-
         # if node type is not set yet, then return
         if self.main_widget.variable_manager_widget.node_type_menu.currentText() == '':
             return
@@ -748,18 +743,13 @@ class VariableManagerGSVMenu(AbstractComboBox):
         item.setText(0, str(self.currentText()))
 
         # if the directory exists
-        if os.path.exists(publish_loc) is True:
-            # Load besterest version
-            self.main_widget.versions_display_widget.loadBesterestVersion()
+        # do BLOCK stuff
+        self.checkBesterestVersion()
 
-        # if directory does not exist
-        else:
-            # Publish
-            variable_browser.reset()
-            self.main_widget.publish_display_widget.publishNewItem(
-                publish_pattern=True, publish_block=True
-            )
-
+        # TODO CLEAN UP HERE
+        variable_browser.reset()
+        variable_browser.clear()
+        variable_browser.populate()
         self.main_widget.setVariable(variable)
 
         # TODO do I need this?
@@ -830,7 +820,7 @@ If you choose to accept you will change the GSV:
         #     self.setCurrentIndexToText(self.main_widget.getVariable())
 
 
-class VariableManagerNodeMenu(AbstractComboBox):
+class VariableManagerNodeMenu(VariableManagerComboBox):
     def __init__(self, parent=None):
         super(VariableManagerNodeMenu, self).__init__(parent)
         self.main_widget = getMainWidget(self)
@@ -883,7 +873,7 @@ class VariableManagerNodeMenu(AbstractComboBox):
         if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
             # get attrs
             variable_browser = self.main_widget.variable_manager_widget.variable_browser
-            variable = self.main_widget.getVariable()
+            #variable = self.main_widget.getVariable()
             node = self.main_widget.getNode()
             node_type = str(self.currentText())
 
@@ -891,18 +881,13 @@ class VariableManagerNodeMenu(AbstractComboBox):
             node.getParameter('node_type').setValue(node_type, 0)
             self.main_widget.setNodeType(node_type)
 
-            publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
-            publish_loc = '%s/%s' % (publish_dir, 'patterns/master/block/v000')
+            self.checkBesterestVersion()
 
-            if os.path.exists(publish_loc) is True:
-                self.main_widget.versions_display_widget.loadBesterestVersion()
-            else:
-                # Publish
-                variable_browser.reset()
-
-                self.main_widget.publish_display_widget.publishNewItem(
-                    publish_pattern=True, publish_block=True
-                )
+            # TODO CLEAN UP HERE
+            variable_browser.reset()
+            variable_browser.clear()
+            variable_browser.populate()
+            #variable_browser.reset()
 
     def cancelled(self):
         self.setExistsFlag(False)
