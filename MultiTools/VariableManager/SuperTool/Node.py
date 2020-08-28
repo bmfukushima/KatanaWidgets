@@ -336,7 +336,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         add_params_node_list = [block_root_node, block_group]
         for node in add_params_node_list:
             params = node.getParameters()
-            params.createChildString('version', '')
+            params.createChildString('version', 'v000')
             params.createChildString('hash', '')
             params.createChildString('expanded', 'False')
             params.createChildString('name', name)
@@ -392,7 +392,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             createNodeReference(pattern_root_node, pattern_string, param=parent_node.getParameter('nodeReference'))
 
         # create parameters
-        pattern_root_node.getParameters().createChildString('version', '')
+        pattern_root_node.getParameters().createChildString('version', 'v000')
         pattern_root_node.getParameters().createChildString('hash', '%s_%s' % (variable, pattern))
         pattern_root_node.getParameters().createChildString('pattern', '%s' % (pattern))
         pattern_root_node.getParameters().createChildString('type', 'pattern')

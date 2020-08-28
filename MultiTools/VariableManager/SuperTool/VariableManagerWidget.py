@@ -754,7 +754,6 @@ class VariableManagerGSVMenu(VariableManagerComboBox):
         # pop up warning box to ask user if they wish to change the variable
         if self.getExistsFlag() is True:
             if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
-
                 warning_text = "Changing the GSV will delete all of your unsaved work..."
                 detailed_warning_text = """
 Publish your work if you want to save it, either in a file save,
@@ -842,6 +841,7 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
             # TODO CLEAN UP HERE
             # DISPLAY CORRECT VERSIONS??!?!?
             variable_browser.reset()
+
             #variable_browser.clear()
             #variable_browser.populate()
             #variable_browser.reset()
@@ -1427,6 +1427,8 @@ class VariableManagerBrowser(QTreeWidget):
         block_item = VariableManagerBrowserItem(
             parent_item,
             block_node=new_block_node,
+            block_version='v000',
+            pattern_version='v000',
             expanded=False,
             item_type=BLOCK_ITEM,
             name=block_node_name,
@@ -1436,7 +1438,7 @@ class VariableManagerBrowser(QTreeWidget):
         )
 
         # Set Parameters
-        block_root_node.getParameter('version').setValue(block_item.block_version, 0)
+        #block_root_node.getParameter('version').setValue(block_item.block_version, 0)
         block_root_node.getParameter('hash').setValue(str(block_item.getHash()), 0)
 
         return block_item
@@ -1474,6 +1476,8 @@ class VariableManagerBrowser(QTreeWidget):
         current_root_node = item.parent().getRootNode()
         new_pattern = PATTERN_PREFIX+pattern
         self.main_widget.updateAllVariableSwitches(current_root_node, new_pattern=new_pattern)
+
+
         return item
 
     def createNewBrowserItem(self, item_type=BLOCK_ITEM, item_text=None):

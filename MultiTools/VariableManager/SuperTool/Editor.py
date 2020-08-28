@@ -484,6 +484,8 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         variable_browser.setCurrentItem(new_item)
         self.main_widget.setWorkingItem(new_item)
 
+        print('end update!')
+
     def __undoEventUpdate(self, args):
         if self._should_update:
             Utils.UndoStack.DisableCapture()

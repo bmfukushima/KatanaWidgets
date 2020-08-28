@@ -16,7 +16,7 @@ class VariableManagerComboBox(AbstractComboBox):
 
     def checkBesterestVersion(self):
         publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
-        for item_type in [BLOCK_ITEM, PATTERN_ITEM]:
+        for item_type in [PATTERN_ITEM, BLOCK_ITEM]:
             publish_loc = '{publish_dir}/patterns/master/{item_type}/v000'.format(
                 publish_dir=publish_dir, item_type=item_type.TYPE
             )
