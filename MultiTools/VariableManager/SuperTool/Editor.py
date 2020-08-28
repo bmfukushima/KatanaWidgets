@@ -113,6 +113,7 @@ from .Settings import (
 from .VariableManagerWidget import VariableManagerWidget, VariableManagerBrowser
 
 from .Utils import (
+    checkBesterestVersion,
     connectInsideGroup,
     disconnectNode,
     goToNode,
@@ -133,7 +134,6 @@ from Widgets2 import (
 )
 
 
-# class VariableManagerEditor(QWidget):
 class VariableManagerEditor(AbstractSuperToolEditor):
     """
     The top level widget for the editor.  This is here to encapsulate
@@ -183,6 +183,10 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             self.__undoSetUpdateStatus, 'parameter_setValue', enabled=enabled
         )
 
+        Utils.EventModule.RegisterCollapsedHandler(
+            self.__publishDirChanged, 'parameter_finalizeValue', enabled=enabled
+        )
+
         # gsv changed
         Utils.EventModule.RegisterCollapsedHandler(
             self.__paramChanged, 'parameter_finalizeValue', enabled=enabled
@@ -228,13 +232,16 @@ class VariableManagerEditor(AbstractSuperToolEditor):
                 if param.getParent().getName() == self.main_widget.getVariable():
                     self.__addGSVPatternWrapper(param)
 
-            # Publish dir changed
+    def __publishDirChanged(self, args):
+        # Publish dir changed
+        for arg in args:
             if arg[2]['node'] == self.node:
                 param = arg[2]['param']
                 if param:
                     if param.getName() == "publish_dir":
                         new_publish_dir = arg[2]['param'].getValue(0)
                         self.__directoryChanged(new_publish_dir)
+                        return
 
     """ DIRECTORY CHANGED """
     def __directoryChanged(self, new_publish_dir):
@@ -250,11 +257,16 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             change return values from ints to keywords
         """
         # if no variable set, create the root dir
-        if self.main_widget.getVariable() == '':
-            mkdirRecursive(new_publish_dir)
+        if (
+            self.main_widget.getVariable() == ''
+            or self.main_widget.getNodeType() == ''
+        ):
             self.main_widget.setRootPublishDir(new_publish_dir)
             self.node.getParameter('publish_dir').setValue(new_publish_dir, 0)
+            # mkdirRecursive(new_publish_dir)
             return
+
+        self._new_publish_dir = new_publish_dir
 
         # ask user to confirm directory change...
         if not os.path.exists(new_publish_dir):
@@ -263,7 +275,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
     Accepting this event will create a bunch of new crap on your file system,
     but you need this crap in order to save stuff into it.
                 """
-            self._new_publish_dir = new_publish_dir
+
             self.main_widget.showWarningBox(
                 warning_text,
                 self.__acceptDirectoryChange,
@@ -278,16 +290,23 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             I have no idea how this works anymore and I'm to lazy
             to look at it and figure it out...
             """
+            # cancel recursion
             if self.main_widget.getRootPublishDir() == new_publish_dir:
                 return
-            self.main_widget.setRootPublishDir(new_publish_dir)
-            # set master item
-            master_item = self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0)
-            self.main_widget.setWorkingItem(master_item)
 
-            # set version
-            self.main_widget.versions_display_widget.update(column=2, gui=True)
+            self.__acceptDirectoryChange()
+            # self.main_widget.setRootPublishDir(new_publish_dir)
+            # self.node.getParameter('publish_dir').setValue(new_publish_dir, 0)
+            # # set master item
+            # master_item = self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0)
+            # self.main_widget.setWorkingItem(master_item)
+            #
+            # # set version
+            # self.main_widget.versions_display_widget.loadBesterestVersion(item_type=BLOCK_ITEM)
+            # self.main_widget.versions_display_widget.loadBesterestVersion(item_type=PATTERN_ITEM)
+            # #self.main_widget.versions_display_widget.update(column=2, gui=True)
 
+    # TODO I dont think this matters anymore...
     def __createDirectories(self):
         """
         Creates all necessary directories / subdirectories
@@ -335,7 +354,9 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         def accept():
             self.main_widget.setRootPublishDir(self._new_publish_dir)
             self.node.getParameter('publish_dir').setValue(self._new_publish_dir, 0)
-            self.__createDirectories()
+            #Utils.EventModule.ProcessAllEvents()
+            #self.__createDirectories()
+            checkBesterestVersion(self.main_widget)
 
         makeUndoozable(
             accept,

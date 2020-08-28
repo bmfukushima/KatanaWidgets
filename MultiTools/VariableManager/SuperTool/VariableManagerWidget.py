@@ -65,6 +65,7 @@ from .Settings import (
     )
 
 from .Utils import (
+    checkBesterestVersion,
     connectInsideGroup,
     convertStringBoolToBool,
     createNodeReference,
@@ -73,12 +74,15 @@ from .Utils import (
     getNextVersion,
     mkdirRecursive,
     updateNodeName,
-    VariableManagerComboBox
 )
 
 from Utils2 import (
     getMainWidget,
     makeUndoozable
+)
+
+from Widgets2 import(
+    AbstractComboBox
 )
 
 
@@ -89,9 +93,9 @@ class VariableManagerWidget(QWidget):
     the main layout.
 
     Widgets:
-        variable_menu (VariableManagerComboBox): QCombobox that contains an
+        variable_menu (AbstractComboBox): QCombobox that contains an
             editable list of GSVs that the user can change to.
-        node_type_menu (VariableManagerComboBox): QCombobox that contains an
+        node_type_menu (AbstractComboBox): QCombobox that contains an
             editable list of Node Types that the user can change to.
         publish_dir (Katana Widget): str value that returns the current root
             directory for publishing.By default this is set to
@@ -568,7 +572,7 @@ class VariableManagerCreateNewItemTextWidget(QLineEdit):
         self._is_toggled = is_toggled
 
 
-class VariableManagerGSVMenu(VariableManagerComboBox):
+class VariableManagerGSVMenu(AbstractComboBox):
     """
     Drop down menu with autocomplete for the user to select
     what GSV that they wish for the Variable Manager to control
@@ -646,7 +650,7 @@ class VariableManagerGSVMenu(VariableManagerComboBox):
         item.setText(0, str(self.currentText()))
 
         # update
-        self.checkBesterestVersion()
+        checkBesterestVersion(self.main_widget)
         variable_browser.reset()
         self.main_widget.setVariable(variable)
 
@@ -685,7 +689,7 @@ class VariableManagerGSVMenu(VariableManagerComboBox):
         self.setExistsFlag(False)
         self.update()
         self.setExistsFlag(True)
-        return VariableManagerComboBox.mousePressEvent(self, *args, **kwargs)
+        return AbstractComboBox.mousePressEvent(self, *args, **kwargs)
 
     def indexChanged(self, event):
         """
@@ -717,7 +721,7 @@ If you choose to accept you will change the GSV:
         #     self.setCurrentIndexToText(self.main_widget.getVariable())
 
 
-class VariableManagerNodeMenu(VariableManagerComboBox):
+class VariableManagerNodeMenu(AbstractComboBox):
     """
     Drop down menu with autocomplete for the user to select
     what Node Type that they wish for the Variable Manager to control
@@ -780,7 +784,7 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
                 return
 
             # update
-            self.checkBesterestVersion()
+            checkBesterestVersion(self.main_widget)
             variable_browser.reset()
 
     def cancelled(self):
@@ -793,7 +797,7 @@ class VariableManagerNodeMenu(VariableManagerComboBox):
         self.setExistsFlag(False)
         self.update()
         self.setExistsFlag(True)
-        return VariableManagerComboBox.mousePressEvent(self, *args, **kwargs)
+        return AbstractComboBox.mousePressEvent(self, *args, **kwargs)
 
     def indexChanged(self):
         """
