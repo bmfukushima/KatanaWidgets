@@ -418,6 +418,10 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         self.main_widget.node_type = node_type
         variable_manager.node_type_menu.setCurrentIndexToText(node_type)
 
+        # update publish dir
+        publish_dir = self.node.getParameter('publish_dir').getValue(0)
+        variable_manager.publish_dir.setText(publish_dir)
+
         # update variable browser
         variable_browser.clear()
         variable_browser.populate()

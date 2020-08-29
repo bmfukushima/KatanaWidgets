@@ -2210,4 +2210,13 @@ class PublishDirWidget(AbstractFileBrowser, iParameter):
         self.setPublishDir()
 
     def setPublishDir(self):
-        self.setValue(str(self.text()))
+        if str(self.text()) == self.getValue():
+            return
+
+        makeUndoozable(
+            self.setValue,
+            self.main_widget,
+            str(self.text()),
+            'Change Publish Dir',
+            str(self.text())
+        )
