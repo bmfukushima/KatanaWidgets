@@ -5,22 +5,14 @@ from PyQt5.QtWidgets import QLineEdit, QFileSystemModel, QApplication, QComplete
 
 from PyQt5.QtCore import Qt, QEvent, QDir
 
-from PyQt5.QtGui import QCursor
-
-from Widgets2.AbstractSuperToolEditor import iParameter
-
-from Utils2 import getMainWidget
-
-from .Settings import PUBLISH_DIR
-
 
 class AbstractFileBrowser(QLineEdit):
     def __init__(self, parent=None):
         super(AbstractFileBrowser, self).__init__(parent=parent)
-        self.main_widget = getMainWidget(self)
 
         # setup model
         self.model = QFileSystemModel()
+        self.model.setRootPath('/home/')
         filters = self.model.filter()
         self.model.setFilter(filters | QDir.Hidden)
 
@@ -66,11 +58,6 @@ class AbstractFileBrowser(QLineEdit):
             self.model.setRootPath(str(self.text()))
 
     def event(self, event, *args, **kwargs):
-        # if (event.type() == QEvent.KeyPress) and (event.key() in [Qt.Key_Enter, Qt.Key_Return]):
-        #     #self.main_widget.populateList()
-        #     #print('updating file browser on enter/return???')
-        #     return True
-
         if (event.type() == QEvent.KeyPress) and (event.key() == Qt.Key_Tab):
             self.next_completion()
             return True

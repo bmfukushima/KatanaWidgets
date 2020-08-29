@@ -2192,6 +2192,7 @@ class PublishDirWidget(AbstractFileBrowser, iParameter):
     """
     def __init__(self, parent=None):
         super(PublishDirWidget, self).__init__(parent)
+        self.main_widget = getMainWidget(self)
 
         # register as katana param
         self.main_widget.parent().registerCustomParameter(
