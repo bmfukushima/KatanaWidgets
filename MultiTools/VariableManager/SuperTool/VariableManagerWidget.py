@@ -2212,7 +2212,10 @@ class PublishDirWidget(AbstractFileBrowser, iParameter):
 
         # set default value
         self.setText(publish_dir)
-        self.setPublishDir()
+        self.setValue(publish_dir)
+
+        # this caused a resize bug? Wtf..
+        #self.setPublishDir()
 
     def setPublishDir(self):
         """

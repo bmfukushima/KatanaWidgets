@@ -22,7 +22,6 @@ class AbstractSuperToolEditor(QWidget):
         self.__resizeEventFilter = ResizeFilter(self)
         self.getKatanaParamsScrollAreaWidget().parent().parent().installEventFilter(self.__resizeEventFilter)
         self.setFixedHeight(self.getKatanaParamsScrollAreaWidget().height())
-        print(self.getKatanaParamsScrollAreaWidget().height())
 
     def getKatanaParamsScrollAreaWidget(self):
         """
@@ -48,7 +47,6 @@ class AbstractSuperToolEditor(QWidget):
         self.is_frozen = False
         if self.height() < self.getKatanaParamsScrollAreaWidget().height():
             self.setFixedHeight(self.getKatanaParamsScrollAreaWidget().height())
-            print(self.getKatanaParamsScrollAreaWidget().height())
 
         return QWidget.showEvent(self, event)
 
