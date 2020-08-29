@@ -32,6 +32,7 @@ class PublishDirWidget(QLineEdit, iParameter):
         self.autoCompleteList = []
 
         # set default values
+        # TODO Set up default publish dir paths
         param = self.main_widget.node.getParameter(self.getLocation())
         publish_dir = PUBLISH_DIR
         if param:

@@ -1,12 +1,6 @@
 """
 TODO
     BUGS:
-        *   Publish_dir does something...
-                - undo doesnt work... because stupid stuff probably
-                    "being_stupid"
-                - Set to previous... instead of "being_stupid"
-                    Inside of undo stack?
-                        yes? to be last trigger?
         *   Defocus events when changing between widgets loses
             ability to focus in on Line Edits?
     Potential Bugs:
@@ -1032,9 +1026,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         for version in reversed(version_list):
             if os.path.exists('%s/%s/live.csv' % (publish_dir, version)):
                 return version
-        # TODO Auto Pattern Load
-        # if not any... create a new one and return v000
-        # I feel like I've already written this before...
+
         return version_list[-1]
 
     def __loadLiveGroupHack(self, publish_node, publish_dir):

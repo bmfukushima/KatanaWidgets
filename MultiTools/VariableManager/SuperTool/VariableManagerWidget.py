@@ -132,6 +132,7 @@ class VariableManagerWidget(QWidget):
 
         self.variable_menu = VariableManagerGSVMenu(self)
         #self.publish_dir = self.createValueParam('publish_dir')
+        # TODO Register as custom widget type
         self.publish_dir = PublishDirWidget(self)
         self.node_type_menu = VariableManagerNodeMenu(self)
 
@@ -2026,8 +2027,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.pattern_version = pattern_version
         self.setExpanded(expanded)
         self.hash = unique_hash
-        # TODO
-        # how to pass location from .node to here...
+
         main_widget = getMainWidget(self.treeWidget())
         root_node = main_widget.node
 
