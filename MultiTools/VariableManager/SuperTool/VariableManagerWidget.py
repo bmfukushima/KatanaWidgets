@@ -43,6 +43,8 @@ except ImportError:
     import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
     import UniqueName, FormMaster, Utils
 
+from .PublishDirWidget import PublishDirWidget
+
 from .ItemTypes import (
     MASTER_ITEM,
     PATTERN_ITEM,
@@ -129,7 +131,8 @@ class VariableManagerWidget(QWidget):
         self.r1_hbox = QHBoxLayout(self.r1_widget)
 
         self.variable_menu = VariableManagerGSVMenu(self)
-        self.publish_dir = self.createValueParam('publish_dir')
+        #self.publish_dir = self.createValueParam('publish_dir')
+        self.publish_dir = PublishDirWidget(self)
         self.node_type_menu = VariableManagerNodeMenu(self)
 
         self.r1_hbox.addWidget(self.variable_menu)

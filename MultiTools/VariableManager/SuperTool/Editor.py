@@ -1,10 +1,12 @@
 """
 TODO
     BUGS:
-        *   Publish_dir does something... bad, can't remember
-                oh yeah
-                    It does not do the check on the GSV / Node Type Menu
-                    to make sure its a valid dir change...
+        *   Publish_dir does something...
+                - undo doesnt work... because stupid stuff probably
+                    "being_stupid"
+                - Set to previous... instead of "being_stupid"
+                    Inside of undo stack?
+                        yes? to be last trigger?
         *   Defocus events when changing between widgets loses
             ability to focus in on Line Edits?
     Potential Bugs:
@@ -124,7 +126,7 @@ from .Utils import (
 
 from Utils2 import(
     getMainWidget,
-    makeUndoozable,
+    makeUndoozable
 )
 
 from Widgets2 import (
@@ -184,7 +186,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         )
 
         Utils.EventModule.RegisterCollapsedHandler(
-            self.__publishDirChanged, 'parameter_finalizeValue', enabled=enabled
+            self.__publishDirChanged, 'parameter_setValue', enabled=enabled
         )
 
         # gsv changed
@@ -239,12 +241,12 @@ class VariableManagerEditor(AbstractSuperToolEditor):
                 param = arg[2]['param']
                 if param:
                     if param.getName() == "publish_dir":
-                        new_publish_dir = arg[2]['param'].getValue(0)
-                        self.__directoryChanged(new_publish_dir)
+                        self._new_publish_dir = arg[2]['param'].getValue(0)
+                        self.__directoryChanged()
                         return
 
     """ DIRECTORY CHANGED """
-    def __directoryChanged(self, new_publish_dir):
+    def __directoryChanged(self):
         """
         If publish_dir parameter is changed, this will ask the user if they
         are sure they'd like to continue if the user decides to continue,
@@ -261,15 +263,17 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             self.main_widget.getVariable() == ''
             or self.main_widget.getNodeType() == ''
         ):
-            self.main_widget.setRootPublishDir(new_publish_dir)
-            self.node.getParameter('publish_dir').setValue(new_publish_dir, 0)
-            # mkdirRecursive(new_publish_dir)
+            makeUndoozable(
+                self.main_widget.setRootPublishDir,
+                self.main_widget,
+                self._new_publish_dir,
+                "Publish Directory",
+                self._new_publish_dir
+            )
             return
 
-        self._new_publish_dir = new_publish_dir
-
         # ask user to confirm directory change...
-        if not os.path.exists(new_publish_dir):
+        if not os.path.exists(self._new_publish_dir):
             warning_text = 'Do you wish to create new directories?'
             detailed_warning_text = """
     Accepting this event will create a bunch of new crap on your file system,
@@ -291,71 +295,14 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             to look at it and figure it out...
             """
             # cancel recursion
-            if self.main_widget.getRootPublishDir() == new_publish_dir:
+            # the "real version"
+            if self.main_widget.getRootPublishDir() == self._new_publish_dir:
                 return
-
             self.__acceptDirectoryChange()
-            # self.main_widget.setRootPublishDir(new_publish_dir)
-            # self.node.getParameter('publish_dir').setValue(new_publish_dir, 0)
-            # # set master item
-            # master_item = self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0)
-            # self.main_widget.setWorkingItem(master_item)
-            #
-            # # set version
-            # self.main_widget.versions_display_widget.loadBesterestVersion(item_type=BLOCK_ITEM)
-            # self.main_widget.versions_display_widget.loadBesterestVersion(item_type=PATTERN_ITEM)
-            # #self.main_widget.versions_display_widget.update(column=2, gui=True)
-
-    # TODO I dont think this matters anymore...
-    def __createDirectories(self):
-        """
-        Creates all necessary directories / subdirectories
-
-        Args:
-            new_publish_dir (str): path on disk to the new publish directory
-            variable (str): name of the current variable
-        """
-        base_publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
-        # make directories
-        mkdirRecursive(base_publish_dir + '/blocks')
-        mkdirRecursive(base_publish_dir + '/patterns')
-
-        master_item = self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0)
-        variable = self.main_widget.getVariable()
-        self._item_list = [master_item]
-        self.__getAllChildItems(master_item)
-
-        for item in self._item_list:
-            # get data
-            unique_hash = item.getHash()
-            if item.getItemType() == BLOCK_ITEM:
-                item_type = 'blocks'
-            elif item.getItemType() in [PATTERN_ITEM, MASTER_ITEM]:
-                if item.getItemType() == PATTERN_ITEM:
-                    hash_string = unique_hash[unique_hash.rindex('_') + 1:]
-                    unique_hash = '%s_%s' % (variable, hash_string)
-                    item.getRootNode().getParameter('hash').setValue(unique_hash, 0)
-                item.setHash(unique_hash)
-                item_type = 'patterns'
-
-            # make dir
-            item_dir = '%s/%s/%s' % (base_publish_dir, item_type, unique_hash)
-            item.setPublishDir(item_dir)
-
-            mkdirRecursive(item_dir + '/block/live')
-            mkdirRecursive(item_dir + '/pattern/live')
-
-        # publish v000 directories
-        item = master_item
-        self.main_widget.publish_display_widget.publish_type = BLOCK_ITEM
-        self.main_widget.publish_display_widget.publishBlock(item=item)
 
     def __acceptDirectoryChange(self):
         def accept():
             self.main_widget.setRootPublishDir(self._new_publish_dir)
-            self.node.getParameter('publish_dir').setValue(self._new_publish_dir, 0)
-            #Utils.EventModule.ProcessAllEvents()
-            #self.__createDirectories()
             checkBesterestVersion(self.main_widget)
 
         makeUndoozable(
@@ -596,7 +543,6 @@ class VariableManagerMainWidget(QWidget):
         # Set up initial values if this node is not being instantiated
         # for the first time
         self.loadUserParameters()
-
 
     def initDefaultAttributes(self, node):
         """
@@ -983,6 +929,10 @@ class VariableManagerMainWidget(QWidget):
 
     def setRootPublishDir(self, root_publish_dir):
         self.root_publish_dir = root_publish_dir
+        print(root_publish_dir)
+        self.node.getParameter('publish_dir').setValue(root_publish_dir, 0)
+        print(root_publish_dir)
+        print('end')
 
     @property
     def suppress_updates(self):
