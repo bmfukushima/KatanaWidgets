@@ -437,8 +437,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         variable_browser.setCurrentItem(new_item)
         self.main_widget.setWorkingItem(new_item)
 
-        print('end update!')
-
     def __undoEventUpdate(self, args):
         if self._should_update:
             Utils.UndoStack.DisableCapture()
@@ -552,11 +550,13 @@ class VariableManagerMainWidget(QWidget):
         self.node.__init__(populate=False)
         self.variable = self.node.getParameter('variable').getValue(0)
         self.node_type = self.node.getParameter('node_type').getValue(0)
+        self.root_publish_dir = ''
         self.pattern = None
         self._options_list = []
         self.updateOptionsList()
-        publish_dir = self.node.getParameter('publish_dir').getValue(0)
-        self.setRootPublishDir(publish_dir)
+
+        #publish_dir = self.node.getParameter('publish_dir').getValue(0)
+        #self.setRootPublishDir(publish_dir)
 
     def initGUI(self):
         """
@@ -923,10 +923,7 @@ class VariableManagerMainWidget(QWidget):
 
     def setRootPublishDir(self, root_publish_dir):
         self.root_publish_dir = root_publish_dir
-        print(root_publish_dir)
         self.node.getParameter('publish_dir').setValue(root_publish_dir, 0)
-        print(root_publish_dir)
-        print('end')
 
     @property
     def suppress_updates(self):

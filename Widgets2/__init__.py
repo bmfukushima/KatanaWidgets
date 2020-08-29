@@ -6,3 +6,4 @@ so I made this Widgets2, because it is also Widgets in here that I'd like to reu
 from .AbstractSuperToolEditor import AbstractSuperToolEditor
 from .AbstractComboBox import AbstractComboBox
 from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
+from .AbstractFileBrowser import AbstractFileBrowser

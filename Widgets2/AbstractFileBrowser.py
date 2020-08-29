@@ -14,9 +14,9 @@ from Utils2 import getMainWidget
 from .Settings import PUBLISH_DIR
 
 
-class PublishDirWidget(QLineEdit, iParameter):
+class AbstractFileBrowser(QLineEdit):
     def __init__(self, parent=None):
-        super(PublishDirWidget, self).__init__(parent=parent)
+        super(AbstractFileBrowser, self).__init__(parent=parent)
         self.main_widget = getMainWidget(self)
 
         # setup model
@@ -31,23 +31,7 @@ class PublishDirWidget(QLineEdit, iParameter):
 
         self.autoCompleteList = []
 
-        # set default values
-        # TODO Set up default publish dir paths
-        param = self.main_widget.node.getParameter(self.getLocation())
-        publish_dir = PUBLISH_DIR
-        if param:
-            value = param.getValue(0)
-            if  value != '':
-                publish_dir = value
-        self.setText(publish_dir)
-
-        # setup signals
-        self.editingFinished.connect(self.test)
-
     """ UTILS """
-    def test(self):
-        print('test')
-
     def next_completion(self):
         row = self.completer.currentRow()
 
@@ -82,9 +66,10 @@ class PublishDirWidget(QLineEdit, iParameter):
             self.model.setRootPath(str(self.text()))
 
     def event(self, event, *args, **kwargs):
-        if (event.type() == QEvent.KeyPress) and (event.key() == Qt.Key_Return):
-            #self.main_widget.populateList()
-            return True
+        # if (event.type() == QEvent.KeyPress) and (event.key() in [Qt.Key_Enter, Qt.Key_Return]):
+        #     #self.main_widget.populateList()
+        #     #print('updating file browser on enter/return???')
+        #     return True
 
         if (event.type() == QEvent.KeyPress) and (event.key() == Qt.Key_Tab):
             self.next_completion()
@@ -101,8 +86,9 @@ class PublishDirWidget(QLineEdit, iParameter):
 
         return QLineEdit.event(self, event, *args, **kwargs)
 
-# app = QApplication(sys.argv)
-# w = PublishDirWidget()
-# w.show()
-# w.move(QCursor.pos())
-# sys.exit(app.exec_())
+
+if __name__ == '__main__':
+    app = QApplication(sys.argv)
+    widget = AbstractFileBrowser()
+    widget.show()
+    sys.exit(app.exec_())

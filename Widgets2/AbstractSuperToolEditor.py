@@ -50,21 +50,21 @@ class AbstractSuperToolEditor(QWidget):
         return QWidget.showEvent(self, event)
 
     """ REGISTER CUSTOM PARM"""
-    def createCustomParam(self, param_loc, data_type, widget, getNewValueFunction, editingFinishedFunction):
+    def registerCustomParameter(self, widget, param_loc, data_type, get_new_value_function, editing_finished_function):
         """
         Creates a custom parameter based off of a custom PyQt widget.
 
         Args:
             param_loc (str): path to location of the parameter with . syntax
-                ie user.somegroup.param
+                ie user.some_group.param
             data_type (iParameter.TYPE): Data type from the iParameter
                 class.
             widget (QWidget): The widget type to be converted into a "param"
                 This does not really support a lot right now... working on getting
                 the triggers working....
-            getNewValueFunction (function): function that should return the new
+            get_new_value_function (function): function that should return the new
                 value that the parameter should be set to.
-            editingFinishedFunction (function): function that is run when the user
+            editing_finished_function (function): function that is run when the user
                 has finished editing the widget...
 
         """
@@ -72,14 +72,14 @@ class AbstractSuperToolEditor(QWidget):
 
         # get attrs
         param_group = '.'.join(param_loc.split('.')[:-1])
-        param_name = param_loc.split('.')[:-1]
+        param_name = param_loc.split('.')[-1]
 
         # create recursive groups
         if param_group:
             self.createParamHierarchy(param_group)
 
         # initialize new parameter on node
-        parent_param = self.__getCurrentParentParamFromLoc(param_loc)
+        parent_param = self.__getCurrentParentParamFromLoc(param_group)
         if data_type == iParameter.INT:
             new_param = parent_param.createChildNumber(param_name, 0)
         elif data_type == iParameter.STRING:
@@ -89,8 +89,8 @@ class AbstractSuperToolEditor(QWidget):
         widget.setLocation(param_loc)
         widget.setDataType(data_type)
         widget.setParameter(new_param)
-        widget.setGetNewValueFunction(getNewValueFunction)
-        widget.setEditingFinishedFunction(editingFinishedFunction)
+        widget.setGetNewValueFunction(get_new_value_function)
+        widget.setEditingFinishedFunction(editing_finished_function)
         # widget will have the signalTrigger to send to this...
         # so all custom parms need the new widget as an interface...
         pass
@@ -112,9 +112,12 @@ class AbstractSuperToolEditor(QWidget):
 
     def __getCurrentParentParamFromLoc(self, location):
         """
-        Simple interface to get the current parent parameter from the location.
+        Simple interface to get the current parent parameter group from the location.
         If there is no parent, then it will use the getParameters() in Katana
         to gather the invisible root...
+
+        This should not include the actual parameter path itself, and if the parameter
+        is at the top most level, then it should provide a blank string...
 
         Args:
             location (str): path to location of the parameter with . syntax
@@ -204,7 +207,7 @@ class iParameter(object):
         value = self.__getNewValue()
         return value
 
-    def setNewGetValueFunction(self, function):
+    def setGetNewValueFunction(self, function):
         self.__getNewValue = function
 
     def finishedEditing(self):

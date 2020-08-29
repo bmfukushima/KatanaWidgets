@@ -43,7 +43,6 @@ except ImportError:
     import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
     import UniqueName, FormMaster, Utils
 
-from .PublishDirWidget import PublishDirWidget
 
 from .ItemTypes import (
     MASTER_ITEM,
@@ -63,7 +62,8 @@ from .Settings import (
     ACCEPT_COLOR_RGBA,
     MAYBE_COLOR_RGBA,
     ACCEPT_HOVER_COLOR_RGBA,
-    MAYBE_HOVER_COLOR_RGBA
+    MAYBE_HOVER_COLOR_RGBA,
+    PUBLISH_DIR
     )
 
 from .Utils import (
@@ -84,8 +84,11 @@ from Utils2 import (
 )
 
 from Widgets2 import(
-    AbstractComboBox
+    AbstractComboBox,
+    AbstractFileBrowser
 )
+
+from Widgets2.AbstractSuperToolEditor import iParameter
 
 
 class VariableManagerWidget(QWidget):
@@ -133,7 +136,9 @@ class VariableManagerWidget(QWidget):
         self.variable_menu = VariableManagerGSVMenu(self)
         #self.publish_dir = self.createValueParam('publish_dir')
         # TODO Register as custom widget type
+
         self.publish_dir = PublishDirWidget(self)
+
         self.node_type_menu = VariableManagerNodeMenu(self)
 
         self.r1_hbox.addWidget(self.variable_menu)
@@ -2033,7 +2038,8 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         variable = main_widget.getVariable()
         node_type = main_widget.getNodeType()
-        root_location = root_node.getParameter('publish_dir').getValue(0)
+        root_location =main_widget.getRootPublishDir()
+        #root_location = root_node.getParameter('publish_dir').getValue(0)
 
         if self.getItemType() == BLOCK_ITEM:
             location = '{root_location}/{variable}/{node_type}/blocks'.format(
@@ -2178,3 +2184,30 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
     def setPublishDir(self, publish_dir):
         self.publish_dir = publish_dir
 
+
+class PublishDirWidget(AbstractFileBrowser, iParameter):
+    def __init__(self, parent=None):
+        super(PublishDirWidget, self).__init__(parent)
+
+        # register as katana param
+        self.main_widget.parent().registerCustomParameter(
+            self, 'publish_dir', iParameter.STRING, self.text, self.editingFinished
+        )
+
+        # set default values
+        param = self.main_widget.node.getParameter(self.getLocation())
+        publish_dir = PUBLISH_DIR
+        if param:
+            value = param.getValue(0)
+            if value != '':
+                publish_dir = value
+
+        # setup signals
+        self.editingFinished.connect(self.setPublishDir)
+
+        # set default value
+        self.setText(publish_dir)
+        self.setPublishDir()
+
+    def setPublishDir(self):
+        self.setValue(str(self.text()))

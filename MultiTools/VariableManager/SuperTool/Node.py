@@ -69,19 +69,6 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         else:
             self.setupInstancedNodeState()
 
-    def setupInstancedNodeState(self):
-        """
-        When a node is instanced, this will restore all of the
-        internal attributes on this class from the node.
-        """
-        self.variable_param = self.getParameter('variable')
-        self.node_type_param = self.getParameter('node_type')
-        self.publish_dir = self.getParameter('publish_dir')
-
-        self.variable_root_node = self.getChildByIndex(0)
-        block_root_node_name = self.variable_root_node.getParameter('nodeReference.block_group').getValue(0)
-        self.block_group = NodegraphAPI.GetNode(block_root_node_name)
-
     def setupDefaultNodeState(self):
         """
         Sets up the default node state.  This will create all of the parameters,
@@ -101,8 +88,10 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         self.variable_param.setHintString(repr({'readOnly': 'True'}))
 
         self.node_type_param = self.getParameters().createChildString('node_type', '')
-        self.publish_dir = self.getParameters().createChildString('publish_dir', PUBLISH_DIR)
-        self.publish_dir.setHintString(repr({'widget': 'fileInput'}))
+
+        # publish_dir has to exist... to run through preflight checks =\
+        #self.publish_dir = self.getParameters().createChildString('publish_dir', PUBLISH_DIR)
+        #self.publish_dir.setHintString(repr({'widget': 'fileInput'}))
 
         # create root node
         self.variable_root_node = self.createBlockRootNode(self, 'master')
@@ -121,7 +110,20 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         connectInsideGroup([self.variable_root_node], self)
 
         # create default publish dir
-        mkdirRecursive(PUBLISH_DIR)
+        # mkdirRecursive(PUBLISH_DIR)
+
+    def setupInstancedNodeState(self):
+        """
+        When a node is instanced, this will restore all of the
+        internal attributes on this class from the node.
+        """
+        self.variable_param = self.getParameter('variable')
+        self.node_type_param = self.getParameter('node_type')
+        self.publish_dir = self.getParameter('publish_dir')
+
+        self.variable_root_node = self.getChildByIndex(0)
+        block_root_node_name = self.variable_root_node.getParameter('nodeReference.block_group').getValue(0)
+        self.block_group = NodegraphAPI.GetNode(block_root_node_name)
 
     def cleanBlockRootNode(self, block_root_node):
         """
@@ -460,6 +462,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         Returns (str):
             {root_location}/{variable}/{node_type}/{item_type}
         """
+        if not self.getParameter('publish_dir'): return 'hopefullyyoudonthaveadirectorynamedthisonyoursystem'
         variable = self.getVariable()
         node_type = self.getNodeType()
         root_location = self.getParameter('publish_dir').getValue(0)
@@ -507,8 +510,10 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         # pre flight checks
         variable = self.getParameter('variable').getValue(0)
         node_type = self.getParameter('node_type').getValue(0)
+        publish_dir = self.getParameter('publish_dir')
         if variable == '': return
         if node_type == '': return
+        if publish_dir is None: return
 
         # create directories
         location = self.__getPublishLoc(item_type)
