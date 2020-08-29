@@ -254,5 +254,5 @@ def updateNodeName(node, name=None):
         node.getParameter('name').setValue(node.getName(), 0)
 
 # TODO what have I done here...
-from Katana import Utils
-Utils.EventModule.RegisterEventHandler(updateNodeName, '_update_node_name')
+'''from Katana import Utils
+Utils.EventModule.RegisterEventHandler(updateNodeName, '_update_node_name')'''

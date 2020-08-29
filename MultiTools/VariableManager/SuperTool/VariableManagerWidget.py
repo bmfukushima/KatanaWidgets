@@ -2186,6 +2186,10 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
 
 class PublishDirWidget(AbstractFileBrowser, iParameter):
+    """
+    Custom parameter widget type thing.  This will be the File Path browser
+    widget for the user to change their publish directory with.
+    """
     def __init__(self, parent=None):
         super(PublishDirWidget, self).__init__(parent)
 
@@ -2210,9 +2214,14 @@ class PublishDirWidget(AbstractFileBrowser, iParameter):
         self.setPublishDir()
 
     def setPublishDir(self):
+        """
+        Sets the current publish directory for the user.
+        """
+        # check to make sure its not reset
         if str(self.text()) == self.getValue():
             return
 
+        # do stuff
         makeUndoozable(
             self.setValue,
             self.main_widget,

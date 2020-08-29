@@ -68,7 +68,15 @@ class AbstractSuperToolEditor(QWidget):
                 has finished editing the widget...
 
         """
-        if self.node.getParameter(param_loc): return
+
+        # check to see if parameter exists
+        if self.node.getParameter(param_loc):
+            widget.setLocation(param_loc)
+            widget.setDataType(data_type)
+            widget.setParameter(self.node.getParameter(param_loc))
+            widget.setGetNewValueFunction(get_new_value_function)
+            widget.setEditingFinishedFunction(editing_finished_function)
+            return
 
         # get attrs
         param_group = '.'.join(param_loc.split('.')[:-1])
