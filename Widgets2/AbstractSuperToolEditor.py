@@ -19,6 +19,7 @@ class AbstractSuperToolEditor(QWidget):
         self._is_frozen = False
         self.node = node
 
+        # set up resizing events
         self.__resizeEventFilter = ResizeFilter(self)
         self.getKatanaParamsScrollAreaWidget().parent().parent().installEventFilter(self.__resizeEventFilter)
         self.setFixedHeight(self.getKatanaParamsScrollAreaWidget().height())
@@ -45,10 +46,26 @@ class AbstractSuperToolEditor(QWidget):
     def showEvent(self, event):
         self.setupEventHandlers(True)
         self.is_frozen = False
-        if self.height() < self.getKatanaParamsScrollAreaWidget().height():
-            self.setFixedHeight(self.getKatanaParamsScrollAreaWidget().height())
+        self.updateSize()
 
         return QWidget.showEvent(self, event)
+
+    """ UTILS """
+    def updateSize(self):
+        """
+        Updates the size of the GUI to match that of the parameters pane...
+        no more of these random af scroll bars everywhere.
+        """
+        # set width
+        width = self.getKatanaParamsScrollAreaWidget().width()
+        width -= 25
+        self.setFixedWidth(width)
+
+        # set height
+        height = self.getKatanaParamsScrollAreaWidget().height()
+        if self.height() < height:
+            self.setFixedHeight(height)
+
 
     """ REGISTER CUSTOM PARM"""
     def registerCustomParameter(self, widget, param_loc, data_type, get_new_value_function, editing_finished_function):
@@ -168,22 +185,13 @@ class ResizeFilter(QWidget):
     """
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Resize:
-            # resize to fill here...
             """
             This is a horrible function that is going to implode later...
             but removes the horrid fixed size of the params pane which
             drives me borderline insane.
             """
             # widget below the scroll area...
-            width = self.parent().getKatanaParamsScrollAreaWidget().width()
-            width -= 25
-            # remove scroll bar
-            # panel_scroll_area = self.parent().getKatanaParamsScrollAreaWidget()
-            # vscroll_bar = panel_scroll_area.verticalScrollBar()
-            # vscroll_bar_width = vscroll_bar.width()
-            # width -= vscroll_bar_width
-
-            self.parent().setFixedWidth(width)
+            self.parent().updateSize()
             return True
         return super(ResizeFilter, self).eventFilter(obj, event)
             # needs to include the scroll bar...

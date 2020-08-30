@@ -33,8 +33,20 @@ from Widgets2 import (
 #                 )
 
 
-def checkBesterestVersion(main_widget):
+def checkBesterestVersion(main_widget, item=None):
+    """
+    Looks at an item and determines if there are versions available to load or not.
+    If there are versions available, it will load the besterest version, if there are not
+    versions available, it will create the new item.
+
+    # currently only checks patterns
+    # currently only checks master item...
+    # add to block create in VaraiableManagerWidget
+    """
     publish_dir = main_widget.getBasePublishDir(include_node_type=True)
+    # if not item:
+    #     item = main_widget.getWorkingItem()
+
     for item_type in [PATTERN_ITEM, BLOCK_ITEM]:
         publish_loc = '{publish_dir}/patterns/master/{item_type}/v000'.format(
             publish_dir=publish_dir, item_type=item_type.TYPE

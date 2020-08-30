@@ -228,16 +228,16 @@ class VariableManagerEditor(AbstractSuperToolEditor):
                 if param.getParent().getName() == self.main_widget.getVariable():
                     self.__addGSVPatternWrapper(param)
 
-    def __publishDirChanged(self, args):
-        # Publish dir changed
-        for arg in args:
-            if arg[2]['node'] == self.node:
-                param = arg[2]['param']
-                if param:
-                    if param.getName() == "publish_dir":
-                        self._new_publish_dir = arg[2]['param'].getValue(0)
-                        self.__directoryChanged()
-                        return
+    # def __publishDirChanged(self, args):
+    #     # Publish dir changed
+    #     for arg in args:
+    #         if arg[2]['node'] == self.node:
+    #             param = arg[2]['param']
+    #             if param:
+    #                 if param.getName() == "publish_dir":
+    #                     self._new_publish_dir = arg[2]['param'].getValue(0)
+    #                     self.__directoryChanged()
+    #                     return
 
     """ DIRECTORY CHANGED """
 
