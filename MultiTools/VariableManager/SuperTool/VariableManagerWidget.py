@@ -2208,28 +2208,112 @@ class PublishDirWidget(AbstractFileBrowser, iParameter):
                 publish_dir = value
 
         # setup signals
-        self.editingFinished.connect(self.setPublishDir)
+        self.editingFinished.connect(self.directoryChanged)
 
         # set default value
+        self.main_widget.setRootPublishDir(publish_dir)
         self.setText(publish_dir)
         self.setValue(publish_dir)
 
         # this caused a resize bug? Wtf..
         #self.setPublishDir()
 
-    def setPublishDir(self):
+    # def setPublishDir(self):
+    #     """
+    #     Sets the current publish directory for the user.
+    #     """
+    #     # check to make sure its not reset
+    #     if str(self.text()) == self.getValue():
+    #         return
+    #
+    #     # do stuff
+    #     makeUndoozable(
+    #         self.setValue,
+    #         self.main_widget,
+    #         str(self.text()),
+    #         'Change Publish Dir',
+    #         str(self.text())
+    #     )
+
+    def directoryChanged(self):
         """
-        Sets the current publish directory for the user.
+        If publish_dir parameter is changed, this will ask the user if they
+        are sure they'd like to continue if the user decides to continue,
+        it will create all of the new directories, but will NOT move over
+        the current publishes
+
+        Args:
+            new_publish_dir (str): The path on disk to the new publish dir
+        TODO:
+            change return values from ints to keywords
         """
+        def accept():
+            self.main_widget.setRootPublishDir(str(self.text()))
+            self.setValue(str(self.text()))
+
         # check to make sure its not reset
         if str(self.text()) == self.getValue():
             return
 
-        # do stuff
+        # if no variable set, create the root dir
+        if (
+                self.main_widget.getVariable() == ''
+                or self.main_widget.getNodeType() == ''
+        ):
+
+            makeUndoozable(
+                accept,
+                self.main_widget,
+                str(self.text()),
+                "Publish Directory"
+            )
+            return
+
+        # ask user to confirm directory change...
+        if not os.path.exists(str(self.text())):
+            warning_text = 'Do you wish to create new directories?'
+            detailed_warning_text = """
+    Accepting this event will create a bunch of new crap on your file system,
+    but you need this crap in order to save stuff into it.
+                """
+
+            self.main_widget.showWarningBox(
+                warning_text,
+                self.__acceptDirectoryChange,
+                self.__cancelDirectoryChange,
+                detailed_warning_text
+            )
+        else:
+            """
+            check if the dir has actually changed or if it was a
+            cancellation of a dir changed to avoid recursion
+
+            I have no idea how this works anymore and I'm to lazy
+            to look at it and figure it out...
+            """
+            # cancel recursion
+            # the "real version"
+            if self.main_widget.getRootPublishDir() == str(self.text()):
+                return
+            self.__acceptDirectoryChange()
+
+    def __acceptDirectoryChange(self):
+        def accept():
+
+            self.main_widget.setRootPublishDir(str(self.text()))
+            self.setValue(str(self.text()))
+            # todo - why is this supressing undo stack?
+            checkBesterestVersion(self.main_widget)
+
         makeUndoozable(
-            self.setValue,
+            accept,
             self.main_widget,
             str(self.text()),
-            'Change Publish Dir',
-            str(self.text())
+            "Publish Directory"
         )
+
+    def __cancelDirectoryChange(self):
+        root_publish_dir = self.main_widget.getRootPublishDir()
+        self.setUpdatesEnabled(False)
+        self.setText(root_publish_dir)
+        self.setUpdatesEnabled(True)

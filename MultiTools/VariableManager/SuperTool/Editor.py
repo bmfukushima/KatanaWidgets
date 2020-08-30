@@ -179,9 +179,9 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             self.__undoSetUpdateStatus, 'parameter_setValue', enabled=enabled
         )
 
-        Utils.EventModule.RegisterCollapsedHandler(
-            self.__publishDirChanged, 'parameter_setValue', enabled=enabled
-        )
+        # Utils.EventModule.RegisterCollapsedHandler(
+        #     self.__publishDirChanged, 'parameter_setValue', enabled=enabled
+        # )
 
         # gsv changed
         Utils.EventModule.RegisterCollapsedHandler(
@@ -240,75 +240,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
                         return
 
     """ DIRECTORY CHANGED """
-    def __directoryChanged(self):
-        """
-        If publish_dir parameter is changed, this will ask the user if they
-        are sure they'd like to continue if the user decides to continue,
-        it will create all of the new directories, but will NOT move over
-        the current publishes
-
-        Args:
-            new_publish_dir (str): The path on disk to the new publish dir
-        TODO:
-            change return values from ints to keywords
-        """
-        # if no variable set, create the root dir
-        if (
-            self.main_widget.getVariable() == ''
-            or self.main_widget.getNodeType() == ''
-        ):
-            makeUndoozable(
-                self.main_widget.setRootPublishDir,
-                self.main_widget,
-                self._new_publish_dir,
-                "Publish Directory",
-                self._new_publish_dir
-            )
-            return
-
-        # ask user to confirm directory change...
-        if not os.path.exists(self._new_publish_dir):
-            warning_text = 'Do you wish to create new directories?'
-            detailed_warning_text = """
-    Accepting this event will create a bunch of new crap on your file system,
-    but you need this crap in order to save stuff into it.
-                """
-
-            self.main_widget.showWarningBox(
-                warning_text,
-                self.__acceptDirectoryChange,
-                self.__cancelDirectoryChange,
-                detailed_warning_text
-            )
-        else:
-            """
-            check if the dir has actually changed or if it was a
-            cancellation of a dir changed to avoid recursion
-
-            I have no idea how this works anymore and I'm to lazy
-            to look at it and figure it out...
-            """
-            # cancel recursion
-            # the "real version"
-            if self.main_widget.getRootPublishDir() == self._new_publish_dir:
-                return
-            self.__acceptDirectoryChange()
-
-    def __acceptDirectoryChange(self):
-        def accept():
-            self.main_widget.setRootPublishDir(self._new_publish_dir)
-            checkBesterestVersion(self.main_widget)
-
-        makeUndoozable(
-            accept,
-            self.main_widget,
-            self._new_publish_dir,
-            "Publish Directory"
-        )
-
-    def __cancelDirectoryChange(self):
-        root_publish_dir = self.main_widget.getRootPublishDir()
-        self.node.getParameter('publish_dir').setValue(root_publish_dir, 0)
 
     def __getAllChildItems(self, item):
         """
@@ -718,7 +649,6 @@ class VariableManagerMainWidget(QWidget):
             item_type = item.getItemType()
         except AttributeError:
             item_type = MASTER_ITEM
-
         if item_type in [
             PATTERN_ITEM,
             MASTER_ITEM
@@ -730,7 +660,8 @@ class VariableManagerMainWidget(QWidget):
 
         # set location
         base_publish_dir = self.getBasePublishDir(include_node_type=True)
-        location = base_publish_dir + '/{publish_type}/{unique_hash}'.format(
+        location = '{base_publish_dir}/{publish_type}/{unique_hash}'.format(
+            base_publish_dir=base_publish_dir,
             publish_type=publish_type,
             unique_hash=unique_hash
         )

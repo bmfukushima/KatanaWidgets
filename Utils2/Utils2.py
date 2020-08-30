@@ -13,6 +13,7 @@ def createUniqueHash(thash, location):
         return createUniqueHash(str(thash), location)
     return thash
 
+
 def getMainWidget(widget):
     try:
         name = widget.__name__()
