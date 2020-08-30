@@ -183,8 +183,8 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             node_type=self.node_type
         )
 
-        mkdirRecursive(base_publish_dir + '/blocks')
-        mkdirRecursive(base_publish_dir + '/patterns')
+        mkdirRecursive(base_publish_dir + '/block')
+        mkdirRecursive(base_publish_dir + '/pattern')
 
         # create internal node structure
         self.populateVariable(self.variable)
@@ -231,8 +231,8 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             node_type=self.node_type
         )
 
-        mkdirRecursive(base_publish_dir + '/blocks')
-        mkdirRecursive(base_publish_dir + '/patterns')
+        mkdirRecursive(base_publish_dir + '/block')
+        mkdirRecursive(base_publish_dir + '/pattern')
 
         self.variable_param.setValue(self.variable, 0)
         self.populateVariable(self.variable)
@@ -468,12 +468,12 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         root_location = self.getParameter('publish_dir').getValue(0)
 
         if item_type == BLOCK_ITEM:
-            location = '{root_location}/{variable}/{node_type}/blocks'.format(
+            location = '{root_location}/{variable}/{node_type}/block'.format(
                 root_location=root_location, variable=variable, node_type=node_type
             )
 
         elif item_type in [MASTER_ITEM, PATTERN_ITEM]:
-            location = '{root_location}/{variable}/{node_type}/patterns'.format(
+            location = '{root_location}/{variable}/{node_type}/pattern'.format(
                 root_location=root_location, variable=variable, node_type=node_type
             )
 

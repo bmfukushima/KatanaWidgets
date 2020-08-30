@@ -915,11 +915,11 @@ class VariableManagerBrowser(QTreeWidget):
         """
         # create null directories
         base_publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
-        mkdirRecursive(base_publish_dir + '/patterns')
-        mkdirRecursive(base_publish_dir + '/blocks')
+        mkdirRecursive(base_publish_dir + '/pattern')
+        mkdirRecursive(base_publish_dir + '/block')
 
         # create default master dirs
-        publish_dir = base_publish_dir + '/patterns/master'
+        publish_dir = base_publish_dir + '/pattern/master'
         mkdirRecursive(publish_dir + '/pattern/live')
         mkdirRecursive(publish_dir + '/block/live')
 
@@ -1392,6 +1392,11 @@ class VariableManagerBrowser(QTreeWidget):
             unique_hash=block_node_hash
         )
 
+        # set up publish dirs
+        # self.main_widget.setWorkingItem(block_item)
+        # self.main_widget.publish_display_widget.publishNewItem(BLOCK_ITEM)
+        # self.main_widget.publish_display_widget.publishNewItem(PATTERN_ITEM)
+
         return block_item
 
     def __createNewPatternItem(self, item_text):
@@ -1427,6 +1432,9 @@ class VariableManagerBrowser(QTreeWidget):
         current_root_node = item.parent().getRootNode()
         new_pattern = PATTERN_PREFIX+pattern
         self.main_widget.updateAllVariableSwitches(current_root_node, new_pattern=new_pattern)
+
+        # self.main_widget.setWorkingItem(item)
+        # self.main_widget.publish_display_widget.publishNewItem(PATTERN_ITEM)
 
         return item
 
@@ -2042,12 +2050,12 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         #root_location = root_node.getParameter('publish_dir').getValue(0)
 
         if self.getItemType() == BLOCK_ITEM:
-            location = '{root_location}/{variable}/{node_type}/blocks'.format(
+            location = '{root_location}/{variable}/{node_type}/block'.format(
                 root_location=root_location, variable=variable, node_type=node_type
             )
 
         elif self.getItemType() in [MASTER_ITEM, PATTERN_ITEM]:
-            location = '{root_location}/{variable}/{node_type}/patterns'.format(
+            location = '{root_location}/{variable}/{node_type}/pattern'.format(
                 root_location=root_location, variable=variable, node_type=node_type
             )
 

@@ -653,10 +653,10 @@ class VariableManagerMainWidget(QWidget):
             PATTERN_ITEM,
             MASTER_ITEM
         ]:
-            publish_type = 'patterns'
+            publish_type = 'pattern'
 
         elif item.getItemType() == BLOCK_ITEM:
-            publish_type = 'blocks'
+            publish_type = 'block'
 
         # set location
         base_publish_dir = self.getBasePublishDir(include_node_type=True)
@@ -1507,8 +1507,8 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         """
         if item_type == BLOCK_ITEM:
             # create block publish dir
-            blocks_publish_dir = self.main_widget.getBasePublishDir(include_node_type=True) + '/blocks'
-            mkdirRecursive(blocks_publish_dir)
+            #blocks_publish_dir = self.main_widget.getBasePublishDir(include_node_type=True) + '/blocks'
+            #mkdirRecursive(blocks_publish_dir)
 
             # publish block
             self.publish_type = BLOCK_ITEM

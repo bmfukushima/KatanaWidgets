@@ -5,33 +5,6 @@ from .ItemTypes import (
     PATTERN_ITEM
 )
 
-from Widgets2 import (
-    AbstractComboBox
-)
-
-
-# class VariableManagerComboBox(AbstractComboBox):
-#     def __init__(self, parent=None):
-#         super(VariableManagerComboBox, self).__init__(parent)
-#
-#     def checkBesterestVersion(self):
-#         publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
-#         for item_type in [PATTERN_ITEM, BLOCK_ITEM]:
-#             publish_loc = '{publish_dir}/patterns/master/{item_type}/v000'.format(
-#                 publish_dir=publish_dir, item_type=item_type.TYPE
-#             )
-#             # LOAD
-#             if os.path.exists(publish_loc) is True:
-#                 # Load besterest version
-#                 self.main_widget.versions_display_widget.loadBesterestVersion(item_type=item_type)
-#
-#             # CREATE
-#             else:
-#                 # Publish
-#                 self.main_widget.publish_display_widget.publishNewItem(
-#                     item_type=item_type
-#                 )
-
 
 def checkBesterestVersion(main_widget, item=None):
     """
@@ -48,7 +21,7 @@ def checkBesterestVersion(main_widget, item=None):
     #     item = main_widget.getWorkingItem()
 
     for item_type in [PATTERN_ITEM, BLOCK_ITEM]:
-        publish_loc = '{publish_dir}/patterns/master/{item_type}/v000'.format(
+        publish_loc = '{publish_dir}/pattern/master/{item_type}/v000'.format(
             publish_dir=publish_dir, item_type=item_type.TYPE
         )
         # LOAD
