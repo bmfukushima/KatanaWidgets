@@ -1403,15 +1403,8 @@ class VariableManagerBrowser(QTreeWidget):
             unique_hash=block_node_hash
         )
 
-        # TODO BUG IS HERE
-        # SOME HOW THESE PUBLISHES CHANGE THE ITEM...
-        # AND THAT ITEM IS JUST FUCKED...
-        # SO THAT'S COOL
         self.main_widget.publish_display_widget.publishNewItem(item_type=BLOCK_ITEM, item=block_item)
         self.main_widget.publish_display_widget.publishNewItem(item_type=PATTERN_ITEM, item=block_item)
-
-        self.clear()
-        self.populate()
 
         return block_item
 
@@ -1451,9 +1444,6 @@ class VariableManagerBrowser(QTreeWidget):
 
         # set up publish dirs
         self.main_widget.publish_display_widget.publishNewItem(item_type=PATTERN_ITEM, item=item)
-
-        self.clear()
-        self.populate()
 
         return item
 
@@ -1792,9 +1782,9 @@ class VariableManagerBrowser(QTreeWidget):
                 # expand new group
                 new_parent_item.setExpanded(True)
 
-        Utils.EventModule.ProcessAllEvents()
-        self.clear()
-        self.populate()
+        #Utils.EventModule.ProcessAllEvents()
+        #self.clear()
+        #self.populate()
 
         return new_parent_item
 
@@ -1989,7 +1979,7 @@ class VariableManagerBrowser(QTreeWidget):
                 self.main_widget.setWorkingItem(item)
 
             self.displayItemParameters()
-        item = self.currentItem()
+
         return QTreeWidget.selectionChanged(self, *args, **kwargs)
 
 

@@ -1484,6 +1484,11 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             item_type: the type of item to be published.  This accepts either
                 BLOCK_ITEM or PATTERN_ITEM
             item (VariableManagerBrowserItem): Item to have its directories created for it.
+
+        TODO:
+            Massive bug in here that will change the actually item returned to the tree widget...
+            This has been mitigated by calling a clear/populate upstream... but... this is prone
+            to break later.
         """
         if item_type == BLOCK_ITEM:
             # create block publish dir
@@ -1579,8 +1584,8 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         orig_item = item
         self.publishAllGroups(item, orig_item)
 
-        self.main_widget.variable_manager_widget.variable_browser.clear()
-        self.main_widget.variable_manager_widget.variable_browser.populate()
+        #self.main_widget.variable_manager_widget.variable_browser.clear()
+        #self.main_widget.variable_manager_widget.variable_browser.populate()
 
     def publishPattern(self, item=None):
         """
@@ -1621,7 +1626,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
         # reset item attributes/parameters
         new_root_node = live_group.convertToGroup()
-        #new_pattern_node = new_root_node.getChildByIndex(0)
+        new_pattern_node = new_root_node.getChildByIndex(0)
 
         # update nodes
         if item_type in BLOCK_PUBLISH_GROUP:
