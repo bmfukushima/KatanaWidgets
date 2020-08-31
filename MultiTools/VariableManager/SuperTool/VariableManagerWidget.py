@@ -1,5 +1,16 @@
 """
 TODO:
+    * bug
+        Block Pattern...
+            For some reason this is all messed up...
+            The block module might need a complete overhaul...
+            __createNewBlockItem --> this sets correctly...
+                but when called by:
+        Drag/Drop block create now not properly updating...
+            ARGGGGGGGGGGGGGGGGGGGG
+        Full trace stack on the clicking on the pattern version... from...
+                VariableManagerBrowser.mouseReleaseEvent()
+                
     * Add redo / undo display updates...
         - Need to check to make sure this all works...
     *   Expand / Collapse
@@ -1392,10 +1403,15 @@ class VariableManagerBrowser(QTreeWidget):
             unique_hash=block_node_hash
         )
 
-        # set up publish dirs
-        # self.main_widget.setWorkingItem(block_item)
-        # self.main_widget.publish_display_widget.publishNewItem(BLOCK_ITEM)
-        # self.main_widget.publish_display_widget.publishNewItem(PATTERN_ITEM)
+        # TODO BUG IS HERE
+        # SOME HOW THESE PUBLISHES CHANGE THE ITEM...
+        # AND THAT ITEM IS JUST FUCKED...
+        # SO THAT'S COOL
+        self.main_widget.publish_display_widget.publishNewItem(item_type=BLOCK_ITEM, item=block_item)
+        self.main_widget.publish_display_widget.publishNewItem(item_type=PATTERN_ITEM, item=block_item)
+
+        self.clear()
+        self.populate()
 
         return block_item
 
@@ -1433,8 +1449,11 @@ class VariableManagerBrowser(QTreeWidget):
         new_pattern = PATTERN_PREFIX+pattern
         self.main_widget.updateAllVariableSwitches(current_root_node, new_pattern=new_pattern)
 
-        # self.main_widget.setWorkingItem(item)
-        # self.main_widget.publish_display_widget.publishNewItem(PATTERN_ITEM)
+        # set up publish dirs
+        self.main_widget.publish_display_widget.publishNewItem(item_type=PATTERN_ITEM, item=item)
+
+        self.clear()
+        self.populate()
 
         return item
 
@@ -1773,6 +1792,10 @@ class VariableManagerBrowser(QTreeWidget):
                 # expand new group
                 new_parent_item.setExpanded(True)
 
+        Utils.EventModule.ProcessAllEvents()
+        self.clear()
+        self.populate()
+
         return new_parent_item
 
     def contextMenuEvent(self, event):
@@ -1943,9 +1966,9 @@ class VariableManagerBrowser(QTreeWidget):
             elif index.column() in [1, 2]:
                 # load up version dir...
                 if event.button() == 1:
-                    main_widget = getMainWidget(self)
-                    previous_variable = main_widget.getVariable()
-                    main_widget.versions_display_widget.update(
+                    previous_variable = self.main_widget.getVariable()
+                    self.main_widget.setWorkingItem(item)
+                    self.main_widget.versions_display_widget.update(
                         column=index.column(),
                         previous_variable=previous_variable,
                         gui=True
@@ -1957,6 +1980,7 @@ class VariableManagerBrowser(QTreeWidget):
         """
         displays the current group that is editable in a mini-node graph
         """
+
         if hasattr(self.main_widget, 'variable_manager_widget'):
             item = self.currentItem()
             if not item:
@@ -1965,7 +1989,7 @@ class VariableManagerBrowser(QTreeWidget):
                 self.main_widget.setWorkingItem(item)
 
             self.displayItemParameters()
-
+        item = self.currentItem()
         return QTreeWidget.selectionChanged(self, *args, **kwargs)
 
 

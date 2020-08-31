@@ -371,6 +371,9 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                 )
                 createNodeReference(block_root_node, block_string, param=parent_node.getParameter('nodeReference'))
 
+        # wire node
+        block_root_node.getInputPortByIndex(0).connect(parent_node.getSendPort('in'))
+        block_root_node.getOutputPortByIndex(0).connect(parent_node.getReturnPort('out'))
         # connect
         connectInsideGroup([pattern_group, block_group, vs_node], block_root_node)
         block_root_node.getSendPort('in').connect(vs_node.getInputPortByIndex(0))
@@ -521,6 +524,8 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
 
         mkdirRecursive(publish_loc + '/pattern/live')
         mkdirRecursive(publish_loc + '/block/live')
+        # mkdirRecursive(publish_loc + '/pattern/v000')
+        # mkdirRecursive(publish_loc + '/block/v000')
 
     """ PROPERTIES """
     @property

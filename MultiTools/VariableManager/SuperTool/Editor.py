@@ -1074,34 +1074,14 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
             if self.column == PATTERN_ITEM.COLUMN:
                 item.setVEGNode(publish_node.getChildByIndex(0))
 
-        """
-        live_group = NodegraphAPI.ConvertGroupToLiveGroup(publish_node)
-        live_group.getParameter('source').setValue(publish_dir, 0)
-        live_group.load()
-        loaded_publish_node = live_group.convertToGroup()
-
-        # update item attributes
-        if item.getItemType() == PATTERN_ITEM:
-            item.setRootNode(loaded_publish_node)
-            item.setBlockNode(loaded_publish_node)
-            item.setPatternNode(loaded_publish_node)
-            item.setVEGNode(loaded_publish_node.getChildByIndex(0))
-        elif item.getItemType() in BLOCK_PUBLISH_GROUP:
-            if self.column == PATTERN_ITEM.COLUMN:
-                item.setPatternNode(loaded_publish_node)
-                item.setVEGNode(loaded_publish_node.getChildByIndex(0))
-            elif self.column == BLOCK_ITEM.COLUMN:
-                item.setBlockNode(loaded_publish_node)
-        """
         # update browser widget
-        #self.main_widget.variable_manager_widget.variable_browser.reset()
         self.main_widget.variable_manager_widget.variable_browser.clear()
         self.main_widget.variable_manager_widget.variable_browser.populate()
 
         # update variable switch...
         # get the parent root node of the item
+        # whatever
         if item.getItemType() == PATTERN_ITEM:
-            # whatever
             root_node = item.getPatternNode().getParent().getParent()
         elif item.getItemType() in BLOCK_PUBLISH_GROUP:
             root_node = item.getPatternNode().getParent()
@@ -1149,7 +1129,6 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
             self.gui needs an overhaul... right now the triggers make this really messy
         """
         # change widget to versions display
-
         if column:
             self.column = column
         if version:
@@ -1496,7 +1475,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         with open(publish_loc + '/notes.csv', 'w') as filehandle:
             filehandle.write(note)
 
-    def publishNewItem(self, item_type=BLOCK_ITEM):
+    def publishNewItem(self, item_type=BLOCK_ITEM, item=None):
         """
         Creates the v000 publish when a new item is created.
         Kwargs provided determine what should be published,
@@ -1504,6 +1483,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         Kwargs:
             item_type: the type of item to be published.  This accepts either
                 BLOCK_ITEM or PATTERN_ITEM
+            item (VariableManagerBrowserItem): Item to have its directories created for it.
         """
         if item_type == BLOCK_ITEM:
             # create block publish dir
@@ -1512,14 +1492,14 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
             # publish block
             self.publish_type = BLOCK_ITEM
-            self.publishBlock()
+            self.publishBlock(item=item)
 
         if item_type == PATTERN_ITEM:
             # TODO
             # apparently patterns auto create during the init process
             # of something new... so... maybe I should track that down...
             self.publish_type = PATTERN_ITEM
-            self.publishPattern()
+            self.publishPattern(item=item)
 
     def publishAllGroups(self, item, orig_item):
         """
@@ -1530,7 +1510,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             orig_item (VariableManagerBrowserItem): the original item that can be considered the root of this publish
         """
         # get publish dir
-        publish_loc = self.main_widget.getItemPublishDir(include_publish_type=self.publish_type)
+        publish_loc = self.main_widget.getItemPublishDir(item=item, include_publish_type=self.publish_type)
 
         version = getNextVersion(publish_loc)
         publish_loc += '/{version}'.format(version=version)
@@ -1623,7 +1603,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             pattern_node = item.getRootNode()
 
         # get attrs
-        location = self.main_widget.getItemPublishDir(include_publish_type=PATTERN_ITEM)
+        location = self.main_widget.getItemPublishDir(item=item, include_publish_type=PATTERN_ITEM)
         version = getNextVersion(location)
         publish_loc = '{location}/{version}'.format(
             location=location, version=version
