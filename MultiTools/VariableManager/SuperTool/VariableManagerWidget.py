@@ -1,16 +1,5 @@
 """
 TODO:
-    * bug
-        Block Pattern...
-            For some reason this is all messed up...
-            The block module might need a complete overhaul...
-            __createNewBlockItem --> this sets correctly...
-                but when called by:
-        Drag/Drop block create now not properly updating...
-            ARGGGGGGGGGGGGGGGGGGGG
-        Full trace stack on the clicking on the pattern version... from...
-                VariableManagerBrowser.mouseReleaseEvent()
-                
     * Add redo / undo display updates...
         - Need to check to make sure this all works...
     *   Expand / Collapse
@@ -32,7 +21,7 @@ import math
 from PyQt5.QtWidgets import (
     qApp, QWidget,  QVBoxLayout, QHBoxLayout,
     QScrollArea, QSplitter, QPushButton, QLineEdit, QTreeWidget,
-    QComboBox, QHeaderView, QAbstractItemView,
+    QApplication, QHeaderView, QAbstractItemView,
     QMenu, QTreeWidgetItem
 )
 from PyQt5.QtCore import (
@@ -145,11 +134,7 @@ class VariableManagerWidget(QWidget):
         self.r1_hbox = QHBoxLayout(self.r1_widget)
 
         self.variable_menu = VariableManagerGSVMenu(self)
-        #self.publish_dir = self.createValueParam('publish_dir')
-        # TODO Register as custom widget type
-
         self.publish_dir = PublishDirWidget(self)
-
         self.node_type_menu = VariableManagerNodeMenu(self)
 
         self.r1_hbox.addWidget(self.variable_menu)
@@ -324,7 +309,6 @@ class VariableManagerWidget(QWidget):
                 splitter.parent().r2_widget.hide()
 
         # reset focus
-        from PyQt5.QtWidgets import QApplication
         QApplication.processEvents()
         resolved_pos = QCursor.pos()
         new_widget = qApp.widgetAt(resolved_pos)
@@ -736,9 +720,6 @@ If you choose to accept you will change the GSV:
                 self.main_widget.showWarningBox(
                     warning_text, self.accepted, self.cancelled, detailed_warning_text
                 )
-        # TODO do I need this?
-        # elif self.getExistsFlag() is False:
-        #     self.setCurrentIndexToText(self.main_widget.getVariable())
 
 
 class VariableManagerNodeMenu(AbstractComboBox):
@@ -1462,20 +1443,23 @@ class VariableManagerBrowser(QTreeWidget):
 
         """
         if item_type == BLOCK_ITEM:
-            return self.__createNewBlockItem(item_text=item_text)
+            new_item = self.__createNewBlockItem(item_text=item_text)
 
         elif item_type == PATTERN_ITEM:
-            return self.__createNewPatternItem(item_text)
+            new_item = self.__createNewPatternItem(item_text)
 
         elif item_type == MASTER_ITEM:
-            return self.__createNewMasterItem()
+            new_item = self.__createNewMasterItem()
+
+        self.setCurrentItem(new_item)
+        self.main_widget.setWorkingItem(new_item)
+        return new_item
 
     """ DISABLE ITEM"""
     def __toggleItemDisabledState(self):
         item = self.main_widget.getWorkingItem()
         item.toggleDisabledState()
         pass
-
     """ PROPERTIES """
     def setItem(self, item):
         self.item = item
@@ -1619,7 +1603,6 @@ class VariableManagerBrowser(QTreeWidget):
         # new_parent_item = item_dropped_on.parent()
         # Dropped on an item
         if drop_type == DROP_ON:
-            # TODO: Enable pattern dropping ( method )
             # dropped on pattern
             if item_dropped_on.getItemType() == PATTERN_ITEM:
                 new_parent_item = item_dropped_on.parent()
@@ -1781,10 +1764,6 @@ class VariableManagerBrowser(QTreeWidget):
 
                 # expand new group
                 new_parent_item.setExpanded(True)
-
-        #Utils.EventModule.ProcessAllEvents()
-        #self.clear()
-        #self.populate()
 
         return new_parent_item
 
@@ -2321,10 +2300,8 @@ class PublishDirWidget(AbstractFileBrowser, iParameter):
 
     def __acceptDirectoryChange(self):
         def accept():
-
             self.main_widget.setRootPublishDir(str(self.text()))
             self.setValue(str(self.text()))
-            # todo - why is this supressing undo stack?
             checkBesterestVersion(self.main_widget)
 
         makeUndoozable(

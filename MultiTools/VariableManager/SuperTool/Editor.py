@@ -1485,24 +1485,12 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
                 BLOCK_ITEM or PATTERN_ITEM
             item (VariableManagerBrowserItem): Item to have its directories created for it.
 
-        TODO:
-            Massive bug in here that will change the actually item returned to the tree widget...
-            This has been mitigated by calling a clear/populate upstream... but... this is prone
-            to break later.
         """
         if item_type == BLOCK_ITEM:
-            # create block publish dir
-            #blocks_publish_dir = self.main_widget.getBasePublishDir(include_node_type=True) + '/blocks'
-            #mkdirRecursive(blocks_publish_dir)
-
-            # publish block
             self.publish_type = BLOCK_ITEM
             self.publishBlock(item=item)
 
         if item_type == PATTERN_ITEM:
-            # TODO
-            # apparently patterns auto create during the init process
-            # of something new... so... maybe I should track that down...
             self.publish_type = PATTERN_ITEM
             self.publishPattern(item=item)
 
@@ -1583,9 +1571,6 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
         orig_item = item
         self.publishAllGroups(item, orig_item)
-
-        #self.main_widget.variable_manager_widget.variable_browser.clear()
-        #self.main_widget.variable_manager_widget.variable_browser.populate()
 
     def publishPattern(self, item=None):
         """
