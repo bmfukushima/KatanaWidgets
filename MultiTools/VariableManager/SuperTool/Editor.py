@@ -17,6 +17,9 @@ TODO:
     *   File Browser needs a file dialogue button
     *   Clean up of everything...
     BUGS:
+        *   Change Node Type
+                Sometimes does not create v000 directories...
+                    This appears to happen after creating blocks?
         *   Defocus events when changing between widgets loses
             ability to focus in on Line Edits?
         *   NodeTypeMenu when losing focus does not update if not
