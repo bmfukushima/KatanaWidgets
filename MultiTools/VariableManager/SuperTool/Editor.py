@@ -17,14 +17,34 @@ TODO:
     *   File Browser needs a file dialogue button
     *   Clean up of everything...
     BUGS:
-        *   Change Node Type
-                Sometimes does not create v000 directories...
-                    This appears to happen after creating blocks?
-        *   Defocus events when changing between widgets loses
-            ability to focus in on Line Edits?
-        *   NodeTypeMenu when losing focus does not update if not
-                correct, allowing it to display a non-valid value...
-        *   On copy/paste show event, the default height is weird
+        CRITICAL:
+            *   Change Node Type to Group - maybe not this...
+                    Existing GSV's does not create the v000 on populate...
+                    Does not create v000 directories
+                    - change in the events for the GSV/Node Menu
+                        This is only looking at the master item, and then repopulating.
+                        This will need to check each item on creation?
+                        Maybe move to populate?
+                    - essentially we need an initial populate...
+                        as this should pretty much fail consistently for all initializations...
+                            so... why tf do some of them work?
+                    - in VariableBrowserManager --> populate
+                            add checkBesterestVersion w/item call
+                            update checkBesterestVersion to accept item call...
+        GDI:
+            *   master vs <var>_master...
+                    Just change this to the var_master
+            *   Creating additional "pattern" at wrong lvl... prob because
+                    something is not suppressing correctly
+                        check for: variable != ''
+            *   Change GSV
+                    Populates previous GSV into new one
+        SUCKS =\
+            *   Defocus events when changing between widgets loses
+                ability to focus in on Line Edits?
+            *   NodeTypeMenu when losing focus does not update if not
+                    correct, allowing it to display a non-valid value...
+            *   On copy/paste show event, the default height is weird
     Potential Bugs:
         *   Pattern Item Duplicates
             This could cause a bug with loading the versions due to not
@@ -1606,7 +1626,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         # get item
         if not item:
             item = self.main_widget.getWorkingItem()
-
+        print(item.text(0))
         # get node to publish
         item_type = item.getItemType()
         if item_type in BLOCK_PUBLISH_GROUP:

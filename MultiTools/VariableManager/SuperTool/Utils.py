@@ -6,35 +6,54 @@ from .ItemTypes import (
 )
 
 
-def checkBesterestVersion(main_widget, item=None):
+def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
     """
     Looks at an item and determines if there are versions available to load or not.
     If there are versions available, it will load the besterest version, if there are not
     versions available, it will create the new item.
+    """
+    # LOAD
+    if os.path.exists(publish_loc) is True:
+        # Load besterest version
+        print('a')
+        # this on init... the main widget does not exist yet =\...
+        # which means... the init populate of the variable browser needs to happen afterwards...
+        # [ERROR python.Utils.EventModule]: Error in collapsed event handler __node_setEdited_callback(): AttributeError: 'VariableManagerMainWidget' object has no attribute 'versions_display_widget'
+        main_widget.versions_display_widget.loadBesterestVersion(item_type=item_type)
+        print('b')
+    # CREATE
+    else:
+        # Publish
+        print('1')
+        main_widget.publish_display_widget.publishNewItem(
+            item_type=item_type, item=item
+        )
+        print('2')
 
-    # currently only checks patterns
-    # currently only checks master item...
-    # add to block create in VaraiableManagerWidget
+
+def checkBesterestVersion(main_widget, item=None):
+    """
+    Gets an items publish directories, and checks to determine if
+    it should load a version, or create a new version.
+
     """
     publish_dir = main_widget.getBasePublishDir(include_node_type=True)
-    # if not item:
-    #     item = main_widget.getWorkingItem()
+    if not item:
+        item = main_widget.getWorkingItem()
 
     for item_type in [PATTERN_ITEM, BLOCK_ITEM]:
-        publish_loc = '{publish_dir}/pattern/master/{item_type}/v000'.format(
-            publish_dir=publish_dir, item_type=item_type.TYPE
+        # check default directories
+        publish_loc = '{publish_dir}/{item_type}/{unique_hash}/{item_type}/v000'.format(
+            publish_dir=publish_dir, item_type=item_type.TYPE, unique_hash=item.getHash()
         )
-        # LOAD
-        if os.path.exists(publish_loc) is True:
-            # Load besterest version
-            main_widget.versions_display_widget.loadBesterestVersion(item_type=item_type)
+        resolveBesterestVersion(main_widget, publish_loc, item_type, item=item)
 
-        # CREATE
-        else:
-            # Publish
-            main_widget.publish_display_widget.publishNewItem(
-                item_type=item_type
+        # check patterns on block items
+        if item_type == BLOCK_ITEM:
+            publish_loc = '{publish_dir}/{item_type}/{unique_hash}/pattern/v000'.format(
+                publish_dir=publish_dir, item_type=item_type.TYPE, unique_hash=item.getHash()
             )
+            resolveBesterestVersion(main_widget, publish_loc, item_type, item=item)
 
 
 def connectInsideGroup(node_list, parent_node):

@@ -12,8 +12,7 @@ from PyQt5.QtCore import (
 )
 
 from PyQt5.QtGui import (
-    QColor, QPixmap, QIcon, QStandardItemModel, QStandardItem, QCursor,
-    QBrush
+    QColor, QPixmap, QIcon, QCursor, QBrush
 )
 
 
@@ -639,7 +638,8 @@ class VariableManagerGSVMenu(AbstractComboBox):
         # update
         checkBesterestVersion(self.main_widget)
         variable_browser.reset()
-        self.main_widget.setVariable(variable)
+
+        #self.main_widget.setVariable(variable)
 
         # TODO do I need this?
         if self.main_widget.node_type == 'Group':
@@ -942,71 +942,86 @@ class VariableManagerBrowser(QTreeWidget):
             pass
         new_parent_item.insertChild(index, item)
 
+    def populateBlock(self, root_item, child):
+        """
+        recursive statement to search through all
+        nodes and create the items for those nodes
+        """
+        root_node = NodegraphAPI.GetNode(child.getValue(0))
+        is_disabled = root_node.isBypassed()
+
+        # create pattern item
+        if root_node.getParameter('type').getValue(0) == 'pattern':
+            # version = root_node.getParameter('version').getValue(0)
+            # unique_hash = root_node.getParameter('hash').getValue(0)
+            # pattern = root_node.getParameter('pattern').getValue(0)
+            #
+            # VariableManagerBrowserItem(
+            #     root_item,
+            #     is_disabled=is_disabled,
+            #     root_node=root_node,
+            #     block_node=root_node,
+            #     pattern_node=root_node,
+            #     veg_node=root_node.getChildByIndex(0),
+            #     pattern_version=version,
+            #     unique_hash=unique_hash,
+            #     name=pattern,
+            #     item_type=PATTERN_ITEM
+            # )
+            pattern = root_node.getParameter('pattern').getValue(0)
+            new_item = self.__createNewPatternItem(pattern, pattern_node=root_node)
+            new_item.setDisabled(is_disabled)
+        # create block item, and populate block
+        else:
+            # get attrs
+            # version = root_node.getParameter('version').getValue(0)
+            # unique_hash = root_node.getParameter('hash').getValue(0)
+            #
+            # # get expanded
+            # if root_node.getParameter('expanded'):
+            #     string_expanded = root_node.getParameter('expanded').getValue(0)
+            #     expanded = convertStringBoolToBool(string_expanded)
+            # else:
+            #     expanded = False
+            # pattern_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.pattern_node').getValue(0))
+            # pattern_version = pattern_node.getParameter('version').getValue(0)
+            #
+            # block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
+            # block_version = block_node.getParameter('version').getValue(0)
+            #
+            # # create block item
+            # block_item = VariableManagerBrowserItem(
+            #     root_item,
+            #     block_node=block_node,
+            #     block_version=block_version,
+            #     expanded=expanded,
+            #     item_type=BLOCK_ITEM,
+            #     is_disabled=is_disabled,
+            #     name=root_node.getParameter('name').getValue(0),
+            #     pattern_node=pattern_node,
+            #     pattern_version=pattern_version,
+            #     root_node=root_node,
+            #     unique_hash=unique_hash,
+            #     veg_node=pattern_node.getChildByIndex(0),
+            # )
+
+            item_text = root_node.getParameter('name').getValue(0)
+            new_item = self.__createNewBlockItem(item_text=item_text , block_root_node=root_node)
+            new_item.setDisabled(is_disabled)
+            string_expanded = root_node.getParameter('expanded').getValue(0)
+            is_expanded = convertStringBoolToBool(string_expanded)
+            new_item.setExpanded(is_expanded)
+            # if root_node.getParameter('expanded'):
+            #     string_expanded = root_node.getParameter('expanded').getValue(0)
+            #     expanded = convertStringBoolToBool(string_expanded)
+            # else:
+            #     expanded = False
+            # recursively populate the block
+            block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
+            for child in block_node.getParameter('nodeReference').getChildren():
+                self.populateBlock(new_item, child)
+
     def populate(self):
-        def populateBlock(root_item, child):
-            """
-            recursive statement to search through all
-            nodes and create the items for those nodes
-            """
-            root_node = NodegraphAPI.GetNode(child.getValue(0))
-            is_disabled = root_node.isBypassed()
-            # create pattern item
-            if root_node.getParameter('type').getValue(0) == 'pattern':
-                version = root_node.getParameter('version').getValue(0)
-                unique_hash = root_node.getParameter('hash').getValue(0)
-                pattern = root_node.getParameter('pattern').getValue(0)
-
-                VariableManagerBrowserItem(
-                    root_item,
-                    is_disabled=is_disabled,
-                    root_node=root_node,
-                    block_node=root_node,
-                    pattern_node=root_node,
-                    veg_node=root_node.getChildByIndex(0),
-                    pattern_version=version,
-                    unique_hash=unique_hash,
-                    name=pattern,
-                    item_type=PATTERN_ITEM
-                )
-
-            # create block item, and populate block
-            else:
-                # get attrs
-                version = root_node.getParameter('version').getValue(0)
-                unique_hash = root_node.getParameter('hash').getValue(0)
-
-                # get expanded
-                if root_node.getParameter('expanded'):
-                    string_expanded = root_node.getParameter('expanded').getValue(0)
-                    expanded = convertStringBoolToBool(string_expanded)
-                else:
-                    expanded = False
-                pattern_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.pattern_node').getValue(0))
-                pattern_version = pattern_node.getParameter('version').getValue(0)
-
-                block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
-                block_version = block_node.getParameter('version').getValue(0)
-
-                # create block item
-                block_item = VariableManagerBrowserItem(
-                    root_item,
-                    block_node=block_node,
-                    block_version=block_version,
-                    expanded=expanded,
-                    item_type=BLOCK_ITEM,
-                    is_disabled=is_disabled,
-                    name=root_node.getParameter('name').getValue(0),
-                    pattern_node=pattern_node,
-                    pattern_version=pattern_version,
-                    root_node=root_node,
-                    unique_hash=unique_hash,
-                    veg_node=pattern_node.getChildByIndex(0),
-                )
-
-                # recursively populate the block
-                for child in block_node.getParameter('nodeReference').getChildren():
-                    populateBlock(block_item, child)
-
         # get publish dir...
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
@@ -1029,7 +1044,7 @@ class VariableManagerBrowser(QTreeWidget):
         if variable != '':
             block_root_node = master_item.getBlockNode()
             for child in block_root_node.getParameter('nodeReference').getChildren():
-                populateBlock(master_item, child)
+                self.populateBlock(master_item, child)
 
     def __deleteItem(self, item):
         """
@@ -1327,7 +1342,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         return master_item
 
-    def __createNewBlockItem(self, item_text='New_Block'):
+    def __createNewBlockItem(self, item_text='New_Block', block_root_node=None):
         """
         Creates a new block item, which is a container for
         holding patterns in a GSV.
@@ -1342,11 +1357,14 @@ class VariableManagerBrowser(QTreeWidget):
         parent_node, parent_item, current_pos = self.__getNewItemSetupAttributes()
 
         # create node group
-        block_root_node = node.createBlockRootNode(parent_node, name=item_text)
+        if not block_root_node:
+            block_root_node = node.createBlockRootNode(parent_node, name=item_text)
+            # connect and align nodes
+            self.__setupNodes(block_root_node, parent_node, current_pos)
+
         block_node_name = block_root_node.getParameter('name').getValue(0)
         block_node_hash = block_root_node.getParameter('hash').getValue(0)
         # connect and align nodes
-        self.__setupNodes(block_root_node, parent_node, current_pos)
 
         # Get Nodes
         new_block_node = NodegraphAPI.GetNode(block_root_node.getParameter('nodeReference.block_group').getValue(0))
@@ -1367,12 +1385,13 @@ class VariableManagerBrowser(QTreeWidget):
             unique_hash=block_node_hash
         )
 
-        self.main_widget.publish_display_widget.publishNewItem(item_type=BLOCK_ITEM, item=block_item)
-        self.main_widget.publish_display_widget.publishNewItem(item_type=PATTERN_ITEM, item=block_item)
+        checkBesterestVersion(self.main_widget, item=block_item)
+        #self.main_widget.publish_display_widget.publishNewItem(item_type=BLOCK_ITEM, item=block_item)
+        #self.main_widget.publish_display_widget.publishNewItem(item_type=PATTERN_ITEM, item=block_item)
 
         return block_item
 
-    def __createNewPatternItem(self, item_text):
+    def __createNewPatternItem(self, item_text, pattern_node=None):
         """
         Args:
             pattern (str): the GSV pattern to be used
@@ -1380,10 +1399,11 @@ class VariableManagerBrowser(QTreeWidget):
         node = self.main_widget.getNode()
         parent_node, parent_item, current_pos = self.__getNewItemSetupAttributes()
         # create node group
-        pattern_node = node.createPatternGroupNode(parent_node, pattern=item_text)
+        if not pattern_node:
+            pattern_node = node.createPatternGroupNode(parent_node, pattern=item_text)
+            # connect and align nodes
+            self.__setupNodes(pattern_node, parent_node, current_pos)
 
-        # connect and align nodes
-        self.__setupNodes(pattern_node, parent_node, current_pos)
 
         # Get Parameters
         version = pattern_node.getParameter('version').getValue(0)
@@ -1407,7 +1427,8 @@ class VariableManagerBrowser(QTreeWidget):
         self.main_widget.updateAllVariableSwitches(current_root_node, new_pattern=new_pattern)
 
         # set up publish dirs
-        self.main_widget.publish_display_widget.publishNewItem(item_type=PATTERN_ITEM, item=item)
+        checkBesterestVersion(self.main_widget, item=item)
+        #self.main_widget.publish_display_widget.publishNewItem(item_type=PATTERN_ITEM, item=item)
 
         return item
 
