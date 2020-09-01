@@ -213,27 +213,51 @@ class VariableManagerEditor(AbstractSuperToolEditor):
                 the event handlers will be disabled.
         """
         # setup undo event filters
-        Utils.EventModule.RegisterCollapsedHandler(
-            self.__undoEventUpdate, 'event_idle', enabled=enabled
-        )
+        try:
+            Utils.EventModule.RegisterCollapsedHandler(
+                self.__undoEventUpdate, 'event_idle', enabled=enabled
+            )
 
-        Utils.EventModule.RegisterCollapsedHandler(
-            self.__undoSetUpdateStatus, 'parameter_setValue', enabled=enabled
-        )
+            Utils.EventModule.RegisterCollapsedHandler(
+                self.__undoSetUpdateStatus, 'parameter_setValue', enabled=enabled
+            )
 
-        # Utils.EventModule.RegisterCollapsedHandler(
-        #     self.__publishDirChanged, 'parameter_setValue', enabled=enabled
-        # )
+            # Utils.EventModule.RegisterCollapsedHandler(
+            #     self.__publishDirChanged, 'parameter_setValue', enabled=enabled
+            # )
 
-        # gsv changed
-        Utils.EventModule.RegisterCollapsedHandler(
-            self.__paramChanged, 'parameter_finalizeValue', enabled=enabled
-        )
+            # gsv changed
+            Utils.EventModule.RegisterCollapsedHandler(
+                self.__paramChanged, 'parameter_finalizeValue', enabled=enabled
+            )
 
-        # select if group node
+            # select if group node
+            Utils.EventModule.RegisterCollapsedHandler(
+                self.__selectNodePopulateParameter, 'node_setSelected', enabled=enabled
+            )
+        except ValueError:
+            # TODO no idea why the workstation bug happens...
+            # This is what happens when I switch work stations and get an error...
+            """
+            [ERROR python.root]: An AttributeError occurred in "Editor.py": 'VariableManagerEditor' object has no attribute 'main_widget'
+    Traceback (most recent call last):
+      File "/media/ssd01/dev/katana/KatanaWidgets/MultiTools/VariableManager/SuperTool/Editor.py", line 240, in hideEvent
+        current_index = self.main_widget.layout().currentIndex()
+    AttributeError: 'VariableManagerEditor' object has no attribute 'main_widget'
+[ERROR python.root]: A ValueError occurred in "EventModuleCommon.py": Collapsed handler __undoEventUpdate() of <MultiTools.VariableManager.SuperTool.Editor.VariableManagerEditor object at 0x7fef4a12d5a8> for event type "event_idle" and event ID None is already registered.
+    Traceback (most recent call last):
+      File "/media/ssd01/dev/katana/KatanaWidgets/MultiTools/VariableManager/SuperTool/Editor.py", line 251, in showEvent
+        self.main_widget.warning_display_widget.cancelPressed()
+      File "/media/ssd01/dev/katana/KatanaWidgets/Widgets2/AbstractSuperToolEditor.py", line 47, in showEvent
+        self.setupEventHandlers(True)
+      File "/media/ssd01/dev/katana/KatanaWidgets/MultiTools/VariableManager/SuperTool/Editor.py", line 217, in setupEventHandlers
         Utils.EventModule.RegisterCollapsedHandler(
-            self.__selectNodePopulateParameter, 'node_setSelected', enabled=enabled
-        )
+      File "Utils/v5/EventModule.py", line 253, in RegisterCollapsedHandler
+      File "Utils/v5/EventModuleCommon.py", line 171, in RegisterCollapsedHandler
+      File "Utils/v5/EventModuleCommon.py", line 529, in _registerCollapsedHandler
+    ValueError: Collapsed handler __undoEventUpdate() of <MultiTools.VariableManager.SuperTool.Editor.VariableManagerEditor object at 0x7fef4a12d5a8> for event type "event_idle" and event ID None is already registered.
+            """
+            pass
 
     def hideEvent(self, event):
         # if the user is in the middle of an event, cancel that event
@@ -505,7 +529,6 @@ class VariableManagerMainWidget(QWidget):
     def __init__(self, parent, node):
         # initialize
         super(VariableManagerMainWidget, self).__init__(parent)
-
         self.initDefaultAttributes(node)
         self.initGUI()
 
@@ -543,9 +566,9 @@ class VariableManagerMainWidget(QWidget):
         QStackedLayout(self)
 
         # create widgets
-        self.variable_manager_widget = VariableManagerWidget(self, node=self.node)
         self.versions_display_widget = VersionsDisplayWidget(self)
         self.publish_display_widget = PublishDisplayWidget(self)
+        self.variable_manager_widget = VariableManagerWidget(self, node=self.node)
         self.warning_display_widget = WarningWidget(self)
 
         # setup layouts
@@ -565,6 +588,7 @@ class VariableManagerMainWidget(QWidget):
         settings such as the <node type> and <variable>.
             ( copy / paste  |  load file  |  etc )
         """
+
         if self.node.getParameter('variable').getValue(0) != '':
             # init GSV menu
             variable = self.node.getParameter('variable').getValue(0)
@@ -972,23 +996,17 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         )
         return publish_dir
 
-    def getBesterestVersion(self, item, publish_type):
+    def getBesterestVersion(self, publish_dir):
         """
         Finds the current publish that has been marked as besterest.
 
         Args:
-            item (VariableManagerBrowserItem): item to get the besterest version of,
-                if no besterest version is available, it will return the high version number.
-            publish_type (ItemType): What type of publish to get
-                BLOCK_ITEM | PATTERN_ITEM
-
+            publish_dir (str): The directory to look in for the versions
+                self.main_widget.getItemPublishDir(item=item, include_publish_type=publish_type)
         returns (str): the current version available.  This
             will be displayed as the default version.
 
         """
-
-        publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=publish_type)
-
         version_list = sorted(os.listdir(publish_dir))
 
         # remove live
@@ -1132,17 +1150,19 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.updateAllVariableSwitches(root_node)
         self.main_widget.updateOptionsList()
 
-    def loadBesterestVersion(self, item_type=BLOCK_ITEM):
+    def loadBesterestVersion(self, item, item_type=BLOCK_ITEM):
         """
         Loads the current besterest version available.  If no besterest
         version is available then this will default to the highest version
         number.  If there are no versions, then I did something wrong.
 
+        item (VariableBrowserItem): item to be loaded
         item_type: the type of item to load the besterest version of
             by default this is BLOCK_ITEM but will also accept PATTERN_ITEMs
         """
-        item = self.main_widget.getWorkingItem()
-        version = self.getBesterestVersion(item, item_type)
+        #item = self.main_widget.getWorkingItem()
+        publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=BLOCK_ITEM)
+        version = self.getBesterestVersion(publish_dir)
         previous_variable = self.main_widget.getVariable()
         # update versions display widget
         self.update(
@@ -1192,8 +1212,8 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
                 publish_type = PATTERN_ITEM
             elif column == 2:
                 publish_type = BLOCK_ITEM
-
-            besterest_version = self.getBesterestVersion(item, publish_type)
+            publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=BLOCK_ITEM)
+            besterest_version = self.getBesterestVersion(publish_dir)
 
             self.version_combobox.setCurrentIndexToText(besterest_version)
 
@@ -1528,6 +1548,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             item (VariableManagerBrowserItem): Item to have its directories created for it.
 
         """
+
         if item_type == BLOCK_ITEM:
             self.publish_type = BLOCK_ITEM
             self.publishBlock(item=item)
@@ -1626,7 +1647,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         # get item
         if not item:
             item = self.main_widget.getWorkingItem()
-        print(item.text(0))
+
         # get node to publish
         item_type = item.getItemType()
         if item_type in BLOCK_PUBLISH_GROUP:

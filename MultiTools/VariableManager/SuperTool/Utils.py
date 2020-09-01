@@ -15,20 +15,16 @@ def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
     # LOAD
     if os.path.exists(publish_loc) is True:
         # Load besterest version
-        print('a')
-        # this on init... the main widget does not exist yet =\...
-        # which means... the init populate of the variable browser needs to happen afterwards...
-        # [ERROR python.Utils.EventModule]: Error in collapsed event handler __node_setEdited_callback(): AttributeError: 'VariableManagerMainWidget' object has no attribute 'versions_display_widget'
-        main_widget.versions_display_widget.loadBesterestVersion(item_type=item_type)
-        print('b')
+        main_widget.versions_display_widget.loadBesterestVersion(item, item_type=item_type)
+
     # CREATE
     else:
-        # Publish
-        print('1')
         main_widget.publish_display_widget.publishNewItem(
             item_type=item_type, item=item
         )
-        print('2')
+
+        live_directory = '/'.join(publish_loc.split('/'))[:-1] + '/live'
+        mkdirRecursive(live_directory)
 
 
 def checkBesterestVersion(main_widget, item=None):
@@ -37,6 +33,7 @@ def checkBesterestVersion(main_widget, item=None):
     it should load a version, or create a new version.
 
     """
+    #if hasattr(main_widget, 'variable_browser'):
     publish_dir = main_widget.getBasePublishDir(include_node_type=True)
     if not item:
         item = main_widget.getWorkingItem()

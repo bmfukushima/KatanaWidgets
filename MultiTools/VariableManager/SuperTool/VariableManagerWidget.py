@@ -99,7 +99,6 @@ class VariableManagerWidget(QWidget):
     def __init__(self, parent=None, node=None):
         super(VariableManagerWidget, self).__init__(parent)
 
-        # main layout
         self.main_widget = getMainWidget(self)
         self.node = node
         self.initGUI()
@@ -1386,8 +1385,6 @@ class VariableManagerBrowser(QTreeWidget):
         )
 
         checkBesterestVersion(self.main_widget, item=block_item)
-        #self.main_widget.publish_display_widget.publishNewItem(item_type=BLOCK_ITEM, item=block_item)
-        #self.main_widget.publish_display_widget.publishNewItem(item_type=PATTERN_ITEM, item=block_item)
 
         return block_item
 
@@ -1403,7 +1400,6 @@ class VariableManagerBrowser(QTreeWidget):
             pattern_node = node.createPatternGroupNode(parent_node, pattern=item_text)
             # connect and align nodes
             self.__setupNodes(pattern_node, parent_node, current_pos)
-
 
         # Get Parameters
         version = pattern_node.getParameter('version').getValue(0)
@@ -1428,7 +1424,6 @@ class VariableManagerBrowser(QTreeWidget):
 
         # set up publish dirs
         checkBesterestVersion(self.main_widget, item=item)
-        #self.main_widget.publish_display_widget.publishNewItem(item_type=PATTERN_ITEM, item=item)
 
         return item
 
@@ -2043,7 +2038,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         variable = main_widget.getVariable()
         node_type = main_widget.getNodeType()
-        root_location =main_widget.getRootPublishDir()
+        root_location = main_widget.getRootPublishDir()
         #root_location = root_node.getParameter('publish_dir').getValue(0)
 
         if self.getItemType() == BLOCK_ITEM:
