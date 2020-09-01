@@ -8,13 +8,25 @@ To Do
     - rename nodes
     - sort by node type
 '''
-from PyQt5 import QtWidgets, QtGui, QtCore
-from Katana import UI4 , NodegraphAPI, Utils
 
-class MainWindow(UI4.Tabs.BaseTab):
+from PyQt5.QtWidgets import (
+    QWidget,
+    QTreeWidget,
+    QTreeWidgetItem,
+    QVBoxLayout,
+    QComboBox,
+    QCompleter,
+    QApplication
+)
+from PyQt5.QtCore import Qt, QEvent, QSortFilterProxyModel
+from PyQt5.QtGui import QBrush, QStandardItem, QStandardItemModel
+
+
+#class MainWindow(UI4.Tabs.BaseTab):
+class MainWindow(QWidget):
     def __init__(self,parent=None):
         super(MainWindow,self).__init__(parent)
-        layout = QtWidgets.QVBoxLayout()
+        layout = QVBoxLayout()
         self.setLayout(layout)
         self.node_list = NodeList(self)
         self.search_box = CreateSearchBox(self)
@@ -29,14 +41,15 @@ class MainWindow(UI4.Tabs.BaseTab):
         Utils.EventModule.RegisterCollapsedHandler(self.updateColor, 'node_setEdited',None)
         Utils.EventModule.RegisterCollapsedHandler(self.updateColor, 'node_setViewed',None)
 
-    def updateColor(self,eventID):
+    def updateColor(self, eventID):
         tree_widget = self.node_list
         tree_widget.updateItemColor()
-    def update(self,eventID):
-        #get tree widget
+
+    def update(self, eventID):
+        # get tree widget
         tree_widget = self.node_list
         
-        #delete list
+        # delete list
         for index in reversed(range(tree_widget.topLevelItemCount())):
             tree_widget.takeTopLevelItem(index)
         tree_widget.populate()
@@ -44,15 +57,15 @@ class MainWindow(UI4.Tabs.BaseTab):
         # repopulate
 
 
-class NodeList(QtWidgets.QTreeWidget):
+class NodeList(QTreeWidget):
     def __init__(self,parent=None):
         super(NodeList,self).__init__(parent)
         self.item_dict = {}
         self.view_item = None
         
         
-        header = QtWidgets.QTreeWidgetItem(['name','type'])
-        #self.head.setResizeMode(0,QtWidgets.QHeaderView.Stretch)
+        header = QTreeWidgetItem(['name','type'])
+        #self.head.setResizeMode(0,QHeaderView.Stretch)
         self.setAlternatingRowColors(True)
         self.setHeaderItem(header)
         self.populate()
@@ -139,18 +152,18 @@ class NodeList(QtWidgets.QTreeWidget):
     def selectionChanged(self, *args, **kwargs):
         node = self.currentItem().getNode()
         self.goToNode(node)
-        return QtWidgets.QTreeWidget.selectionChanged(self, *args, **kwargs)
+        return QTreeWidget.selectionChanged(self, *args, **kwargs)
     def keyPressEvent(self, event, *args, **kwargs):
         node = self.currentItem().getNode()
-        if event.key() == QtCore.Qt.Key_E:
+        if event.key() == Qt.Key_E:
             NodegraphAPI.SetNodeEdited(node, True, exclusive=True)
-        elif event.key() == QtCore.Qt.Key_V:
+        elif event.key() == Qt.Key_V:
             NodegraphAPI.SetNodeViewed(node, True, exclusive=True)
         self.updateItemColor()
-        #return QtWidgets.QTreeWidget.keyPressEvent(self, event, *args, **kwargs)
+        #return QTreeWidget.keyPressEvent(self, event, *args, **kwargs)
 
 
-class NodeListItem(QtWidgets.QTreeWidgetItem):
+class NodeListItem(QTreeWidgetItem):
     def __init__(self,parent=None,name=''):
         super(NodeListItem,self).__init__(parent)
         self.viewed = False
@@ -183,13 +196,13 @@ class NodeListItem(QtWidgets.QTreeWidgetItem):
         self.edited = edited
 
     def setColor(self):
-        self.setForeground(0,QtGui.QBrush(QtGui.QColor(200,200,200)))
+        self.setForeground(0,QBrush(QColor(200,200,200)))
         if self.getViewed() == True:
-            self.setForeground(0,QtGui.QBrush(QtGui.QColor(128,128,255)))
+            self.setForeground(0,QBrush(QColor(128,128,255)))
         if self.getEdited() == True:
-            self.setForeground(0,QtGui.QBrush(QtGui.QColor(100,200,100)))
+            self.setForeground(0,QBrush(QColor(100,200,100)))
         if self.getViewed() == True and self.getEdited() == True:
-            self.setForeground(0,QtGui.QBrush(QtGui.QColor(255,200,0)))
+            self.setForeground(0,QBrush(QColor(255,200,0)))
 
     def getName(self):
         return self.name
@@ -210,10 +223,8 @@ class NodeListItem(QtWidgets.QTreeWidgetItem):
     def setNodeParent(self,node_parent):
         self.node_parent = node_parent
 
-## how to filter/search this?
 
-
-class CreateSearchBox(QtWidgets.QComboBox):
+class CreateSearchBox(QComboBox):
     '''
     so... this could be a line edit... not a combo box.. dont really need that popup search
     '''
@@ -224,15 +235,13 @@ class CreateSearchBox(QtWidgets.QComboBox):
         self.setEditable(True)
         self.main_widget = self.getMainWidget(self)
         self.lineEdit().textChanged.connect(self.textChanged)
-        self.completer = QtWidgets.QCompleter( self )
-        #self.completer.setCompletionMode( QtWidgets.QCompleter.PopupCompletion)
-        #self.completer.setCompletionMode( QtWidgets.QCompleter.InlineCompletion)
-        #kinda like popup completion... but needs to be shown differently...
-        self.completer.setCaseSensitivity( QtCore.Qt.CaseInsensitive )
-        #self.completer.setPopup( self.view() )
+        self.completer = QCompleter(self)
+
+        self.completer.setCaseSensitivity(Qt.CaseInsensitive)
+
         self.setCompleter( self.completer )
         
-        self.pFilterModel = QtCore.QSortFilterProxyModel( self )
+        self.pFilterModel = QSortFilterProxyModel( self )
         node_names = self.main_widget.node_list.getItemDict().keys()
         self.nodeTypes = [''] + node_names
         #self.editTextChanged.connect(self.textChanged)
@@ -248,9 +257,9 @@ class CreateSearchBox(QtWidgets.QComboBox):
 
     def populate(self):       
         createNewNodeWidget = self
-        model = QtGui.QStandardItemModel()
+        model = QStandardItemModel()
         for i,nodeType in enumerate( self.nodeTypes ):
-            item = QtGui.QStandardItem(nodeType)
+            item = QStandardItem(nodeType)
             model.setItem(i, 0, item)
 
         createNewNodeWidget.setModel(model)
@@ -279,24 +288,25 @@ class CreateSearchBox(QtWidgets.QComboBox):
         #main_widget = self.getMainWidget(self)
         self.main_widget.update(None)
 
-    def event(self, event,*args, **kwargs):
-        if (event.type()==QtCore.QEvent.KeyPress) and (event.key() == 16777220 or event.key() == 16777221):
-            print 'enter'
+    def keyPressEvent(self, event):
+        accept_list = [Qt.Key_Enter, Qt.Key_Return]
+        if (event.type()==QEvent.KeyPress) and (event.key() == 16777220 or event.key() == 16777221):
+            pass
             #self.selectNodes()
 
-        return QtWidgets.QComboBox.event(self, event,*args, **kwargs)
+        return QComboBox.keyPressEvent(self, event)
 
 
 if __name__ == '__main__':
     #MainWindow()
     import sys
-    app = QtWidgets.QApplication(sys.argv)
+    app = QApplication(sys.argv)
     a = CreateSearchBox()
     a.show()
     sys.exit(app.exec_())
 
 else:
-    
+    from Katana import UI4, NodegraphAPI, Utils
     PluginRegistry = [("KatanaPanel", 2, "Node List", MainWindow)]
     #main_widget = MainWindow()
 #a = MainWindow()
