@@ -1,20 +1,3 @@
-"""
-TODO:
-    * Add redo / undo display updates...
-        - Need to check to make sure this all works...
-    *   Expand / Collapse
-            - Default states seem bjorked...
-            - Add menu / hotkey options
-                    - RMB Menu
-                    - Arrow keys or WASD?
-    *   Auto create handler needs to go in init function
-            - Check to see if the variable exists, if it does bypass.
-                If it does not, create the pattern as the last item in the group...
-    *   Node Type Change
-            - needs to honor current hierarchy.
-            - recursive search through tree, update all pattern nodes?
-"""
-
 import os
 import math
 

@@ -1,8 +1,27 @@
 """
-TODO
+TODO:
+    * Add redo / undo display updates...
+        - Need to check to make sure this all works...
+    *   Expand / Collapse
+            - Default states seem bjorked...
+            - Add menu / hotkey options
+                    - RMB Menu
+                    - Arrow keys or WASD?
+    *   Auto create handler needs to go in init function
+            - Check to see if the variable exists, if it does bypass.
+                If it does not, create the pattern as the last item in the group...
+    *   Node Type Change
+            - needs to honor current hierarchy.
+            - recursive search through tree, update all pattern nodes?
+    *   GSV/Node Menu need to be added as custom params
+    *   File Browser needs a file dialogue button
+    *   Clean up of everything...
     BUGS:
         *   Defocus events when changing between widgets loses
             ability to focus in on Line Edits?
+        *   NodeTypeMenu when losing focus does not update if not
+                correct, allowing it to display a non-valid value...
+        *   On copy/paste show event, the default height is weird
     Potential Bugs:
         *   Pattern Item Duplicates
             This could cause a bug with loading the versions due to not
