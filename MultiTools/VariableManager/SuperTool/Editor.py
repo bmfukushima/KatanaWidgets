@@ -390,13 +390,11 @@ class VariableManagerEditor(AbstractSuperToolEditor):
                 if node == self.node and param.getName() == 'undoozable':
                     self._should_update = True
 
-    def __updateGUI(self, args):
+    def __updateGUI(self, args, check_besterest=True):
         """
         Synchronizes the GUI, and anything else in the nodes that is not updated.
-
         """
         # condition checks
-
         if not hasattr(self, 'main_widget'): return
         if self._should_update is False: return
         if self.main_widget.suppress_updates is True: return
@@ -425,8 +423,8 @@ class VariableManagerEditor(AbstractSuperToolEditor):
 
         # update variable browser
         variable_browser.clear()
-        #variable_browser.populate(check_besterest=False)
-        variable_browser.populate()
+        variable_browser.populate(check_besterest=check_besterest)
+
         # reset selected item
         items = variable_browser.findItems(item_name, Qt.MatchExactly | Qt.MatchRecursive)
         for item in items:
@@ -434,6 +432,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             if full_path == item_path:
                 variable_browser.setCurrentItem(item)
                 self.main_widget.setWorkingItem(item)
+
                 return
 
         # if none found, set to top level item
@@ -443,9 +442,12 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         self.main_widget.setWorkingItem(new_item)
 
     def __undoEventUpdate(self, args):
+
         if self._should_update:
             Utils.UndoStack.DisableCapture()
-            self.__updateGUI(args)
+            # so... this is deleting a node... or calling ad elete node?
+            self.__updateGUI(args, check_besterest=False)
+
             self._should_update = False
             Utils.EventModule.ProcessAllEvents()
             Utils.UndoStack.EnableCapture()

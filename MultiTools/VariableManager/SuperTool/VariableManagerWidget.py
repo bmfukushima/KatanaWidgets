@@ -868,8 +868,8 @@ class VariableManagerBrowser(QTreeWidget):
         no directory, this will publish a v000 and load it.
 
         check_besterest (bool): Determines if this should check the besterest
-            version or not.  This is really here to disable recursion when loading
-            live groups.
+            version or not.  Certain events will want to bypass the besterest
+            call, especially those that have deleted node functionality.
         """
         # get publish dir...
         variable = self.main_widget.getVariable()
