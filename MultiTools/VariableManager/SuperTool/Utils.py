@@ -19,10 +19,14 @@ def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
 
     # CREATE
     else:
+        # preflight checks...
+        # can prob remove these from individual modules?
+        if main_widget.getVariable() == '': return
+        if main_widget.getNodeType() == '': return
         main_widget.publish_display_widget.publishNewItem(
             item_type=item_type, item=item
         )
-        print ('making dir == ', publish_loc)
+        # print ('making dir == ', publish_loc)
         # make live directory
         live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
         mkdirRecursive(live_directory)
@@ -57,6 +61,7 @@ def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOC
                 publish_dir=publish_dir, item_type=item_type.TYPE, unique_hash=item.getHash()
             )
             resolveBesterestVersion(main_widget, publish_loc, PATTERN_ITEM, item=item)
+
 
 def connectInsideGroup(node_list, parent_node):
     """

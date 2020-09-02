@@ -635,10 +635,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         item.setText(0, str(self.currentText()))
 
         # update
-        #checkBesterestVersion(self.main_widget)
         variable_browser.reset()
-
-        #self.main_widget.setVariable(variable)
 
         # TODO do I need this?
         if self.main_widget.node_type == 'Group':
@@ -767,7 +764,6 @@ class VariableManagerNodeMenu(AbstractComboBox):
                 return
 
             # update
-            #checkBesterestVersion(self.main_widget)
             variable_browser.reset()
 
     def cancelled(self):
@@ -881,22 +877,6 @@ class VariableManagerBrowser(QTreeWidget):
         else:
             return vs_node_list
 
-    def createMasterPublishDir(self):
-        """
-        Creates the directories associated with a specific item.
-        This should probably accept the arg <item> instead of
-        the strings...
-        """
-        # create null directories
-        base_publish_dir = self.main_widget.getBasePublishDir(include_node_type=True)
-        mkdirRecursive(base_publish_dir + '/pattern')
-        mkdirRecursive(base_publish_dir + '/block')
-
-        # create default master dirs
-        publish_dir = base_publish_dir + '/pattern/master'
-        mkdirRecursive(publish_dir + '/pattern/live')
-        mkdirRecursive(publish_dir + '/block/live')
-
     def clear(self):
         """
         Overriding this functionality so that it won't explode in my face
@@ -957,73 +937,31 @@ class VariableManagerBrowser(QTreeWidget):
 
         # create pattern item
         if root_node.getParameter('type').getValue(0) == 'pattern':
-            # version = root_node.getParameter('version').getValue(0)
-            # unique_hash = root_node.getParameter('hash').getValue(0)
-            # pattern = root_node.getParameter('pattern').getValue(0)
-            #
-            # VariableManagerBrowserItem(
-            #     root_item,
-            #     is_disabled=is_disabled,
-            #     root_node=root_node,
-            #     block_node=root_node,
-            #     pattern_node=root_node,
-            #     veg_node=root_node.getChildByIndex(0),
-            #     pattern_version=version,
-            #     unique_hash=unique_hash,
-            #     name=pattern,
-            #     item_type=PATTERN_ITEM
-            # )
+            # create pattern item
             pattern = root_node.getParameter('pattern').getValue(0)
-            new_item = self.__createNewPatternItem(
-                pattern, pattern_node=root_node, check_besterest=check_besterest)
+
+            new_item = self.createNewBrowserItem(
+                item_type=PATTERN_ITEM, item_text=pattern, node=root_node, check_besterest=check_besterest
+            )
+
+            # set item attrs
             new_item.setDisabled(is_disabled)
+
         # create block item, and populate block
         else:
-            # get attrs
-            # version = root_node.getParameter('version').getValue(0)
-            # unique_hash = root_node.getParameter('hash').getValue(0)
-            #
-            # # get expanded
-            # if root_node.getParameter('expanded'):
-            #     string_expanded = root_node.getParameter('expanded').getValue(0)
-            #     expanded = convertStringBoolToBool(string_expanded)
-            # else:
-            #     expanded = False
-            # pattern_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.pattern_node').getValue(0))
-            # pattern_version = pattern_node.getParameter('version').getValue(0)
-            #
-            # block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
-            # block_version = block_node.getParameter('version').getValue(0)
-            #
-            # # create block item
-            # block_item = VariableManagerBrowserItem(
-            #     root_item,
-            #     block_node=block_node,
-            #     block_version=block_version,
-            #     expanded=expanded,
-            #     item_type=BLOCK_ITEM,
-            #     is_disabled=is_disabled,
-            #     name=root_node.getParameter('name').getValue(0),
-            #     pattern_node=pattern_node,
-            #     pattern_version=pattern_version,
-            #     root_node=root_node,
-            #     unique_hash=unique_hash,
-            #     veg_node=pattern_node.getChildByIndex(0),
-            # )
-
+            # create block item
             item_text = root_node.getParameter('name').getValue(0)
-            new_item = self.__createNewBlockItem(
-                item_text=item_text , block_root_node=root_node, check_besterest=check_besterest)
+            new_item = self.createNewBrowserItem(
+                item_type=BLOCK_ITEM, item_text=item_text, node=root_node, check_besterest=check_besterest
+            )
+
+            # set item attrs
             new_item.setDisabled(is_disabled)
             string_expanded = root_node.getParameter('expanded').getValue(0)
             is_expanded = convertStringBoolToBool(string_expanded)
             new_item.setExpanded(is_expanded)
-            # if root_node.getParameter('expanded'):
-            #     string_expanded = root_node.getParameter('expanded').getValue(0)
-            #     expanded = convertStringBoolToBool(string_expanded)
-            # else:
-            #     expanded = False
-            # recursively populate the block
+
+            # recurse through block
             block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
             for child in block_node.getParameter('nodeReference').getChildren():
                 self.populateBlock(child, check_besterest)
@@ -1041,26 +979,18 @@ class VariableManagerBrowser(QTreeWidget):
         # get publish dir...
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
-        """
-        TODO:
-            variable != ''
-                repeated... because the directories need to exist to
-                create the master item?  Do I need to be repeating
-                this?
-        """
-        # do stuff if variable is empty/unassigned/initializing
-        if variable != '' and node_type != '':
-            # create directories
-            self.createMasterPublishDir()
 
         # create master item
-        master_item = self.createNewBrowserItem(MASTER_ITEM, variable)
+        master_item = self.createNewBrowserItem(MASTER_ITEM, variable, check_besterest=False)
+        if check_besterest is True:
+            checkBesterestVersion(self.main_widget, item=master_item, item_types=[BLOCK_ITEM])
 
         # recursively populate the items under the master group
-        if variable != '':
-            block_root_node = master_item.getBlockNode()
-            for child in block_root_node.getParameter('nodeReference').getChildren():
-                self.populateBlock(child, check_besterest)
+        block_root_node = master_item.getBlockNode()
+        for child in block_root_node.getParameter('nodeReference').getChildren():
+            self.populateBlock(child, check_besterest)
+
+        # publish master item...
 
     def __deleteItem(self, item):
         """
@@ -1358,7 +1288,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         return master_item
 
-    def __createNewBlockItem(self, item_text='New_Block', block_root_node=None, check_besterest=True):
+    def __createNewBlockItem(self, item_text='New_Block', block_root_node=None):
         """
         Creates a new block item, which is a container for
         holding patterns in a GSV.  If no block root node is provided, this will
@@ -1407,9 +1337,8 @@ class VariableManagerBrowser(QTreeWidget):
             root_node=block_root_node,
             unique_hash=block_node_hash
         )
-
-        if check_besterest is True:
-            checkBesterestVersion(self.main_widget, item=block_item, item_types=[BLOCK_ITEM])
+        # if check_besterest is True:
+        #     checkBesterestVersion(self.main_widget, item=block_item, item_types=[BLOCK_ITEM])
 
         return block_item
 
@@ -1482,7 +1411,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         return new_parent_item
 
-    def __createNewPatternItem(self, item_text, pattern_node=None, check_besterest=True):
+    def __createNewPatternItem(self, item_text, pattern_node=None):
         """
         Creates a new pattern item, which is a container for
         holding patterns in a GSV.  If no pattern node is provided, this will
@@ -1531,12 +1460,12 @@ class VariableManagerBrowser(QTreeWidget):
         self.main_widget.updateAllVariableSwitches(current_root_node, new_pattern=new_pattern)
 
         # set up publish dirs
-        if check_besterest is True:
-            checkBesterestVersion(self.main_widget, item=item, item_types=[PATTERN_ITEM])
+        # if check_besterest is True:
+        #     checkBesterestVersion(self.main_widget, item=item, item_types=[PATTERN_ITEM])
 
         return item
 
-    def createNewBrowserItem(self, item_type=BLOCK_ITEM, item_text=None):
+    def createNewBrowserItem(self, item_type=BLOCK_ITEM, item_text=None, node=None, check_besterest=True):
         """
         Creates a new Variable Browser item, at the currently selected item.
         If no item is selected, it will create the new item under the master item.
@@ -1551,23 +1480,28 @@ class VariableManagerBrowser(QTreeWidget):
 
         """
         if item_type == BLOCK_ITEM:
-            new_item = self.__createNewBlockItem(item_text=item_text)
+            new_item = self.__createNewBlockItem(item_text=item_text, block_root_node=node)
 
         elif item_type == PATTERN_ITEM:
-            new_item = self.__createNewPatternItem(item_text)
+            new_item = self.__createNewPatternItem(item_text, pattern_node=node)
 
         elif item_type == MASTER_ITEM:
             new_item = self.__createNewMasterItem()
 
         self.setCurrentItem(new_item)
         self.main_widget.setWorkingItem(new_item)
+
+        # check to see if item should be published or not
+        if check_besterest is True:
+            checkBesterestVersion(self.main_widget, item=new_item, item_types=[item_type])
+
         return new_item
 
     """ DISABLE ITEM"""
     def __toggleItemDisabledState(self):
         item = self.main_widget.getWorkingItem()
         item.toggleDisabledState()
-        pass
+
     """ PROPERTIES """
     def setItem(self, item):
         self.item = item
@@ -2090,7 +2024,6 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         variable = main_widget.getVariable()
         node_type = main_widget.getNodeType()
         root_location = main_widget.getRootPublishDir()
-        #root_location = root_node.getParameter('publish_dir').getValue(0)
 
         if self.getItemType() == BLOCK_ITEM:
             location = '{root_location}/{variable}/{node_type}/block'.format(
