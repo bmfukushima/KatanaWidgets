@@ -635,7 +635,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         item.setText(0, str(self.currentText()))
 
         # update
-        checkBesterestVersion(self.main_widget)
+        #checkBesterestVersion(self.main_widget)
         variable_browser.reset()
 
         #self.main_widget.setVariable(variable)
@@ -767,7 +767,7 @@ class VariableManagerNodeMenu(AbstractComboBox):
                 return
 
             # update
-            checkBesterestVersion(self.main_widget)
+            #checkBesterestVersion(self.main_widget)
             variable_browser.reset()
 
     def cancelled(self):
