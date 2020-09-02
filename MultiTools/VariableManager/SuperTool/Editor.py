@@ -183,6 +183,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
     """
     def __init__(self, parent, node):
         super(VariableManagerEditor, self).__init__(parent, node)
+
         Utils.UndoStack.DisableCapture()
         self._should_update = False
 
@@ -395,12 +396,15 @@ class VariableManagerEditor(AbstractSuperToolEditor):
 
         """
         # condition checks
+
+        if not hasattr(self, 'main_widget'): return
         if self._should_update is False: return
         if self.main_widget.suppress_updates is True: return
 
         # get attrs
         variable_manager = self.main_widget.variable_manager_widget
         variable_browser = variable_manager.variable_browser
+
         item = variable_browser.currentItem()
         item_name = variable_browser.currentItem().text(0)
         item_path = VariableManagerBrowser.getFullItemPath(item, '')
@@ -421,8 +425,8 @@ class VariableManagerEditor(AbstractSuperToolEditor):
 
         # update variable browser
         variable_browser.clear()
+        #variable_browser.populate(check_besterest=False)
         variable_browser.populate()
-
         # reset selected item
         items = variable_browser.findItems(item_name, Qt.MatchExactly | Qt.MatchRecursive)
         for item in items:

@@ -6,32 +6,6 @@ from .ItemTypes import (
 )
 
 
-def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
-    """
-    Looks at an item and determines if there are versions available to load or not.
-    If there are versions available, it will load the besterest version, if there are not
-    versions available, it will create the new item.
-    """
-    # LOAD
-    if os.path.exists(publish_loc) is True:
-        # Load besterest version
-        main_widget.versions_display_widget.loadBesterestVersion(item, item_type=item_type)
-
-    # CREATE
-    else:
-        # preflight checks...
-        # can prob remove these from individual modules?
-        if main_widget.getVariable() == '': return
-        if main_widget.getNodeType() == '': return
-        main_widget.publish_display_widget.publishNewItem(
-            item_type=item_type, item=item
-        )
-        # print ('making dir == ', publish_loc)
-        # make live directory
-        live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
-        mkdirRecursive(live_directory)
-
-
 def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOCK_ITEM]):
     """
     Gets an items publish directories, and checks to determine if
@@ -93,7 +67,6 @@ def connectInsideGroup(node_list, parent_node):
         node_list[0].getInputPortByIndex(0).connect(send_port)
         node_list[-1].getOutputPortByIndex(0).connect(return_port)
         NodegraphAPI.SetNodePosition(node_list[-1], (0, len(node_list) * -100))
-
 
 def convertStringBoolToBool(string_bool):
     """
@@ -162,22 +135,6 @@ def disconnectNode(node, input=False, output=False):
                 port.disconnect(output)
 
 
-def mkdirRecursive(path):
-    """
-    Creates a directory and all parent directories leading
-    to that directory.  This is not as necessary in Python 3.x+
-    as you can do stuff like os.mkdirs.
-
-    Args:
-        path (str): directory to be created
-    """
-    sub_path = os.path.dirname(path)
-    if not os.path.exists(sub_path):
-        mkdirRecursive(sub_path)
-    if not os.path.exists(path):
-        os.mkdir(path)
-
-
 def goToNode(node, frame=False, nodegraph_tab=None):
     """
     Changes the nodegraph to the selected items node,
@@ -224,6 +181,48 @@ def getNextVersion(location):
         next_version = 'v'+str(sorted(versions)[-1] + 1).zfill(3)
 
     return next_version
+
+
+def mkdirRecursive(path):
+    """
+    Creates a directory and all parent directories leading
+    to that directory.  This is not as necessary in Python 3.x+
+    as you can do stuff like os.mkdirs.
+
+    Args:
+        path (str): directory to be created
+    """
+    sub_path = os.path.dirname(path)
+    if not os.path.exists(sub_path):
+        mkdirRecursive(sub_path)
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+
+def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
+    """
+    Looks at an item and determines if there are versions available to load or not.
+    If there are versions available, it will load the besterest version, if there are not
+    versions available, it will create the new item.
+    """
+    # LOAD
+    if os.path.exists(publish_loc) is True:
+        # Load besterest version
+        main_widget.versions_display_widget.loadBesterestVersion(item, item_type=item_type)
+
+    # CREATE
+    else:
+        # preflight checks...
+        # can prob remove these from individual modules?
+        if main_widget.getVariable() == '': return
+        if main_widget.getNodeType() == '': return
+        main_widget.publish_display_widget.publishNewItem(
+            item_type=item_type, item=item
+        )
+        # print ('making dir == ', publish_loc)
+        # make live directory
+        live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
+        mkdirRecursive(live_directory)
 
 
 # HACK

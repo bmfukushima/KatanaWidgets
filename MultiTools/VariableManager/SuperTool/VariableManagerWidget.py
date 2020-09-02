@@ -859,7 +859,75 @@ class VariableManagerBrowser(QTreeWidget):
         self.itemExpanded.connect(self.itemExpandedEvent)
         self.itemChanged.connect(self.itemNameChanged)
         # create all items
-        self.populate()
+        self.populate(check_besterest=False)
+
+    def populate(self, check_besterest=True):
+        """
+        Creates all of the items for a specific variable.  This will create all of the
+        items for the TreeWidget, aswell as any directories if needed.  If there is
+        no directory, this will publish a v000 and load it.
+
+        check_besterest (bool): Determines if this should check the besterest
+            version or not.  This is really here to disable recursion when loading
+            live groups.
+        """
+        # get publish dir...
+        variable = self.main_widget.getVariable()
+        node_type = self.main_widget.getNodeType()
+
+        # create master item
+        master_item = self.createNewBrowserItem(MASTER_ITEM, variable, check_besterest=False)
+        if check_besterest is True:
+            checkBesterestVersion(self.main_widget, item=master_item, item_types=[BLOCK_ITEM])
+
+        # recursively populate the items under the master group
+        block_root_node = master_item.getBlockNode()
+        for child in block_root_node.getParameter('nodeReference').getChildren():
+            self.populateBlock(child, check_besterest)
+
+    def populateBlock(self, child, check_besterest):
+        """
+        recursive statement to search through all
+        nodes and create the items for those nodes
+        Args:
+            child (Parameter): The parameter whose value will return
+                the new nodes name to check.
+            check_besterest (bool): Determines if this should check the besterest
+                version or not.  This is really here to disable recursion when loading
+                live groups.
+        """
+        root_node = NodegraphAPI.GetNode(child.getValue(0))
+        is_disabled = root_node.isBypassed()
+
+        # create pattern item
+        if root_node.getParameter('type').getValue(0) == 'pattern':
+            # create pattern item
+            pattern = root_node.getParameter('pattern').getValue(0)
+            new_item = self.createNewBrowserItem(
+                item_type=PATTERN_ITEM, item_text=pattern, node=root_node, check_besterest=check_besterest
+            )
+
+            # set item attrs
+            new_item.setDisabled(is_disabled)
+
+        # create block item, and populate block
+        else:
+            # create block item
+            item_text = root_node.getParameter('name').getValue(0)
+            new_item = self.createNewBrowserItem(
+                item_type=BLOCK_ITEM, item_text=item_text, node=root_node, check_besterest=check_besterest
+            )
+
+            # set item attrs
+            new_item.setDisabled(is_disabled)
+            string_expanded = root_node.getParameter('expanded').getValue(0)
+            is_expanded = convertStringBoolToBool(string_expanded)
+            new_item.setExpanded(is_expanded)
+
+            # recurse through block
+            block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
+            for child in block_node.getParameter('nodeReference').getChildren():
+                self.populateBlock(child, check_besterest)
 
     """ UTILS """
     @classmethod
@@ -920,77 +988,6 @@ class VariableManagerBrowser(QTreeWidget):
             # if the item does not have a parent, we will duck out
             pass
         new_parent_item.insertChild(index, item)
-
-    def populateBlock(self, child, check_besterest):
-        """
-        recursive statement to search through all
-        nodes and create the items for those nodes
-        Args:
-            child (Parameter): The parameter whose value will return
-                the new nodes name to check.
-            check_besterest (bool): Determines if this should check the besterest
-                version or not.  This is really here to disable recursion when loading
-                live groups.
-        """
-        root_node = NodegraphAPI.GetNode(child.getValue(0))
-        is_disabled = root_node.isBypassed()
-
-        # create pattern item
-        if root_node.getParameter('type').getValue(0) == 'pattern':
-            # create pattern item
-            pattern = root_node.getParameter('pattern').getValue(0)
-
-            new_item = self.createNewBrowserItem(
-                item_type=PATTERN_ITEM, item_text=pattern, node=root_node, check_besterest=check_besterest
-            )
-
-            # set item attrs
-            new_item.setDisabled(is_disabled)
-
-        # create block item, and populate block
-        else:
-            # create block item
-            item_text = root_node.getParameter('name').getValue(0)
-            new_item = self.createNewBrowserItem(
-                item_type=BLOCK_ITEM, item_text=item_text, node=root_node, check_besterest=check_besterest
-            )
-
-            # set item attrs
-            new_item.setDisabled(is_disabled)
-            string_expanded = root_node.getParameter('expanded').getValue(0)
-            is_expanded = convertStringBoolToBool(string_expanded)
-            new_item.setExpanded(is_expanded)
-
-            # recurse through block
-            block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
-            for child in block_node.getParameter('nodeReference').getChildren():
-                self.populateBlock(child, check_besterest)
-
-    def populate(self, check_besterest=True):
-        """
-        Creates all of the items for a specific variable.  This will create all of the
-        items for the TreeWidget, aswell as any directories if needed.  If there is
-        no directory, this will publish a v000 and load it.
-
-        check_besterest (bool): Determines if this should check the besterest
-            version or not.  This is really here to disable recursion when loading
-            live groups.
-        """
-        # get publish dir...
-        variable = self.main_widget.getVariable()
-        node_type = self.main_widget.getNodeType()
-
-        # create master item
-        master_item = self.createNewBrowserItem(MASTER_ITEM, variable, check_besterest=False)
-        if check_besterest is True:
-            checkBesterestVersion(self.main_widget, item=master_item, item_types=[BLOCK_ITEM])
-
-        # recursively populate the items under the master group
-        block_root_node = master_item.getBlockNode()
-        for child in block_root_node.getParameter('nodeReference').getChildren():
-            self.populateBlock(child, check_besterest)
-
-        # publish master item...
 
     def __deleteItem(self, item):
         """
@@ -1115,7 +1112,6 @@ class VariableManagerBrowser(QTreeWidget):
             old_parent_item (VariableManagerBrowserItem): the item to have
                 the reference removed from.
         """
-        # update params
 
         # get nodes
         node = item.getRootNode()
@@ -1174,12 +1170,14 @@ class VariableManagerBrowser(QTreeWidget):
         self.main_widget.publish_display_widget.display()
 
     """ CREATE NEW ITEM """
-    def __setupNodes(self, node, parent_node, current_pos):
+    @staticmethod
+    def __insertNode(node, parent_node, current_pos):
         """
-        connects the nodes, and sets their position
+        Inserts the node in the correct position in the Nodegraph, and then
+        wires the node into that position.
 
         Args:
-            node (node): Current node that is being created
+            node (node): Current node to be inserted
             parent_node (node): The current nodes parent
             current_pos (QPoint): the current position of the last node
         """
@@ -1313,7 +1311,7 @@ class VariableManagerBrowser(QTreeWidget):
         if not block_root_node:
             block_root_node = node.createBlockRootNode(parent_node, name=item_text)
             # connect and align nodes
-            self.__setupNodes(block_root_node, parent_node, current_pos)
+            self.__insertNode(block_root_node, parent_node, current_pos)
 
         block_node_name = block_root_node.getParameter('name').getValue(0)
         block_node_hash = block_root_node.getParameter('hash').getValue(0)
@@ -1436,7 +1434,7 @@ class VariableManagerBrowser(QTreeWidget):
         if not pattern_node:
             pattern_node = node.createPatternGroupNode(parent_node, pattern=item_text)
             # connect and align nodes
-            self.__setupNodes(pattern_node, parent_node, current_pos)
+            self.__insertNode(pattern_node, parent_node, current_pos)
 
         # Get Parameters
         version = pattern_node.getParameter('version').getValue(0)
@@ -1642,7 +1640,7 @@ class VariableManagerBrowser(QTreeWidget):
         item_dropped = self.currentItem()
         old_parent_item = item_dropped.parent()
         item_dropped_on = self.itemAt(event.pos())
-        # new_parent_item = item_dropped_on.parent()
+
         # Dropped on an item
         if drop_type == DROP_ON:
             # dropped on pattern
@@ -1671,6 +1669,7 @@ class VariableManagerBrowser(QTreeWidget):
         if new_parent_item:
             new_index = new_parent_item.indexOfChild(item_dropped)
             self.__dropOnBlockWrapper(item_dropped, new_index, new_parent_item, old_parent_item)
+
         # fix weird magical drop spot in the tree inbetween items...
         else:
             self.reparentItem(item_dropped, old_parent_item, index=old_index)
@@ -1716,11 +1715,6 @@ class VariableManagerBrowser(QTreeWidget):
                 nodegraph_tab = variable_manager_widget.nodegraph_tab
 
                 # go to node
-                #self.main_widget.variable_manager_widget.variable_browser
-                # variable_browser = variable_manager_widget.variable_browser
-                # item = variable_browser.topLevelItem(0)
-                # variable_browser.setCurrentItem(item)
-                # self.main_widget.setWorkingItem(item)
                 goToNode(node, frame=True, nodegraph_tab=nodegraph_tab)
 
                 # resize splitter to let user know that they can do this now...
