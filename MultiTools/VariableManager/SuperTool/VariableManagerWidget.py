@@ -839,7 +839,7 @@ class VariableManagerBrowser(QTreeWidget):
         # set up header
         self.head = self.header()
         self.head.setSectionsClickable(True)
-        self.head.sectionClicked.connect(self.__createUserBlockItemWrapper)
+        self.head.sectionClicked.connect(self.__createNewBlockItemHeader)
         self.setHeaderItem(QTreeWidgetItem([variable, 'pattern', 'block']))
         self.head.setStretchLastSection(False)
         self.head.setSectionResizeMode(0, QHeaderView.Stretch)
@@ -1388,6 +1388,75 @@ class VariableManagerBrowser(QTreeWidget):
 
         return block_item
 
+    def __createNewBlockItemHeader(self):
+        """
+        When the header is pressed, this will create a new block item.  I'm not
+        to sure if I even want to keep this functionality...
+        """
+        # preflight
+        if self.main_widget.getVariable() == '': return
+        if self.main_widget.getNodeType() == '': return
+
+        self.__createUserBlockItemWrapper()
+
+    def __createUserBlockItemWrapper(self):
+        """
+        Wrapper function for the horribly named function
+        __createUseBlockItem.
+        """
+        if not self.main_widget.variable:
+            return
+        item = self.currentItem()
+        makeUndoozable(self.__createUserBlockItem, self.main_widget, 'Block', 'Create Block Item', item=item)
+
+    def __createUserBlockItem(self, item=None):
+        """
+        Creates a new user block item.  This is triggered from the
+        Context Menu, and header clicked.
+
+        TODO:
+            Merge this with the __createNewBlockItem method
+
+        Kwargs:
+            item (VariableManagerBrowserItem): If the item is given,
+                the block item will be created at this items location, and
+                the item clicked on while creating the block menu will
+                be reparented underneath the new block.
+
+        Returns (BLOCK ITEM)
+        """
+        # create block
+        new_parent_item = self.createNewBrowserItem(
+            item_type=BLOCK_ITEM, item_text="block"
+        )
+
+        # move new item under item clicked on,
+        # if created on a pattern item
+        if item:
+            if item.getItemType() == PATTERN_ITEM:
+                # get attrs
+                old_parent_item = item.parent()
+                index = old_parent_item.indexOfChild(item)
+
+                # move pattern under block
+                old_parent_item.takeChild(index)
+                new_parent_item.addChild(item)
+                self.__moveItem(item, 0, new_parent_item, old_parent_item)
+
+                # move block to patterns old location
+                new_grandparent_item = new_parent_item.parent()
+                self.__moveItem(new_parent_item, index, new_grandparent_item, new_grandparent_item)
+
+                # move VariableManagerBrowserItem
+                new_index = new_grandparent_item.indexOfChild(new_parent_item)
+                new_grandparent_item.takeChild(new_index)
+                new_grandparent_item.insertChild(index, new_parent_item)
+
+                # expand new group
+                new_parent_item.setExpanded(True)
+
+        return new_parent_item
+
     def __createNewPatternItem(self, item_text, pattern_node=None):
         """
         Args:
@@ -1708,64 +1777,6 @@ class VariableManagerBrowser(QTreeWidget):
             self.main_widget.populateParameters(node_list=[node])
 
     """ RMB EVENTS """
-    def __createUserBlockItemWrapper(self):
-        """
-        Wrapper function for the horribly named function
-        __createUseBlockItem.
-        """
-        if not self.main_widget.variable:
-            return
-        item = self.currentItem()
-        makeUndoozable(self.__createUserBlockItem, self.main_widget, 'Block', 'Create Block Item', item=item)
-
-    def __createUserBlockItem(self, item=None):
-        """
-        Creates a new user block item.  This is triggered from the
-        Context Menu, and header clicked.
-
-        TODO:
-            Merge this with the __createNewBlockItem method
-
-        Kwargs:
-            item (VariableManagerBrowserItem): If the item is given,
-                the block item will be created at this items location, and
-                the item clicked on while creating the block menu will
-                be reparented underneath the new block.
-
-        Returns (BLOCK ITEM)
-        """
-        # create block
-        new_parent_item = self.createNewBrowserItem(
-            item_type=BLOCK_ITEM, item_text="block"
-        )
-
-        # move new item under item clicked on,
-        # if created on a pattern item
-        if item:
-            if item.getItemType() == PATTERN_ITEM:
-                # get attrs
-                old_parent_item = item.parent()
-                index = old_parent_item.indexOfChild(item)
-
-                # move pattern under block
-                old_parent_item.takeChild(index)
-                new_parent_item.addChild(item)
-                self.__moveItem(item, 0, new_parent_item, old_parent_item)
-
-                # move block to patterns old location
-                new_grandparent_item = new_parent_item.parent()
-                self.__moveItem(new_parent_item, index, new_grandparent_item, new_grandparent_item)
-
-                # move VariableManagerBrowserItem
-                new_index = new_grandparent_item.indexOfChild(new_parent_item)
-                new_grandparent_item.takeChild(new_index)
-                new_grandparent_item.insertChild(index, new_parent_item)
-
-                # expand new group
-                new_parent_item.setExpanded(True)
-
-        return new_parent_item
-
     def contextMenuEvent(self, event):
         """
         popup menu created when the rmb is hit - has a sub method

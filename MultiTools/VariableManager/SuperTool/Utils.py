@@ -23,7 +23,8 @@ def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
             item_type=item_type, item=item
         )
 
-        live_directory = '/'.join(publish_loc.split('/'))[:-1] + '/live'
+        # make live directory
+        live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
         mkdirRecursive(live_directory)
 
 
@@ -33,7 +34,7 @@ def checkBesterestVersion(main_widget, item=None):
     it should load a version, or create a new version.
 
     """
-    #if hasattr(main_widget, 'variable_browser'):
+
     publish_dir = main_widget.getBasePublishDir(include_node_type=True)
     if not item:
         item = main_widget.getWorkingItem()
