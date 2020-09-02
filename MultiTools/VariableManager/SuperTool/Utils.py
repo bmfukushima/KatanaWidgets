@@ -22,24 +22,29 @@ def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
         main_widget.publish_display_widget.publishNewItem(
             item_type=item_type, item=item
         )
-
+        print ('making dir == ', publish_loc)
         # make live directory
         live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
         mkdirRecursive(live_directory)
 
 
-def checkBesterestVersion(main_widget, item=None):
+def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOCK_ITEM]):
     """
     Gets an items publish directories, and checks to determine if
     it should load a version, or create a new version.
 
+    main_widget (VariableManagerMainWidget): The getMainWidget widget...
+    item (VariableManagerBrowserItem): item to check for besterest version
+    item_types (list): list of ITEM_TYPES to check for besterest version
+        by default this is set to all, but can be just a single
+            [PATTERN_ITEM] or [BLOCK_ITEM]
     """
 
     publish_dir = main_widget.getBasePublishDir(include_node_type=True)
     if not item:
         item = main_widget.getWorkingItem()
 
-    for item_type in [PATTERN_ITEM, BLOCK_ITEM]:
+    for item_type in item_types:
         # check default directories
         publish_loc = '{publish_dir}/{item_type}/{unique_hash}/{item_type}/v000'.format(
             publish_dir=publish_dir, item_type=item_type.TYPE, unique_hash=item.getHash()
@@ -51,8 +56,7 @@ def checkBesterestVersion(main_widget, item=None):
             publish_loc = '{publish_dir}/{item_type}/{unique_hash}/pattern/v000'.format(
                 publish_dir=publish_dir, item_type=item_type.TYPE, unique_hash=item.getHash()
             )
-            resolveBesterestVersion(main_widget, publish_loc, item_type, item=item)
-
+            resolveBesterestVersion(main_widget, publish_loc, PATTERN_ITEM, item=item)
 
 def connectInsideGroup(node_list, parent_node):
     """

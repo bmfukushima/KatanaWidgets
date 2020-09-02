@@ -1098,11 +1098,6 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         item = self.main_widget.getWorkingItem()
 
         # get publish node
-        """
-        why is this note here...
-            only look at one thing...
-            only looking at the publish type, not looking at the item type...
-        """
         if item.getItemType() == PATTERN_ITEM:
             publish_type = PATTERN_ITEM
             publish_node = item.getPatternNode()
@@ -1125,6 +1120,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
 
         # massive hack... commented out lines below show
         # the kinda sorta realish code
+        # those lines disappeared..
         self.__loadLiveGroupHack(publish_node, publish_dir)
 
         # update item attributes
@@ -1136,7 +1132,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
 
         # update browser widget
         self.main_widget.variable_manager_widget.variable_browser.clear()
-        self.main_widget.variable_manager_widget.variable_browser.populate()
+        self.main_widget.variable_manager_widget.variable_browser.populate(check_besterest=False)
 
         # update variable switch...
         # get the parent root node of the item
@@ -1146,7 +1142,6 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         elif item.getItemType() in BLOCK_PUBLISH_GROUP:
             root_node = item.getPatternNode().getParent()
 
-        #root_node = item.getRootNode()
         self.main_widget.updateAllVariableSwitches(root_node)
         self.main_widget.updateOptionsList()
 
@@ -1160,8 +1155,8 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         item_type: the type of item to load the besterest version of
             by default this is BLOCK_ITEM but will also accept PATTERN_ITEMs
         """
-        #item = self.main_widget.getWorkingItem()
-        publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=BLOCK_ITEM)
+
+        publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=item_type)
         version = self.getBesterestVersion(publish_dir)
         previous_variable = self.main_widget.getVariable()
         # update versions display widget
@@ -1174,7 +1169,24 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
 
     """ EVENTS """
     def display(self):
+        """
+        Displays the Versions to the user.  If display is not activated,
+        then whatever is happening should go through an auto pub
+        process
+        """
         self.main_widget.layout().setCurrentIndex(1)
+        item = self.main_widget.getWorkingItem()
+
+        # get publish type
+        if self.column == 1:
+            publish_type = PATTERN_ITEM
+        elif self.column == 2:
+            publish_type = BLOCK_ITEM
+
+        publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=publish_type)
+        besterest_version = self.getBesterestVersion(publish_dir)
+
+        self.version_combobox.setCurrentIndexToText(besterest_version)
 
     def update(
         self,
@@ -1204,18 +1216,9 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         local_publish_dir = self.getPublishDir()
         self.version_combobox.updateVersions(local_publish_dir)
 
-        # get/display latest version if there is no gui
+        # get/display latest version if GUI mode has been selected
         if self.gui is True:
             self.display()
-            item = self.main_widget.getWorkingItem()
-            if column == 1:
-                publish_type = PATTERN_ITEM
-            elif column == 2:
-                publish_type = BLOCK_ITEM
-            publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=BLOCK_ITEM)
-            besterest_version = self.getBesterestVersion(publish_dir)
-
-            self.version_combobox.setCurrentIndexToText(besterest_version)
 
     def __cancelled(self):
         """

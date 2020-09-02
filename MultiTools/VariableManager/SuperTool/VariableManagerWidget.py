@@ -941,10 +941,16 @@ class VariableManagerBrowser(QTreeWidget):
             pass
         new_parent_item.insertChild(index, item)
 
-    def populateBlock(self, root_item, child):
+    def populateBlock(self, child, check_besterest):
         """
         recursive statement to search through all
         nodes and create the items for those nodes
+        Args:
+            child (Parameter): The parameter whose value will return
+                the new nodes name to check.
+            check_besterest (bool): Determines if this should check the besterest
+                version or not.  This is really here to disable recursion when loading
+                live groups.
         """
         root_node = NodegraphAPI.GetNode(child.getValue(0))
         is_disabled = root_node.isBypassed()
@@ -968,7 +974,8 @@ class VariableManagerBrowser(QTreeWidget):
             #     item_type=PATTERN_ITEM
             # )
             pattern = root_node.getParameter('pattern').getValue(0)
-            new_item = self.__createNewPatternItem(pattern, pattern_node=root_node)
+            new_item = self.__createNewPatternItem(
+                pattern, pattern_node=root_node, check_besterest=check_besterest)
             new_item.setDisabled(is_disabled)
         # create block item, and populate block
         else:
@@ -1005,7 +1012,8 @@ class VariableManagerBrowser(QTreeWidget):
             # )
 
             item_text = root_node.getParameter('name').getValue(0)
-            new_item = self.__createNewBlockItem(item_text=item_text , block_root_node=root_node)
+            new_item = self.__createNewBlockItem(
+                item_text=item_text , block_root_node=root_node, check_besterest=check_besterest)
             new_item.setDisabled(is_disabled)
             string_expanded = root_node.getParameter('expanded').getValue(0)
             is_expanded = convertStringBoolToBool(string_expanded)
@@ -1018,9 +1026,18 @@ class VariableManagerBrowser(QTreeWidget):
             # recursively populate the block
             block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
             for child in block_node.getParameter('nodeReference').getChildren():
-                self.populateBlock(new_item, child)
+                self.populateBlock(child, check_besterest)
 
-    def populate(self):
+    def populate(self, check_besterest=True):
+        """
+        Creates all of the items for a specific variable.  This will create all of the
+        items for the TreeWidget, aswell as any directories if needed.  If there is
+        no directory, this will publish a v000 and load it.
+
+        check_besterest (bool): Determines if this should check the besterest
+            version or not.  This is really here to disable recursion when loading
+            live groups.
+        """
         # get publish dir...
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
@@ -1043,7 +1060,7 @@ class VariableManagerBrowser(QTreeWidget):
         if variable != '':
             block_root_node = master_item.getBlockNode()
             for child in block_root_node.getParameter('nodeReference').getChildren():
-                self.populateBlock(master_item, child)
+                self.populateBlock(child, check_besterest)
 
     def __deleteItem(self, item):
         """
@@ -1341,14 +1358,21 @@ class VariableManagerBrowser(QTreeWidget):
 
         return master_item
 
-    def __createNewBlockItem(self, item_text='New_Block', block_root_node=None):
+    def __createNewBlockItem(self, item_text='New_Block', block_root_node=None, check_besterest=True):
         """
         Creates a new block item, which is a container for
-        holding patterns in a GSV.
+        holding patterns in a GSV.  If no block root node is provided, this will
+        create a new block root node.
 
         This is called by the createNewBrowserItem method
         Args:
                 item_text (str): The name of the new block
+                block_root_node (Block Root Node): The new block node... if this
+                    is provided, it will be used as the block root node, rather than
+                    creating a new one.
+                check_besterest (bool): Determines if this should check the besterest
+                    version or not.  This is really here to disable recursion when loading
+                    live groups.
         return (VariableManagerBrowserItem)
         """
         # gather variables for item creation
@@ -1384,7 +1408,8 @@ class VariableManagerBrowser(QTreeWidget):
             unique_hash=block_node_hash
         )
 
-        checkBesterestVersion(self.main_widget, item=block_item)
+        if check_besterest is True:
+            checkBesterestVersion(self.main_widget, item=block_item, item_types=[BLOCK_ITEM])
 
         return block_item
 
@@ -1457,10 +1482,24 @@ class VariableManagerBrowser(QTreeWidget):
 
         return new_parent_item
 
-    def __createNewPatternItem(self, item_text, pattern_node=None):
+    def __createNewPatternItem(self, item_text, pattern_node=None, check_besterest=True):
         """
+        Creates a new pattern item, which is a container for
+        holding patterns in a GSV.  If no pattern node is provided, this will
+        create a new block root node.
+
+        This is called by the createNewBrowserItem method
         Args:
-            pattern (str): the GSV pattern to be used
+                item_text (str): The name of the new block
+                pattern_node (Pattern Node): The new block node... if this
+                    is provided, it will be used as the block root node, rather than
+                    creating a new one.
+                check_besterest (bool): Determines if this should check the besterest
+                    version or not.  This is really here to disable recursion when loading
+                    live groups.
+        return (VariableManagerBrowserItem)
+        TODO
+            Consider merging with __createNewBlockItem
         """
         node = self.main_widget.getNode()
         parent_node, parent_item, current_pos = self.__getNewItemSetupAttributes()
@@ -1492,7 +1531,8 @@ class VariableManagerBrowser(QTreeWidget):
         self.main_widget.updateAllVariableSwitches(current_root_node, new_pattern=new_pattern)
 
         # set up publish dirs
-        checkBesterestVersion(self.main_widget, item=item)
+        if check_besterest is True:
+            checkBesterestVersion(self.main_widget, item=item, item_types=[PATTERN_ITEM])
 
         return item
 
