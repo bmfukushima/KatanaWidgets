@@ -432,7 +432,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             if full_path == item_path:
                 variable_browser.setCurrentItem(item)
                 self.main_widget.setWorkingItem(item)
-
                 return
 
         # if none found, set to top level item

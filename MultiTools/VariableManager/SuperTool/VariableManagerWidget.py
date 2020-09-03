@@ -883,9 +883,9 @@ class VariableManagerBrowser(QTreeWidget):
         # recursively populate the items under the master group
         block_root_node = master_item.getBlockNode()
         for child in block_root_node.getParameter('nodeReference').getChildren():
-            self.populateBlock(child, check_besterest)
+            self.populateBlock(master_item, child, check_besterest)
 
-    def populateBlock(self, child, check_besterest):
+    def populateBlock(self, parent_item, child, check_besterest):
         """
         recursive statement to search through all
         nodes and create the items for those nodes
@@ -904,7 +904,7 @@ class VariableManagerBrowser(QTreeWidget):
             # create pattern item
             pattern = root_node.getParameter('pattern').getValue(0)
             new_item = self.createNewBrowserItem(
-                item_type=PATTERN_ITEM, item_text=pattern, node=root_node, check_besterest=check_besterest
+                item_type=PATTERN_ITEM, item_text=pattern, node=root_node, check_besterest=check_besterest, parent_item=parent_item
             )
 
             # set item attrs
@@ -915,7 +915,7 @@ class VariableManagerBrowser(QTreeWidget):
             # create block item
             item_text = root_node.getParameter('name').getValue(0)
             new_item = self.createNewBrowserItem(
-                item_type=BLOCK_ITEM, item_text=item_text, node=root_node, check_besterest=check_besterest
+                item_type=BLOCK_ITEM, item_text=item_text, node=root_node, check_besterest=check_besterest, parent_item=parent_item
             )
 
             # set item attrs
@@ -927,7 +927,7 @@ class VariableManagerBrowser(QTreeWidget):
             # recurse through block
             block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
             for child in block_node.getParameter('nodeReference').getChildren():
-                self.populateBlock(child, check_besterest)
+                self.populateBlock(new_item, child, check_besterest)
 
     """ UTILS """
     @classmethod
@@ -1215,7 +1215,7 @@ class VariableManagerBrowser(QTreeWidget):
             current_item = self.topLevelItem(0)
 
         if not current_item:
-            return None, None, None
+            return None, None
 
         if current_item.getItemType() == PATTERN_ITEM:
             parent_item = current_item.parent()
@@ -1238,7 +1238,7 @@ class VariableManagerBrowser(QTreeWidget):
             current_pos = (0, 0)
 
         # return stuff
-        return parent_node, parent_item, current_pos
+        return parent_node, current_pos
 
     def __createNewMasterItem(self):
         """
@@ -1286,7 +1286,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         return master_item
 
-    def __createNewBlockItem(self, item_text='New_Block', block_root_node=None):
+    def __createNewBlockItem(self, item_text='New_Block', block_root_node=None, parent_item=None):
         """
         Creates a new block item, which is a container for
         holding patterns in a GSV.  If no block root node is provided, this will
@@ -1305,7 +1305,7 @@ class VariableManagerBrowser(QTreeWidget):
         """
         # gather variables for item creation
         node = self.main_widget.getNode()
-        parent_node, parent_item, current_pos = self.__getNewItemSetupAttributes()
+        parent_node, current_pos = self.__getNewItemSetupAttributes()
 
         # create node group
         if not block_root_node:
@@ -1409,7 +1409,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         return new_parent_item
 
-    def __createNewPatternItem(self, item_text, pattern_node=None):
+    def __createNewPatternItem(self, item_text, pattern_node=None, parent_item=None):
         """
         Creates a new pattern item, which is a container for
         holding patterns in a GSV.  If no pattern node is provided, this will
@@ -1429,7 +1429,7 @@ class VariableManagerBrowser(QTreeWidget):
             Consider merging with __createNewBlockItem
         """
         node = self.main_widget.getNode()
-        parent_node, parent_item, current_pos = self.__getNewItemSetupAttributes()
+        parent_node, current_pos = self.__getNewItemSetupAttributes()
         # create node group
         if not pattern_node:
             pattern_node = node.createPatternGroupNode(parent_node, pattern=item_text)
@@ -1463,7 +1463,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         return item
 
-    def createNewBrowserItem(self, item_type=BLOCK_ITEM, item_text=None, node=None, check_besterest=True):
+    def createNewBrowserItem(self, item_type=BLOCK_ITEM, item_text=None, node=None, check_besterest=True, parent_item=None):
         """
         Creates a new Variable Browser item, at the currently selected item.
         If no item is selected, it will create the new item under the master item.
@@ -1477,11 +1477,20 @@ class VariableManagerBrowser(QTreeWidget):
             The newly created item.
 
         """
+        # handle non existant scenerio
+        if not parent_item:
+            parent_item = self.main_widget.getWorkingItem()
+
+        # # handle pattern scenerio
+        if parent_item:
+            if parent_item.getItemType() == PATTERN_ITEM:
+                parent_item = parent_item.parent()
+
         if item_type == BLOCK_ITEM:
-            new_item = self.__createNewBlockItem(item_text=item_text, block_root_node=node)
+            new_item = self.__createNewBlockItem(item_text=item_text, block_root_node=node, parent_item=parent_item)
 
         elif item_type == PATTERN_ITEM:
-            new_item = self.__createNewPatternItem(item_text, pattern_node=node)
+            new_item = self.__createNewPatternItem(item_text, pattern_node=node, parent_item=parent_item)
 
         elif item_type == MASTER_ITEM:
             new_item = self.__createNewMasterItem()
