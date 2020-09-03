@@ -200,6 +200,10 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         # set up node graph destruction handler
         self.setupDestroyNodegraphEvent()
 
+        # update on init
+        self._should_update = True
+        self.__updateGUI(None, check_besterest=False)
+        self._should_update = False
         Utils.UndoStack.EnableCapture()
 
     """ SETUP EVENT HANDLERS """
@@ -267,7 +271,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         return AbstractSuperToolEditor.hideEvent(self, event)
 
     def showEvent(self, event):
-        self.__updateGUI(event)
+        self.__updateGUI(event, check_besterest=False)
         return AbstractSuperToolEditor.showEvent(self, event)
 
     """ PARAM CHANGED """
@@ -356,7 +360,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         """
         Synchronizes the GUI, and anything else in the nodes that is not updated.
         """
-        # condition checks
+        # pre flight checks
         if not hasattr(self, 'main_widget'): return
         if self._should_update is False: return
         if self.main_widget.suppress_updates is True: return
@@ -394,13 +398,14 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             if full_path == item_path:
                 variable_browser.setCurrentItem(item)
                 self.main_widget.setWorkingItem(item)
+                self.updateSize()
                 return
 
         # if none found, set to top level item
         new_item = variable_manager.variable_browser.topLevelItem(0)
-        variable_manager.variable_browser.setCurrentItem(new_item)
         variable_browser.setCurrentItem(new_item)
         self.main_widget.setWorkingItem(new_item)
+        self.updateSize()
 
     def __undoEventUpdate(self, args):
 
