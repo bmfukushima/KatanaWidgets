@@ -1534,8 +1534,6 @@ class VariableManagerBrowser(QTreeWidget):
         """
         # get nodes
         node = item.getRootNode()
-        #old_parent_node = old_parent_item.getRootNode()
-        #new_parent_node = new_parent_item.getRootNode()
         new_block_node = new_parent_item.getBlockNode()
 
         # reset node parent
@@ -1569,7 +1567,6 @@ class VariableManagerBrowser(QTreeWidget):
                 new parent (BLOCK_ITEM)
             new_index (int): The current index of the item that has been dropped on
         """
-
         self.__moveItem(item_dropped, new_index, new_parent_item, old_parent_item)
         new_parent_item.setExpanded(True)
 
@@ -1674,14 +1671,14 @@ class VariableManagerBrowser(QTreeWidget):
             return_val = super(VariableManagerBrowser, self).dropEvent(event, *args, **kwargs)
             new_parent_item = item_dropped.parent()
 
-        # move item
-        if new_parent_item:
-            new_index = new_parent_item.indexOfChild(item_dropped)
-            self.__dropOnBlockWrapper(item_dropped, new_index, new_parent_item, old_parent_item)
+            # move item
+            if new_parent_item:
+                new_index = new_parent_item.indexOfChild(item_dropped)
+                self.__dropOnBlockWrapper(item_dropped, new_index, new_parent_item, old_parent_item)
 
-        # fix weird magical drop spot in the tree inbetween items...
-        else:
-            self.reparentItem(item_dropped, old_parent_item, index=old_index)
+            # fix weird magical drop spot in the tree inbetween items...
+            else:
+                self.reparentItem(item_dropped, old_parent_item, index=old_index)
 
         # return drop event
         return return_val
