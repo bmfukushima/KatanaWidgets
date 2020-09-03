@@ -13,9 +13,7 @@ from .Settings import (
     CANCEL_COLOR_RGBA
 )
 
-from Utils2 import (
-    getMainWidget, suppressUndooz
-)
+from Utils2 import suppressUndooz
 
 from .GifPlayer import GifPlayer
 
@@ -43,7 +41,7 @@ class AbstractUserBooleanWidget(QWidget):
     """
     def __init__(self, parent=None, central_widget=None, button_width=None):
         super(AbstractUserBooleanWidget, self).__init__(parent)
-        self.main_widget = getMainWidget(self)
+        #self.main_widget = getMainWidget(self)
 
         # Create main layout
         QHBoxLayout(self)
@@ -132,11 +130,11 @@ You can also hit <ESCAPE> to go back...
         self._cancel = cancel
 
     def acceptPressed(self):
-        self.main_widget.layout().setCurrentIndex(0)
+        #self.main_widget.layout().setCurrentIndex(0)
         self._accept()
 
     def cancelPressed(self):
-        self.main_widget.layout().setCurrentIndex(0)
+        #self.main_widget.layout().setCurrentIndex(0)
         suppressUndooz(self._cancel)
 
     def keyPressEvent(self, event):

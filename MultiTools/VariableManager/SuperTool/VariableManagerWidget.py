@@ -50,19 +50,19 @@ from .Settings import (
 
 from .Utils import (
     checkBesterestVersion,
-    connectInsideGroup,
-    convertStringBoolToBool,
     createNodeReference,
-    disconnectNode,
-    goToNode,
+    getMainWidget,
     getNextVersion,
-    mkdirRecursive,
+    goToNode,
     updateNodeName,
 )
 
 from Utils2 import (
-    getMainWidget,
-    makeUndoozable
+    convertStringBoolToBool,
+    disconnectNode,
+    gsvutils,
+    makeUndoozable,
+    nodeutils,
 )
 
 from Widgets2 import(
@@ -80,14 +80,13 @@ class VariableManagerWidget(QWidget):
     the main layout.
 
     Widgets:
-        variable_menu (AbstractComboBox): QCombobox that contains an
+        variable_menu (VariableManagerGSVMenu): QCombobox that contains an
             editable list of GSVs that the user can change to.
-        node_type_menu (AbstractComboBox): QCombobox that contains an
+        node_type_menu (VariableManagerNodeTypeMenu): QCombobox that contains an
             editable list of Node Types that the user can change to.
-        publish_dir (Katana Widget): str value that returns the current root
+        publish_dir (PublishDirWidget): str value that returns the current root
             directory for publishing.By default this is set to
                 $HOME/.katana/VariableManager
-
             This is set in the settings file, potentially will change this to
                 $HOME/.katana/<node_name>
         params_widget (QWidget): An internal parameters display window for this
@@ -95,6 +94,11 @@ class VariableManagerWidget(QWidget):
             set this to display that nodes parameters.  If it is set to Group a special
             hotkey will need to be hit to display the parameters in this window,
             by default it is Alt+W
+        variable_browser (VariableManagerBrowser): The tree widget / organizer
+            for all of the patterns inside of the specified GSV
+        nodegraph_tab (Katana Nodegraph):  Hidden unless node type is set
+            to 'Group'.
+
     """
     def __init__(self, parent=None, node=None):
         super(VariableManagerWidget, self).__init__(parent)
@@ -107,6 +111,7 @@ class VariableManagerWidget(QWidget):
     def __name__(self):
         return "Variable Manager Widget"
 
+    """ CREATE GUI"""
     def initGUI(self):
 
         QVBoxLayout(self)
@@ -229,15 +234,7 @@ class VariableManagerWidget(QWidget):
         self.params_scroll.setWidgetResizable(True)
         return params_widget
 
-    def createValueParam(self, name):
-        """
-        Create a katana param
-        """
-        factory = UI4.FormMaster.KatanaFactory.ParameterWidgetFactory
-        locationPolicy = UI4.FormMaster.CreateParameterPolicy(None, self.node.getParameter(name))
-        w = factory.buildWidget(self, locationPolicy)
-        return w
-
+    """ EVENTS """
     @staticmethod
     def toggleFullView(splitter):
         """
@@ -297,6 +294,7 @@ class VariableManagerWidget(QWidget):
 
     def keyPressEvent(self, event):
         if event.key() == 96:
+            # ~ KEY... can't find this in the Qt.Key_Tilda...
             VariableManagerWidget.toggleFullView(self.splitter)
 
 
@@ -308,14 +306,14 @@ class VariableManagerCreateNewItemWidget(QWidget):
     chosen by the user.
 
     Attributes:
-        node_type (ITEM_TYPE): the type of item to create
+        item_type (ITEM_TYPE): the type of item to create
         spacing (int): how much space is between the buttons
             and the user input.
     Widgets:
         item_type_button (QPushButton): Toggles what type
             of item the user will be creating.
-        item_text_field (QLineEdit): Text of the new item to
-            be created.
+        item_text_field (VariableManagerCreateNewItemTextWidget):
+            Text of the new item to be created.
         enter_button (QPushButton): If the user is incapable of
             understanding that you can hit enter/return to accept
             something.  This is a really big, pretty much pointless
@@ -378,6 +376,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
             spacing=str(self.spacing),
             grid_color=GRID_COLOR
         ))
+
     """ EVENTS """
     def toggleItemType(self):
         """
@@ -396,7 +395,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
         # get current item
         item = self.main_widget.getWorkingItem()
         current_text = str(self.item_text_field.text())
-        # browser_widget = self.main_widget.variable_manager_widget.variable_browser
+
         if item:
             if current_text:
                 if self.main_widget.variable:
@@ -421,7 +420,9 @@ class VariableManagerCreateNewItemWidget(QWidget):
 
         # check parameters if pattern
         if self.item_type == PATTERN_ITEM:
-            self.createNewPattern()
+            variable = self.main_widget.variable
+            pattern = str(self.item_text_field.text())
+            gsvutils.createNewPattern(pattern, variable)
 
         # reset text
         self.item_text_field.setText('')
@@ -433,39 +434,6 @@ class VariableManagerCreateNewItemWidget(QWidget):
         QWidget.resizeEvent(self, event)
 
     """ UTILS"""
-    def createNewPattern(self):
-        """
-        Creates a new pattern item for this widget.  If that pattern
-        does not exist for the current graph state variable, it will
-        create the new pattern aswell
-        """
-        # get attributes
-        variable = self.main_widget.variable
-        new_variable = str(self.item_text_field.text())
-
-        # get variables list
-        variables_list_parm = NodegraphAPI.GetRootNode().getParameter(
-            'variables.{variable}.options'.format(variable=variable)
-        )
-        variables_list = [child.getName() for child in variables_list_parm.getChildren()]
-        # TODO
-        # Pattern Create
-        """
-        TODO:
-            print(variables_list)
-            print(self.main_widget.getOptionsList())
-    
-            variables list ['i0', 'i1', 'i2', 'i3', 'i4', 'i5', 'i6', 'i7', 'i8', 'i9', 'i10', 'i11', 'i12', 'i13']
-            options list ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'asdf', 'sfsfs', 'asfas', 'asfasf']
-        """
-
-        # suppress callback...
-        # create new variable if doesn't exist
-        if new_variable not in variables_list:
-            num_children = variables_list_parm.getNumChildren()
-            variables_list_parm.resizeArray(num_children + 1)
-            variables_list_parm.getChildByIndex(num_children).setValue(new_variable, 0)
-
     def __updateItemTypeButton(self):
         """
         Updates the look for the Node Type button.  This will
@@ -518,6 +486,10 @@ class VariableManagerCreateNewItemTextWidget(QLineEdit):
     Pressing CTRL+SHIFT will toggle the creation type between
     blocks and patterns.  This will only register while the keys are
     pressed, and will revert back to the original one upon key release.
+
+    Attributes:
+        is_toggled (bool): determines if the create item type button
+            has been toggled via the ctrl+shift hotkey functionality.
     """
     def __init__(self, parent=None):
         super(VariableManagerCreateNewItemTextWidget, self).__init__(parent)
@@ -574,51 +546,25 @@ class VariableManagerGSVMenu(AbstractComboBox):
 
         # setup signals
         self.currentIndexChanged.connect(self.indexChanged)
-        self.setCleanItemsFunction(self.__getAllVariables)
+        self.setCleanItemsFunction(gsvutils.getAllVariables)
 
         # populate
         self.populate(self.getCleanItems())
         self.setCurrentIndexToText(self.previous_text)
 
     """ UTILS """
-    @staticmethod
-    def __getAllVariables():
-        """
-        Gets all of the current graph state variables available
-
-        returns (list): list of variable names as strings
-        """
-        variables = NodegraphAPI.GetNode('rootNode').getParameter('variables').getChildren()
-        variable_list = [x.getName() for x in variables]
-        return variable_list
-
-    def checkUserInput(self):
-        """
-        Checks the user input to determine if it is a valid option
-        in the current model.  If it is not this will create a brand
-        spanking new GSV for the user.
-        """
-        variables_list = self.__getAllVariables()
-        variable = self.currentText()
-        if variable not in variables_list:
-            self.setExistsFlag(False)
-            self.createNewGSV(str(self.currentText()))
-            self.setExistsFlag(True)
-            return
-
     def gsvChanged(self):
         """
         When the user changes the GSV and accepts the change,
         this function will be triggered.
         """
-
-        # check to make sure variable exists... if not, create it
-        self.checkUserInput()
-
         # get attributes
         variable_browser = self.main_widget.variable_manager_widget.variable_browser
         variable = str(self.currentText())
         node = self.main_widget.getNode()
+
+        # create new pattern if it doesn't exist
+        gsvutils.createNewGSV(variable)
 
         # update variables
         self.main_widget.setVariable(variable)
@@ -642,6 +588,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
             variable_browser.showMiniNodeGraph()
 
     def accepted(self):
+        self.main_widget.layout().setCurrentIndex(0)
         makeUndoozable(
             self.gsvChanged,
             self.main_widget,
@@ -650,22 +597,9 @@ class VariableManagerGSVMenu(AbstractComboBox):
         )
 
     def cancelled(self):
+        self.main_widget.layout().setCurrentIndex(0)
         self.setCurrentIndexToText(self.main_widget.getVariable())
         self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.main_widget.variable)
-
-    def createNewGSV(self, gsv):
-        """
-        Creates a new GSV in the project settings.
-
-        Args:
-            gsv (str) the name of the GSV to add
-        """
-        variables_group = NodegraphAPI.GetRootNode().getParameter('variables')
-        variable_param = variables_group.createChildGroup(gsv)
-        variable_param.createChildNumber('enable', 1)
-        variable_param.createChildString('value', '')
-        variable_param.createChildStringArray('options', 0)
-        return variable_param.getName()
 
     """ EVENTS """
     def mousePressEvent(self, *args, **kwargs):
@@ -678,7 +612,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         """
         When the user changes the value in the GSV dropdown menu,
         this event is run.  It will first ask the user if they wish to proceed,
-        as doing so will essentially reinstantiate this node back to an initial setting.
+        as doing so will essentially reinstated this node back to an initial setting.
         """
         # pop up warning box to ask user if they wish to change the variable
         if self.getExistsFlag() is True:
@@ -736,12 +670,19 @@ class VariableManagerNodeMenu(AbstractComboBox):
             return
 
     def accepted(self):
+        self.main_widget.layout().setCurrentIndex(0)
         makeUndoozable(
             self.changeNodeType,
             self.main_widget,
             str(self.currentText()),
             'Change Node Type'
         )
+
+    def cancelled(self):
+        self.main_widget.layout().setCurrentIndex(0)
+        self.setExistsFlag(False)
+        node_type = self.main_widget.node.getParameter('node_type').getValue(0)
+        self.setCurrentIndexToText(node_type)
 
     def changeNodeType(self):
         """
@@ -766,11 +707,6 @@ class VariableManagerNodeMenu(AbstractComboBox):
             # update
             variable_browser.reset()
 
-    def cancelled(self):
-        self.setExistsFlag(False)
-        node_type = self.main_widget.node.getParameter('node_type').getValue(0)
-        self.setCurrentIndexToText(node_type)
-
     """ EVENTS """
     def mousePressEvent(self, *args, **kwargs):
         self.setExistsFlag(False)
@@ -786,9 +722,8 @@ class VariableManagerNodeMenu(AbstractComboBox):
         # preflight checks
         # return if this node type does not exist
         if self.currentText() not in NodegraphAPI.GetNodeTypes(): return
-        # check gsv to exist...
 
-        # pass preflight do stuff
+        # show warning box
         if self.getExistsFlag() is True:
             warning_text = "This will delete all of your unsaved work"
             detailed_warning_text = """
@@ -890,6 +825,8 @@ class VariableManagerBrowser(QTreeWidget):
         recursive statement to search through all
         nodes and create the items for those nodes
         Args:
+            parent_item (VariableManagerBrowserItem): The parent item of
+                the newly created item.
             child (Parameter): The parameter whose value will return
                 the new nodes name to check.
             check_besterest (bool): Determines if this should check the besterest
@@ -966,7 +903,7 @@ class VariableManagerBrowser(QTreeWidget):
         self.populate()
         self.main_widget.updateOptionsList()
 
-    def reparentItem(self, item, new_parent_item, index=0):
+    def __reparentItem(self, item, new_parent_item, index=0):
         """
         Reparents an item from its current parent to the provided parent.
 
@@ -988,6 +925,30 @@ class VariableManagerBrowser(QTreeWidget):
             # if the item does not have a parent, we will duck out
             pass
         new_parent_item.insertChild(index, item)
+
+    def __reparentNode(self, item, new_index, new_parent_item, old_parent_item):
+        """
+        Moves all of the nodes for an item to a new location in the hierarchy.
+        This will also reset all of the node expressions for linking.
+
+        Args:
+            item (VariableManagerBrowserItem): The item that is currently
+                being moved around.  Whose root node should be reparented
+            new_index (int): The new index of the child for the
+                new parent.
+            new_parent_item (VariableManagerBrowserItem): The new parent item
+                that has had an item moved under it.
+            old_parent_item (VariableManagerBrowserItem): The previous parent item
+                that has had an item moved under it.
+        """
+        # get nodes
+        node = item.getRootNode()
+        new_block_node = new_parent_item.getBlockNode()
+
+        # reset node parent
+        self.__unwireNode(item, old_parent_item)
+        node.setParent(new_block_node)
+        self.__wireNode(item, new_parent_item, new_index)
 
     def __deleteItem(self, item):
         """
@@ -1049,7 +1010,7 @@ class VariableManagerBrowser(QTreeWidget):
         self.main_widget.updateAllVariableSwitches(new_root_node)
 
         # connect children
-        connectInsideGroup(node_list, new_parent_item.getBlockNode())
+        nodeutils.connectInsideGroup(node_list, new_parent_item.getBlockNode())
 
     def __unwireNode(self, item, old_parent_item):
         """
@@ -1154,58 +1115,25 @@ class VariableManagerBrowser(QTreeWidget):
         )
 
     """ PUBLISH """
-    def publishBlock(self, name=None):
+    def __publish(self, name='', item_type=PATTERN_ITEM):
         """
-        Pops up the display
+        Context menu event for displaying a user publish
         """
         self.main_widget.publish_display_widget.update(
-            name=name, publish_type=BLOCK_ITEM
-        )
-        self.main_widget.publish_display_widget.display()
-
-    def publishPattern(self, name=None):
-        self.main_widget.publish_display_widget.update(
-            name=name, publish_type=PATTERN_ITEM
+            name=name, publish_type=item_type
         )
         self.main_widget.publish_display_widget.display()
 
     """ CREATE NEW ITEM """
-    @staticmethod
-    def __insertNode(node, parent_node, current_pos):
+    def __getParentNode(self):
         """
-        Inserts the node in the correct position in the Nodegraph, and then
-        wires the node into that position.
-
-        Args:
-            node (node): Current node to be inserted
-            parent_node (node): The current nodes parent
-            current_pos (QPoint): the current position of the last node
-        """
-        # get previous port
-        if len(parent_node.getChildren()) == 0:
-            previous_port = parent_node.getSendPort('in')
-        else:
-            previous_port = parent_node.getChildByIndex(len(parent_node.getChildren()) - 2).getOutputPortByIndex(0)
-
-        # connect node
-        previous_port.connect(node.getInputPortByIndex(0))
-        node.getOutputPortByIndex(0).connect(parent_node.getReturnPort('out'))
-
-        # position node
-        new_pos = (current_pos[0], current_pos[1] - 100)
-        NodegraphAPI.SetNodePosition(node, new_pos)
-
-    def __getNewItemSetupAttributes(self):
-        """
-        Gets the attributes necessary for creating the creating the new
-        nodes and VariableManagerBrowserItems.
+        Gets the the current items parent node.  The parent node
+        is the block_node of the selection, or its parent, depending
+        on whether or not a pattern/block type is currently chosen
 
         Returns:
             parent_node (node): the parent node to create this new group under
-            parent_item (VariableManagerBrowserItem): The parent item
-                to create the new VariableManagerBrowserItem under.
-            current_pos (QPoint): The current position of the last node in this
-                location.  If there are no nodes, this will return (0, 0).
+
         """
         node = self.main_widget.getNode()
 
@@ -1213,12 +1141,10 @@ class VariableManagerBrowser(QTreeWidget):
         current_item = self.currentItem()
         if not current_item:
             current_item = self.topLevelItem(0)
-
         if not current_item:
-            return None, None
+            return None
 
         if current_item.getItemType() == PATTERN_ITEM:
-            parent_item = current_item.parent()
             if current_item.parent():
                 parent_node = NodegraphAPI.GetNode(current_item.parent().getRootNode().getParameter('nodeReference.block_group').getValue(0))
             else:
@@ -1227,18 +1153,8 @@ class VariableManagerBrowser(QTreeWidget):
         # Block / Master
         elif current_item.getItemType() in [MASTER_ITEM, BLOCK_ITEM]:
             parent_node = NodegraphAPI.GetNode(current_item.getRootNode().getParameter('nodeReference.block_group').getValue(0))
-            parent_item = current_item
 
-        # Get last nodes position
-        if parent_item.childCount() > 0:
-            last_node = parent_item.child(parent_item.childCount() - 1).getRootNode()
-            current_pos = NodegraphAPI.GetNodePosition(last_node)
-        else:
-            # do something if 0
-            current_pos = (0, 0)
-
-        # return stuff
-        return parent_node, current_pos
+        return parent_node
 
     def __createNewMasterItem(self):
         """
@@ -1263,7 +1179,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         # setup master item
         master_item = VariableManagerBrowserItem(
-            self,
+            self.invisibleRootItem(),
             is_disabled=master_root_node.isBypassed(),
             root_node=master_root_node,
             block_node=block_root_node,
@@ -1305,13 +1221,13 @@ class VariableManagerBrowser(QTreeWidget):
         """
         # gather variables for item creation
         node = self.main_widget.getNode()
-        parent_node, current_pos = self.__getNewItemSetupAttributes()
+        parent_node = self.__getParentNode()
 
         # create node group
         if not block_root_node:
             block_root_node = node.createBlockRootNode(parent_node, name=item_text)
             # connect and align nodes
-            self.__insertNode(block_root_node, parent_node, current_pos)
+            nodeutils.insertNode(block_root_node, parent_node)
 
         block_node_name = block_root_node.getParameter('name').getValue(0)
         block_node_hash = block_root_node.getParameter('hash').getValue(0)
@@ -1335,8 +1251,6 @@ class VariableManagerBrowser(QTreeWidget):
             root_node=block_root_node,
             unique_hash=block_node_hash
         )
-        # if check_besterest is True:
-        #     checkBesterestVersion(self.main_widget, item=block_item, item_types=[BLOCK_ITEM])
 
         return block_item
 
@@ -1393,11 +1307,11 @@ class VariableManagerBrowser(QTreeWidget):
                 # move pattern under block
                 old_parent_item.takeChild(index)
                 new_parent_item.addChild(item)
-                self.__moveItem(item, 0, new_parent_item, old_parent_item)
+                self.__reparentNode(item, 0, new_parent_item, old_parent_item)
 
                 # move block to patterns old location
                 new_grandparent_item = new_parent_item.parent()
-                self.__moveItem(new_parent_item, index, new_grandparent_item, new_grandparent_item)
+                self.__reparentNode(new_parent_item, index, new_grandparent_item, new_grandparent_item)
 
                 # move VariableManagerBrowserItem
                 new_index = new_grandparent_item.indexOfChild(new_parent_item)
@@ -1429,12 +1343,12 @@ class VariableManagerBrowser(QTreeWidget):
             Consider merging with __createNewBlockItem
         """
         node = self.main_widget.getNode()
-        parent_node, current_pos = self.__getNewItemSetupAttributes()
+        parent_node = self.__getParentNode()
         # create node group
         if not pattern_node:
             pattern_node = node.createPatternGroupNode(parent_node, pattern=item_text)
             # connect and align nodes
-            self.__insertNode(pattern_node, parent_node, current_pos)
+            nodeutils.insertNode(pattern_node, parent_node)
 
         # Get Parameters
         version = pattern_node.getParameter('version').getValue(0)
@@ -1452,14 +1366,11 @@ class VariableManagerBrowser(QTreeWidget):
             root_node=pattern_node,
             unique_hash=unique_hash
         )
+
         # create variable switch connections
         current_root_node = item.parent().getRootNode()
         new_pattern = PATTERN_PREFIX+pattern
         self.main_widget.updateAllVariableSwitches(current_root_node, new_pattern=new_pattern)
-
-        # set up publish dirs
-        # if check_besterest is True:
-        #     checkBesterestVersion(self.main_widget, item=item, item_types=[PATTERN_ITEM])
 
         return item
 
@@ -1477,14 +1388,15 @@ class VariableManagerBrowser(QTreeWidget):
             The newly created item.
 
         """
-        # handle non existant scenerio
+        # handle non existent scenerio
         if not parent_item:
             parent_item = self.main_widget.getWorkingItem()
 
-        # # handle pattern scenerio
-        if parent_item:
-            if parent_item.getItemType() == PATTERN_ITEM:
-                parent_item = parent_item.parent()
+        # handle pattern scenario
+        if item_type != MASTER_ITEM:
+            if parent_item:
+                if parent_item.getItemType() == PATTERN_ITEM:
+                    parent_item = parent_item.parent()
 
         if item_type == BLOCK_ITEM:
             new_item = self.__createNewBlockItem(item_text=item_text, block_root_node=node, parent_item=parent_item)
@@ -1517,30 +1429,6 @@ class VariableManagerBrowser(QTreeWidget):
         return self.item
 
     """ DROP EVENTS """
-    def __moveItem(self, item, new_index, new_parent_item, old_parent_item):
-        """
-        Moves all of the nodes for an item to a new location in the hierarchy.
-        This will also reset all of the node expressions for linking.
-
-        Args:
-            item (VariableManagerBrowserItem): The item that is currently
-                being moved around.
-            new_index (int): The new index of the child for the
-                new parent.
-            new_parent_item (VariableManagerBrowserItem): The new parent item
-                that has had an item moved under it.
-            old_parent_item (VariableManagerBrowserItem): The previous parent item
-                that has had an item moved under it.
-        """
-        # get nodes
-        node = item.getRootNode()
-        new_block_node = new_parent_item.getBlockNode()
-
-        # reset node parent
-        self.__unwireNode(item, old_parent_item)
-        node.setParent(new_block_node)
-        self.__wireNode(item, new_parent_item, new_index)
-
     def __dropOnBlockWrapper(self, item_dropped, new_index, new_parent_item, old_parent_item):
         makeUndoozable(
             self.__dropOnBlockEvent,
@@ -1567,7 +1455,7 @@ class VariableManagerBrowser(QTreeWidget):
                 new parent (BLOCK_ITEM)
             new_index (int): The current index of the item that has been dropped on
         """
-        self.__moveItem(item_dropped, new_index, new_parent_item, old_parent_item)
+        self.__reparentNode(item_dropped, new_index, new_parent_item, old_parent_item)
         new_parent_item.setExpanded(True)
 
         if item_dropped.getItemType() == BLOCK_ITEM:
@@ -1610,24 +1498,24 @@ class VariableManagerBrowser(QTreeWidget):
             new_block_item = self.__createUserBlockItem(item=item_dropped_on)
 
             # move block
-            self.__moveItem(new_block_item, new_index, new_block_item_parent, old_parent_item)
-            self.reparentItem(new_block_item, new_block_item_parent, index=new_index)
+            self.__reparentNode(new_block_item, new_index, new_block_item_parent, old_parent_item)
+            self.__reparentItem(new_block_item, new_block_item_parent, index=new_index)
 
             # move dropped node under new block item
-            self.reparentItem(item_dropped, new_block_item)
-            self.__moveItem(item_dropped, 0, new_block_item, old_parent_item)
+            self.__reparentItem(item_dropped, new_block_item)
+            self.__reparentNode(item_dropped, 0, new_block_item, old_parent_item)
 
             # set expanded
             new_block_item.setExpanded(True)
 
         elif item_dropped.getItemType() == BLOCK_ITEM:
             # move / rewire nodes
-            self.__moveItem(item_dropped, new_index, new_parent_item, old_parent_item)
-            self.__moveItem(item_dropped_on, 0, item_dropped, new_parent_item)
+            self.__reparentNode(item_dropped, new_index, new_parent_item, old_parent_item)
+            self.__reparentNode(item_dropped_on, 0, item_dropped, new_parent_item)
 
             # reparent items...
-            self.reparentItem(item_dropped, new_parent_item, index=new_index)
-            self.reparentItem(item_dropped_on, item_dropped, 0)
+            self.__reparentItem(item_dropped, new_parent_item, index=new_index)
+            self.__reparentItem(item_dropped_on, item_dropped, 0)
 
             # set expanded
             item_dropped.setExpanded(True)
@@ -1678,18 +1566,31 @@ class VariableManagerBrowser(QTreeWidget):
 
             # fix weird magical drop spot in the tree inbetween items...
             else:
-                self.reparentItem(item_dropped, old_parent_item, index=old_index)
+                self.__reparentItem(item_dropped, old_parent_item, index=old_index)
 
         # return drop event
         return return_val
 
     """ DISPLAY PARAMETERS EVENTS """
+    def showItemParameters(self):
+        """
+        Shows the parameters of the current item if it
+        is not of type Group.
+        """
+        if self.currentItem():
+            node = self.currentItem().getVEGNode().getChildByIndex(0)
+            self.main_widget.populateParameters(node_list=[node])
+
     def displayItemParameters(self):
+        """
+        Shows the currently selected items parameters.  Unless the node type
+        is set to "Group" then it will display the mini node graph, which will
+        allow selecting of nodes to display the parameters to the user.
+        """
         self.main_widget.setWorkingItem(self.currentItem())
         if self.main_widget.getNodeType() == 'Group':
             self.showMiniNodeGraph()
             self.main_widget.populateParameters()
-            # clear item parameters...
         else:
             self.hideMiniNodeGraph()
             self.showItemParameters()
@@ -1741,15 +1642,6 @@ class VariableManagerBrowser(QTreeWidget):
             # variable_manager_widget doest not exist yet
             pass
 
-    def showItemParameters(self):
-        """
-        Shows the parameters of the current item if it
-        is not of type Group.
-        """
-        if self.currentItem():
-            node = self.currentItem().getVEGNode().getChildByIndex(0)
-            self.main_widget.populateParameters(node_list=[node])
-
     """ RMB EVENTS """
     def contextMenuEvent(self, event):
         """
@@ -1787,21 +1679,23 @@ class VariableManagerBrowser(QTreeWidget):
                 # determine which button was pressed..
                 if action.text() == 'Publish Block':
                     # get publishing display text
-                    publish_dir = self.main_widget.getItemPublishDir(include_publish_type=BLOCK_ITEM)
+                    item_type = BLOCK_ITEM
+                    publish_dir = self.main_widget.getItemPublishDir(include_publish_type=item_type)
                     version = getNextVersion(publish_dir)
                     name = 'BLOCK  (  %s  |  %s  |  %s  )' % (variable, current_text, version)
 
                     # publish
-                    self.publishBlock(name=name)
+                    self.__publish(name=name, item_type=item_type)
 
                 elif action.text() == 'Publish Pattern':
                     # get publishing display text
-                    publish_dir = self.main_widget.getItemPublishDir(include_publish_type=PATTERN_ITEM)
+                    item_type = PATTERN_ITEM
+                    publish_dir = self.main_widget.getItemPublishDir(include_publish_type=item_type)
                     version = getNextVersion(publish_dir)
                     name = 'PATTERN  (  %s  |  %s  |  %s  )' % (variable, current_text, version)
 
                     # publish
-                    self.publishPattern(name=name)
+                    self.__publish(name=name, item_type=item_type)
 
         # Create pop up menu
         pos = event.globalPos()
@@ -1873,7 +1767,7 @@ class VariableManagerBrowser(QTreeWidget):
                     makeUndoozable(
                         updateNodeName,
                         self.main_widget,
-                        item.text(0),
+                        name,
                         'Change Name',
                         root_node,
                         name=name
@@ -1902,6 +1796,7 @@ class VariableManagerBrowser(QTreeWidget):
             )
 
         elif event.key() == 96:
+            # ~ Tilda pressed
             VariableManagerWidget.toggleFullView(self.main_widget.variable_manager_widget.splitter)
 
         return QTreeWidget.keyPressEvent(self, event, *args, **kwargs)
@@ -2008,6 +1903,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         super(VariableManagerBrowserItem, self).__init__(parent)
 
         Utils.UndoStack.DisableCapture()
+
         self.setItemType(item_type)
         self.pattern_node = pattern_node
         self.root_node = root_node
@@ -2198,26 +2094,6 @@ class PublishDirWidget(AbstractFileBrowser, iParameter):
         self.main_widget.setRootPublishDir(publish_dir)
         self.setText(publish_dir)
         self.setValue(publish_dir)
-
-        # this caused a resize bug? Wtf..
-        #self.setPublishDir()
-
-    # def setPublishDir(self):
-    #     """
-    #     Sets the current publish directory for the user.
-    #     """
-    #     # check to make sure its not reset
-    #     if str(self.text()) == self.getValue():
-    #         return
-    #
-    #     # do stuff
-    #     makeUndoozable(
-    #         self.setValue,
-    #         self.main_widget,
-    #         str(self.text()),
-    #         'Change Publish Dir',
-    #         str(self.text())
-    #     )
 
     def directoryChanged(self):
         """

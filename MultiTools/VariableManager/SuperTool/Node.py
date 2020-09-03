@@ -4,15 +4,11 @@ import os
 from Katana import NodegraphAPI, Utils, UniqueName, DrawingModule
 
 from .Settings import (
-    PUBLISH_DIR,
     BLOCK_PREFIX,
     PATTERN_PREFIX
 )
 from .Utils import (
-    connectInsideGroup,
     createNodeReference,
-    mkdirRecursive,
-    transferNodeReferences
 )
 
 from .ItemTypes import (
@@ -22,7 +18,9 @@ from .ItemTypes import (
 )
 
 from Utils2 import (
-    createUniqueHash
+    createUniqueHash,
+    mkdirRecursive,
+    nodeutils
 )
 
 log = logging.getLogger("Test.Node")
@@ -107,7 +105,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         Utils.EventModule.ProcessAllEvents()
 
         # wire node
-        connectInsideGroup([self.variable_root_node], self)
+        nodeutils.connectInsideGroup([self.variable_root_node], self)
 
         # create default publish dir
         # mkdirRecursive(PUBLISH_DIR)
@@ -218,7 +216,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         Utils.EventModule.ProcessAllEvents()
 
         # wire nodes
-        connectInsideGroup(node_list, self)
+        nodeutils.connectInsideGroup(node_list, self)
 
         # set GSV
         self.variable = variable
@@ -251,7 +249,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
                     group_node = self.createPatternGroupNode(self.block_group, pattern=child.getValue(0))
                     node_list.append(group_node)
                     # connect VS NODE
-                connectInsideGroup(node_list, self.block_group)
+                nodeutils.connectInsideGroup(node_list, self.block_group)
 
     """ NODE CREATION """
     def createVariableSwitch(self, parent_node):
@@ -375,7 +373,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         block_root_node.getInputPortByIndex(0).connect(parent_node.getSendPort('in'))
         block_root_node.getOutputPortByIndex(0).connect(parent_node.getReturnPort('out'))
         # connect
-        connectInsideGroup([pattern_group, block_group, vs_node], block_root_node)
+        nodeutils.connectInsideGroup([pattern_group, block_group, vs_node], block_root_node)
         block_root_node.getSendPort('in').connect(vs_node.getInputPortByIndex(0))
 
         # create directories

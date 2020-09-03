@@ -5,6 +5,8 @@ from .ItemTypes import (
     PATTERN_ITEM
 )
 
+from Utils2 import mkdirRecursive
+
 
 def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOCK_ITEM]):
     """
@@ -37,55 +39,6 @@ def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOC
             resolveBesterestVersion(main_widget, publish_loc, PATTERN_ITEM, item=item)
 
 
-def connectInsideGroup(node_list, parent_node):
-    """
-    Connects all of the nodes inside of a specific node in a linear fashion
-
-    Args:
-        node_list (list): list of nodes to be connected together, the order
-            of the nodes in this list, will be the order that they are connected in
-        parent_node (node): node have the nodes from the node_list
-            wired into.
-    """
-    import NodegraphAPI
-    send_port = parent_node.getSendPort('in')
-    return_port = parent_node.getReturnPort('out')
-    if len(node_list) == 0:
-        send_port.connect(return_port)
-    elif len(node_list) == 1:
-        node_list[0].getOutputPortByIndex(0).connect(return_port)
-        node_list[0].getInputPortByIndex(0).connect(send_port)
-    elif len(node_list) == 2:
-        node_list[0].getInputPortByIndex(0).connect(send_port)
-        node_list[1].getOutputPortByIndex(0).connect(return_port)
-        node_list[0].getOutputPortByIndex(0).connect(node_list[1].getInputPortByIndex(0))
-        NodegraphAPI.SetNodePosition(node_list[0], (0, 100))
-    elif len(node_list) > 2:
-        for index, node in enumerate(node_list[:-1]):
-            node.getOutputPortByIndex(0).connect(node_list[index+1].getInputPortByIndex(0))
-            NodegraphAPI.SetNodePosition(node, (0, index * -100))
-        node_list[0].getInputPortByIndex(0).connect(send_port)
-        node_list[-1].getOutputPortByIndex(0).connect(return_port)
-        NodegraphAPI.SetNodePosition(node_list[-1], (0, len(node_list) * -100))
-
-def convertStringBoolToBool(string_bool):
-    """
-    Converts a string boolean to a boolean
-
-    Args:
-        string_bool (str): string value of the boolean
-            such as "True" or "False"
-
-    Returns (bool)
-    """
-    if string_bool == "True":
-        return True
-    elif string_bool == "False":
-        return False
-    else:
-        return False
-
-
 def createNodeReference(node_ref, param_name, param=None, node=None, index=-1):
     """
     Creates a new string parameter whose expression value
@@ -109,30 +62,15 @@ def createNodeReference(node_ref, param_name, param=None, node=None, index=-1):
     return new_param
 
 
-def disconnectNode(node, input=False, output=False):
-    """
-    Disconnects the node provide from all over nodes.  The same
-    as hitting 'x' on the keyboard... or "Extract Nodes" except this
-    is in the NodegraphWidget, not the NodegraphAPI. so kinda hard
-    to call... so I made my own...
-
-    Args:
-        node (node): Node to be extracted
-        input (bool): If true disconnect all input ports
-        output (bool): If true disconnect all output ports
-
-    """
-    if input is True:
-        for input_port in node.getInputPorts():
-            output_ports = input_port.getConnectedPorts()
-            for port in output_ports:
-                port.disconnect(input_port)
-
-    if output is True:
-        for output in node.getOutputPorts():
-            input_ports = output.getConnectedPorts()
-            for port in input_ports:
-                port.disconnect(output)
+def getMainWidget(widget):
+    try:
+        name = widget.__name__()
+        if name == 'VariableManagerMainWidget':
+            return widget
+        else:
+            return getMainWidget(widget.parent())
+    except AttributeError:
+        return getMainWidget(widget.parent())
 
 
 def goToNode(node, frame=False, nodegraph_tab=None):
@@ -181,22 +119,6 @@ def getNextVersion(location):
         next_version = 'v'+str(sorted(versions)[-1] + 1).zfill(3)
 
     return next_version
-
-
-def mkdirRecursive(path):
-    """
-    Creates a directory and all parent directories leading
-    to that directory.  This is not as necessary in Python 3.x+
-    as you can do stuff like os.mkdirs.
-
-    Args:
-        path (str): directory to be created
-    """
-    sub_path = os.path.dirname(path)
-    if not os.path.exists(sub_path):
-        mkdirRecursive(sub_path)
-    if not os.path.exists(path):
-        os.mkdir(path)
 
 
 def resolveBesterestVersion(main_widget, publish_loc, item_type, item):

@@ -151,18 +151,17 @@ from .Settings import (
 from .VariableManagerWidget import VariableManagerWidget, VariableManagerBrowser
 
 from .Utils import (
-    checkBesterestVersion,
-    connectInsideGroup,
-    disconnectNode,
-    goToNode,
+    getMainWidget,
     getNextVersion,
-    mkdirRecursive,
+    goToNode,
     transferNodeReferences
 )
 
 from Utils2 import(
-    getMainWidget,
-    makeUndoozable
+    disconnectNode,
+    mkdirRecursive,
+    makeUndoozable,
+    nodeutils
 )
 
 from Widgets2 import (
@@ -223,10 +222,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
                 self.__undoSetUpdateStatus, 'parameter_setValue', enabled=enabled
             )
 
-            # Utils.EventModule.RegisterCollapsedHandler(
-            #     self.__publishDirChanged, 'parameter_setValue', enabled=enabled
-            # )
-
             # gsv changed
             Utils.EventModule.RegisterCollapsedHandler(
                 self.__paramChanged, 'parameter_finalizeValue', enabled=enabled
@@ -275,9 +270,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         self.__updateGUI(event)
         return AbstractSuperToolEditor.showEvent(self, event)
 
-    def checkWarningBox(self):
-        self.main_widget.warning_display_widget
-
     """ PARAM CHANGED """
     def __paramChanged(self, args):
         """
@@ -294,36 +286,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
                 param = arg[2]['param']
                 if param.getParent().getName() == self.main_widget.getVariable():
                     self.__addGSVPatternWrapper(param)
-
-    # def __publishDirChanged(self, args):
-    #     # Publish dir changed
-    #     for arg in args:
-    #         if arg[2]['node'] == self.node:
-    #             param = arg[2]['param']
-    #             if param:
-    #                 if param.getName() == "publish_dir":
-    #                     self._new_publish_dir = arg[2]['param'].getValue(0)
-    #                     self.__directoryChanged()
-    #                     return
-
-    """ DIRECTORY CHANGED """
-
-    def __getAllChildItems(self, item):
-        """
-        returns all children underneath a specific item
-
-        CLEANUP: self.item_list needs to be removed... this recursion is bad...
-
-        Args:
-            item (VariableManagerBrowserItem): item to search below for all children
-        """
-        if item.childCount() > 0:
-            for index in range(item.childCount()):
-                child = item.child(index)
-                self._item_list.append(child)
-                if child.childCount() > 0:
-                    self.__getAllChildItems(child)
-        return self._item_list
 
     """ GSV CHANGED """
     def __addGSVPatternWrapper(self, param):
@@ -455,7 +417,8 @@ class VariableManagerEditor(AbstractSuperToolEditor):
     def setupDestroyNodegraphEvent(self):
         """
         Sets up all of the handlers for when the Nodegraph is destroyed.
-
+        Don't necessarily want this during the hide/show event as that could
+        a larger head ache than its worth.
         """
         # node delete
         Utils.EventModule.RegisterCollapsedHandler(
@@ -467,7 +430,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             self.loadBegin, 'nodegraph_loadBegin', None
         )
 
-        # destroy on param close
+        # destroy on param tabs close
         # let us never speak of this hack
         self.parent().parent().parent().parent().parent().parent().installEventFilter(self)
 
@@ -549,7 +512,6 @@ class VariableManagerMainWidget(QWidget):
         Args:
             node (node): This node
         """
-
         self.setNode(node)
         self.suppress_updates = False
         self.node.__init__(populate=False)
@@ -559,9 +521,6 @@ class VariableManagerMainWidget(QWidget):
         self.pattern = None
         self._options_list = []
         self.updateOptionsList()
-
-        #publish_dir = self.node.getParameter('publish_dir').getValue(0)
-        #self.setRootPublishDir(publish_dir)
 
     def initGUI(self):
         """
@@ -1080,7 +1039,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
             node_list.append(child_node)
 
         # reconnect nodes
-        connectInsideGroup(node_list, publish_node)
+        nodeutils.connectInsideGroup(node_list, publish_node)
 
         # delete proxy node
         temp_live_group.delete()
@@ -1235,6 +1194,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.variable_manager_widget.variable_menu.setCurrentIndexToText(self.previous_variable)
         self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.previous_variable)
         self.gui = False
+        self.main_widget.layout().setCurrentIndex(0)
 
     def __accepted(self):
         """
@@ -1249,6 +1209,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
             'Load {item_type}'.format(item_type=item_type)
         )
         self.gui = False
+        self.main_widget.layout().setCurrentIndex(0)
 
     """ PROPERTIES """
     @property
@@ -1738,7 +1699,7 @@ BESTEREST
 
         # for some reason we're going to the node
         self.goToNode()
-
+        self.main_widget.layout().setCurrentIndex(0)
         #
         self.main_widget.variable_manager_widget.variable_browser.showItemParameters()
 
@@ -1746,8 +1707,12 @@ BESTEREST
 
     def __cancelled(self):
         self.goToNode()
+        self.main_widget.layout().setCurrentIndex(0)
 
     def goToNode(self):
+        """
+        Displays the current node in the mini nodegraph
+        """
         item = self.main_widget.variable_manager_widget.variable_browser.currentItem()
         if item:
             nodegraph_tab = self.main_widget.variable_manager_widget.nodegraph_tab

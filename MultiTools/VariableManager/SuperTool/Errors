@@ -1,8 +1,0 @@
-[ERROR python.root]: An AttributeError occurred in "AbstractComboBox.py": 'VariableManagerGSVMenu' object has no attribute '_previous_text'
-    Traceback (most recent call last):
-      File "/media/ssd01/dev/katana/KatanaWidgets/Widgets2/AbstractComboBox.py", line 57, in userFinishedEditing
-        self.setCurrentIndexToText(self._previous_text)
-    AttributeError: 'VariableManagerGSVMenu' object has no attribute '_previous_text'
-[ERROR python.Utils.EventModule]: Error in collapsed event handler __paramChanged(): AttributeError: 'NoneType' object has no attribute 'getName'
-
-[ERROR python.Utils.EventModule]: Error in collapsed event handler __paramChanged(): AttributeError: 'NoneType' object has no attribute 'getName'
