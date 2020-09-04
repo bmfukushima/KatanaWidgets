@@ -5,7 +5,6 @@ import inspect
 CURRENT_DIR = (
     os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 )
-print ('Adding {CURRENT_DIR} to PYTHONPATH'.format(CURRENT_DIR))
+print ('Adding {CURRENT_DIR} to PYTHONPATH'.format(CURRENT_DIR=CURRENT_DIR))
 sys.path.append(CURRENT_DIR)
-#print('/'.join(KATANA_RESOURCES_DIR.split('/')[:-1]))
 
