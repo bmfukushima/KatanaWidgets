@@ -38,22 +38,40 @@ def insertNode(node, parent_node):
     Inserts the node in the correct position in the Nodegraph, and then
     wires the node into that position.
 
+    Note:
+        When this happens, the node has already been connected..
+        Thus the awesome -2
+
     Args:
         node (node): Current node to be inserted
         parent_node (node): The current nodes parent
     """
     # get previous port / position
-    if len(parent_node.getChildren()) == 0:
+
+    if len(parent_node.getChildren()) == 1:
+        # previous port
         previous_port = parent_node.getSendPort('in')
-        current_pos = (0,0)
+
+        # position
+        pos = (0, 0)
     else:
-        previous_port = parent_node.getReturnPort('out').getConnectedPorts()[0]
-        current_pos = NodegraphAPI.GetNodePosition(previous_port.getNode())
+        # get previous node
+        node_references = parent_node.getParameter('nodeReference')
+        previous_node_name = node_references.getChildByIndex(node_references.getNumChildren() - 2)
+        previous_node = NodegraphAPI.GetNode(previous_node_name.getValue(0))
+
+        # previous port
+        previous_port = previous_node.getOutputPortByIndex(0)
+
+        # setup pos
+        current_pos = NodegraphAPI.GetNodePosition(previous_node)
+        xpos = current_pos[0]
+        ypos = current_pos[1] - 100
+        pos = (xpos, ypos)
 
     # wire node
     previous_port.connect(node.getInputPortByIndex(0))
     node.getOutputPortByIndex(0).connect(parent_node.getReturnPort('out'))
 
     # position node
-    new_pos = (current_pos[0], current_pos[1] - 100)
-    NodegraphAPI.SetNodePosition(node, new_pos)
+    NodegraphAPI.SetNodePosition(node, pos)

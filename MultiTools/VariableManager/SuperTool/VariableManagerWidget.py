@@ -787,8 +787,9 @@ class VariableManagerBrowser(QTreeWidget):
         self.itemCollapsed.connect(self.itemCollapsedEvent)
         self.itemExpanded.connect(self.itemExpandedEvent)
         self.itemChanged.connect(self.itemNameChanged)
-        # create all items
-        self.populate(check_besterest=False)
+
+        # create initial master item
+        self.createNewBrowserItem(MASTER_ITEM, self.main_widget.getVariable(), check_besterest=False)
 
     def populate(self, check_besterest=True):
         """
@@ -801,6 +802,7 @@ class VariableManagerBrowser(QTreeWidget):
             call, especially those that have deleted node functionality.
         """
         # get publish dir...
+        print ('=========== start ==============')
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
 
@@ -828,13 +830,19 @@ class VariableManagerBrowser(QTreeWidget):
                 version or not.  This is really here to disable recursion when loading
                 live groups.
         """
+        # root node is the current item's root node being operated on
         root_node = NodegraphAPI.GetNode(child.getValue(0))
         is_disabled = root_node.isBypassed()
 
-        # create pattern item
+        string_expanded = parent_item.getRootNode().getParameter('expanded').getValue(0)
+        is_expanded = convertStringBoolToBool(string_expanded)
+        print('setting <%s>    <%s>' % (root_node.getName(), is_expanded), string_expanded)
+
+        # create PATTERN item
         if root_node.getParameter('type').getValue(0) == 'pattern':
             # create pattern item
             pattern = root_node.getParameter('pattern').getValue(0)
+
             new_item = self.createNewBrowserItem(
                 item_type=PATTERN_ITEM, item_text=pattern, node=root_node, check_besterest=check_besterest, parent_item=parent_item
             )
@@ -842,7 +850,13 @@ class VariableManagerBrowser(QTreeWidget):
             # set item attrs
             new_item.setDisabled(is_disabled)
 
-        # create block item, and populate block
+            # # expanded
+            # string_expanded = parent_item.getRootNode().getParameter('expanded').getValue(0)
+            # is_expanded = convertStringBoolToBool(string_expanded)
+            print('pattern <%s>    <%s>' % (parent_item.text(0), is_expanded), string_expanded)
+            parent_item.setExpanded(is_expanded)
+            # print('b setting %s to %s' % (new_item.text(0), is_expanded), string_expanded)
+        # create BLOCK item, and populate block
         else:
             # create block item
             item_text = root_node.getParameter('name').getValue(0)
@@ -851,11 +865,16 @@ class VariableManagerBrowser(QTreeWidget):
             )
 
             # set item attrs
+            # disabled
             new_item.setDisabled(is_disabled)
-            string_expanded = root_node.getParameter('expanded').getValue(0)
-            is_expanded = convertStringBoolToBool(string_expanded)
-            new_item.setExpanded(is_expanded)
 
+            # expanded
+            print('pattern <%s>    <%s>' % (parent_item.text(0), is_expanded), string_expanded)
+            parent_item.setExpanded(is_expanded)
+            # string_expanded = root_node.getParameter('expanded').getValue(0)
+            # is_expanded = convertStringBoolToBool(string_expanded)
+            # new_item.setExpanded(is_expanded)
+            # print('b setting %s to %s' % (new_item.text(0), is_expanded), string_expanded)
             # recurse through block
             block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
             for child in block_node.getParameter('nodeReference').getChildren():
@@ -1222,7 +1241,7 @@ class VariableManagerBrowser(QTreeWidget):
         if not block_root_node:
             block_root_node = node.createBlockRootNode(parent_node, name=item_text)
             # connect and align nodes
-            nodeutils.insertNode(block_root_node, parent_node)
+            #nodeutils.insertNode(block_root_node, parent_node)
 
         block_node_name = block_root_node.getParameter('name').getValue(0)
         block_node_hash = block_root_node.getParameter('hash').getValue(0)
@@ -1403,6 +1422,7 @@ class VariableManagerBrowser(QTreeWidget):
         elif item_type == MASTER_ITEM:
             new_item = self.__createNewMasterItem()
 
+        # This
         self.setCurrentItem(new_item)
         self.main_widget.setWorkingItem(new_item)
 

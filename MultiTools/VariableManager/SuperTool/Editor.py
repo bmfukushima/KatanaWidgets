@@ -249,7 +249,9 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         return AbstractSuperToolEditor.hideEvent(self, event)
 
     def showEvent(self, event):
+        print ('============= show ================')
         self.__updateGUI(event, check_besterest=False)
+        print ('============= end show ================')
         return AbstractSuperToolEditor.showEvent(self, event)
 
     """ PARAM CHANGED """

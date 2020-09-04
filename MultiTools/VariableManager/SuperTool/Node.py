@@ -442,10 +442,6 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             veg_node.getParameter('pattern').setValue(pattern, 0)
         veg_node.setName(pattern_string)
 
-        # create publish dirs
-        # if create_dirs is True:
-        #     self.__createPublishDirectories(unique_hash, PATTERN_ITEM)
-
         # create child node
         self.createNodeOfType(veg_node)
 
