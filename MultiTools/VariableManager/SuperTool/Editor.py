@@ -13,7 +13,6 @@ TODO:
     *   Node Type Change
             - needs to honor current hierarchy.
             - recursive search through tree, update all pattern nodes?
-    *   GSV/Node Menu need to be added as custom params
     *   File Browser needs a file dialogue button
     *   Clean up of everything...
     BUGS:
@@ -23,19 +22,13 @@ TODO:
                             somehow... this is registering the master item on init as a pattern
         GDI:
             *   drag/Drop reselect always defaults to last item
-            *   master vs <var>_master...
-                    Just change this to the var_master
-            *   Creating additional "pattern" at wrong lvl... prob because
-                    something is not suppressing correctly
-                        check for: variable != ''
-            *   Change GSV
-                    Populates previous GSV into new one
         SUCKS =\
             *   Defocus events when changing between widgets loses
                 ability to focus in on Line Edits?
     CLEANUP:
-        getNode --> AbstractSuperTool
-        setCurrentIndex --> class variables
+        *   getNode --> AbstractSuperTool
+        *   setCurrentIndex --> class variables
+        *   GSV/Node Menu need to be added as custom params
     Potential Bugs:
         *   Pattern Item Duplicates
             This could cause a bug with loading the versions due to not
@@ -94,7 +87,6 @@ SuperTool --> group (shot/variable)
 PATTERN    :    LG --> VEG --> NODES
 BLOCK        :    LG --> ROOT NODES
 MASTER: Top most group
-
 """
 
 import os
