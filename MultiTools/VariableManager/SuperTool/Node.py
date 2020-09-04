@@ -377,7 +377,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         block_root_node.getSendPort('in').connect(vs_node.getInputPortByIndex(0))
 
         # create directories
-        self.__createPublishDirectories(unique_hash, BLOCK_ITEM)
+        # self.__createPublishDirectories(unique_hash, BLOCK_ITEM)
 
         return block_root_node
 
@@ -390,6 +390,10 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
             parent_node (node): the node that this group should
                 become a child of
             pattern (str): The GSV Pattern to be created
+        Kwargs:
+            create_dirs (bool): determines if these directories should be created.
+                When creating PATTERN_ITEMS this should be true, however
+                for blocks this should be false
         """
 
         variable = self.getParameter('variable').getValue(0)
@@ -411,6 +415,7 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         unique_hash = '{variable}_{pattern}'.format(
             variable=variable, pattern=pattern
         )
+
         pattern_root_node.getParameters().createChildString('version', 'v000')
         pattern_root_node.getParameters().createChildString('hash', unique_hash)
         pattern_root_node.getParameters().createChildString('pattern', pattern)
@@ -438,7 +443,8 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         veg_node.setName(pattern_string)
 
         # create publish dirs
-        self.__createPublishDirectories(unique_hash, PATTERN_ITEM)
+        # if create_dirs is True:
+        #     self.__createPublishDirectories(unique_hash, PATTERN_ITEM)
 
         # create child node
         self.createNodeOfType(veg_node)
@@ -468,12 +474,12 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         node_type = self.getNodeType()
         root_location = self.getParameter('publish_dir').getValue(0)
 
-        if item_type == BLOCK_ITEM:
+        if item_type in [MASTER_ITEM, BLOCK_ITEM]:
             location = '{root_location}/{variable}/{node_type}/block'.format(
                 root_location=root_location, variable=variable, node_type=node_type
             )
 
-        elif item_type in [MASTER_ITEM, PATTERN_ITEM]:
+        elif item_type in [PATTERN_ITEM]:
             location = '{root_location}/{variable}/{node_type}/pattern'.format(
                 root_location=root_location, variable=variable, node_type=node_type
             )
@@ -497,33 +503,6 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         else:
             unique_hash = 'master'
         return str(unique_hash)
-
-    def __createPublishDirectories(self, unique_hash, item_type):
-        """
-        creates all directories on disk to be used when
-        a new item is created (pattern) returns the unique hash
-
-        Args:
-            unique_hash (str): The items current unique hash
-            item_type (ITEM_TYPE): The item type whose
-                directory should be created
-        """
-        # pre flight checks
-        variable = self.getParameter('variable').getValue(0)
-        node_type = self.getParameter('node_type').getValue(0)
-        publish_dir = self.getParameter('publish_dir')
-        if variable == '': return
-        if node_type == '': return
-        if publish_dir is None: return
-
-        # create directories
-        location = self.__getPublishLoc(item_type)
-        publish_loc = '%s/%s' % (location, unique_hash)
-
-        mkdirRecursive(publish_loc + '/pattern/live')
-        mkdirRecursive(publish_loc + '/block/live')
-        # mkdirRecursive(publish_loc + '/pattern/v000')
-        # mkdirRecursive(publish_loc + '/block/v000')
 
     """ PROPERTIES """
     @property

@@ -141,7 +141,7 @@ def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
         main_widget.publish_display_widget.publishNewItem(
             item_type=item_type, item=item
         )
-        # print ('making dir == ', publish_loc)
+        print ('making dir == ', publish_loc)
         # make live directory
         live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
         mkdirRecursive(live_directory)

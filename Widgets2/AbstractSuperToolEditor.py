@@ -66,7 +66,6 @@ class AbstractSuperToolEditor(QWidget):
         if self.height() < height:
             self.setFixedHeight(height)
 
-
     """ REGISTER CUSTOM PARM"""
     def registerCustomParameter(self, widget, param_loc, data_type, get_new_value_function, editing_finished_function):
         """

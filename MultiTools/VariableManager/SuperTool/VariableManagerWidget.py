@@ -89,11 +89,11 @@ class VariableManagerWidget(QWidget):
                 $HOME/.katana/VariableManager
             This is set in the settings file, potentially will change this to
                 $HOME/.katana/<node_name>
-        params_widget (QWidget): An internal parameters display window for this
+        param_scroll (QScrollArea): An internal parameters display window for this
             node.  If the node_type is set to a Katana node type, it will automagically
             set this to display that nodes parameters.  If it is set to Group a special
-            hotkey will need to be hit to display the parameters in this window,
-            by default it is Alt+W
+            hotkey will need to be hit to display the parameters in this window
+                QScrollArea --> QWidget --> QVBoxLayout
         variable_browser (VariableManagerBrowser): The tree widget / organizer
             for all of the patterns inside of the specified GSV
         nodegraph_tab (Katana Nodegraph):  Hidden unless node type is set
@@ -574,12 +574,6 @@ class VariableManagerGSVMenu(AbstractComboBox):
         if self.main_widget.variable_manager_widget.node_type_menu.currentText() == '':
             return
 
-        # reset item selection to root
-        item = variable_browser.topLevelItem(0)
-        variable_browser.setCurrentItem(item)
-        self.main_widget.setWorkingItem(item)
-        item.setText(0, str(self.currentText()))
-
         # update
         variable_browser.reset()
 
@@ -812,6 +806,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         # create master item
         master_item = self.createNewBrowserItem(MASTER_ITEM, variable, check_besterest=False)
+        # not this...
         if check_besterest is True:
             checkBesterestVersion(self.main_widget, item=master_item, item_types=[BLOCK_ITEM])
 
@@ -1398,6 +1393,7 @@ class VariableManagerBrowser(QTreeWidget):
                 if parent_item.getItemType() == PATTERN_ITEM:
                     parent_item = parent_item.parent()
 
+        # create items
         if item_type == BLOCK_ITEM:
             new_item = self.__createNewBlockItem(item_text=item_text, block_root_node=node, parent_item=parent_item)
 
@@ -1921,12 +1917,12 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         node_type = main_widget.getNodeType()
         root_location = main_widget.getRootPublishDir()
 
-        if self.getItemType() == BLOCK_ITEM:
+        if self.getItemType() in [MASTER_ITEM, BLOCK_ITEM]:
             location = '{root_location}/{variable}/{node_type}/block'.format(
                 root_location=root_location, variable=variable, node_type=node_type
             )
 
-        elif self.getItemType() in [MASTER_ITEM, PATTERN_ITEM]:
+        elif self.getItemType() in [PATTERN_ITEM]:
             location = '{root_location}/{variable}/{node_type}/pattern'.format(
                 root_location=root_location, variable=variable, node_type=node_type
             )

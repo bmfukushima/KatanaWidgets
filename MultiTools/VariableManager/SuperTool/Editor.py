@@ -18,20 +18,11 @@ TODO:
     *   Clean up of everything...
     BUGS:
         CRITICAL:
-            *   Change Node Type to Group - maybe not this...
-                    Existing GSV's does not create the v000 on populate...
-                    Does not create v000 directories
-                    - change in the events for the GSV/Node Menu
-                        This is only looking at the master item, and then repopulating.
-                        This will need to check each item on creation?
-                        Maybe move to populate?
-                    - essentially we need an initial populate...
-                        as this should pretty much fail consistently for all initializations...
-                            so... why tf do some of them work?
-                    - in VariableBrowserManager --> populate
-                            add checkBesterestVersion w/item call
-                            update checkBesterestVersion to accept item call...
+            *   Switching to a GSV/Node type that already exists publishes a new version
+                    node --> createPatternGroupNode --> createPublishDirectories
+                            somehow... this is registering the master item on init as a pattern
         GDI:
+            *   drag/Drop reselect always defaults to last item
             *   master vs <var>_master...
                     Just change this to the var_master
             *   Creating additional "pattern" at wrong lvl... prob because
@@ -42,9 +33,9 @@ TODO:
         SUCKS =\
             *   Defocus events when changing between widgets loses
                 ability to focus in on Line Edits?
-            *   NodeTypeMenu when losing focus does not update if not
-                    correct, allowing it to display a non-valid value...
-            *   On copy/paste show event, the default height is weird
+    CLEANUP:
+        getNode --> AbstractSuperTool
+        setCurrentIndex --> class variables
     Potential Bugs:
         *   Pattern Item Duplicates
             This could cause a bug with loading the versions due to not
@@ -62,13 +53,8 @@ TODO:
         *   MainLayout change indexes
                 - move this to class attributes of integers...
                 - set class integers based off of population order
-        *   checkHash repeats...
         *   send all widget calls to getters /setters on the main widget
         *   "Wrapper" maybe moved to "Undo"
-        *   Clean up Directory Creation... This is done like 90000 times
-                I prob used this code like 9 times..
-                    mkdirRecursive(item_dir + '/block/live')
-                    mkdirRecursive(item_dir + '/pattern/live')
         *   What this nasty thing is to reset the top level item...
                 item = self.topLevelItem(0)
                 self.setCurrentItem(item)
@@ -684,13 +670,10 @@ class VariableManagerMainWidget(QWidget):
             item_type = item.getItemType()
         except AttributeError:
             item_type = MASTER_ITEM
-        if item_type in [
-            PATTERN_ITEM,
-            MASTER_ITEM
-        ]:
+        if item_type in [PATTERN_ITEM]:
             publish_type = 'pattern'
 
-        elif item.getItemType() == BLOCK_ITEM:
+        elif item.getItemType() in [MASTER_ITEM, BLOCK_ITEM]:
             publish_type = 'block'
 
         # set location
@@ -770,7 +753,7 @@ class VariableManagerMainWidget(QWidget):
             # if splitter.itemAt(2):
             # clear params
             # print(splitter.itemAt(2).widget())
-            splitter.widget(1).setParent(None)
+            #splitter.widget(1).setParent(None)
             params_layout = self.variable_manager_widget.params_layout
             for i in reversed(range(params_layout.count())):
                 params_layout.itemAt(i).widget().setParent(None)
@@ -795,8 +778,8 @@ class VariableManagerMainWidget(QWidget):
                             params_layout.addWidget(params_widget)
                             params_layout.update()
 
-            splitter.addWidget(self.variable_manager_widget.params_scroll)
-        self.variable_manager_widget.params_widget.show()
+            #splitter.addWidget(self.variable_manager_widget.params_scroll)
+        #self.variable_manager_widget.params_widget.show()
 
     """ PROPERTIES """
     def getNode(self):
