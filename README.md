@@ -33,6 +33,7 @@ This repo contains a small collection of my personal tools which have been creat
   * [qtpy](https://pypi.org/project/QtPy/) is a small abstraction layer that lets you write applications using a single API call to either PyQt or PySide.
   * [cgwidgets](https://github.com/bmfukushima/cgwidgets) small PyQt5/PySide agnostic widgets to be used between multiple DCCs
  
+<<<<<<< HEAD
 ## Written In:
   * Python 3.7.7
   * PyQt 5.15.0
@@ -41,3 +42,21 @@ This repo contains a small collection of my personal tools which have been creat
 This library is written for [VFX Reference Platform 2021](https://vfxplatform.com/), however I have intentionally left some things in the ancient Python 2.7.x so that you can still enjoy it... but seriously, fstrings... hurry up.
   * Python 2.7.blah
   * PyQt 5.12.1
+=======
+## Written in
+  * Python 2.7.12
+  * PyQt 5.12
+
+## Compatibility
+This library is written for [VFX Reference Platform 2020](https://vfxplatform.com/)
+  * Python 3.7.7
+    * PyQt 5.12.1
+    
+## Note
+  * I am aiming for a first release of this library with Katana 5.0 which will have the upgrades to Python 3.7.x and Qt for Python (PySide2).
+  * The Utils2 / Widgets2 folders are named this way to avoid library conflicts with Katana's internal mechanisms.  I hav'nt really tested a worked around to much for this... But as of this time, this works and shouldn't conflict with anything...
+  * Load Order...
+      * SuperTools
+      * UIPlugins
+      * Startup
+      * Tabs
