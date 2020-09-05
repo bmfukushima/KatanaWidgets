@@ -23,10 +23,14 @@ from Utils2 import (
     nodeutils
 )
 
+from Widgets2 import (
+    AbstractSuperToolNode
+)
+
 log = logging.getLogger("Test.Node")
 
 
-class VariableManagerNode(NodegraphAPI.SuperTool):
+class VariableManagerNode(AbstractSuperToolNode):
     """
     Node Parameters:
         variable_root_node (str): returns the variable root node name.
@@ -76,7 +80,8 @@ class VariableManagerNode(NodegraphAPI.SuperTool):
         self.getParameters().createChildString('undoozable', 'you like my hack?')
 
         # setup node
-        NodegraphAPI.SetNodeShapeAttr(self, 'basicDisplay', 1)
+        #NodegraphAPI.SetNodeShapeAttr(self, 'basicDisplay', 1)
+        self.setGroupDisplay(False)
         self.addOutputPort('out')
         self.addInputPort('in')
         self.getSendPort('in').connect(self.getReturnPort('out'))

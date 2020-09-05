@@ -7,3 +7,4 @@ from .AbstractSuperToolEditor import AbstractSuperToolEditor
 from .AbstractComboBox import AbstractComboBox
 from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
 from .AbstractFileBrowser import AbstractFileBrowser
+from .AbstractSuperToolNode import AbstractSuperToolNode
