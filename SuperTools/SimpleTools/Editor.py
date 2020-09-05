@@ -6,6 +6,7 @@ from Widgets2 import (
     AbstractSuperToolEditor
 )
 
+
 class SimpleToolsEditor(AbstractSuperToolEditor):
     """
     The top level widget for the editor.  This is here to encapsulate

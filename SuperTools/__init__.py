@@ -15,32 +15,25 @@ with open(__register_python_path, "rb") as source_file:
 exec(code)
 
 #############################################################
-#########                IMPORT SUPER TOOLS                ##############
+########                REGISTER SUPER TOOLS                #############
 #############################################################
 
 import Katana
-PluginRegistry = []
 
-
+# import super tools
 import SimpleTools
-if SimpleTools:
-    PluginRegistry.append((
-        "SuperTool", 2, "SimpleTools",
-        (
-            SimpleTools.SimpleToolsNode,
-            SimpleTools.GetEditor
-        )
-    ))
-
-
 from MultiTools import VariableManager
-if VariableManager:
+
+# compile list of super tools
+superdooper_tools_list = [SimpleTools, VariableManager]
+
+# register all super tools
+PluginRegistry = []
+for superdooper_tool in superdooper_tools_list:
     PluginRegistry.append((
-        "SuperTool", 2, "VariableManager",
-        (
-            VariableManager.VariableManagerNode,
-            VariableManager.GetEditor
-        )
-    ))
-
-
+            "SuperTool", 2, superdooper_tool.NAME,
+            (
+                superdooper_tool.NODE,
+                superdooper_tool.EDITOR
+            )
+        ))
