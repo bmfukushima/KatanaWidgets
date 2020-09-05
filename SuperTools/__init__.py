@@ -19,15 +19,28 @@ exec(code)
 #############################################################
 
 import Katana
-from MultiTools import VariableManager
+PluginRegistry = []
 
+
+import SimpleTools
+if SimpleTools:
+    PluginRegistry.append((
+        "SuperTool", 2, "SimpleTools",
+        (
+            SimpleTools.SimpleToolsNode,
+            SimpleTools.GetEditor
+        )
+    ))
+
+
+from MultiTools import VariableManager
 if VariableManager:
-    PluginRegistry = [(
+    PluginRegistry.append((
         "SuperTool", 2, "VariableManager",
         (
             VariableManager.VariableManagerNode,
             VariableManager.GetEditor
         )
-    ), ]
+    ))
 
 

@@ -1,6 +1,6 @@
 from Katana import NodegraphAPI
 
 
-class VariableManagerNode(NodegraphAPI.SuperTool):
+class SimpleToolsNode(NodegraphAPI.SuperTool):
     def __init__(self):
         pass

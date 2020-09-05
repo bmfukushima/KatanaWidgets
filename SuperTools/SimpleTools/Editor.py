@@ -4,9 +4,9 @@ from PyQt5.QtWidgets import (
 
 from Widgets2 import (
     AbstractSuperToolEditor
+)
 
-
-class Editor(AbstractSuperToolEditor):
+class SimpleToolsEditor(AbstractSuperToolEditor):
     """
     The top level widget for the editor.  This is here to encapsulate
     the main widget with a stretch box...
@@ -16,7 +16,7 @@ class Editor(AbstractSuperToolEditor):
             its GUI updated or not during the next event idle process.
     """
     def __init__(self, parent, node):
-        super(Editor, self).__init__(parent, node)
+        super(SimpleToolsEditor, self).__init__(parent, node)
         layout = QVBoxLayout(self)
         test = QLineEdit('test')
         layout.addWidget(test)
