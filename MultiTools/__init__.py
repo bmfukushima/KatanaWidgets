@@ -1,1 +1,0 @@
-from .VariableManager import SuperTool as VariableManager
