@@ -67,7 +67,8 @@ from Utils2 import (
 
 from Widgets2 import(
     AbstractComboBox,
-    AbstractFileBrowser
+    AbstractFileBrowser,
+    AbstractNodegraphWidget
 )
 
 from Widgets2.AbstractSuperToolEditor import iParameter
@@ -96,7 +97,7 @@ class VariableManagerWidget(QWidget):
                 QScrollArea --> QWidget --> QVBoxLayout
         variable_browser (VariableManagerBrowser): The tree widget / organizer
             for all of the patterns inside of the specified GSV
-        nodegraph_tab (Katana Nodegraph):  Hidden unless node type is set
+        nodegraph_widget (AbstractNodegraphWidget):  Hidden unless node type is set
             to 'Group'.
 
     """
@@ -190,7 +191,7 @@ class VariableManagerWidget(QWidget):
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
         self.variable_browser_widget.setObjectName("Variable Browser Widget")
-        self.nodegraph_widget = self.createNodeGraphWidget()
+        self.nodegraph_widget = AbstractNodegraphWidget(self, node=self.node)
 
         # Setup Layouts
         self.variable_splitter.addWidget(self.variable_browser_widget)
@@ -198,25 +199,6 @@ class VariableManagerWidget(QWidget):
         vbox.addWidget(self.variable_splitter)
 
         return widget
-
-    def createNodeGraphWidget(self):
-        """
-        Creates the internal node graph for this widget.
-        This is essentially a mini nodegraph that is embedded
-        inside of the parameters.
-        """
-        nodegraph_widget = QWidget()
-        layout = QVBoxLayout(nodegraph_widget)
-        tab_with_timeline = UI4.App.Tabs.CreateTab('Node Graph', None)
-
-        self.nodegraph_tab = tab_with_timeline.getWidget()
-        ngw_menu_bar = self.nodegraph_tab.getMenuBar()
-        ngw_menu_bar.setParent(None)
-
-        self.nodegraph_tab.layout().itemAt(0).widget().hide()
-        layout.addWidget(self.nodegraph_tab)
-
-        return nodegraph_widget
 
     def createParamsWidget(self):
         """
@@ -578,7 +560,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         variable_browser.reset()
 
         # TODO do I need this?
-        if self.main_widget.node_type == 'Group':
+        if self.main_widget.getNodeType() == 'Group':
             variable_browser.showMiniNodeGraph()
 
     def accepted(self):
@@ -802,7 +784,6 @@ class VariableManagerBrowser(QTreeWidget):
             call, especially those that have deleted node functionality.
         """
         # get publish dir...
-        print ('=========== start ==============')
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
 
@@ -1626,10 +1607,11 @@ class VariableManagerBrowser(QTreeWidget):
                 variable_manager_widget = self.main_widget.variable_manager_widget
 
                 # show nodegraph
-                nodegraph_tab = variable_manager_widget.nodegraph_tab
+                nodegraph_widget = variable_manager_widget.nodegraph_widget
+                nodegraph_panel = nodegraph_widget.getPanel()
 
                 # go to node
-                goToNode(node, frame=True, nodegraph_tab=nodegraph_tab)
+                goToNode(node, frame=True, nodegraph_panel=nodegraph_panel)
 
                 # resize splitter to let user know that they can do this now...
                 variable_manager_widget.variable_splitter.setHandleWidth(
@@ -1639,7 +1621,7 @@ class VariableManagerBrowser(QTreeWidget):
                 variable_manager_widget.variable_splitter.setStyleSheet(
                     SPLITTER_STYLE_SHEET
                 )
-                if nodegraph_tab.isVisible() is False:
+                if nodegraph_widget.isVisible() is False:
                     variable_manager_widget = self.main_widget.variable_manager_widget
                     variable_manager_widget.nodegraph_widget.show()
                     variable_manager_widget.variable_splitter.moveSplitter(self.width() * 0.7, 1)

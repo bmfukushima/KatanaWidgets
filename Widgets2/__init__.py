@@ -8,3 +8,4 @@ from .AbstractComboBox import AbstractComboBox
 from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
 from .AbstractFileBrowser import AbstractFileBrowser
 from .AbstractSuperToolNode import AbstractSuperToolNode
+from .AbstractNodegraphWidget import AbstractNodegraphWidget

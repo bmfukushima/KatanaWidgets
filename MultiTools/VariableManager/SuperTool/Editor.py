@@ -175,7 +175,8 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         self.layout().addWidget(resize_widget)
 
         # set up node graph destruction handler
-        self.setupDestroyNodegraphEvent()
+        param_widget = self.parent().parent().parent().parent().parent().parent()
+        self.main_widget.variable_manager_widget.nodegraph_widget.setupDestroyNodegraphEvent(widget_list=[param_widget])
 
         # update on init
         self._should_update = True
@@ -394,59 +395,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             self._should_update = False
             Utils.EventModule.ProcessAllEvents()
             Utils.UndoStack.EnableCapture()
-
-    """ SETUP NODEGRAPH DESTRUCTION HANDLER """
-    def setupDestroyNodegraphEvent(self):
-        """
-        Sets up all of the handlers for when the Nodegraph is destroyed.
-        Don't necessarily want this during the hide/show event as that could
-        a larger head ache than its worth.
-        """
-        # node delete
-        Utils.EventModule.RegisterCollapsedHandler(
-            self.nodeDelete, 'node_delete', None
-        )
-
-        # new scene
-        Utils.EventModule.RegisterCollapsedHandler(
-            self.loadBegin, 'nodegraph_loadBegin', None
-        )
-
-        # destroy on param tabs close
-        # let us never speak of this hack
-        self.parent().parent().parent().parent().parent().parent().installEventFilter(self)
-
-    def eventFilter(self, obj, event):
-        event_type = event.type()
-        if event_type == QEvent.Close:
-            self.destroyNodegraph()
-            obj.removeEventFilter(self)
-            return True
-
-        return super(VariableManagerEditor, self).eventFilter(obj, event)
-
-    def nodeDelete(self, args):
-        if args[0][2]['node'] == self.node:
-            self.destroyNodegraph()
-
-    def loadBegin(self, args):
-        self.destroyNodegraph()
-
-    def destroyNodegraph(self):
-        """
-        Purges all metadata from the Nodegraph.  If you don't do this,
-        holy warning messages batman!  But it doesn't crash ;).
-
-        Essentially there is a private class attr on the Node Graph Widget called
-        __nodegraphWidgetList which needs to have the nodegraph removed from it,
-        or else it will let you know that its been destroyed
-        """
-        # get node graph widget
-        nodegraph_widget = self.main_widget.variable_manager_widget.nodegraph_tab._NodegraphPanel__nodegraphWidget
-
-        # clean up
-        NodeGraphView.CleanupModule(self)
-        nodegraph_widget.cleanup()
 
 
 class VariableManagerMainWidget(QWidget):
@@ -1694,11 +1642,11 @@ BESTEREST
         """
         item = self.main_widget.variable_manager_widget.variable_browser.currentItem()
         if item:
-            nodegraph_tab = self.main_widget.variable_manager_widget.nodegraph_tab
+            nodegraph_panel = self.main_widget.variable_manager_widget.nodegraph_widget.getPanel()
             self.main_widget.setPattern(str(item.text(0)))
             self.main_widget.setWorkingItem(item)
             node = item.getVEGNode()
-            goToNode(node, nodegraph_tab=nodegraph_tab, frame=True)
+            goToNode(node, nodegraph_panel=nodegraph_panel, frame=True)
 
     def display(self):
         self.main_widget.layout().setCurrentIndex(2)

@@ -73,7 +73,7 @@ def getMainWidget(widget):
         return getMainWidget(widget.parent())
 
 
-def goToNode(node, frame=False, nodegraph_tab=None):
+def goToNode(node, frame=False, nodegraph_panel=None):
     """
     Changes the nodegraph to the selected items node,
     if it is not a group node, then it goes to its parent
@@ -84,17 +84,17 @@ def goToNode(node, frame=False, nodegraph_tab=None):
 
     Kwargs:
         frame (bool): if True will frame all of the nodes inside of the "node" arg
-        nodegraph_tab (nodegraph_panel): if exists, will frame in this node graph, if there is no
+        nodegraph_panel (nodegraph_panel): if exists, will frame in this node graph, if there is no
             node graph tab.  Then it will search for the default node graph.
     """
     from Katana import UI4
-    if not nodegraph_tab:
-        nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
-    nodegraph_tab._NodegraphPanel__navigationToolbarCallback(node.getName(), 'useless')
+    if not nodegraph_panel:
+        nodegraph_panel = UI4.App.Tabs.FindTopTab('Node Graph')
+    nodegraph_panel._NodegraphPanel__navigationToolbarCallback(node.getName(), 'useless')
 
     if frame is True:
-        nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
-        nodegraph_widget.frameNodes(nodegraph_tab.getEnteredGroupNode().getChildren())
+        nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
+        nodegraph_widget.frameNodes(nodegraph_panel.getEnteredGroupNode().getChildren())
 
 
 def getNextVersion(location):
