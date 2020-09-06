@@ -68,7 +68,8 @@ from Utils2 import (
 from Widgets2 import(
     AbstractComboBox,
     AbstractFileBrowser,
-    AbstractNodegraphWidget
+    AbstractNodegraphWidget,
+    AbstractParametersDisplayWidget
 )
 
 from Widgets2.AbstractSuperToolEditor import iParameter
@@ -141,9 +142,10 @@ class VariableManagerWidget(QWidget):
         self.variable_stack = self.createVariableStack()
 
         # row 2.2
-        self.params_widget = self.createParamsWidget()
+        #self.params_widget = self.createParamsWidget()
+        self.params_widget = AbstractParametersDisplayWidget(self)
         self.splitter.addWidget(self.variable_stack)
-        self.splitter.addWidget(self.params_scroll)
+        self.splitter.addWidget(self.params_widget)
         self.splitter.setSizes([200, 600])
 
         # setup layout
@@ -200,21 +202,21 @@ class VariableManagerWidget(QWidget):
 
         return widget
 
-    def createParamsWidget(self):
-        """
-        Creates the widget that will display the parameters
-        back to the user when a node is selected in the mini nodegraph.
-        """
-        params_widget = QWidget()
-        params_widget.setObjectName("params widget")
-        self.params_layout = QVBoxLayout(params_widget)
-        self.params_layout.setAlignment(Qt.AlignTop)
-
-        self.params_scroll = QScrollArea()
-        self.params_scroll.setWidget(params_widget)
-        self.params_scroll.setWidgetResizable(True)
-
-        return params_widget
+    # def createParamsWidget(self):
+    #     """
+    #     Creates the widget that will display the parameters
+    #     back to the user when a node is selected in the mini nodegraph.
+    #     """
+    #     params_widget = QWidget()
+    #     params_widget.setObjectName("params widget")
+    #     self.params_layout = QVBoxLayout(params_widget)
+    #     self.params_layout.setAlignment(Qt.AlignTop)
+    #
+    #     self.params_widget = QScrollArea()
+    #     self.params_widget.setWidget(params_widget)
+    #     self.params_widget.setWidgetResizable(True)
+    #
+    #     return params_widget
 
     """ EVENTS """
     @staticmethod

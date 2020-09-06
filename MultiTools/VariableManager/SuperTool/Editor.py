@@ -653,31 +653,6 @@ class VariableManagerMainWidget(QWidget):
         self.layout().setCurrentIndex(3)
 
     """ EVENTS """
-    def createParamReference(self, node_name, hide_title=False):
-        """
-        Creates a teledrop parameter widget
-
-        Args:
-            *   node_name (str): name of node to be referenced
-            **  hide_title (bool): Determines if the title of the parameter will be hidden.
-                    If there is more than one parameter, the title will not be hidden,
-                    if there is only 1 then it will be hidden.
-
-        Returns:
-            teledropparam
-        """
-        policyData = dict(displayNode="")
-        rootPolicy = QT4FormWidgets.PythonValuePolicy("cels", policyData)
-        params_policy = rootPolicy.getChildByName("displayNode")
-        params_policy.getWidgetHints().update(
-            widget='teleparam',
-            open="True",
-            hideTitle=repr(hide_title)
-        )
-        param_widget = UI4.FormMaster.KatanaWidgetFactory.buildWidget(None, params_policy)
-        params_policy.setValue(node_name, 0)
-        return param_widget
-
     def populateParameters(self, node_list=None):
         """
         Displays the parameters in the bottom of the GUI,
@@ -688,14 +663,16 @@ class VariableManagerMainWidget(QWidget):
         """
         splitter = self.variable_manager_widget.splitter
 
-        if self.variable_manager_widget.params_scroll:
+        if self.variable_manager_widget.params_widget:
             # TODO teleparam HACK
-            self.variable_manager_widget.params_scroll.setParent(None)
+            self.variable_manager_widget.params_widget.setParent(None)
+
+            # get widgets
+            params_widget = self.variable_manager_widget.params_widget
+            params_layout = params_widget.getLayout()
 
             # clear layout
-            params_layout = self.variable_manager_widget.params_layout
-            for i in reversed(range(params_layout.count())):
-                params_layout.itemAt(i).widget().setParent(None)
+            params_widget.clearLayout()
 
             # add params
             if node_list is None:
@@ -713,14 +690,15 @@ class VariableManagerMainWidget(QWidget):
                                 hide_title = False
 
                             # Create teleparams widget
-                            param_reference_widget = self.createParamReference(node.getName(), hide_title)
-                            param_reference_widget.show()
-                            params_layout.addWidget(param_reference_widget)
+                            params_widget.showParameter(node.getName(), hide_title)
+                            # param_reference_widget = params_widget.createTeleparamWidget(node.getName(), hide_title)
+                            # param_reference_widget.show()
+                            # params_layout.addWidget(param_reference_widget)
 
             # TODO teleparam HACK
             # reshow teleparam
-            splitter.addWidget(self.variable_manager_widget.params_scroll)
-        self.variable_manager_widget.params_widget.show()
+            splitter.addWidget(self.variable_manager_widget.params_widget)
+        self.variable_manager_widget.params_widget.widget().show()
 
     """ PROPERTIES """
     def getNode(self):

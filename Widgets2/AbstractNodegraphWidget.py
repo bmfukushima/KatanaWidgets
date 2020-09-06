@@ -109,7 +109,6 @@ class AbstractNodegraphWidget(QWidget):
                 self.destroyNodegraph()
 
     def loadBegin(self, args):
-        print(args)
         try:
             self.destroyNodegraph()
         except AttributeError:
