@@ -788,13 +788,14 @@ class VariableManagerBrowser(QTreeWidget):
         # get publish dir...
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
-
+        print ('=== populate start ===')
         # create master item
         master_item = self.createNewBrowserItem(MASTER_ITEM, variable, check_besterest=False)
         # not this...
         if check_besterest is True:
-            checkBesterestVersion(self.main_widget, item=master_item, item_types=[BLOCK_ITEM])
-            return
+            checkBesterestVersion(self.main_widget, item=master_item, item_types=[MASTER_ITEM])
+            # somehow... this needs to determine if this is a new master item or not... =\
+            #return
 
         # recursively populate the items under the master group
         block_root_node = master_item.getBlockNode()
@@ -822,6 +823,7 @@ class VariableManagerBrowser(QTreeWidget):
         if root_node.getParameter('type').getValue(0) == 'pattern':
             # create pattern item
             pattern = root_node.getParameter('pattern').getValue(0)
+            print('parent item == %s'%parent_item.text(0), pattern)
             new_item = self.createNewBrowserItem(
                 item_type=PATTERN_ITEM, item_text=pattern, node=root_node, check_besterest=check_besterest, parent_item=parent_item
             )
@@ -1581,7 +1583,8 @@ class VariableManagerBrowser(QTreeWidget):
         self.main_widget.setWorkingItem(self.currentItem())
         if self.main_widget.getNodeType() == 'Group':
             self.showMiniNodeGraph()
-            self.main_widget.populateParameters()
+            node_list = NodegraphAPI.GetAllSelectedNodes()
+            self.main_widget.populateParameters(node_list)
         else:
             self.hideMiniNodeGraph()
             self.showItemParameters()
@@ -1600,7 +1603,6 @@ class VariableManagerBrowser(QTreeWidget):
         try:
             if self.currentItem():
                 # setup attrs
-
                 self.main_widget.setPattern(str(self.currentItem().text(0)))
                 self.main_widget.setWorkingItem(self.currentItem())
 

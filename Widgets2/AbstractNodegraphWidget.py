@@ -68,7 +68,7 @@ class AbstractNodegraphWidget(QWidget):
             nodegraph_widget.layout().itemAt(0).widget().hide()
 
     """ SETUP NODEGRAPH DESTRUCTION HANDLER """
-    def setupDestroyNodegraphEvent(self, widget_list=None, enabled=False):
+    def setupDestroyNodegraphEvent(self, widget_list=None, enabled=True):
         """
         Sets up all of the handlers for when the Nodegraph is destroyed.
         Don't necessarily want this during the hide/show event as that could
@@ -88,8 +88,7 @@ class AbstractNodegraphWidget(QWidget):
             self.loadBegin, 'nodegraph_loadBegin', enabled
         )
 
-        # destroy on param tabs close
-        # let us never speak of this hack
+        # additional widgets closed to destroy this...
         for widget in widget_list:
             widget.installEventFilter(self)
 
@@ -103,15 +102,20 @@ class AbstractNodegraphWidget(QWidget):
         return super(AbstractNodegraphWidget, self).eventFilter(obj, event)
 
     def nodeDelete(self, args):
+        # print('delete')
         node = self.getNode()
         if node:
             if args[0][2]['node'] == node:
+                print('destroyed?')
                 self.destroyNodegraph()
 
     def loadBegin(self, args):
+        self.destroyNodegraph()
         try:
+            print('1')
             self.destroyNodegraph()
         except AttributeError:
+            print('2')
             # on init this will suppress the logged message
             pass
 
@@ -125,6 +129,7 @@ class AbstractNodegraphWidget(QWidget):
         or else it will let you know that its been destroyed
         """
         # get node graph widget
+        print('destroyingg./asfdk.afjfjaslkfj?')
         nodegraph_widget = self.getWidget()
 
         # clean up

@@ -661,44 +661,55 @@ class VariableManagerMainWidget(QWidget):
         Args:
             node_list (list): list of nodes that will have their parameters displayed.
         """
-        splitter = self.variable_manager_widget.splitter
+        def nodeFilter(node):
+            if not node: return False
+            if node.getType() == 'VariableManager': return False
 
-        if self.variable_manager_widget.params_widget:
-            # TODO teleparam HACK
-            self.variable_manager_widget.params_widget.setParent(None)
+            parent_node = self.getWorkingItem().getVEGNode()
+            if node.getParent() != parent_node: return False
 
-            # get widgets
-            params_widget = self.variable_manager_widget.params_widget
-            params_layout = params_widget.getLayout()
+            return True
 
-            # clear layout
-            params_widget.clearLayout()
-
-            # add params
-            if node_list is None:
-                node_list = NodegraphAPI.GetAllSelectedNodes()
-
-            for node in node_list:
-                if hasattr(node, 'getType'):
-                    if node.getType() != 'VariableManager':
-                        parent_node = self.getWorkingItem().getVEGNode()
-                        if node.getParent() == parent_node:
-                            # determine if title should be hidden or not
-                            if len(node_list) < 2:
-                                hide_title = True
-                            else:
-                                hide_title = False
-
-                            # Create teleparams widget
-                            params_widget.showParameter(node.getName(), hide_title)
-                            # param_reference_widget = params_widget.createTeleparamWidget(node.getName(), hide_title)
-                            # param_reference_widget.show()
-                            # params_layout.addWidget(param_reference_widget)
-
-            # TODO teleparam HACK
-            # reshow teleparam
-            splitter.addWidget(self.variable_manager_widget.params_widget)
-        self.variable_manager_widget.params_widget.widget().show()
+        self.variable_manager_widget.params_widget.setNodeFilter(nodeFilter)
+        self.variable_manager_widget.params_widget.populateParameters(node_list=node_list)
+        # splitter = self.variable_manager_widget.splitter
+        #
+        # if self.variable_manager_widget.params_widget:
+        #     # TODO teleparam HACK
+        #     self.variable_manager_widget.params_widget.setParent(None)
+        #
+        #     # get widgets
+        #     params_widget = self.variable_manager_widget.params_widget
+        #     params_layout = params_widget.getLayout()
+        #
+        #     # clear layout
+        #     params_widget.clearLayout()
+        #
+        #     # add params
+        #     if node_list is None:
+        #         node_list = NodegraphAPI.GetAllSelectedNodes()
+        #
+        #     for node in node_list:
+        #         if hasattr(node, 'getType'):
+        #             if node.getType() != 'VariableManager':
+        #                 parent_node = self.getWorkingItem().getVEGNode()
+        #                 if node.getParent() == parent_node:
+        #                     # determine if title should be hidden or not
+        #                     if len(node_list) < 2:
+        #                         hide_title = True
+        #                     else:
+        #                         hide_title = False
+        #
+        #                     # Create teleparams widget
+        #                     params_widget.showParameter(node.getName(), hide_title)
+        #                     # param_reference_widget = params_widget.createTeleparamWidget(node.getName(), hide_title)
+        #                     # param_reference_widget.show()
+        #                     # params_layout.addWidget(param_reference_widget)
+        #
+        #     # TODO teleparam HACK
+        #     # reshow teleparam
+        #     splitter.addWidget(self.variable_manager_widget.params_widget)
+        # self.variable_manager_widget.params_widget.widget().show()
 
     """ PROPERTIES """
     def getNode(self):

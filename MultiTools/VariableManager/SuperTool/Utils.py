@@ -2,7 +2,8 @@ import os
 
 from .ItemTypes import (
     BLOCK_ITEM,
-    PATTERN_ITEM
+    PATTERN_ITEM,
+    MASTER_ITEM
 )
 
 from Utils2 import mkdirRecursive
@@ -32,7 +33,7 @@ def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOC
         resolveBesterestVersion(main_widget, publish_loc, item_type, item=item)
 
         # check patterns on block items
-        if item_type == BLOCK_ITEM:
+        if item_type in [MASTER_ITEM, BLOCK_ITEM]:
             publish_loc = '{publish_dir}/{item_type}/{unique_hash}/pattern/v000'.format(
                 publish_dir=publish_dir, item_type=item_type.TYPE, unique_hash=item.getHash()
             )
@@ -141,10 +142,16 @@ def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
         main_widget.publish_display_widget.publishNewItem(
             item_type=item_type, item=item
         )
-        print ('making dir == ', publish_loc)
+        print ('making dir == ', publish_loc, item_type)
         # make live directory
         live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
         mkdirRecursive(live_directory)
+
+        # if item_type == MASTER_ITEM:
+        #     # recursively populate the items under the master group
+        #     block_root_node = item.getBlockNode()
+        #     for child in block_root_node.getParameter('nodeReference').getChildren():
+        #         self.populateBlock(item, child, True)
 
 
 # HACK
