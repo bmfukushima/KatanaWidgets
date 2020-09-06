@@ -688,11 +688,11 @@ class VariableManagerMainWidget(QWidget):
         """
         splitter = self.variable_manager_widget.splitter
 
-        if splitter.widget(1):
-            # if splitter.itemAt(2):
-            # clear params
-            # print(splitter.itemAt(2).widget())
-            #splitter.widget(1).setParent(None)
+        if self.variable_manager_widget.params_scroll:
+            # TODO teleparam HACK
+            self.variable_manager_widget.params_scroll.setParent(None)
+
+            # clear layout
             params_layout = self.variable_manager_widget.params_layout
             for i in reversed(range(params_layout.count())):
                 params_layout.itemAt(i).widget().setParent(None)
@@ -713,12 +713,14 @@ class VariableManagerMainWidget(QWidget):
                                 hide_title = False
 
                             # Create teleparams widget
-                            params_widget = self.createParamReference(node.getName(), hide_title)
-                            params_layout.addWidget(params_widget)
-                            params_layout.update()
+                            param_reference_widget = self.createParamReference(node.getName(), hide_title)
+                            param_reference_widget.show()
+                            params_layout.addWidget(param_reference_widget)
 
-            #splitter.addWidget(self.variable_manager_widget.params_scroll)
-        #self.variable_manager_widget.params_widget.show()
+            # TODO teleparam HACK
+            # reshow teleparam
+            splitter.addWidget(self.variable_manager_widget.params_scroll)
+        self.variable_manager_widget.params_widget.show()
 
     """ PROPERTIES """
     def getNode(self):

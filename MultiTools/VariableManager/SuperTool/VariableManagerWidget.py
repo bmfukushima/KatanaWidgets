@@ -207,13 +207,13 @@ class VariableManagerWidget(QWidget):
         """
         params_widget = QWidget()
         params_widget.setObjectName("params widget")
-        self.params_layout = QVBoxLayout()
+        self.params_layout = QVBoxLayout(params_widget)
         self.params_layout.setAlignment(Qt.AlignTop)
 
-        params_widget.setLayout(self.params_layout)
         self.params_scroll = QScrollArea()
         self.params_scroll.setWidget(params_widget)
         self.params_scroll.setWidgetResizable(True)
+
         return params_widget
 
     """ EVENTS """
@@ -792,6 +792,7 @@ class VariableManagerBrowser(QTreeWidget):
         # not this...
         if check_besterest is True:
             checkBesterestVersion(self.main_widget, item=master_item, item_types=[BLOCK_ITEM])
+            return
 
         # recursively populate the items under the master group
         block_root_node = master_item.getBlockNode()
