@@ -26,6 +26,11 @@ def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOC
         item = main_widget.getWorkingItem()
 
     for item_type in item_types:
+
+        # TODO publish dir hack...
+        if item_type == MASTER_ITEM:
+            item_type = BLOCK_ITEM
+
         # check default directories
         publish_loc = '{publish_dir}/{item_type}/{unique_hash}/{item_type}/v000'.format(
             publish_dir=publish_dir, item_type=item_type.TYPE, unique_hash=item.getHash()

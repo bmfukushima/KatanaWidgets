@@ -788,7 +788,7 @@ class VariableManagerBrowser(QTreeWidget):
         # get publish dir...
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
-        print ('=== populate start ===')
+
         # create master item
         master_item = self.createNewBrowserItem(MASTER_ITEM, variable, check_besterest=False)
         # not this...
@@ -823,7 +823,6 @@ class VariableManagerBrowser(QTreeWidget):
         if root_node.getParameter('type').getValue(0) == 'pattern':
             # create pattern item
             pattern = root_node.getParameter('pattern').getValue(0)
-            print('parent item == %s'%parent_item.text(0), pattern)
             new_item = self.createNewBrowserItem(
                 item_type=PATTERN_ITEM, item_text=pattern, node=root_node, check_besterest=check_besterest, parent_item=parent_item
             )
