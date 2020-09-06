@@ -132,6 +132,11 @@ class AbstractNodegraphWidget(QWidget):
         NodeGraphView.CleanupModule(self)
         nodegraph_widget.cleanup()
 
+    """ EVENTS """
+    def closeEvent(self, event):
+        self.destroyNodegraph()
+        return QWidget.closeEvent(self, event)
+
     """ PROPERTIES """
     def setNode(self, node):
         self._node = node
@@ -146,6 +151,7 @@ class AbstractNodegraphWidget(QWidget):
         return self._nodegraph_panel
 
     def setTab(self, nodegraph_tab):
+        self.layout().addWidget(nodegraph_tab)
         self._nodegraph_tab = nodegraph_tab
         self.setPanel(nodegraph_tab.getWidget())
         self.setWidget(self.getPanel().getNodeGraphWidget())

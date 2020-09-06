@@ -261,13 +261,13 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             User adds new pattern to current GSV --> __addGSVPattern()
         """
         root_node = NodegraphAPI.GetRootNode()
-
         for arg in args:
             # GSV Changed
             if arg[2]['node'] == root_node:
                 param = arg[2]['param']
-                if param.getParent().getName() == self.main_widget.getVariable():
-                    self.__addGSVPatternWrapper(param)
+                if param.getParent():
+                    if param.getParent().getName() == self.main_widget.getVariable():
+                        self.__addGSVPatternWrapper(param)
 
     """ GSV CHANGED """
     def __addGSVPatternWrapper(self, param):
