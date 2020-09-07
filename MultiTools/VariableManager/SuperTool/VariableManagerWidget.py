@@ -60,6 +60,7 @@ from Utils2 import (
 )
 
 from Utils2.colors import(
+    ERROR_COLOR_RGBA,
     GRID_COLOR,
     TEXT_COLOR
 )
@@ -1729,7 +1730,7 @@ class VariableManagerBrowser(QTreeWidget):
         menu = QMenu(self)
         item = self.currentItem()
 
-        if item.is_broken: return
+        if item.getIsBroken(): return
 
         # Add actions to menu
         menu.addAction("Create Block")
@@ -1837,7 +1838,7 @@ class VariableManagerBrowser(QTreeWidget):
         """
         item = self.itemAt(event.pos())
         if item:
-            if item.is_broken: return
+            if item.getIsBroken(): return
 
             index = self.currentIndex()
             if index.column() == 0:
@@ -1961,58 +1962,58 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
                 | Qt.ItemIsDragEnabled
             )
 
+        # setup display
         # update text
         self.setText(0, name)
         self.setText(1, pattern_version)
         self.setText(2, block_version)
 
-        # check existance
-        self.is_broken = False
+        # update colors
+        self.checkValidity(update=False)
+        self.setDisabled(is_disabled, update=False)
+        self.updateColors()
 
+        Utils.UndoStack.EnableCapture()
+
+    def checkValidity(self, update=True):
+        """
+        Checks to determine if the item is broken or not based off of if
+        the directories exist or not.  This will set the _is_broken attr via setIsBroken
+        to determine if the item is broken or not.
+
+        Args:
+            update (bool): if true the colors will be updated.
+        """
+        # get attrs
+        publish_dir = self.publish_dir
+        pattern_version = self.pattern_version
+        block_version = self.block_version
+        item_type = self.getItemType()
+
+        # setup is broken
+        self.setIsBroken(False)
         if not os.path.exists('{publish_dir}/pattern/{version}/something.livegroup'.format(
                 publish_dir=publish_dir, version=pattern_version
         )):
-            self.is_broken = True
+            self.setIsBroken(True)
         if item_type in [BLOCK_ITEM, MASTER_ITEM]:
             if not os.path.exists('{publish_dir}/block/{version}/something.livegroup'.format(
                 publish_dir=publish_dir, version=block_version
             )):
-                self.is_broken = True
+                self.setIsBroken(True)
+        if update is True:
+            self.updateColors()
 
-        # set colors
-        self.setColor()
-        default_color = QBrush(QColor(*TEXT_COLOR))
-        if self.is_broken:
-            default_color = QBrush(QColor(255, 0, 0, 255))
-        self.setForeground(0, default_color)
+    """ COLORS """
+    def updateColors(self):
+        """
+        Updates all of the colors for the item including the
+            icon, text
+        """
+        self.setIconColor()
+        self.setTextColor()
 
-        # set initial disabled
-        self.setDisabled(is_disabled)
-        Utils.UndoStack.EnableCapture()
-
-    def setDisabled(self, is_disabled):
-        # get initial styles
-        font = self.font(0)
-        brush = self.foreground(0)
-
-        # get new color
-        if is_disabled is True:
-            new_colors = [min(x*.75, 255) for x in brush.color().getRgb()]
-        elif is_disabled is False:
-            new_colors = TEXT_COLOR
-        if self.is_broken:
-            new_colors = (255, 0, 0, 255)
-        # update style
-        font.setStrikeOut(is_disabled)
-        new_brush = QBrush(QColor(*new_colors))
-        self.__is_disabled = is_disabled
-        self.setForeground(0, new_brush)
-        self.setFont(0, font)
-
-        # disable root node
-        self.getRootNode().setBypassed(is_disabled)
-
-    def setColor(self):
+    def setIconColor(self):
         """
         Sets the color of the individual item based off of
         what type they are
@@ -2031,12 +2032,63 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         icon = QIcon(pixmap)
         self.setIcon(0, icon)
-        """        
-        self.setForeground(0, QBrush(color))
+
+    def setTextColor(self):
         """
+        sets the text's color based on the specific arguments set to it
+        such as enable/disable and errors
+        """
+        # Set text color
+        brush = self.foreground(0)
+
+        # get color
+        if self.isDisabled() is True:
+            new_colors = [min(x*.75, 255) for x in brush.color().getRgb()]
+        elif self.isDisabled() is False:
+            new_colors = TEXT_COLOR
+        elif self.getIsBroken() is True:
+            new_colors = ERROR_COLOR_RGBA
+
+        new_brush = QBrush(QColor(*new_colors))
+        self.setForeground(0, new_brush)
+
+    """ DISPLAY ATTRS"""
+    def isDisabled(self):
+        return self._is_disabled
+
+    def setDisabled(self, is_disabled, update=True):
+        """
+        Sets the flag for if this item is disabled or not.
+
+        Args:
+            is_disabled (bool): flag to determine if this item is disabled.
+            update (bool): if true the colors will be updated.
+        """
+        # setter
+        self._is_disabled = is_disabled
+
+        # strike out font
+        font = self.font(0)
+        font.setStrikeOut(is_disabled)
+        self.setFont(0, font)
+
+        # update color
+        if update is True:
+            self.updateColors()
+
+        # disable root node
+        self.getRootNode().setBypassed(is_disabled)
+
+        return is_disabled
 
     def toggleDisabledState(self):
-        self.setDisabled(not self.__is_disabled)
+        self.setDisabled(not self._is_disabled)
+
+    def getIsBroken(self):
+        return self._is_broken
+
+    def setIsBroken(self, bool):
+        self._is_broken = bool
 
     """ ATTRIBUTES """
     def getItemType(self):
@@ -2093,14 +2145,6 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
     def setPublishDir(self, publish_dir):
         self.publish_dir = publish_dir
-
-    @property
-    def is_broken(self):
-        return self._is_broken
-
-    @is_broken.setter
-    def is_broken(self, bool):
-        self._is_broken = bool
 
 
 class PublishDirWidget(AbstractFileBrowser, iParameter):
