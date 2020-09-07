@@ -1934,7 +1934,6 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         veg_node=None
     ):
         super(VariableManagerBrowserItem, self).__init__(parent)
-
         Utils.UndoStack.DisableCapture()
 
         # setup default attrs
@@ -1949,19 +1948,6 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.hash = unique_hash
         self.publish_dir = publish_dir
 
-        # setup flags
-        if item_type == BLOCK_ITEM:
-            self.setFlags(
-                self.flags()
-                | Qt.ItemIsEditable
-            )
-        elif item_type == PATTERN_ITEM:
-            self.setFlags(
-                self.flags()
-                | Qt.ItemIsDropEnabled
-                | Qt.ItemIsDragEnabled
-            )
-
         # setup display
         # update text
         self.setText(0, name)
@@ -1972,6 +1958,9 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.checkValidity(update=False)
         self.setDisabled(is_disabled, update=False)
         self.updateColors()
+
+        # set flags
+        self.__setItemTypeFlags()
 
         Utils.UndoStack.EnableCapture()
 
@@ -1991,18 +1980,38 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         item_type = self.getItemType()
 
         # setup is broken
-        self.setIsBroken(False)
+        is_broken = False
         if not os.path.exists('{publish_dir}/pattern/{version}/something.livegroup'.format(
                 publish_dir=publish_dir, version=pattern_version
         )):
-            self.setIsBroken(True)
+            is_broken = True
         if item_type in [BLOCK_ITEM, MASTER_ITEM]:
             if not os.path.exists('{publish_dir}/block/{version}/something.livegroup'.format(
                 publish_dir=publish_dir, version=block_version
             )):
-                self.setIsBroken(True)
+                is_broken = True
+
+        self.setIsBroken(is_broken)
+
+        # update
         if update is True:
             self.updateColors()
+
+    def __setItemTypeFlags(self):
+        # setup flags
+        if self.getIsBroken() is True:
+            self.setFlags(self.flags() & ~Qt.ItemIsDragEnabled & ~Qt.ItemIsDropEnabled)
+        elif self.getItemType() == BLOCK_ITEM:
+            self.setFlags(
+                self.flags()
+                | Qt.ItemIsEditable
+            )
+        elif self.getItemType() == PATTERN_ITEM:
+            self.setFlags(
+                self.flags()
+                | Qt.ItemIsDropEnabled
+                | Qt.ItemIsDragEnabled
+            )
 
     """ COLORS """
     def updateColors(self):
@@ -2042,13 +2051,16 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         brush = self.foreground(0)
 
         # get color
+        # disabled
         if self.isDisabled() is True:
             new_colors = [min(x*.75, 255) for x in brush.color().getRgb()]
         elif self.isDisabled() is False:
             new_colors = TEXT_COLOR
-        elif self.getIsBroken() is True:
+        # broken
+        if self.getIsBroken() is True:
             new_colors = ERROR_COLOR_RGBA
 
+        # set brush
         new_brush = QBrush(QColor(*new_colors))
         self.setForeground(0, new_brush)
 
@@ -2087,8 +2099,9 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
     def getIsBroken(self):
         return self._is_broken
 
-    def setIsBroken(self, bool):
-        self._is_broken = bool
+    def setIsBroken(self, value):
+        self._is_broken = value
+        self.__setItemTypeFlags()
 
     """ ATTRIBUTES """
     def getItemType(self):
