@@ -60,7 +60,7 @@ from Utils2 import (
 )
 
 from Utils2.colors import(
-    ACCEPT_HOVER_COLOR_RGBA,
+    DISABLED_KATANA_LOCAL_YELLOW,
     DISABLED_TEXT_COLOR,
     ERROR_COLOR_RGBA,
     GRID_COLOR,
@@ -789,16 +789,8 @@ class VariableManagerBrowser(QTreeWidget):
                 color:rgba%s;}
         """%(
             repr(KATANA_LOCAL_YELLOW),
-            repr(DISABLED_TEXT_COLOR)
+            repr(DISABLED_KATANA_LOCAL_YELLOW)
              ))
-        # self.setStyleSheet("""
-        #     QTreeWidget::item:selected {color: rgba%s}
-        #     QTreeWidget::item:selected[is_disabled=true] {color: rgba%s}
-        #     """%(
-        #         repr(KATANA_LOCAL_YELLOW),
-        #         repr(DISABLED_TEXT_COLOR)
-        #     )
-        # )
 
     def populate(self, check_besterest=True):
         """
