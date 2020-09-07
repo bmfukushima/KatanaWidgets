@@ -1725,31 +1725,49 @@ class VariableManagerBrowser(QTreeWidget):
                     # publish
                     self.__publish(name=name, item_type=item_type)
 
+            # Fix it like Felix
+            elif 'Fix' in action.text():
+                if action.text() == 'Fix Item':
+                    self.fixItem()
+                elif action.text() == 'Fix All Items':
+                    self.fixAllItems()
+
         # Create pop up menu
         pos = event.globalPos()
         menu = QMenu(self)
         item = self.currentItem()
 
-        if item.getIsBroken(): return
+        # check if broken
+        if item.getIsBroken():
+            menu.addAction("Fix Item")
+            menu.addAction("Fix All Items")
 
-        # Add actions to menu
-        menu.addAction("Create Block")
-        menu.addSeparator()
-        menu.addAction('Go To Node')
-        menu.addAction('Get Publish Dir')
-        menu.addSeparator()
-        menu.addAction('Publish Pattern')
+        # if not broken
+        else:
+            # Add actions to menu
+            menu.addAction("Create Block")
+            menu.addSeparator()
+            menu.addAction('Go To Node')
+            menu.addAction('Get Publish Dir')
+            menu.addSeparator()
+            menu.addAction('Publish Pattern')
 
-        # Add items to block/master types
-        if item:
-            if item.getItemType() in [BLOCK_ITEM, MASTER_ITEM]:
-                menu.addAction('Publish Block')
+            # Add items to block/master types
+            if item:
+                if item.getItemType() in [BLOCK_ITEM, MASTER_ITEM]:
+                    menu.addAction('Publish Block')
 
         # Show/Execute menu
         menu.popup(pos)
         action = menu.exec_(QCursor.pos())
         if action is not None:
             actionPicker(action)
+
+    def fixItem(self):
+        print ('fixing broken path...')
+
+    def fixAllItems(self):
+        print('fixing all items...')
 
     """ EVENTS """
     def dragMoveEvent(self, event, *args, **kwargs):
@@ -2101,7 +2119,12 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
     def setIsBroken(self, value):
         self._is_broken = value
+
+        # update gui
         self.__setItemTypeFlags()
+        if value is True:
+            self.setText(1, '')
+            self.setText(2, '')
 
     """ ATTRIBUTES """
     def getItemType(self):
