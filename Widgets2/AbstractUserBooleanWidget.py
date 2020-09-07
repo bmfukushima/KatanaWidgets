@@ -2,18 +2,19 @@ from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QSizePolicy,
 )
 
-from PyQt5.QtCore import (
-    Qt
-)
+from PyQt5.QtCore import (Qt)
 
-from .Settings import (
+from Utils2 import suppressUndooz
+
+from Utils2.settings import (
     ACCEPT_GIF,
     CANCEL_GIF,
+)
+
+from Utils2.colors import (
     ACCEPT_COLOR_RGBA,
     CANCEL_COLOR_RGBA
 )
-
-from Utils2 import suppressUndooz
 
 from .GifPlayer import GifPlayer
 

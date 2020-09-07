@@ -16,9 +16,11 @@ TODO:
     *   Clean up of everything...
     BUGS:
         CRITICAL:
-            *   Switching to a GSV/Node type that already exists publishes a new version
-                    node --> createPatternGroupNode --> createPublishDirectories
-                            somehow... this is registering the master item on init as a pattern
+            *   Somehow...
+                    On creation, if directories don't exist... it will create them, but
+                    it does not reset the nodes... somehow...
+
+                    PublishDisplayWidget --> publishNewItem?
         GDI:
             *   drag/Drop reselect always defaults to last item
         SUCKS =\
@@ -118,12 +120,9 @@ from .ItemTypes import (
 )
 from .Settings import (
     PATTERN_PREFIX,
-    BLOCK_PREFIX,
-    ACCEPT_COLOR_RGBA,
-    MAYBE_COLOR_RGBA,
-    ACCEPT_HOVER_COLOR_RGBA,
-    MAYBE_HOVER_COLOR_RGBA
+    BLOCK_PREFIX
     )
+
 
 from .VariableManagerWidget import VariableManagerWidget, VariableManagerBrowser
 
@@ -132,6 +131,13 @@ from .Utils import (
     getNextVersion,
     goToNode,
     transferNodeReferences
+)
+
+from Utils2.colors import(
+    ACCEPT_COLOR_RGBA,
+    MAYBE_COLOR_RGBA,
+    ACCEPT_HOVER_COLOR_RGBA,
+    MAYBE_HOVER_COLOR_RGBA
 )
 
 from Utils2 import(
@@ -1435,7 +1441,6 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             item (VariableManagerBrowserItem): Item to have its directories created for it.
 
         """
-
         if item_type == BLOCK_ITEM:
             self.publish_type = BLOCK_ITEM
             self.publishBlock(item=item)
@@ -1561,7 +1566,6 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
         # reset item attributes/parameters
         new_root_node = live_group.convertToGroup()
-        new_pattern_node = new_root_node.getChildByIndex(0)
 
         # update nodes
         if item_type in BLOCK_PUBLISH_GROUP:

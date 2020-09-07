@@ -11,23 +11,21 @@ from PyQt5.QtGui import (
 )
 
 from PyQt5.QtCore import (
-    QEvent, Qt, QByteArray, QSize, QSortFilterProxyModel
+    Qt, QByteArray, QSize
 )
-
-from Settings import (
-    ACCEPT_GIF,
-    CANCEL_GIF,
-    MAYBE_COLOR_RGBA,
-    ACCEPT_COLOR_RGBA,
-    CANCEL_COLOR_RGBA
-)
-from PyQt5.Qt import QApplication
 
 
 class GifPlayer(QWidget):
+    """
+    Simple widget to play a gif
+
+    gif_file (str): path on disk to gif file to be used
+    hover_color (rgba): color to be displayed when the widget
+        is hovered over by the user
+    """
     def __init__(
         self,
-        gifFile,
+        gif_file,
         hover_color,
         parent=None
     ):
@@ -42,7 +40,7 @@ class GifPlayer(QWidget):
         self.movie_widget = QLabel()
         self.layout().addWidget(self.movie_widget)
 
-        self.movie_widget.movie = QMovie(gifFile, QByteArray(), self.movie_widget)
+        self.movie_widget.movie = QMovie(gif_file, QByteArray(), self.movie_widget)
         self.movie_widget.movie.setScaledSize(QSize(100, 300))
         self.movie_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.movie_widget.setAlignment(Qt.AlignTop)

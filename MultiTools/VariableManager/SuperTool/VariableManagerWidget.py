@@ -36,15 +36,9 @@ from .ItemTypes import (
 from .Settings import (
     PATTERN_PREFIX,
     BLOCK_PREFIX,
-    GRID_COLOR,
-    TEXT_COLOR,
     SPLITTER_STYLE_SHEET,
     SPLITTER_STYLE_SHEET_HIDE,
     SPLITTER_HANDLE_WIDTH,
-    ACCEPT_COLOR_RGBA,
-    MAYBE_COLOR_RGBA,
-    ACCEPT_HOVER_COLOR_RGBA,
-    MAYBE_HOVER_COLOR_RGBA,
     PUBLISH_DIR
     )
 
@@ -63,6 +57,11 @@ from Utils2 import (
     gsvutils,
     makeUndoozable,
     nodeutils,
+)
+
+from Utils2.colors import(
+    GRID_COLOR,
+    TEXT_COLOR
 )
 
 from Widgets2 import(
@@ -799,6 +798,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         # recursively populate the items under the master group
         block_root_node = master_item.getBlockNode()
+
         for child in block_root_node.getParameter('nodeReference').getChildren():
             self.populateBlock(master_item, child, check_besterest)
 
@@ -1146,6 +1146,27 @@ class VariableManagerBrowser(QTreeWidget):
 
         return parent_node
 
+    def __getPublishDir(self, item_type, unique_hash):
+        """
+        Gets the full publish dir for an item that is being created
+        """
+
+        variable = self.main_widget.getVariable()
+        node_type = self.main_widget.getNodeType()
+        root_location = self.main_widget.getRootPublishDir()
+
+        if item_type in [MASTER_ITEM, BLOCK_ITEM]:
+            publish_dir = '{root_location}/{variable}/{node_type}/block/{unique_hash}'.format(
+                root_location=root_location, variable=variable, node_type=node_type, unique_hash=unique_hash
+            )
+
+        elif item_type in [PATTERN_ITEM]:
+            publish_dir = '{root_location}/{variable}/{node_type}/pattern/{unique_hash}'.format(
+                root_location=root_location, variable=variable, node_type=node_type, unique_hash=unique_hash
+            )
+
+        return publish_dir
+
     def __createNewMasterItem(self):
         """
         Creates the root item.  If there is no variable,
@@ -1167,6 +1188,9 @@ class VariableManagerBrowser(QTreeWidget):
         pattern_version = pattern_root_node.getParameter('version').getValue(0)
         block_version = block_root_node.getParameter('version').getValue(0)
 
+        # get publish dir
+        publish_dir = self.__getPublishDir(MASTER_ITEM, 'master')
+
         # setup master item
         master_item = VariableManagerBrowserItem(
             self.invisibleRootItem(),
@@ -1177,6 +1201,7 @@ class VariableManagerBrowser(QTreeWidget):
             veg_node=pattern_root_node.getChildByIndex(0),
             unique_hash='master',
             pattern_version=pattern_version,
+            publish_dir=publish_dir,
             block_version=block_version,
             name=variable,
             item_type=MASTER_ITEM,
@@ -1227,6 +1252,8 @@ class VariableManagerBrowser(QTreeWidget):
         new_block_node = NodegraphAPI.GetNode(block_root_node.getParameter('nodeReference.block_group').getValue(0))
         pattern_node = NodegraphAPI.GetNode(block_root_node.getParameter('nodeReference.pattern_node').getValue(0))
 
+        # get publish dir
+        publish_dir = self.__getPublishDir(BLOCK_ITEM, block_node_hash)
         # Create Item
         block_item = VariableManagerBrowserItem(
             parent_item,
@@ -1235,6 +1262,7 @@ class VariableManagerBrowser(QTreeWidget):
             pattern_version='v000',
             expanded=False,
             item_type=BLOCK_ITEM,
+            publish_dir=publish_dir,
             name=block_node_name,
             pattern_node=pattern_node,
             veg_node=pattern_node.getChildByIndex(0),
@@ -1334,6 +1362,7 @@ class VariableManagerBrowser(QTreeWidget):
         """
         node = self.main_widget.getNode()
         parent_node = self.__getParentNode()
+
         # create node group
         if not pattern_node:
             pattern_node = node.createPatternGroupNode(parent_node, pattern=item_text)
@@ -1345,6 +1374,9 @@ class VariableManagerBrowser(QTreeWidget):
         unique_hash = pattern_node.getParameter('hash').getValue(0)
         pattern = pattern_node.getParameter('pattern').getValue(0)
 
+        # get publish dir
+        publish_dir = self.__getPublishDir(PATTERN_ITEM, unique_hash)
+
         # Create Item
         item = VariableManagerBrowserItem(
             parent_item,
@@ -1352,6 +1384,7 @@ class VariableManagerBrowser(QTreeWidget):
             name=pattern,
             pattern_node=pattern_node,
             veg_node=pattern_node.getChildByIndex(0),
+            publish_dir=publish_dir,
             pattern_version=version,
             root_node=pattern_node,
             unique_hash=unique_hash
@@ -1685,6 +1718,7 @@ class VariableManagerBrowser(QTreeWidget):
                     item_type = PATTERN_ITEM
                     publish_dir = self.main_widget.getItemPublishDir(include_publish_type=item_type)
                     version = getNextVersion(publish_dir)
+
                     name = 'PATTERN  (  %s  |  %s  |  %s  )' % (variable, current_text, version)
 
                     # publish
@@ -1694,6 +1728,8 @@ class VariableManagerBrowser(QTreeWidget):
         pos = event.globalPos()
         menu = QMenu(self)
         item = self.currentItem()
+
+        if item.is_broken: return
 
         # Add actions to menu
         menu.addAction("Create Block")
@@ -1801,6 +1837,8 @@ class VariableManagerBrowser(QTreeWidget):
         """
         item = self.itemAt(event.pos())
         if item:
+            if item.is_broken: return
+
             index = self.currentIndex()
             if index.column() == 0:
                 pass
@@ -1890,6 +1928,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         block_node=None,
         item_type=None,
         expanded=False,
+        publish_dir=None,
         unique_hash=None,
         veg_node=None
     ):
@@ -1897,6 +1936,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         Utils.UndoStack.DisableCapture()
 
+        # setup default attrs
         self.setItemType(item_type)
         self.pattern_node = pattern_node
         self.root_node = root_node
@@ -1906,28 +1946,9 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.pattern_version = pattern_version
         self.setExpanded(expanded)
         self.hash = unique_hash
+        self.publish_dir = publish_dir
 
-        main_widget = getMainWidget(self.treeWidget())
-        root_node = main_widget.node
-
-        variable = main_widget.getVariable()
-        node_type = main_widget.getNodeType()
-        root_location = main_widget.getRootPublishDir()
-
-        if self.getItemType() in [MASTER_ITEM, BLOCK_ITEM]:
-            location = '{root_location}/{variable}/{node_type}/block'.format(
-                root_location=root_location, variable=variable, node_type=node_type
-            )
-
-        elif self.getItemType() in [PATTERN_ITEM]:
-            location = '{root_location}/{variable}/{node_type}/pattern'.format(
-                root_location=root_location, variable=variable, node_type=node_type
-            )
-
-        self.publish_dir = '%s/%s' % (location, self.hash)
-
-        # END TO DO
-
+        # setup flags
         if item_type == BLOCK_ITEM:
             self.setFlags(
                 self.flags()
@@ -1945,9 +1966,24 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.setText(1, pattern_version)
         self.setText(2, block_version)
 
+        # check existance
+        self.is_broken = False
+
+        if not os.path.exists('{publish_dir}/pattern/{version}/something.livegroup'.format(
+                publish_dir=publish_dir, version=pattern_version
+        )):
+            self.is_broken = True
+        if item_type in [BLOCK_ITEM, MASTER_ITEM]:
+            if not os.path.exists('{publish_dir}/block/{version}/something.livegroup'.format(
+                publish_dir=publish_dir, version=block_version
+            )):
+                self.is_broken = True
+
         # set colors
         self.setColor()
         default_color = QBrush(QColor(*TEXT_COLOR))
+        if self.is_broken:
+            default_color = QBrush(QColor(255, 0, 0, 255))
         self.setForeground(0, default_color)
 
         # set initial disabled
@@ -1964,7 +2000,8 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
             new_colors = [min(x*.75, 255) for x in brush.color().getRgb()]
         elif is_disabled is False:
             new_colors = TEXT_COLOR
-
+        if self.is_broken:
+            new_colors = (255, 0, 0, 255)
         # update style
         font.setStrikeOut(is_disabled)
         new_brush = QBrush(QColor(*new_colors))
@@ -2056,6 +2093,14 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
     def setPublishDir(self, publish_dir):
         self.publish_dir = publish_dir
+
+    @property
+    def is_broken(self):
+        return self._is_broken
+
+    @is_broken.setter
+    def is_broken(self, bool):
+        self._is_broken = bool
 
 
 class PublishDirWidget(AbstractFileBrowser, iParameter):
