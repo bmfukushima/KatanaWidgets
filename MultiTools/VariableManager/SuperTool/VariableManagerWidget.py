@@ -60,8 +60,11 @@ from Utils2 import (
 )
 
 from Utils2.colors import(
+    ACCEPT_HOVER_COLOR_RGBA,
+    DISABLED_TEXT_COLOR,
     ERROR_COLOR_RGBA,
     GRID_COLOR,
+    KATANA_LOCAL_YELLOW,
     TEXT_COLOR
 )
 
@@ -774,6 +777,28 @@ class VariableManagerBrowser(QTreeWidget):
 
         # create initial master item
         self.createNewBrowserItem(MASTER_ITEM, self.main_widget.getVariable(), check_besterest=False)
+        self.setProperty('asdf', False)
+        self.setStyleSheet("""
+            QTreeWidget::item:selected[is_disabled=false] {
+                border:none;
+                border-radius:5px;
+                color:rgba%s;}
+            QTreeWidget::item:selected[is_disabled=true] {
+                border:none;
+                border-radius:5px;
+                color:rgba%s;}
+        """%(
+            repr(KATANA_LOCAL_YELLOW),
+            repr(DISABLED_TEXT_COLOR)
+             ))
+        # self.setStyleSheet("""
+        #     QTreeWidget::item:selected {color: rgba%s}
+        #     QTreeWidget::item:selected[is_disabled=true] {color: rgba%s}
+        #     """%(
+        #         repr(KATANA_LOCAL_YELLOW),
+        #         repr(DISABLED_TEXT_COLOR)
+        #     )
+        # )
 
     def populate(self, check_besterest=True):
         """
@@ -893,6 +918,22 @@ class VariableManagerBrowser(QTreeWidget):
         node._reset(variable=variable, node_type=node_type)
         self.populate()
         self.main_widget.updateOptionsList()
+
+    def updateStyleSheet(self, property, value):
+        """
+        Updates the property for the dynamic style sheet with the values provided
+
+        Args:
+            property (str): the property to be updated
+            value (str/bool): the value to set the new property to
+        """
+        # update property
+        self.setProperty(property, value)
+
+        # update stylesheet
+        self.style().unpolish(self)
+        self.style().polish(self)
+        self.update()
 
     def __reparentItem(self, item, new_parent_item, index=0):
         """
@@ -1886,6 +1927,10 @@ class VariableManagerBrowser(QTreeWidget):
                 self.setCurrentItem(item)
                 self.main_widget.setWorkingItem(item)
 
+            # update style sheet
+            self.updateStyleSheet('is_disabled', item.isDisabled())
+
+            # show parameters
             self.displayItemParameters()
 
         return QTreeWidget.selectionChanged(self, *args, **kwargs)
@@ -2018,7 +2063,12 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
     def __setItemTypeFlags(self):
         # setup flags
         if self.getIsBroken() is True:
-            self.setFlags(self.flags() & ~Qt.ItemIsDragEnabled & ~Qt.ItemIsDropEnabled)
+            self.setFlags(
+                self.flags()
+                & ~Qt.ItemIsDragEnabled
+                & ~Qt.ItemIsDropEnabled
+                & ~Qt.ItemIsSelectable
+            )
         elif self.getItemType() == BLOCK_ITEM:
             self.setFlags(
                 self.flags()
@@ -2065,13 +2115,11 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         sets the text's color based on the specific arguments set to it
         such as enable/disable and errors
         """
-        # Set text color
-        brush = self.foreground(0)
-
         # get color
+
         # disabled
         if self.isDisabled() is True:
-            new_colors = [min(x*.75, 255) for x in brush.color().getRgb()]
+            new_colors = DISABLED_TEXT_COLOR
         elif self.isDisabled() is False:
             new_colors = TEXT_COLOR
         # broken
@@ -2108,6 +2156,9 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         # disable root node
         self.getRootNode().setBypassed(is_disabled)
+
+        # update if selected
+        self.treeWidget().updateStyleSheet('is_disabled', self.isDisabled())
 
         return is_disabled
 
