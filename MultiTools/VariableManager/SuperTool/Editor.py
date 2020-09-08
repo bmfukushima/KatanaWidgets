@@ -1586,7 +1586,6 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             item.updateDisplay()
         #print('publishing %s' % item.text(0))
         # set display text
-        #item.setText(1, version)
 
     def __setBesterestButtonStyle(self):
         """

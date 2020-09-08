@@ -1303,17 +1303,21 @@ class VariableManagerBrowser(QTreeWidget):
         # connect and align nodes
 
         # Get Nodes
-        new_block_node = NodegraphAPI.GetNode(block_root_node.getParameter('nodeReference.block_group').getValue(0))
+        block_node = NodegraphAPI.GetNode(block_root_node.getParameter('nodeReference.block_group').getValue(0))
         pattern_node = NodegraphAPI.GetNode(block_root_node.getParameter('nodeReference.pattern_node').getValue(0))
+
+        # get versions
+        pattern_version = pattern_node.getParameter('version').getValue(0)
+        block_version = block_node.getParameter('version').getValue(0)
 
         # get publish dir
         publish_dir = self.__getPublishDir(BLOCK_ITEM, block_node_hash)
         # Create Item
         block_item = VariableManagerBrowserItem(
             parent_item,
-            block_node=new_block_node,
-            block_version='v000',
-            pattern_version='v000',
+            block_node=block_node,
+            block_version=block_version,
+            pattern_version=pattern_version,
             expanded=False,
             item_type=BLOCK_ITEM,
             publish_dir=publish_dir,
@@ -1590,6 +1594,9 @@ class VariableManagerBrowser(QTreeWidget):
 
             # set expanded
             new_block_item.setExpanded(True)
+
+            self.clear()
+            self.populate(check_besterest=False)
 
         elif item_dropped.getItemType() == BLOCK_ITEM:
             # move / rewire nodes
