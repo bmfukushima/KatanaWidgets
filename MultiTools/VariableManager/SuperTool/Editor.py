@@ -376,8 +376,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         variable_manager.publish_dir.setText(publish_dir)
 
         # update variable browser
-        variable_browser.clear()
-        variable_browser.populate(check_besterest=check_besterest)
+        variable_browser.updateDisplay(check_besterest=check_besterest)
 
         # reset selected item
         items = variable_browser.findItems(item_name, Qt.MatchExactly | Qt.MatchRecursive)
@@ -1016,8 +1015,9 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
                 item.setVEGNode(publish_node.getChildByIndex(0))
 
         # update browser widget
-        self.main_widget.variable_manager_widget.variable_browser.clear()
-        self.main_widget.variable_manager_widget.variable_browser.populate(check_besterest=False)
+        self.main_widget.variable_manager_widget.variable_browser.updateDisplay(check_besterest=False)
+        # self.main_widget.variable_manager_widget.variable_browser.clear()
+        # self.main_widget.variable_manager_widget.variable_browser.populate(check_besterest=False)
 
         # update variable switch...
         # get the parent root node of the item
@@ -1449,8 +1449,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
         # recursively update
         browser_widget = self.main_widget.variable_manager_widget.variable_browser
-        browser_widget.clear()
-        browser_widget.populate(check_besterest=False)
+        browser_widget.updateDisplay(check_besterest=False)
 
     def publishAllGroups(self, item, orig_item):
         """

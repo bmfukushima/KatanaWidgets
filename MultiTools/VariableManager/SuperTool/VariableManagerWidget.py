@@ -791,6 +791,22 @@ class VariableManagerBrowser(QTreeWidget):
             repr(DISABLED_KATANA_LOCAL_YELLOW)
              ))
 
+    def updateDisplay(self, check_besterest=True):
+        current_item = self.currentItem()
+        current_hash = current_item.getHash()
+
+        self.clear()
+        self.populate(check_besterest)
+
+        all_items = self.getAllChildItems(self.topLevelItem(0))
+        for item in all_items:
+            if item.getHash() == current_hash:
+                self.setCurrentItem(item)
+                self.main_widget.setWorkingItem(item)
+                return
+        self.main_widget.setWorkingItem(self.topLevelItem(0))
+        self.setCurrentItem(self.topLevelItem(0))
+
     def populate(self, check_besterest=True):
         """
         Creates all of the items for a specific variable.  This will create all of the
@@ -1595,8 +1611,8 @@ class VariableManagerBrowser(QTreeWidget):
             # set expanded
             new_block_item.setExpanded(True)
 
-            self.clear()
-            self.populate(check_besterest=False)
+            # update display
+            self.updateDisplay(check_besterest=False)
 
         elif item_dropped.getItemType() == BLOCK_ITEM:
             # move / rewire nodes
