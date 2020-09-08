@@ -2322,6 +2322,7 @@ class PublishDirWidget(AbstractFileBrowser, iParameter):
 
     def __acceptDirectoryChange(self):
         def accept():
+            self.main_widget.layout().setCurrentIndex(0)
             self.main_widget.setRootPublishDir(str(self.text()))
             self.setValue(str(self.text()))
             checkBesterestVersion(self.main_widget)
@@ -2334,6 +2335,7 @@ class PublishDirWidget(AbstractFileBrowser, iParameter):
         )
 
     def __cancelDirectoryChange(self):
+        self.main_widget.layout().setCurrentIndex(0)
         root_publish_dir = self.main_widget.getRootPublishDir()
         self.setUpdatesEnabled(False)
         self.setText(root_publish_dir)
