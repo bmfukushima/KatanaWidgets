@@ -777,7 +777,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         # create initial master item
         self.createNewBrowserItem(MASTER_ITEM, self.main_widget.getVariable(), check_besterest=False)
-        self.setProperty('asdf', False)
+
         self.setStyleSheet("""
             QTreeWidget::item:selected[is_disabled=false] {
                 border:none;
@@ -804,21 +804,20 @@ class VariableManagerBrowser(QTreeWidget):
         """
         # get publish dir...
         variable = self.main_widget.getVariable()
-        node_type = self.main_widget.getNodeType()
 
         # create master item
-        master_item = self.createNewBrowserItem(MASTER_ITEM, variable, check_besterest=False)
-        # not this...
-        if check_besterest is True:
-            checkBesterestVersion(self.main_widget, item=master_item, item_types=[MASTER_ITEM])
-            # somehow... this needs to determine if this is a new master item or not... =\
-            #return
+        master_item = self.createNewBrowserItem(MASTER_ITEM, variable, check_besterest=check_besterest)
 
+        # if this is a new directory, check all subdirectories
         # recursively populate the items under the master group
         block_root_node = master_item.getBlockNode()
 
         for child in block_root_node.getParameter('nodeReference').getChildren():
             self.populateBlock(master_item, child, check_besterest)
+
+        # set it all to the master item
+        self.setCurrentItem(master_item)
+        self.main_widget.setWorkingItem(master_item)
 
     def populateBlock(self, parent_item, child, check_besterest):
         """
@@ -898,7 +897,7 @@ class VariableManagerBrowser(QTreeWidget):
             self.takeTopLevelItem(index)
         return
 
-    def reset(self):
+    def reset(self, check_besterest=True):
         """
         Deletes all of the top level items in.  This is essentially
         clearing the state of the browser so that it can be repopulated.
@@ -908,7 +907,7 @@ class VariableManagerBrowser(QTreeWidget):
         node_type = self.main_widget.getNodeType()
         node = self.main_widget.getNode()
         node._reset(variable=variable, node_type=node_type)
-        self.populate()
+        self.populate(check_besterest=check_besterest)
         self.main_widget.updateOptionsList()
 
     def updateStyleSheet(self, property, value):
@@ -1473,6 +1472,7 @@ class VariableManagerBrowser(QTreeWidget):
         if check_besterest is True:
             checkBesterestVersion(self.main_widget, item=new_item, item_types=[item_type])
 
+        new_item.checkValidity(update=True)
         return new_item
 
     """ DISABLE ITEM"""
@@ -2003,16 +2003,16 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.hash = unique_hash
         self.publish_dir = publish_dir
 
+        self.setIsBroken(False)
+
         # setup display
         # update text
         self.setText(0, name)
         self.setText(1, pattern_version)
         self.setText(2, block_version)
 
-        # update colors
-        self.checkValidity(update=False)
-        self.setDisabled(is_disabled, update=False)
-        self.updateColors()
+        # set disabled
+        self.setDisabled(is_disabled, update=True)
 
         # set flags
         self.__setItemTypeFlags()
@@ -2036,6 +2036,8 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         # setup is broken
         is_broken = False
+
+        # check to see if directories exist
         if not os.path.exists('{publish_dir}/pattern/{version}/something.livegroup'.format(
                 publish_dir=publish_dir, version=pattern_version
         )):

@@ -1501,10 +1501,9 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
         # write notes to disk
         self.__publishNotesToDisk(publish_loc, note)
-
         self.__setAsBesterest(publish_loc, live_group, note)
-
         new_block_node = live_group.convertToGroup()
+
         # reset references
         new_pattern_node = NodegraphAPI.GetNode(item.getRootNode().getParameter('nodeReference.pattern_node').getValue(0))
         item.setPatternNode(new_pattern_node)

@@ -152,13 +152,6 @@ def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
         live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
         mkdirRecursive(live_directory)
 
-        # if item_type == MASTER_ITEM:
-        #     # recursively populate the items under the master group
-        #     block_root_node = item.getBlockNode()
-        #     for child in block_root_node.getParameter('nodeReference').getChildren():
-        #         self.populateBlock(item, child, True)
-
-
 # HACK
 def transferNodeReferences(xfer_from, xfer_to):
     """
