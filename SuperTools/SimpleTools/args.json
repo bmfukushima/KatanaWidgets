@@ -1,47 +1,298 @@
 {
-  "node_create": {
-    "arg": [
-      {"arg": "node", "note": "the created node"},
-      {"arg": "nodeType", "note": "the type used to create the node"},
-      {"arg": "nodeName", "note": "the name of the node created"}] ,
-    "note": "A node is created"
-  },
-  "node_setName": {
-    "arg": [
-      {"arg": "node", "note": "the node renamed"},
-      {"arg": "oldName", "note": "previous node name"},
-      {"arg": "newName", "note": "current node name"}] ,
-    "note": "Node name changed"
-  },
-  
-  "node_setParent": ["node", "nodeName", "oldParent", "oldParentName", "newParent", "newParentName"],
-  "node_setLocked": ["node", "locked"],
-  "node_setBypassed": ["node", "bypassed"],
-  "node_setFloating": ["node"],
-  "node_setHidden": ["node"],
-  "node_setViewed": ["node"],
-  "node_setSelected": ["node"],
-  "node_attributeEditorSetActive": ["node"],
-  "node_setPosition": ["node", "nodeName", "oldPosition", "newPosition"],
-  "node_delete": ["node", "oldName"],
-  "node_addInputPort": ["node", "nodeName", "port", "portName"],
-  "node_addOutputPort": ["node", "nodeName", "port", "portName"],
-  "node_renameInputPort": ["node", "nodeName", "newPortName", "oldPortName"],
-  "node_renameOutputPort": ["node", "nodeName", "newPortName", "oldPortName"],
-  "node_removeInputPort": ["node", "nodeName", "port", "portName"],
-  "node_removeOutputPort": ["node", "nodeName", "port", "portName"],
-  "node_tagFlavor": ["flavor"],
-  "parameter_setValue": ["param", "node"],
-  "parameter_finalizeValue": ["param", "node"],
-  "parameter_setKey": ["param", "keyTime", "node"],
-  "parameter_removeKey": ["param", "keyTime", "node"],
-  "parameter_removeKeys": ["param", "node"],
-  "parameter_moveKeys": ["param", "node"],
-  "parameter_createChild": ["param", "paramName", "node", "childParam", "element", "index"],
-  "parameter_deleteChild": ["param", "paramName", "node", "childParam", "element", "childName", "index"],
-  "parameter_replaceXML": ["param", "paramName", "node", "oldXML", "newXML"],
-  "parameter_setAutoKeyAll": [],
-  "port_connect": ["portA", "nodeNameA", "portNameA", "portB", "nodeNameB", "portNameB", "oldSourceNode", "oldSourcePort"],
-  "port_disconnect": ["portA", "nodeNameA", "portNameA", "portB", "nodeNameB", "portNameB", "isPortASendPort", "isPortBReturnPort", "nodeAShapeAttrs", "nodeBShapeAttrs"],
+"node_setName" : {
+    "note" : "Node name changed",
+    "args" : [
+        {"arg" : "node" , "note" : "the node renamed"},
+        {"arg" : "oldName" , "note" : "previous node name"},
+        {"arg" : "newName" , "note" : "current node name"}
+    ]},
+
+"node_setParent" : {
+    "note" : "Node parent changed",
+    "args" : [
+        {"arg" : "node" , "note" : "node parented"},
+        {"arg" : "nodeName" , "note" : "name of the node parented"},
+        {"arg" : "oldParent" , "note" : "old parent node"},
+        {"arg" : "oldParentName" , "note" : "old parent node name"},
+        {"arg" : "newParent" , "note" : "new parent node"},
+        {"arg" : "newParentName" , "note" : "new parent node name"}
+    ]},
+
+"node_setLocked" : {
+    "note" : "Node locked or unlocked",
+    "args" : [
+        {"arg" : "node" , "note" : "node locked"},
+        {"arg" : "locked" , "note" : "boolean state of node lock"}
+    ]},
+
+"node_setBypassed" : {
+    "note" : "Node ignored",
+    "args" : [
+        {"arg" : "node" , "note" : "node locked"},
+        {"arg" : "bypassed" , "note" : "boolean state of node bypass"}
+    ]},
+
+"node_setFloating" : {
+    "note" : "Node floating state changed",
+    "args" : [
+        {"arg" : "node" , "note" : "node floated"}
+    ]},
+
+"node_setHidden" : {
+    "note" : "Node hidden state changed",
+    "args" : [
+        {"arg" : "node" , "note" : "node hidden"}
+    ]},
+
+"node_setEdited" : {
+    "note" : "Node edit state changed",
+    "args" : [
+        {"arg" : "node" , "note" : "node edited"}
+    ]},
+
+"node_setViewed" : {
+    "note" : "Node view state changed",
+    "args" : [
+        {"arg" : "node" , "note" : "node viewed"}
+    ]},
+
+"node_setSelected" : {
+    "note" : "Node selection state changed",
+    "args" : [
+        {"arg" : "node" , "note" : "node selected"}
+    ]},
+
+"node_attributeEditorSetActive" : {
+    "note" : "AttributeEditor node active state changed",
+    "args" : [
+        {"arg" : "node" , "note" : "AttributeEditor node changed"}
+    ]},
+
+"node_setPosition" : {
+    "note" : "Node moved in graph view",
+    "args" : [
+        {"arg" : "node" , "note" : "node moved"},
+        {"arg" : "nodeName" , "note" : "name of the node moved"},
+        {"arg" : "oldPosition" , "note" : "previous (x,y) position"},
+        {"arg" : "newPosition" , "note" : "current (x,y) position"}
+    ]},
+
+"node_delete" : {
+    "note" : "Node destroyed",
+    "args" : [
+        {"arg" : "node" , "note" : "node in a zombie state"},
+        {"arg" : "oldName" , "note" : "name of the node before death"}
+    ]},
+
+"node_addInputPort" : {
+    "note" : "Node input port added",
+    "args" : [
+        {"arg" : "node" , "note" : "node modified"},
+        {"arg" : "nodeName" , "note" : "name of node modified"},
+        {"arg" : "port" , "note" : "port object added"},
+        {"arg" : "portName" , "note" : "name of new port"}
+    ]},
+
+"node_addOutputPort" : {
+    "note" : "Node output port added",
+    "args" : [
+        {"arg" : "node" , "note" : "node modified"},
+        {"arg" : "nodeName" , "note" : "name of node modified"},
+        {"arg" : "port" , "note" : "port object added"},
+        {"arg" : "portName" , "note" : "name of new port"}
+    ]},
+
+"node_renameInputPort" : {
+    "note" : "Node input port renamed",
+    "args" : [
+        {"arg" : "node" , "note" : "node modified"},
+        {"arg" : "nodeName" , "note" : "name of node modified"},
+        {"arg" : "oldPortName" , "note" : "old name of renamed input port"},
+        {"arg" : "newPortName" , "note" : "new name of renamed input port"}
+    ]},
+
+"node_renameOutputPort" : {
+    "note" : "Node output port renamed",
+    "args" : [
+        {"arg" : "node" , "note" : "node modified"},
+        {"arg" : "nodeName" , "note" : "name of node modified"},
+        {"arg" : "oldPortName" , "note" : "old name of renamed output port"},
+        {"arg" : "newPortName" , "note" : "new name of renamed output port"}
+    ]},
+
+"node_removeInputPort" : {
+    "note" : "Node input port removed",
+    "args" : [
+        {"arg" : "node" , "note" : "node modified"},
+        {"arg" : "nodeName" , "note" : "name of node modified"},
+        {"arg" : "port" , "note" : "port object removed"},
+        {"arg" : "portName" , "note" : "name of removed port"}
+    ]},
+
+"node_removeOutputPort" : {
+    "note" : "Node output port removed",
+    "args" : [
+        {"arg" : "node" , "note" : "node modified"},
+        {"arg" : "nodeName" , "note" : "name of node modified"},
+        {"arg" : "port" , "note" : "port object removed"},
+        {"arg" : "portName" , "note" : "name of removed port"}
+    ]},
+
+"node_tagFlavor" : {
+    "note" : "Node flavor changed",
+    "args" : [
+        {"arg" : "flavor" , "note" : "the flavor that was added, removed, or cleared"}
+    ]},
+
+"parameter_setValue" : {
+    "note" : "Parameter’s value changed (during continuous manipulation)",
+    "args" : [
+        {"arg" : "param" , "note" : "parameter changed"},
+        {"arg" : "node" , "note" : "parameter node"}
+    ]},
+
+"parameter_finalizeValue" : {
+    "note" : "Parameter’s value changed (on pen up)",
+    "args" : [
+        {"arg" : "param" , "note" : "parameter changed"},
+        {"arg" : "node" , "note" : "parameter node"}
+    ]},
+
+"parameter_setKey" : {
+    "note" : "Key about to be added to parameter curve",
+    "args" : [
+        {"arg" : "param" , "note" : "parameter changed"},
+        {"arg" : "keyTime" , "note" : "time of keyframe added"},
+        {"arg" : "node" , "note" : "parameter node"}
+    ]},
+
+"parameter_removeKey" : {
+    "note" : "Key about to be removed from parameter curve",
+    "args" : [
+        {"arg" : "param" , "note" : "parameter changed"},
+        {"arg" : "keyTime" , "note" : "time of keyframe changed"},
+        {"arg" : "node" , "note" : "parameter node"}
+    ]},
+
+"parameter_removeKeys" : {
+    "note" : "Keys about to be removed from parameter curve",
+    "args" : [
+        {"arg" : "param" , "note" : "parameter changed"},
+        {"arg" : "node" , "note" : "parameter node"}
+    ]},
+
+"parameter_moveKeys" : {
+    "note" : "Keys about to be moved on parameter curve",
+    "args" : [
+        {"arg" : "param" , "note" : "parameter changed"},
+        {"arg" : "node" , "note" : "parameter node"}
+    ]},
+
+"parameter_createChild" : {
+    "note" : "Child parameter created",
+    "args" : [
+        {"arg" : "param" , "note" : "the parent parameter under which a child parameter has been created"},
+        {"arg" : "paramName" , "note" : "the full name of the parent parameter"},
+        {"arg" : "node" , "note" : "the node that contains the parent parameter and its new child"},
+        {"arg" : "childParam" , "note" : "the child parameter that has been created"},
+        {"arg" : "element" , "note" : "a PyXmlIO element representing the new child parameter"},
+        {"arg" : "index" , "note" : "the index of the child parameter within its parent parameter"}
+    ]},
+
+"parameter_deleteChild" : {
+    "note" : "Child parameter deleted",
+    "args" : [
+        {"arg" : "param" , "note" : "the parent parameter under which a child parameter has been deleted"},
+        {"arg" : "paramName" , "note" : "the full name of the parent parameter"},
+        {"arg" : "node" , "note" : "the node that contains the parent parameter"},
+        {"arg" : "childParam" , "note" : "the child parameter that has been deleted"},
+        {"arg" : "element" , "note" : "a PyXmlIO element representing the deleted child parameter"},
+        {"arg" : "childName" , "note" : "the name of the deleted child parameter"},
+        {"arg" : "index" , "note" : "the previous index of the child parameter within its parent parameter"}
+    ]},
+
+"parameter_replaceXML" : {
+    "note" : "Parameter hierarchy changed",
+    "args" : [
+        {"arg" : "param" , "note" : "root parameter changed"},
+        {"arg" : "paramName" , "note" : "root parameter name"},
+        {"arg" : "oldXML" , "note" : "previous XML representation"},
+        {"arg" : "newXML" , "note" : "current XML representation"},
+        {"arg" : "node" , "note" : "parameter node"}
+    ]},
+
+"parameter_setAutoKeyAll" : {
+    "note" : "Global autokey state changed",
+    "args" : []},
+
+"port_connect" : {
+    "note" : "Ports of nodes have been connected",
+    "args" : [
+        {"arg" : "portA" , "note" : "The output port that was connected to an input port."},
+        {"arg" : "nodeNameA" , "note" : "The name of the node that contains the output port."},
+        {"arg" : "portNameA" , "note" : "The name of the output port that was connected."},
+        {"arg" : "portB" , "note" : "The input port that was connected to the output port."},
+        {"arg" : "nodeNameB" , "note" : "The name of the node that contains the input port."},
+        {"arg" : "portNameB" , "note" : "The name of the input port that was connected."},
+        {"arg" : "oldSourceNode" , "note" : "The name of a node that contained the output port that was previously connected to the input port, if any."},
+        {"arg" : "oldSourcePort" , "note" : "The name of an output port that was previously connected to the input port, if any."}
+    ]},
+
+"port_disconnect" : {
+    "note" : "Ports of nodes have been disconnected",
+    "args" : [
+        {"arg" : "portA" , "note" : "The output port that was connected to an input port."},
+        {"arg" : "nodeNameA" , "note" : "The name of the node that contains the output port."},
+        {"arg" : "portNameA" , "note" : "The name of the output port that was connected."},
+        {"arg" : "portB" , "note" : "The input port that was connected to the output port."},
+        {"arg" : "nodeNameB" , "note" : "The name of the node that contains the input port."},
+        {"arg" : "portNameB" , "note" : "The name of the input port that was connected."},
+        {"arg" : "isPortASendPort" , "note" : "True if the upstream port A is a send port on the inside of a GroupNode, otherwise False."},
+        {"arg" : "isPortBReturnPort" , "note" : "True if the downstream port B is a return port on the inside of a GroupNode, otherwise False."},
+        {"arg" : "nodeAShapeAttrs" , "note" : "The node shape attributes of the node on which port A belongs."},
+        {"arg" : "nodeBShapeAttrs" , "note" : "The node shape attributes of the node on which port B belongs."}
+    ]},
+
+"nodegraph_changed" : {
+    "note" : "Called once per idle when any action has changed the node graph.",
+    "args" : []},
+
+"nodegraph_setRootNode" : {
+    "note" : "A new root node has been set",
+    "args" : []},
+
+"nodegraph_loadBegin" : {
+    "note" : "About to load nodes from a node graph document.",
+    "args" : []},
+
+"nodegraph_loadEnd" : {
+    "note" : "Finished loading nodes from a node graph document.",
+    "args" : []},
+
+"nodegraph_setCurrentTime" : {
+    "note" : "Current frame changed.",
+    "args" : []},
+
+"currentTime" : {
+    "note" : "current frame",
+    "args" : []},
+
+"nodegraph_setTimeRange" : {
+    "note" : "inTime and outTime frames changed.",
+    "args" : []},
+
+"nodegraph_setWorkingTimeRange" : {
+    "note" : "workingInTime and workingOutTime frames changed.",
+    "args" : []},
+
+"nodegraph_setTimeIncrement" : {
+    "note" : "Time increment changed.",
+    "args" : []},
+
+"nodegraph_registerType" : {
+    "note" : "New node type registered",
+    "args" : [
+        {"arg" : "type" , "note" : "Name of the newly registered type"}
+    ]}
 
 }

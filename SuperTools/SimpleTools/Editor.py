@@ -61,9 +61,40 @@ class SimpleToolsEditor(AbstractSuperToolEditor):
     Attributes:
         should_update (bool): determines if this tool should have
             its GUI updated or not during the next event idle process.
+
+    Note:
+        Args dict stores information like this...
+        args_dict {
+            event_type: {
+                'note': 'description',
+                'args': [{'arg': argName, 'note': 'description']
+            },
+            event_type: { 'args': [] , 'description': 'note'},
+            "nodegraph_loadBegin" : {
+                "note" : "About to load nodes from a node graph document.",
+                "args" : []
+            },
+        }
     """
     def __init__(self, parent, node):
         super(SimpleToolsEditor, self).__init__(parent, node)
         layout = QVBoxLayout(self)
         test = QLineEdit('test')
         layout.addWidget(test)
+
+    def getEventTypes(self):
+        """
+        Right now this is just printing out all the different args and what not...
+        """
+        import json
+
+        with open('args.json', 'r') as args:
+            args_dict = json.load(args)
+            for event_type in args_dict.keys():
+                print('')
+                print(event_type, args_dict[event_type]['note'])
+                for arg in args_dict[event_type]['args']:
+                    arg_name = arg['arg']
+                    arg_note = arg['note']
+                    print('-----|', arg_name, arg_note)
+
