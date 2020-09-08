@@ -34,7 +34,6 @@ class AbstractParametersDisplayWidget(QScrollArea):
         """
         for i in reversed(range(self.getLayout().count())):
             self.getLayout().itemAt(i).widget().setParent(None)
-
     def populateParameters(self, node_list):
         """
         Displays the parameters in the bottom of the GUI,
@@ -43,19 +42,6 @@ class AbstractParametersDisplayWidget(QScrollArea):
         Args:
             node_list (list): list of nodes that will have their parameters displayed.
         """
-        # TODO teleparam HACK
-        # get old parent attributes...
-        parent_widget = self.parentWidget()
-        parent = parent_widget.layout()
-        if parent:
-            current_index = parent.indexOf(self)
-        else:
-            current_index = parent_widget.indexOf(self)
-            parent = parent_widget
-
-        # remove parent (update hack)
-        self.setParent(None)
-
         # clear layout
         self.clearLayout()
 
@@ -71,9 +57,45 @@ class AbstractParametersDisplayWidget(QScrollArea):
         for node in node_list:
             self.showParameter(node.getName(), hide_title)
 
-        # TODO param hack finish
-        parent.insertWidget(current_index, self)
-        self.widget().show()
+    # def populateParameters(self, node_list):
+    #     """
+    #     Displays the parameters in the bottom of the GUI,
+    #     this is currently linked to the Alt+W hotkey.
+    #
+    #     Args:
+    #         node_list (list): list of nodes that will have their parameters displayed.
+    #     """
+    #     # TODO teleparam HACK
+    #     # get old parent attributes...
+    #     parent_widget = self.parentWidget()
+    #     parent = parent_widget.layout()
+    #     if parent:
+    #         current_index = parent.indexOf(self)
+    #     else:
+    #         current_index = parent_widget.indexOf(self)
+    #         parent = parent_widget
+    #
+    #     # remove parent (update hack)
+    #     self.setParent(None)
+    #
+    #     # clear layout
+    #     self.clearLayout()
+    #
+    #     node_list = self.filterNodeList(node_list)
+    #
+    #     # get hide
+    #     if len(node_list) < 2:
+    #         hide_title = True
+    #     else:
+    #         hide_title = False
+    #
+    #     # display nodes
+    #     for node in node_list:
+    #         self.showParameter(node.getName(), hide_title)
+    #
+    #     # TODO param hack finish
+    #     parent.insertWidget(current_index, self)
+    #     self.widget().show()
 
     def showParameter(self, node_name, hide_title=False):
         """
@@ -86,8 +108,9 @@ class AbstractParametersDisplayWidget(QScrollArea):
                     if there is only 1 then it will be hidden.
         """
         teleparam_widget = self.__createTeleparamWidget(node_name, hide_title=hide_title)
-        teleparam_widget.show()
         self.getLayout().addWidget(teleparam_widget)
+        teleparam_widget.show()
+        self.update()
 
     def filterNodeList(self, node_list):
         for index, node in enumerate(reversed(node_list)):
