@@ -801,7 +801,7 @@ class VariableManagerBrowser(QTreeWidget):
             version or not.  Certain events will want to bypass the besterest
             call, especially those that have deleted node functionality.
         """
-        print (" ==== POPULATING ====")
+        #print (" ==== POPULATING ====")
         # get publish dir...
         variable = self.main_widget.getVariable()
 
@@ -846,7 +846,6 @@ class VariableManagerBrowser(QTreeWidget):
 
             # set item attrs
             new_item.setDisabled(is_disabled)
-            return
 
         # create BLOCK item, and populate block
         else:
@@ -871,9 +870,29 @@ class VariableManagerBrowser(QTreeWidget):
             block_node = NodegraphAPI.GetNode(root_node.getParameter('nodeReference.block_group').getValue(0))
             for child in block_node.getParameter('nodeReference').getChildren():
                 self.populateBlock(new_item, child, check_besterest)
-                return
 
     """ UTILS """
+    @staticmethod
+    def getAllChildItems(item, item_list=None):
+        """
+        returns all children underneath a specific item
+
+        CLEANUP: self.item_list needs to be removed... this recursion is bad...
+
+        Args:
+            item (VariableManagerBrowserItem): item to search below for all children
+        """
+        if not item_list:
+            item_list = []
+
+        if item.childCount() > 0:
+            for index in range(item.childCount()):
+                child = item.child(index)
+                item_list.append(child)
+                if child.childCount() > 0:
+                    return VariableManagerBrowser.getAllChildItems(child, item_list=item_list)
+        return item_list
+
     @classmethod
     def getFullItemPath(cls, item, path):
         if item:
@@ -902,7 +921,7 @@ class VariableManagerBrowser(QTreeWidget):
         Deletes all of the top level items in.  This is essentially
         clearing the state of the browser so that it can be repopulated.
         """
-        print ('==== reset start ====')
+        #print ('==== reset start ====')
         self.clear()
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
@@ -910,7 +929,7 @@ class VariableManagerBrowser(QTreeWidget):
         node._reset(variable=variable, node_type=node_type)
         self.populate(check_besterest=check_besterest)
         self.main_widget.updateOptionsList()
-        print('==== reset end ====')
+        #print('==== reset end ====')
 
     def updateStyleSheet(self, property, value):
         """
@@ -1425,7 +1444,7 @@ class VariableManagerBrowser(QTreeWidget):
             root_node=pattern_node,
             unique_hash=unique_hash
         )
-        print(item.text(0), parent_item.text(0), parent_item)
+        #print(item.text(0), parent_item.text(0), parent_item)
         # create variable switch connections
         current_root_node = item.parent().getRootNode()
         new_pattern = PATTERN_PREFIX+pattern
@@ -1807,6 +1826,14 @@ class VariableManagerBrowser(QTreeWidget):
         Fixes a single item and all of its children, because it recurses automatically lol
         """
         Utils.UndoStack.DisableCapture()
+        # TODO fix
+        """
+        TODO
+            - Something to do with the publishing of the new item
+            - Display updates not registering for all items EXCEPT the item the command was run on
+            - live directories not being created other than on item command was run on
+            - text is being reset to "master" on the root item...
+        """
         checkBesterestVersion(self.main_widget, item=item, item_types=[item.getItemType()])
         Utils.UndoStack.EnableCapture()
 
@@ -1944,6 +1971,8 @@ class VariableManagerBrowser(QTreeWidget):
             # show parameters
             self.displayItemParameters()
 
+            #print(item.debugAttrs())
+
         return QTreeWidget.selectionChanged(self, *args, **kwargs)
 
 
@@ -2061,13 +2090,17 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         # get versions
         pattern_version = self.getPatternNode().getParameter('version').getValue(0)
-        block_version = self.getBlockNode().getParameter('version').getValue(0)
+        self.pattern_version = pattern_version
 
         # set text
         self.setText(0, name)
         self.setText(1, pattern_version)
         if self.getItemType() in BLOCK_PUBLISH_GROUP:
+            block_version = self.getBlockNode().getParameter('version').getValue(0)
+            self.block_version = block_version
             self.setText(2, block_version)
+        print(' ======== %s ========'%self.text(0))
+        #print(self.debugAttrs())
 
     def checkValidity(self, update=True):
         """
@@ -2106,6 +2139,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
     def debugAttrs(self):
         # setup default attrs
+        print(' ======== %s ========'%self.text(0))
         print("item type == ", self.getItemType())
         print("pattern node == ", self.getPatternNode())
         print("root node == ", self.getRootNode())

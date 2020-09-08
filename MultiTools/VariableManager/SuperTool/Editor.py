@@ -130,6 +130,7 @@ from .Settings import (
 from .VariableManagerWidget import VariableManagerWidget, VariableManagerBrowser
 
 from .Utils import (
+    checkBesterestVersion,
     getMainWidget,
     getNextVersion,
     goToNode,
@@ -1446,7 +1447,10 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             self.publish_type = PATTERN_ITEM
             self.publishPattern(item=item)
 
-        item.updateDisplay()
+        # recursively update
+        browser_widget = self.main_widget.variable_manager_widget.variable_browser
+        browser_widget.clear()
+        browser_widget.populate(check_besterest=False)
 
     def publishAllGroups(self, item, orig_item):
         """
@@ -1505,10 +1509,10 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
         # reset references
         new_pattern_node = NodegraphAPI.GetNode(item.getRootNode().getParameter('nodeReference.pattern_node').getValue(0))
+
         item.setPatternNode(new_pattern_node)
         item.setVEGNode(new_pattern_node.getChildByIndex(0))
         item.setBlockNode(new_block_node)
-        #item.setText(2, version)
 
         # update display
         item.updateDisplay()
@@ -1580,7 +1584,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
             # update display
             item.updateDisplay()
-
+        #print('publishing %s' % item.text(0))
         # set display text
         #item.setText(1, version)
 
@@ -1616,12 +1620,7 @@ BESTEREST
         If the user accepts the publish.
         """
         Utils.UndoStack.DisableCapture()
-        # choose publish type
-        if self.publish_type == PATTERN_ITEM:
-            self.publishPattern()
-
-        elif self.publish_type == BLOCK_ITEM:
-            self.publishBlock()
+        self.publishNewItem(self.publish_type)
 
         # for some reason we're going to the node
         self.goToNode()
