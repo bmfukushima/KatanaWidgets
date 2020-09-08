@@ -17,6 +17,10 @@ TODO:
                 -
         *   --------- Get all args... ---------
                 - Hard coded?
+            Event Dict {
+                event_type: { 'args': [{'arg': argName, 'note': 'description'] , 'note': 'description'},
+                event_type: { 'args': [] , 'description': 'note'},
+            }
                     [{event_type: {**kwargs}}]
                 - Dynamic?
                     - Register dummy, get values, destroy dummy?

@@ -1,3 +1,47 @@
-[('node_delete', 3104496928, {'node': <Group GroupNode '__XX_DELETED_pattern__bar5'>, 'oldName': 'pattern__bar'}), ('node_delete', 3117714912, {'node': <VariableEnabledGroup GroupNode '__XX_DELETED_pattern__bar4'>, 'oldName': 'pattern__bar1'}), ('node_delete', 3117305984, {'node': <TimeOffset Node '__XX_DELETED_TimeOffset4'>, 'oldName': 'TimeOffset1'}), ('node_delete', 3117479456, {'node': <Group GroupNode '__XX_DELETED___SAVE_exportedNodes4'>, 'oldName': '__SAVE_exportedNodes'})]
+{
+  "node_create": {
+    "arg": [
+      {"arg": "node", "note": "the created node"},
+      {"arg": "nodeType", "note": "the type used to create the node"},
+      {"arg": "nodeName", "note": "the name of the node created"}] ,
+    "note": "A node is created"
+  },
+  "node_setName": {
+    "arg": [
+      {"arg": "node", "note": "the node renamed"},
+      {"arg": "oldName", "note": "previous node name"},
+      {"arg": "newName", "note": "current node name"}] ,
+    "note": "Node name changed"
+  },
+  
+  "node_setParent": ["node", "nodeName", "oldParent", "oldParentName", "newParent", "newParentName"],
+  "node_setLocked": ["node", "locked"],
+  "node_setBypassed": ["node", "bypassed"],
+  "node_setFloating": ["node"],
+  "node_setHidden": ["node"],
+  "node_setViewed": ["node"],
+  "node_setSelected": ["node"],
+  "node_attributeEditorSetActive": ["node"],
+  "node_setPosition": ["node", "nodeName", "oldPosition", "newPosition"],
+  "node_delete": ["node", "oldName"],
+  "node_addInputPort": ["node", "nodeName", "port", "portName"],
+  "node_addOutputPort": ["node", "nodeName", "port", "portName"],
+  "node_renameInputPort": ["node", "nodeName", "newPortName", "oldPortName"],
+  "node_renameOutputPort": ["node", "nodeName", "newPortName", "oldPortName"],
+  "node_removeInputPort": ["node", "nodeName", "port", "portName"],
+  "node_removeOutputPort": ["node", "nodeName", "port", "portName"],
+  "node_tagFlavor": ["flavor"],
+  "parameter_setValue": ["param", "node"],
+  "parameter_finalizeValue": ["param", "node"],
+  "parameter_setKey": ["param", "keyTime", "node"],
+  "parameter_removeKey": ["param", "keyTime", "node"],
+  "parameter_removeKeys": ["param", "node"],
+  "parameter_moveKeys": ["param", "node"],
+  "parameter_createChild": ["param", "paramName", "node", "childParam", "element", "index"],
+  "parameter_deleteChild": ["param", "paramName", "node", "childParam", "element", "childName", "index"],
+  "parameter_replaceXML": ["param", "paramName", "node", "oldXML", "newXML"],
+  "parameter_setAutoKeyAll": [],
+  "port_connect": ["portA", "nodeNameA", "portNameA", "portB", "nodeNameB", "portNameB", "oldSourceNode", "oldSourcePort"],
+  "port_disconnect": ["portA", "nodeNameA", "portNameA", "portB", "nodeNameB", "portNameB", "isPortASendPort", "isPortBReturnPort", "nodeAShapeAttrs", "nodeBShapeAttrs"],
 
-[('parameter_finalizeValue', 2053723568, {'node': <VariableManager VariableManagerNode 'VariableManager'>, 'param': <Parameter object at 0x7fceb8158570 string 'publish_dir'>}), ('parameter_finalizeValue', 2053723568, {'node': <VariableManager VariableManagerNode 'VariableManager'>, 'param': <Parameter object at 0x7fceb8158570 string 'publish_dir'>}), ('parameter_finalizeValue', 2084850768, {'node': <Group GroupNode 'master'>, 'param': <Parameter object at 0x7fceb81585e8 string 'expanded'>}), ('parameter_finalizeValue', 2084850768, {'node': <Group GroupNode 'master'>, 'param': <Parameter object at 0x7fceb81585e8 string 'expanded'>}), ('parameter_finalizeValue', 2053723568, {'node': <VariableManager VariableManagerNode 'VariableManager'>, 'param': <Parameter object at 0x7fceb81580a8 string 'variable'>}), ('parameter_finalizeValue', 2084850768, {'node': <Group GroupNode 'master'>, 'param': <Parameter object at 0x7fceb81585e8 string 'expanded'>}), ('parameter_finalizeValue', 2084850768, {'node': <Group GroupNode 'master'>, 'param': <Parameter object at 0x7fceb81585e8 string 'expanded'>})]
+}
