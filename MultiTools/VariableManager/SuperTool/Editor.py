@@ -1,5 +1,15 @@
 """
 TODO:
+    *   Fix Items
+            - cannot toggle selection after the update =\
+                potentially something with is disabled in stylesheet?
+            - error color is only updated for current item...
+            FixItem
+                - Is recursive due to how publishing system works...
+                - Block item is not publishing block portion... only pattern portion
+            FixAllItems
+                Shouldn't just batch overwrite.  Needs to selectively find the items that
+                need to be updated.
     * Add redo / undo display updates...
         - Need to check to make sure this all works...
     *   Expand / Collapse
@@ -14,18 +24,11 @@ TODO:
             - recursive search through tree, update all pattern nodes?
     *   File Browser needs a file dialogue button
     *   Clean up of everything...
-    BUGS:
-        CRITICAL:
-            *   Somehow...
-                    On creation, if directories don't exist... it will create them, but
-                    it does not reset the nodes... somehow...
-
-                    PublishDisplayWidget --> publishNewItem?
-        GDI:
-            *   drag/Drop reselect always defaults to last item
-        SUCKS =\
-            *   Defocus events when changing between widgets loses
-                ability to focus in on Line Edits?
+    GDI:
+        *   drag/Drop reselect always defaults to last item
+    SUCKS =\
+        *   Defocus events when changing between widgets loses
+            ability to focus in on Line Edits?
     CLEANUP:
         *   getNode --> AbstractSuperTool
         *   setCurrentIndex --> class variables
@@ -934,19 +937,11 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         for param in current_node_ref_group.getChildren():
             current_node_ref_group.deleteChild(param)
 
-
         # transfer node refs
         transferNodeReferences(
             temp_live_group.getParameter('nodeReference'),
             current_node_ref_group
         )
-        '''        
-        for param in temp_live_group.getParameter('nodeReference').getChildren():
-            param_name = param.getName()
-            node_ref = NodegraphAPI.GetNode(param.getValue(0))
-            createNodeReference(
-                node_ref, param_name, param=current_node_ref_group
-            )'''
 
         for param_name in ['type', 'version', 'hash', 'expanded', 'name']:
             try:
@@ -955,6 +950,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
             except AttributeError:
                 # kill it if its on a pattern because it doesnt have expanded
                 pass
+
         # disconnect / move all nodes
         node_list = []
         for child_node in temp_live_group.getChildren():
@@ -1441,6 +1437,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             item (VariableManagerBrowserItem): Item to have its directories created for it.
 
         """
+        # do publishing stuff
         if item_type == BLOCK_ITEM:
             self.publish_type = BLOCK_ITEM
             self.publishBlock(item=item)
@@ -1448,6 +1445,8 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         if item_type == PATTERN_ITEM:
             self.publish_type = PATTERN_ITEM
             self.publishPattern(item=item)
+
+        item.updateDisplay()
 
     def publishAllGroups(self, item, orig_item):
         """
@@ -1509,7 +1508,10 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         item.setPatternNode(new_pattern_node)
         item.setVEGNode(new_pattern_node.getChildByIndex(0))
         item.setBlockNode(new_block_node)
-        item.setText(2, version)
+        #item.setText(2, version)
+
+        # update display
+        item.updateDisplay()
 
     def publishBlock(self, item=None):
         """
@@ -1576,8 +1578,11 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             item.setPatternNode(new_root_node)
             item.setVEGNode(new_root_node.getChildByIndex(0))
 
+            # update display
+            item.updateDisplay()
+
         # set display text
-        item.setText(1, version)
+        #item.setText(1, version)
 
     def __setBesterestButtonStyle(self):
         """

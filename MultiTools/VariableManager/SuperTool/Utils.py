@@ -9,16 +9,19 @@ from .ItemTypes import (
 from Utils2 import mkdirRecursive
 
 
-def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOCK_ITEM]):
+def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOCK_ITEM], should_load=True):
     """
     Gets an items publish directories, and checks to determine if
     it should load a version, or create a new version.
 
-    main_widget (VariableManagerMainWidget): The getMainWidget widget...
-    item (VariableManagerBrowserItem): item to check for besterest version
-    item_types (list): list of ITEM_TYPES to check for besterest version
-        by default this is set to all, but can be just a single
-            [PATTERN_ITEM] or [BLOCK_ITEM]
+    Args:
+        main_widget (VariableManagerMainWidget): The getMainWidget widget...
+        item (VariableManagerBrowserItem): item to check for besterest version
+        item_types (list): list of ITEM_TYPES to check for besterest version
+            by default this is set to all, but can be just a single
+                [PATTERN_ITEM] or [BLOCK_ITEM]
+        should_load (bool): determines if this should load or bypass.  The default
+            value is true.
     """
 
     publish_dir = main_widget.getBasePublishDir(include_node_type=True)
@@ -35,14 +38,14 @@ def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOC
         publish_loc = '{publish_dir}/{item_type}/{unique_hash}/{item_type}/v000'.format(
             publish_dir=publish_dir, item_type=item_type.TYPE, unique_hash=item.getHash()
         )
-        resolveBesterestVersion(main_widget, publish_loc, item_type, item=item)
+        resolveBesterestVersion(main_widget, publish_loc, item_type, item=item, should_load=should_load)
 
         # check patterns on block items
         if item_type in [MASTER_ITEM, BLOCK_ITEM]:
-            publish_loc = '{publish_dir}/{item_type}/{unique_hash}/pattern/v000'.format(
-                publish_dir=publish_dir, item_type=item_type.TYPE, unique_hash=item.getHash()
+            publish_loc = '{publish_dir}/block/{unique_hash}/pattern/v000'.format(
+                publish_dir=publish_dir, unique_hash=item.getHash()
             )
-            resolveBesterestVersion(main_widget, publish_loc, PATTERN_ITEM, item=item)
+            resolveBesterestVersion(main_widget, publish_loc, PATTERN_ITEM, item=item, should_load=should_load)
 
 
 def createNodeReference(node_ref, param_name, param=None, node=None, index=-1):
@@ -127,16 +130,25 @@ def getNextVersion(location):
     return next_version
 
 
-def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
+def resolveBesterestVersion(main_widget, publish_loc, item_type, item, should_load=True):
     """
     Looks at an item and determines if there are versions available to load or not.
     If there are versions available, it will load the besterest version, if there are not
     versions available, it will create the new item.
+
+    Args:
+        main_widget (VariableManagerMainWidget): The getMainWidget widget...
+        publish_loc (str)
+        item_type (ITEM_TYPE)
+        item (VariableManagerBrowserItem):
+        should_load (bool): determines if this should load or bypass.  The default
+            value is true.
     """
     # LOAD
     if os.path.exists(publish_loc) is True:
         # Load besterest version
-        main_widget.versions_display_widget.loadBesterestVersion(item, item_type=item_type)
+        if should_load is True:
+            main_widget.versions_display_widget.loadBesterestVersion(item, item_type=item_type)
 
     # CREATE
     else:
@@ -144,13 +156,19 @@ def resolveBesterestVersion(main_widget, publish_loc, item_type, item):
         # can prob remove these from individual modules?
         if main_widget.getVariable() == '': return
         if main_widget.getNodeType() == '': return
+
+        # make live dir
+        live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
+        mkdirRecursive(live_directory)
+
+        # create v000 item
         main_widget.publish_display_widget.publishNewItem(
             item_type=item_type, item=item
         )
+
         print ('making dir == ', publish_loc, item_type)
         # make live directory
-        live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
-        mkdirRecursive(live_directory)
+
 
 # HACK
 def transferNodeReferences(xfer_from, xfer_to):

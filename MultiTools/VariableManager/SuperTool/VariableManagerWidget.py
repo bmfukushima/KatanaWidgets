@@ -777,7 +777,6 @@ class VariableManagerBrowser(QTreeWidget):
 
         # create initial master item
         self.createNewBrowserItem(MASTER_ITEM, self.main_widget.getVariable(), check_besterest=False)
-
         self.setStyleSheet("""
             QTreeWidget::item:selected[is_disabled=false] {
                 border:none;
@@ -802,6 +801,7 @@ class VariableManagerBrowser(QTreeWidget):
             version or not.  Certain events will want to bypass the besterest
             call, especially those that have deleted node functionality.
         """
+        print (" ==== POPULATING ====")
         # get publish dir...
         variable = self.main_widget.getVariable()
 
@@ -841,7 +841,7 @@ class VariableManagerBrowser(QTreeWidget):
             # create pattern item
             pattern = root_node.getParameter('pattern').getValue(0)
             new_item = self.createNewBrowserItem(
-                item_type=PATTERN_ITEM, item_text=pattern, node=root_node, check_besterest=check_besterest, parent_item=parent_item
+                item_type=PATTERN_ITEM, item_text=pattern, node=root_node, check_besterest=check_besterest, parent_item=parent_item, should_load=False
             )
 
             # set item attrs
@@ -857,7 +857,7 @@ class VariableManagerBrowser(QTreeWidget):
             # create block item
             item_text = root_node.getParameter('name').getValue(0)
             new_item = self.createNewBrowserItem(
-                item_type=BLOCK_ITEM, item_text=item_text, node=root_node, check_besterest=check_besterest, parent_item=parent_item
+                item_type=BLOCK_ITEM, item_text=item_text, node=root_node, check_besterest=check_besterest, parent_item=parent_item, should_load=False
             )
 
             # set item attrs
@@ -902,6 +902,7 @@ class VariableManagerBrowser(QTreeWidget):
         Deletes all of the top level items in.  This is essentially
         clearing the state of the browser so that it can be repopulated.
         """
+        print ('==== reset start ====')
         self.clear()
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
@@ -909,6 +910,7 @@ class VariableManagerBrowser(QTreeWidget):
         node._reset(variable=variable, node_type=node_type)
         self.populate(check_besterest=check_besterest)
         self.main_widget.updateOptionsList()
+        print('==== reset end ====')
 
     def updateStyleSheet(self, property, value):
         """
@@ -1411,6 +1413,7 @@ class VariableManagerBrowser(QTreeWidget):
         publish_dir = self.__getPublishDir(PATTERN_ITEM, unique_hash)
 
         # Create Item
+
         item = VariableManagerBrowserItem(
             parent_item,
             item_type=PATTERN_ITEM,
@@ -1422,7 +1425,7 @@ class VariableManagerBrowser(QTreeWidget):
             root_node=pattern_node,
             unique_hash=unique_hash
         )
-
+        print(item.text(0), parent_item.text(0), parent_item)
         # create variable switch connections
         current_root_node = item.parent().getRootNode()
         new_pattern = PATTERN_PREFIX+pattern
@@ -1430,7 +1433,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         return item
 
-    def createNewBrowserItem(self, item_type=BLOCK_ITEM, item_text=None, node=None, check_besterest=True, parent_item=None):
+    def createNewBrowserItem(self, item_type=BLOCK_ITEM, item_text=None, node=None, check_besterest=True, parent_item=None, should_load=True):
         """
         Creates a new Variable Browser item, at the currently selected item.
         If no item is selected, it will create the new item under the master item.
@@ -1440,6 +1443,8 @@ class VariableManagerBrowser(QTreeWidget):
                 master | block | pattern
             item_text (str): the display text of the item...
                 this is only used by pattern atm... but I should really clean this up...
+            should_load (bool): If check besterest is True, then this will determine if
+                the besterest should load or not.  The default value is True.
         Returns (VariableManagerBrowserItem):
             The newly created item.
 
@@ -1470,7 +1475,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         # check to see if item should be published or not
         if check_besterest is True:
-            checkBesterestVersion(self.main_widget, item=new_item, item_types=[item_type])
+            checkBesterestVersion(self.main_widget, item=new_item, item_types=[item_type], should_load=should_load)
 
         new_item.checkValidity(update=True)
         return new_item
@@ -1709,7 +1714,7 @@ class VariableManagerBrowser(QTreeWidget):
         'actionPicker' which is choosing another method inside of
         this class to do an action when that particular name is chosen
         """
-        def actionPicker(action):
+        def actionPicker(action, item):
             """
             Select what to do when a user clicks on a specific portion
             of the pop up menu
@@ -1761,7 +1766,7 @@ class VariableManagerBrowser(QTreeWidget):
             # Fix it like Felix
             elif 'Fix' in action.text():
                 if action.text() == 'Fix Item':
-                    self.fixItem()
+                    self.fixItem(item)
                 elif action.text() == 'Fix All Items':
                     self.fixAllItems()
 
@@ -1794,13 +1799,27 @@ class VariableManagerBrowser(QTreeWidget):
         menu.popup(pos)
         action = menu.exec_(QCursor.pos())
         if action is not None:
-            actionPicker(action)
+            actionPicker(action, item)
 
-    def fixItem(self):
-        print ('fixing broken path...')
+    def fixItem(self, item):
+        """
+        TODO: make this not recurse
+        Fixes a single item and all of its children, because it recurses automatically lol
+        """
+        Utils.UndoStack.DisableCapture()
+        checkBesterestVersion(self.main_widget, item=item, item_types=[item.getItemType()])
+        Utils.UndoStack.EnableCapture()
 
     def fixAllItems(self):
-        print('fixing all items...')
+        """
+        TODO: Make this not udpate everything, and only update what is required.
+        Fixes all of the items
+        """
+        # get root item...
+        Utils.UndoStack.DisableCapture()
+        item = self.topLevelItem(0)
+        checkBesterestVersion(self.main_widget, item=item, item_types=[MASTER_ITEM])
+        Utils.UndoStack.EnableCapture()
 
     """ EVENTS """
     def dragMoveEvent(self, event, *args, **kwargs):
@@ -2002,7 +2021,6 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.setExpanded(expanded)
         self.hash = unique_hash
         self.publish_dir = publish_dir
-
         self.setIsBroken(False)
 
         # setup display
@@ -2018,6 +2036,38 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.__setItemTypeFlags()
 
         Utils.UndoStack.EnableCapture()
+
+    def updateDisplay(self):
+        """
+        Updates the items display state by refreshing all attributes
+        """
+        # broken
+        self.checkValidity()
+
+        # disabled
+        self.setDisabled(self.getRootNode().isBypassed())
+        self.updateColors()
+
+        # update text
+        # TODO consider moving 'pattern' call to 'name' however...
+        #   looks weird on the user side
+        # get block name
+        try:
+            name = self.getRootNode().getParameter('name').getValue(0)
+
+        # get pattern name
+        except AttributeError:
+            name = self.getRootNode().getParameter('pattern').getValue(0)
+
+        # get versions
+        pattern_version = self.getPatternNode().getParameter('version').getValue(0)
+        block_version = self.getBlockNode().getParameter('version').getValue(0)
+
+        # set text
+        self.setText(0, name)
+        self.setText(1, pattern_version)
+        if self.getItemType() in BLOCK_PUBLISH_GROUP:
+            self.setText(2, block_version)
 
     def checkValidity(self, update=True):
         """
@@ -2054,6 +2104,20 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         if update is True:
             self.updateColors()
 
+    def debugAttrs(self):
+        # setup default attrs
+        print("item type == ", self.getItemType())
+        print("pattern node == ", self.getPatternNode())
+        print("root node == ", self.getRootNode())
+        print("block node == ", self.getBlockNode())
+        print("veg node == ", self.getVEGNode())
+        print("block version == ", self.block_version)
+        print("pattern version == ", self.pattern_version)
+        print("expanded == ", self.isExpanded())
+        print("hash == ", self.getHash())
+        print("broken == ", self.getIsBroken())
+        print("publish dir == ", self.getPublishDir())
+
     def __setItemTypeFlags(self):
         # setup flags
         if self.getIsBroken() is True:
@@ -2067,12 +2131,22 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
             self.setFlags(
                 self.flags()
                 | Qt.ItemIsEditable
+                | Qt.ItemIsDropEnabled
+                | Qt.ItemIsDragEnabled
+                | Qt.ItemIsSelectable
             )
         elif self.getItemType() == PATTERN_ITEM:
             self.setFlags(
                 self.flags()
                 | Qt.ItemIsDropEnabled
                 | Qt.ItemIsDragEnabled
+                | Qt.ItemIsSelectable
+            )
+        elif self.getItemType() == MASTER_ITEM:
+            self.setFlags(
+                self.flags()
+                | Qt.ItemIsSelectable
+                #| Qt.ItemIsDropEnabled
             )
 
     """ COLORS """
@@ -2152,7 +2226,14 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.getRootNode().setBypassed(is_disabled)
 
         # update if selected
-        self.treeWidget().updateStyleSheet('is_disabled', self.isDisabled())
+        # TODO hack
+        # for some reason... when reset happens on the last item, it cannot
+        # find the treeWidget...
+        try:
+            self.treeWidget().updateStyleSheet('is_disabled', self.isDisabled())
+        except AttributeError:
+            pass
+
 
         return is_disabled
 
