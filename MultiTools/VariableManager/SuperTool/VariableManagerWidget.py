@@ -791,21 +791,42 @@ class VariableManagerBrowser(QTreeWidget):
             repr(DISABLED_KATANA_LOCAL_YELLOW)
              ))
 
-    def updateDisplay(self, check_besterest=True):
+    def updateDisplay(self, update=False, reset=False, check_besterest=True):
+        """
+        Updates all of the items inside of the browser.  The two options are to
+        reset and update.  Where a reset will completely purge all of the items
+        and repopulate, and update will be gentler and only look to alter each
+        individual item.  If both are true, it will run the update, then the reset.
+
+        Args:
+            update (bool)
+            reset (bool)
+            check_besterest (bool)
+
+        """
         current_item = self.currentItem()
         current_hash = current_item.getHash()
 
-        self.clear()
-        self.populate(check_besterest)
+        if update is True:
+            root_item = self.topLevelItem(0)
+            all_items = self.getAllChildItems(root_item, item_list=[root_item])
+            for item in all_items:
+                item.updateDisplay()
 
-        all_items = self.getAllChildItems(self.topLevelItem(0))
-        for item in all_items:
-            if item.getHash() == current_hash:
-                self.setCurrentItem(item)
-                self.main_widget.setWorkingItem(item)
-                return
-        self.main_widget.setWorkingItem(self.topLevelItem(0))
-        self.setCurrentItem(self.topLevelItem(0))
+        if reset is True:
+            self.clear()
+            self.populate(check_besterest)
+            root_item = self.topLevelItem(0)
+            all_items = self.getAllChildItems(root_item, item_list=[root_item])
+            # reselect item
+            for item in all_items:
+                if item.getHash() == current_hash:
+                    self.setCurrentItem(item)
+                    self.main_widget.setWorkingItem(item)
+                    return
+
+            self.main_widget.setWorkingItem(self.topLevelItem(0))
+            self.setCurrentItem(self.topLevelItem(0))
 
     def populate(self, check_besterest=True):
         """
@@ -1374,6 +1395,10 @@ class VariableManagerBrowser(QTreeWidget):
 
         TODO:
             Merge this with the __createNewBlockItem method
+            This breaks... because of the check besterest, publishing,
+            and reloading everything... I need to have a repopulate do an
+            update on everything rather than a complete recreation of everything...
+
 
         Kwargs:
             item (VariableManagerBrowserItem): If the item is given,
@@ -1385,7 +1410,7 @@ class VariableManagerBrowser(QTreeWidget):
         """
         # create block
         new_parent_item = self.createNewBrowserItem(
-            item_type=BLOCK_ITEM, item_text="block"
+            item_type=BLOCK_ITEM, item_text="block", check_besterest=False
         )
 
         # move new item under item clicked on,
@@ -1472,7 +1497,15 @@ class VariableManagerBrowser(QTreeWidget):
 
         return item
 
-    def createNewBrowserItem(self, item_type=BLOCK_ITEM, item_text=None, node=None, check_besterest=True, parent_item=None, should_load=True):
+    def createNewBrowserItem(
+            self,
+            item_type=BLOCK_ITEM,
+            item_text=None,
+            node=None,
+            check_besterest=True,
+            parent_item=None,
+            should_load=True
+        ):
         """
         Creates a new Variable Browser item, at the currently selected item.
         If no item is selected, it will create the new item under the master item.
@@ -1612,6 +1645,7 @@ class VariableManagerBrowser(QTreeWidget):
             new_block_item.setExpanded(True)
 
             # update display
+            checkBesterestVersion(self.main_widget, item=new_block_item, item_types=[BLOCK_ITEM])
             self.updateDisplay(check_besterest=False)
 
         elif item_dropped.getItemType() == BLOCK_ITEM:
@@ -1858,6 +1892,7 @@ class VariableManagerBrowser(QTreeWidget):
             - text is being reset to "master" on the root item...
         """
         checkBesterestVersion(self.main_widget, item=item, item_types=[item.getItemType()])
+        #self.updateDisplay(reset=True)
         Utils.UndoStack.EnableCapture()
 
     def fixAllItems(self):
@@ -1869,6 +1904,7 @@ class VariableManagerBrowser(QTreeWidget):
         Utils.UndoStack.DisableCapture()
         item = self.topLevelItem(0)
         checkBesterestVersion(self.main_widget, item=item, item_types=[MASTER_ITEM])
+        self.updateDisplay(reset=True)
         Utils.UndoStack.EnableCapture()
 
     """ EVENTS """
@@ -2122,8 +2158,6 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
             block_version = self.getBlockNode().getParameter('version').getValue(0)
             self.block_version = block_version
             self.setText(2, block_version)
-        print(' ======== %s ========'%self.text(0))
-        #print(self.debugAttrs())
 
     def checkValidity(self, update=True):
         """

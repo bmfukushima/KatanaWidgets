@@ -34,6 +34,7 @@ class AbstractParametersDisplayWidget(QScrollArea):
         """
         for i in reversed(range(self.getLayout().count())):
             self.getLayout().itemAt(i).widget().setParent(None)
+
     def populateParameters(self, node_list):
         """
         Displays the parameters in the bottom of the GUI,

@@ -20,8 +20,8 @@ def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOC
         item_types (list): list of ITEM_TYPES to check for besterest version
             by default this is set to all, but can be just a single
                 [PATTERN_ITEM] or [BLOCK_ITEM]
-        should_load (bool): determines if this should load or bypass.  The default
-            value is true.
+        should_load (bool): If the publish loc is found, this determines if this should load or bypass.  The default
+            value is true, which will enable loading.
     """
 
     publish_dir = main_widget.getBasePublishDir(include_node_type=True)
