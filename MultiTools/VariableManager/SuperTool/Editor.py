@@ -369,7 +369,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         item = variable_browser.currentItem()
         item_hash = 'master'
         if item:
-            print(item)
             item_hash = item.getHash()
 
         # update variable menu
@@ -508,7 +507,8 @@ class VariableManagerMainWidget(QWidget):
             node_type_menu.setCurrentIndexToText(node_type)
 
     """ UPDATE VARIABLE SWITCH"""
-    def updateVariableSwitch(self, root_node, variable_list):
+    @staticmethod
+    def __updateVariableSwitch(root_node, variable_list):
         """
         creates/deletes all the ports for one individual variable switch
 
@@ -588,7 +588,7 @@ class VariableManagerMainWidget(QWidget):
             variable_list = self.getVariableList(block_node, variable_list=list(filter(None, temp_list)))
 
             # update the internal variable switches
-            self.updateVariableSwitch(root_node, variable_list)
+            self.__updateVariableSwitch(root_node, variable_list)
 
             # recurse
             new_root_node = root_node.getParent().getParent()
@@ -1329,7 +1329,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             )
 
     """ PUBLISH """
-    def __setAsBesterest(self, publish_loc, node, note):
+    def __setAsBesterest(self, publish_loc, node, note, version):
         """
         sets up this publish to be live
 
@@ -1337,10 +1337,13 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             publish_loc (str): path to live directory of this
             node (node): Root node to be published
             note (str): the user notes for this publish
-        Kwargs:
-            publish_type (VariableManagerBrowserItem.TYPE): The type of
-                the browser item to be published.
+
         """
+        if version == 'v000':
+            live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
+            mkdirRecursive(live_directory)
+            self.setPublishState(1)
+
         if self.getPublishState() == 1:
             # get live dir
             live_dir = publish_loc[:publish_loc.rindex('/')] + '/live'
@@ -1361,6 +1364,9 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             # create live flag file... this should really change to something less stoopid
             with open(publish_loc + '/live.csv', 'w') as filehandle:
                 filehandle.write('thecowlevel.slack.com')
+
+            # reset publish state
+            self.setPublishState(0)
             return
 
     def __convertToLiveGroup(self, publish_loc, node, version):
@@ -1473,7 +1479,9 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
         # write notes to disk
         self.__publishNotesToDisk(publish_loc, note)
-        self.__setAsBesterest(publish_loc, live_group, note)
+
+        self.__setAsBesterest(publish_loc, live_group, note, version)
+
         new_block_node = live_group.convertToGroup()
 
         # reset references
@@ -1536,7 +1544,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         self.__publishNotesToDisk(publish_loc, note)
 
         # determine if this is a besterest publish
-        self.__setAsBesterest(publish_loc, live_group, note)
+        self.__setAsBesterest(publish_loc, live_group, note, version)
 
         # reset item attributes/parameters
         new_root_node = live_group.convertToGroup()
@@ -1553,6 +1561,10 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
             # update display
             item.updateDisplay()
+
+        # create live dir
+        live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
+        mkdirRecursive(live_directory)
         #print('publishing %s' % item.text(0))
         # set display text
 

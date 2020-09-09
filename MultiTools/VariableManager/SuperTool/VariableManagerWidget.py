@@ -1559,15 +1559,12 @@ class VariableManagerBrowser(QTreeWidget):
         elif item_type == MASTER_ITEM:
             new_item = self.__createNewMasterItem()
 
-        # This
-        #self.setCurrentItem(new_item)
-        #self.main_widget.setWorkingItem(new_item)
-
         # check to see if item should be published or not
         if check_besterest is True:
             checkBesterestVersion(self.main_widget, item=new_item, item_types=[item_type], should_load=should_load)
+        else:
+            new_item.checkValidity(update=True)
 
-        new_item.checkValidity(update=True)
         return new_item
 
     """ DISABLE ITEM"""
@@ -1691,7 +1688,7 @@ class VariableManagerBrowser(QTreeWidget):
         DROP_ON = 0
         item_dropped = self.currentItem()
         current_hash = item_dropped.getHash()
-        print('current_hash == ', current_hash)
+
         old_parent_item = item_dropped.parent()
         item_dropped_on = self.itemAt(event.pos())
 
@@ -1705,7 +1702,6 @@ class VariableManagerBrowser(QTreeWidget):
                 self.__dropOnPatternWrapper(item_dropped, item_dropped_on, new_index, new_parent_item,  old_parent_item)
 
                 # reselect item
-                print('current_hash == ', current_hash)
                 self.selectItemByHash(current_hash)
                 return
             # dropped on block
@@ -1733,7 +1729,6 @@ class VariableManagerBrowser(QTreeWidget):
                 self.__reparentItem(item_dropped, old_parent_item, index=old_index)
 
         # reselect item
-        print('current_hash == ', current_hash)
         self.selectItemByHash(current_hash)
         # return drop event
         return return_val

@@ -157,16 +157,16 @@ def resolveBesterestVersion(main_widget, publish_loc, item_type, item, should_lo
         if main_widget.getVariable() == '': return
         if main_widget.getNodeType() == '': return
 
-        # make live dir
-        live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
-        mkdirRecursive(live_directory)
+        # # make live dir
+        # live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
+        # mkdirRecursive(live_directory)
 
         # create v000 item
         main_widget.publish_display_widget.publishNewItem(
             item_type=item_type, item=item
         )
 
-        print ('making dir == ', publish_loc, item_type)
+        # print ('making dir == ', publish_loc, item_type)
         # make live directory
 
 
