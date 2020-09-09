@@ -82,9 +82,7 @@ class VariableManagerNode(AbstractSuperToolNode):
         # setup node
         #NodegraphAPI.SetNodeShapeAttr(self, 'basicDisplay', 1)
         self.setGroupDisplay(False)
-        self.addOutputPort('out')
-        self.addInputPort('in')
-        self.getSendPort('in').connect(self.getReturnPort('out'))
+        self.createIOPorts()
 
         # create parameters
         self.variable_param = self.getParameters().createChildString('variable', '')

@@ -196,7 +196,8 @@ class VariableManagerWidget(QWidget):
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
         self.variable_browser_widget.setObjectName("Variable Browser Widget")
-        self.nodegraph_widget = AbstractNodegraphWidget(self, node=self.node)
+        self.nodegraph_widget = AbstractNodegraphWidget(self, node=self.node, display_menus=False)
+        self.nodegraph_widget.enableScrollWheel(False)
 
         # Setup Layouts
         self.variable_splitter.addWidget(self.variable_browser_widget)

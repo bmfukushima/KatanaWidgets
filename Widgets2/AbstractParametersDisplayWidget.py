@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
-from Katana import UI4, QT4FormWidgets, NodegraphAPI
+from Katana import UI4, QT4FormWidgets, NodegraphAPI, Utils
 
 
 class AbstractParametersDisplayWidget(QScrollArea):
@@ -22,6 +22,18 @@ class AbstractParametersDisplayWidget(QScrollArea):
         # set main widget
         self.setWidgetResizable(True)
 
+    def enableSelectionDisplay(self, enabled):
+        """
+        Determines if the auto selection should be active.
+        """
+        Utils.EventModule.RegisterCollapsedHandler(
+            self.__displaySelectedParameters, 'node_setSelected', enabled=enabled
+        )
+
+    def __displaySelectedParameters(self, args):
+        self.populateParameters(node_list=NodegraphAPI.GetAllSelectedNodes())
+
+    """ populate parameters"""
     def getLayout(self):
         """
         returns the current widgets layout
@@ -58,46 +70,6 @@ class AbstractParametersDisplayWidget(QScrollArea):
         for node in node_list:
             self.showParameter(node.getName(), hide_title)
 
-    # def populateParameters(self, node_list):
-    #     """
-    #     Displays the parameters in the bottom of the GUI,
-    #     this is currently linked to the Alt+W hotkey.
-    #
-    #     Args:
-    #         node_list (list): list of nodes that will have their parameters displayed.
-    #     """
-    #     # TODO teleparam HACK
-    #     # get old parent attributes...
-    #     parent_widget = self.parentWidget()
-    #     parent = parent_widget.layout()
-    #     if parent:
-    #         current_index = parent.indexOf(self)
-    #     else:
-    #         current_index = parent_widget.indexOf(self)
-    #         parent = parent_widget
-    #
-    #     # remove parent (update hack)
-    #     self.setParent(None)
-    #
-    #     # clear layout
-    #     self.clearLayout()
-    #
-    #     node_list = self.filterNodeList(node_list)
-    #
-    #     # get hide
-    #     if len(node_list) < 2:
-    #         hide_title = True
-    #     else:
-    #         hide_title = False
-    #
-    #     # display nodes
-    #     for node in node_list:
-    #         self.showParameter(node.getName(), hide_title)
-    #
-    #     # TODO param hack finish
-    #     parent.insertWidget(current_index, self)
-    #     self.widget().show()
-
     def showParameter(self, node_name, hide_title=False):
         """
         Creates and displays one individual teleparam based off of the node name
@@ -113,6 +85,7 @@ class AbstractParametersDisplayWidget(QScrollArea):
         teleparam_widget.show()
         self.update()
 
+    """ Get node list"""
     def filterNodeList(self, node_list):
         for index, node in enumerate(reversed(node_list)):
             value = self.filterNode(node)

@@ -21,11 +21,11 @@ exec(code)
 import Katana
 
 # import super tools
-import SimpleTools
+import SimpleTool
 from MultiTools import VariableManager
 
 # compile list of super tools
-superdooper_tools_list = [SimpleTools, VariableManager]
+superdooper_tools_list = [SimpleTool, VariableManager]
 
 # register all super tools
 PluginRegistry = []

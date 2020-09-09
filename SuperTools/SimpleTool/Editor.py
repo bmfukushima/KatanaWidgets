@@ -8,7 +8,7 @@ TODO:
         HUD:
             *   UI Create
     Node:
-        *   SimpleTools --> Live Group --> Contents of group
+        *   SimpleTool --> Live Group --> Contents of group
         *   Can I just completely overwrite group node/ live group functionality?
     Trigger:
         *   Script Editor
@@ -49,11 +49,13 @@ from PyQt5.QtWidgets import (
 )
 
 from Widgets2 import (
-    AbstractSuperToolEditor
+    AbstractSuperToolEditor,
+    AbstractNodegraphWidget,
+    AbstractParametersDisplayWidget
 )
 
 
-class SimpleToolsEditor(AbstractSuperToolEditor):
+class SimpleToolEditor(AbstractSuperToolEditor):
     """
     The top level widget for the editor.  This is here to encapsulate
     the main widget with a stretch box...
@@ -77,10 +79,19 @@ class SimpleToolsEditor(AbstractSuperToolEditor):
         }
     """
     def __init__(self, parent, node):
-        super(SimpleToolsEditor, self).__init__(parent, node)
+        super(SimpleToolEditor, self).__init__(parent, node)
+        # set up attrs
+        self.node = node
+        self.main_node = node.getChildByIndex(0)
+
+        # create gui
         layout = QVBoxLayout(self)
-        test = QLineEdit('test')
-        layout.addWidget(test)
+
+        self.nodegraph_widget = NodegraphWidget(self, node=self.main_node)
+        self.parameters_widget = ParametersDisplayWidget(self, node=self.main_node)
+
+        layout.addWidget(self.nodegraph_widget)
+        layout.addWidget(self.parameters_widget)
 
     def getEventTypes(self):
         """
@@ -98,3 +109,38 @@ class SimpleToolsEditor(AbstractSuperToolEditor):
                     arg_note = arg['note']
                     print('-----|', arg_name, arg_note)
 
+
+class NodegraphWidget(AbstractNodegraphWidget):
+    def __init__(self, parent=None, node=None):
+        super(NodegraphWidget, self).__init__(parent)
+        # setup attrs
+        self.node = node
+
+        AbstractNodegraphWidget.displayMenus(False, self.getPanel())
+        self.enableScrollWheel(False)
+        self.goToNode(node)
+
+    def wheelEvent(self, event):
+        return
+
+class ParametersDisplayWidget(AbstractParametersDisplayWidget):
+    """
+    The widget that will display all of the parameters to the user.
+    """
+    def __init__(self, parent=None, node=None):
+        super(ParametersDisplayWidget, self).__init__(parent)
+        self.node = node
+        self.setNodeFilter(self.nodeFilter)
+        self.enableSelectionDisplay(True)
+
+    def nodeFilter(self, node):
+        """
+        Filter for the node list to ensure that the selected nodes are a child of this one
+
+        Args:
+            node (Node): The node that is being filtered
+        """
+        if not node: return False
+        if node.getParent() != self.node: return False
+
+        return True

@@ -34,8 +34,9 @@ class AbstractNodegraphWidget(QWidget):
         self.setTab(self.__createNodegraph())
 
         # setup nodegraph display
-        widget = self.getWidget()
-        self.__displayMenus(widget, display_menus)
+        #widget = self.getWidget()
+        widget = self.getPanel()
+        self.displayMenus(display_menus, widget)
 
     @staticmethod
     def __createNodegraph():
@@ -50,22 +51,38 @@ class AbstractNodegraphWidget(QWidget):
         return nodegraph_tab
 
     @staticmethod
-    def __displayMenus(value, nodegraph_widget):
+    def displayMenus(value, nodegraph_widget):
         """
         Determines if the main tabs menus should be hidden or not.
 
         Args:
             value (boolean): If False, this will return only the Nodegraph,
                 if True, this will return the entire Nodegraph area.
-            nodegraph_widget (NodegraphWidget.getWidget()):
-                What widget to remove the menus from.
+            nodegraph_widget (NodegraphWidget.getPanel()):
+                What widget to remove the menus from.  Note that this is not
+                a widget in regard to this object, but the widget in regard to the
+                Katana Nodegraph Object.
         """
 
         if value is False:
+            print (nodegraph_widget)
             ngw_menu_bar = nodegraph_widget.getMenuBar()
             ngw_menu_bar.setParent(None)
 
             nodegraph_widget.layout().itemAt(0).widget().hide()
+
+    def enableScrollWheel(self, enable):
+        """
+        Determines if the scroll wheel should be allowed.  This is good to turn off
+        especially for parameters due to the double scrolling effect
+        """
+        self.getWidget()._NodegraphWidget__zoomLayer._ZoomInteractionLayer__allowMouseWheel = enable
+
+    def goToNode(self, node):
+        """
+        Sets the node graph to view the children of the specified node
+        """
+        self.getPanel()._NodegraphPanel__navigationToolbarCallback(node.getName(), 'useless')
 
     """ SETUP NODEGRAPH DESTRUCTION HANDLER """
     def setupDestroyNodegraphEvent(self, widget_list=None):
@@ -163,3 +180,5 @@ class AbstractNodegraphWidget(QWidget):
 
     def getWidget(self):
         return self._nodegraph_widget
+
+
