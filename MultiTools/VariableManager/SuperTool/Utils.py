@@ -26,7 +26,7 @@ def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOC
 
     publish_dir = main_widget.getBasePublishDir(include_node_type=True)
     if not item:
-        item = main_widget.getWorkingItem()
+        item = main_widget.currentItem()
 
     for item_type in item_types:
 

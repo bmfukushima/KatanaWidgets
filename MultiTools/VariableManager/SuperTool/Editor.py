@@ -33,6 +33,15 @@ TODO:
         *   getNode --> AbstractSuperTool
         *   setCurrentIndex --> class variables
         *   GSV/Node Menu need to be added as custom params
+        *   main_widget.setWorkingItem / currentItem
+                This module needs a clean up...
+                    done some uncommenting already for testing.  But...
+                    then it broke and I don't feel like working on it... so...
+                    *   working_item = item to be transferred around the stack
+                            but don't want to register it as the current item so that
+                            it won't do all those updates...
+                    *   current_item = interface to get current item from variable browser
+                    This should default back to the topLevelItem(0)
     Potential Bugs:
         *   Pattern Item Duplicates
             This could cause a bug with loading the versions due to not
@@ -358,8 +367,10 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         variable_browser = variable_manager.variable_browser
 
         item = variable_browser.currentItem()
-        item_name = variable_browser.currentItem().text(0)
-        item_path = VariableManagerBrowser.getFullItemPath(item, '')
+        item_hash = 'master'
+        if item:
+            print(item)
+            item_hash = item.getHash()
 
         # update variable menu
         variable = self.node.getParameter('variable').getValue(0)
@@ -378,20 +389,9 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         # update variable browser
         variable_browser.updateDisplay(check_besterest=check_besterest, reset=True)
 
-        # reset selected item
-        items = variable_browser.findItems(item_name, Qt.MatchExactly | Qt.MatchRecursive)
-        for item in items:
-            full_path = VariableManagerBrowser.getFullItemPath(item, '')
-            if full_path == item_path:
-                variable_browser.setCurrentItem(item)
-                self.main_widget.setWorkingItem(item)
-                self.updateSize()
-                return
+        # reselect item
+        variable_browser.selectItemByHash(item_hash)
 
-        # if none found, set to top level item
-        new_item = variable_manager.variable_browser.topLevelItem(0)
-        variable_browser.setCurrentItem(new_item)
-        self.main_widget.setWorkingItem(new_item)
         self.updateSize()
 
     def __undoEventUpdate(self, args):
@@ -606,7 +606,7 @@ class VariableManagerMainWidget(QWidget):
                     MASTER_ITEM
         """
         if not item:
-            item = self.getWorkingItem()
+            item = self.currentItem()
 
         # attribute checks
         try:
@@ -674,51 +674,13 @@ class VariableManagerMainWidget(QWidget):
             if not node: return False
             if node.getType() == 'VariableManager': return False
 
-            parent_node = self.getWorkingItem().getVEGNode()
+            parent_node = self.currentItem().getVEGNode()
             if node.getParent() != parent_node: return False
 
             return True
 
         self.variable_manager_widget.params_widget.setNodeFilter(nodeFilter)
         self.variable_manager_widget.params_widget.populateParameters(node_list=node_list)
-        # splitter = self.variable_manager_widget.splitter
-        #
-        # if self.variable_manager_widget.params_widget:
-        #     # TODO teleparam HACK
-        #     self.variable_manager_widget.params_widget.setParent(None)
-        #
-        #     # get widgets
-        #     params_widget = self.variable_manager_widget.params_widget
-        #     params_layout = params_widget.getLayout()
-        #
-        #     # clear layout
-        #     params_widget.clearLayout()
-        #
-        #     # add params
-        #     if node_list is None:
-        #         node_list = NodegraphAPI.GetAllSelectedNodes()
-        #
-        #     for node in node_list:
-        #         if hasattr(node, 'getType'):
-        #             if node.getType() != 'VariableManager':
-        #                 parent_node = self.getWorkingItem().getVEGNode()
-        #                 if node.getParent() == parent_node:
-        #                     # determine if title should be hidden or not
-        #                     if len(node_list) < 2:
-        #                         hide_title = True
-        #                     else:
-        #                         hide_title = False
-        #
-        #                     # Create teleparams widget
-        #                     params_widget.showParameter(node.getName(), hide_title)
-        #                     # param_reference_widget = params_widget.createTeleparamWidget(node.getName(), hide_title)
-        #                     # param_reference_widget.show()
-        #                     # params_layout.addWidget(param_reference_widget)
-        #
-        #     # TODO teleparam HACK
-        #     # reshow teleparam
-        #     splitter.addWidget(self.variable_manager_widget.params_widget)
-        # self.variable_manager_widget.params_widget.widget().show()
 
     """ PROPERTIES """
     def getNode(self):
@@ -771,11 +733,18 @@ class VariableManagerMainWidget(QWidget):
     def setWorkingItem(self, item):
         self.working_item = item
 
-    def getWorkingItem(self):
-        if hasattr(self, 'working_item'):
-            return self.working_item
-        else:
-            return None
+    def currentItem(self):
+        """
+        Gets the current item from the variable browser.  If no item is found, this
+        will automatically get the root item.
+        """
+        if hasattr(self, 'variable_manager_widget'):
+            if hasattr(self.variable_manager_widget, 'variable_browser'):
+                if self.variable_manager_widget.variable_browser.currentItem():
+                    return self.variable_manager_widget.variable_browser.currentItem()
+                else:
+                    return self.variable_manager_widget.variable_browser.topLevelItem(0)
+        return None
 
     def getBasePublishDir(self, include_variable=False, include_node_type=False):
         """
@@ -979,7 +948,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
                 The version is returned as v000
         """
         # current thingy mabobber to publish
-        item = self.main_widget.getWorkingItem()
+        item = self.main_widget.currentItem()
 
         # get publish node
         if item.getItemType() == PATTERN_ITEM:
@@ -1060,7 +1029,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         process
         """
         self.main_widget.layout().setCurrentIndex(1)
-        item = self.main_widget.getWorkingItem()
+        item = self.main_widget.currentItem()
 
         # get publish type
         if self.column == 1:
@@ -1121,7 +1090,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         """
         load block selected and set the publish dir
         """
-        item = self.main_widget.getWorkingItem()
+        item = self.main_widget.currentItem()
         item_type = item.getItemType().TYPE
         makeUndoozable(
             self.loadLiveGroup,
@@ -1477,7 +1446,8 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
                 self.publishAllGroups(child, orig_item)
 
         # Below the recursion to inverse the winding order...
-        self.main_widget.setWorkingItem(item)
+        #self.main_widget.setWorkingItem(item)
+        #self.main_widget.variable_manager_widget.variable_browser.setCurrentItem(item)
         self.main_widget.setPattern(str(item.text(0)))
 
         # Statement to check for original item, if it is, dont publish the pattern
@@ -1526,7 +1496,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             item (VariableManagerBrowserItem): the item to be published
         """
         if not item:
-            item = self.main_widget.getWorkingItem()
+            item = self.main_widget.currentItem()
 
         orig_item = item
         self.publishAllGroups(item, orig_item)
@@ -1542,7 +1512,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         """
         # get item
         if not item:
-            item = self.main_widget.getWorkingItem()
+            item = self.main_widget.currentItem()
 
         # get node to publish
         item_type = item.getItemType()
@@ -1640,7 +1610,7 @@ BESTEREST
         if item:
             nodegraph_panel = self.main_widget.variable_manager_widget.nodegraph_widget.getPanel()
             self.main_widget.setPattern(str(item.text(0)))
-            self.main_widget.setWorkingItem(item)
+            #self.main_widget.setWorkingItem(item)
             node = item.getVEGNode()
             goToNode(node, nodegraph_panel=nodegraph_panel, frame=True)
 

@@ -380,7 +380,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
         Wrapper for creating new item and placing it in the undo stack
         """
         # get current item
-        item = self.main_widget.getWorkingItem()
+        item = self.main_widget.currentItem()
         current_text = str(self.item_text_field.text())
 
         if item:
@@ -805,7 +805,9 @@ class VariableManagerBrowser(QTreeWidget):
 
         """
         current_item = self.currentItem()
-        current_hash = current_item.getHash()
+        current_hash = 'master'
+        if current_item:
+            current_hash = current_item.getHash()
 
         if update is True:
             root_item = self.topLevelItem(0)
@@ -816,17 +818,35 @@ class VariableManagerBrowser(QTreeWidget):
         if reset is True:
             self.clear()
             self.populate(check_besterest)
-            root_item = self.topLevelItem(0)
-            all_items = self.getAllChildItems(root_item, item_list=[root_item])
-            # reselect item
-            for item in all_items:
-                if item.getHash() == current_hash:
-                    self.setCurrentItem(item)
-                    self.main_widget.setWorkingItem(item)
-                    return
+            self.selectItemByHash(current_hash)
 
-            self.main_widget.setWorkingItem(self.topLevelItem(0))
-            self.setCurrentItem(self.topLevelItem(0))
+    def selectItemByHash(self, item_hash, fallback_to_root=False):
+        """
+        Selects an item by its unique item hash.  This is unique for blocks,
+        however patterns don't have a unique hash, so it will merely find the first
+        one.
+        TODO:
+            What happens when you publish two of the same pattern in the same block...
+            This sounds like a recursion error...
+
+        Args:
+            item_hash (str): item hash to be reselected
+            fallback_to_root (bool): if this is True then if no hash is found it all
+                auto select the root item.  If it is false, then this will not fallback
+                to the root item.
+        """
+        # get list to search through
+        root_item = self.topLevelItem(0)
+        all_items = self.getAllChildItems(root_item, item_list=[root_item])
+
+        # reselect item
+        for item in all_items:
+            if item.getHash() == item_hash:
+                self.setCurrentItem(item)
+                return
+        # ensure an item is always selected
+        if fallback_to_root is True:
+            self.setCurrentItem(root_item)
 
     def populate(self, check_besterest=True):
         """
@@ -838,9 +858,12 @@ class VariableManagerBrowser(QTreeWidget):
             version or not.  Certain events will want to bypass the besterest
             call, especially those that have deleted node functionality.
         """
-        #print (" ==== POPULATING ====")
-        # get publish dir...
+
+        # get attrs
         variable = self.main_widget.getVariable()
+        item_hash = 'master'
+        if self.currentItem():
+            item_hash = self.currentItem().getHash()
 
         # create master item
         master_item = self.createNewBrowserItem(MASTER_ITEM, variable, check_besterest=check_besterest)
@@ -848,13 +871,11 @@ class VariableManagerBrowser(QTreeWidget):
         # if this is a new directory, check all subdirectories
         # recursively populate the items under the master group
         block_root_node = master_item.getBlockNode()
-
         for child in block_root_node.getParameter('nodeReference').getChildren():
             self.populateBlock(master_item, child, check_besterest)
 
-        # set it all to the master item
-        self.setCurrentItem(master_item)
-        self.main_widget.setWorkingItem(master_item)
+        # set item selected
+        self.selectItemByHash(item_hash)
 
     def populateBlock(self, parent_item, child, check_besterest):
         """
@@ -1302,9 +1323,6 @@ class VariableManagerBrowser(QTreeWidget):
         # setup master item attrs
         if variable == '':
             master_item.setHidden(True)
-        self.main_widget.setWorkingItem(master_item)
-        self.setCurrentItem(master_item)
-        master_item.setSelected(True)
 
         return master_item
 
@@ -1523,7 +1541,7 @@ class VariableManagerBrowser(QTreeWidget):
         """
         # handle non existent scenerio
         if not parent_item:
-            parent_item = self.main_widget.getWorkingItem()
+            parent_item = self.main_widget.currentItem()
 
         # handle pattern scenario
         if item_type != MASTER_ITEM:
@@ -1543,7 +1561,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         # This
         #self.setCurrentItem(new_item)
-        self.main_widget.setWorkingItem(new_item)
+        #self.main_widget.setWorkingItem(new_item)
 
         # check to see if item should be published or not
         if check_besterest is True:
@@ -1554,7 +1572,7 @@ class VariableManagerBrowser(QTreeWidget):
 
     """ DISABLE ITEM"""
     def __toggleItemDisabledState(self):
-        item = self.main_widget.getWorkingItem()
+        item = self.main_widget.currentItem()
         item.toggleDisabledState()
 
     """ PROPERTIES """
@@ -1672,17 +1690,23 @@ class VariableManagerBrowser(QTreeWidget):
         drop_type = self.dropIndicatorPosition()
         DROP_ON = 0
         item_dropped = self.currentItem()
+        current_hash = item_dropped.getHash()
+        print('current_hash == ', current_hash)
         old_parent_item = item_dropped.parent()
         item_dropped_on = self.itemAt(event.pos())
 
         # Dropped on an item
         if drop_type == DROP_ON:
             # dropped on pattern
+            self.main_widget.setWorkingItem(item_dropped)
             if item_dropped_on.getItemType() == PATTERN_ITEM:
                 new_parent_item = item_dropped_on.parent()
                 new_index = new_parent_item.indexOfChild(item_dropped_on)
                 self.__dropOnPatternWrapper(item_dropped, item_dropped_on, new_index, new_parent_item,  old_parent_item)
 
+                # reselect item
+                print('current_hash == ', current_hash)
+                self.selectItemByHash(current_hash)
                 return
             # dropped on block
             else:
@@ -1708,6 +1732,9 @@ class VariableManagerBrowser(QTreeWidget):
             else:
                 self.__reparentItem(item_dropped, old_parent_item, index=old_index)
 
+        # reselect item
+        print('current_hash == ', current_hash)
+        self.selectItemByHash(current_hash)
         # return drop event
         return return_val
 
@@ -1751,7 +1778,7 @@ class VariableManagerBrowser(QTreeWidget):
             if self.currentItem():
                 # setup attrs
                 self.main_widget.setPattern(str(self.currentItem().text(0)))
-                self.main_widget.setWorkingItem(self.currentItem())
+                #self.main_widget.setWorkingItem(self.currentItem())
 
                 # get attrs
                 item = self.currentItem()
@@ -1803,7 +1830,7 @@ class VariableManagerBrowser(QTreeWidget):
 
             # Return publish directory of item to terminal
             elif action.text() == 'Get Publish Dir':
-                print(self.main_widget.getWorkingItem().getPublishDir())
+                print(self.main_widget.currentItem().getPublishDir())
 
             # Create new item
             elif 'Create' in action.text():
@@ -1812,9 +1839,9 @@ class VariableManagerBrowser(QTreeWidget):
 
             # Publish item
             elif 'Publish' in action.text():
-                # item = self.main_widget.getWorkingItem()
+                # item = self.main_widget.currentItem()
                 node = self.main_widget.getNode()
-                current_text = self.main_widget.working_item.text(0)
+                current_text = self.currentItem().text(0)
                 variable = node.getParameter('variable').getValue(0)
 
                 # determine which button was pressed..
@@ -2003,7 +2030,8 @@ class VariableManagerBrowser(QTreeWidget):
                 # load up version dir...
                 if event.button() == 1:
                     previous_variable = self.main_widget.getVariable()
-                    self.main_widget.setWorkingItem(item)
+                    #self.main_widget.setWorkingItem(item)
+                    self.setCurrentItem(item)
                     self.main_widget.versions_display_widget.update(
                         column=index.column(),
                         previous_variable=previous_variable,
@@ -2022,7 +2050,7 @@ class VariableManagerBrowser(QTreeWidget):
             if not item:
                 item = self.topLevelItem(0)
                 self.setCurrentItem(item)
-                self.main_widget.setWorkingItem(item)
+                # self.main_widget.setWorkingItem(item)
 
             # update style sheet
             self.updateStyleSheet('is_disabled', item.isDisabled())
@@ -2263,7 +2291,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
             color = QColor(*MASTER_ITEM.COLOR)
 
         # set display flag
-        pixmap = QPixmap(5, 50)
+        pixmap = QPixmap(7, 7)
         pixmap.fill(color)
 
         icon = QIcon(pixmap)
