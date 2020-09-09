@@ -1,31 +1,6 @@
 """
 TODO:
-    *   Fix Items
-            - cannot toggle selection after the update =\
-                potentially something with is disabled in stylesheet?
-            - error color is only updated for current item...
-            FixItem
-                - Is recursive due to how publishing system works...
-                - Block item is not publishing block portion... only pattern portion
-            FixAllItems
-                Shouldn't just batch overwrite.  Needs to selectively find the items that
-                need to be updated.
-    * Add redo / undo display updates...
-        - Need to check to make sure this all works...
-    *   Expand / Collapse
-            - Add menu / hotkey options
-                    - RMB Menu
-                    - Arrow keys or WASD?
-    *   Auto create handler needs to go in init function
-            - Check to see if the variable exists, if it does bypass.
-                If it does not, create the pattern as the last item in the group...
-    *   Node Type Change
-            - needs to honor current hierarchy.
-            - recursive search through tree, update all pattern nodes?
-    *   File Browser needs a file dialogue button
     *   Clean up of everything...
-    GDI:
-        *   drag/Drop reselect always defaults to last item
     SUCKS =\
         *   Defocus events when changing between widgets loses
             ability to focus in on Line Edits?
@@ -33,15 +8,6 @@ TODO:
         *   getNode --> AbstractSuperTool
         *   setCurrentIndex --> class variables
         *   GSV/Node Menu need to be added as custom params
-        *   main_widget.setWorkingItem / currentItem
-                This module needs a clean up...
-                    done some uncommenting already for testing.  But...
-                    then it broke and I don't feel like working on it... so...
-                    *   working_item = item to be transferred around the stack
-                            but don't want to register it as the current item so that
-                            it won't do all those updates...
-                    *   current_item = interface to get current item from variable browser
-                    This should default back to the topLevelItem(0)
     Potential Bugs:
         *   Pattern Item Duplicates
             This could cause a bug with loading the versions due to not
@@ -67,6 +33,31 @@ TODO:
                 self.main_widget.setWorkingItem(item)
         *   VersionsDisplayWidget.gui
                 This flag is being toggled in some really awkward ways...
+    UX WISHLIST:
+    *   Is version dirty
+            Needs to turn orange in the pattern/block when something is changed
+                block
+                    - hierarchy change
+                    - Item moved / param changed
+                pattern
+                    - value changed
+    *   Fix Items
+            FixAllItems
+                Shouldn't just batch overwrite.  Needs to selectively find the items that
+                need to be updated.
+    * Add redo / undo display updates...
+        - Need to check to make sure this all works...
+    *   Expand / Collapse
+            - Add menu / hotkey options
+                    - RMB Menu
+                    - Arrow keys or WASD?
+    *   Auto create handler needs to go in init function
+            - Check to see if the variable exists, if it does bypass.
+                If it does not, create the pattern as the last item in the group...
+    *   Node Type Change
+            - needs to honor current hierarchy.
+            - recursive search through tree, update all pattern nodes?
+    *   File Browser needs a file dialogue button
     WISH LIST:
         1.) Import/Export?
         2.) Drag/Drop
