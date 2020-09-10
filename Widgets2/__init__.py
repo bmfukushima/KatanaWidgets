@@ -11,3 +11,4 @@ from .AbstractParametersDisplayWidget import AbstractParametersDisplayWidget
 from .AbstractSuperToolEditor import AbstractSuperToolEditor
 from .AbstractSuperToolNode import AbstractSuperToolNode
 from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
+from .TwoFaceSuperToolWidget import TwoFacedSuperToolWidget

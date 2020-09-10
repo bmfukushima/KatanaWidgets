@@ -1,4 +1,6 @@
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import (
+    QWidget, QStackedLayout, QTabWidget, QVBoxLayout
+)
 from PyQt5.QtCore import QEvent
 
 
@@ -193,7 +195,6 @@ class ResizeFilter(QWidget):
             self.parent().updateSize()
             return True
         return super(ResizeFilter, self).eventFilter(obj, event)
-            # needs to include the scroll bar...
 
 
 class iParameter(object):

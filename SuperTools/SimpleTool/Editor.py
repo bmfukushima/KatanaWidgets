@@ -45,17 +45,22 @@ TODO:
 """
 
 from PyQt5.QtWidgets import (
-    QLineEdit, QVBoxLayout
+    QLineEdit, QVBoxLayout, QWidget
 )
+
+from PyQt5.QtCore import Qt, QEvent
 
 from Widgets2 import (
     AbstractSuperToolEditor,
     AbstractNodegraphWidget,
-    AbstractParametersDisplayWidget
+    AbstractParametersDisplayWidget,
+    TwoFacedSuperToolWidget
 )
 
+from Katana import UI4
 
-class SimpleToolEditor(AbstractSuperToolEditor):
+
+class SimpleToolEditor(TwoFacedSuperToolWidget):
     """
     The top level widget for the editor.  This is here to encapsulate
     the main widget with a stretch box...
@@ -83,15 +88,11 @@ class SimpleToolEditor(AbstractSuperToolEditor):
         # set up attrs
         self.node = node
         self.main_node = node.getChildByIndex(0)
-
-        # create gui
-        layout = QVBoxLayout(self)
-
-        self.nodegraph_widget = NodegraphWidget(self, node=self.main_node)
-        self.parameters_widget = ParametersDisplayWidget(self, node=self.main_node)
-
-        layout.addWidget(self.nodegraph_widget)
-        layout.addWidget(self.parameters_widget)
+        #layout = QVBoxLayout(self)
+        self.node_editor = NodeEditor(self, self.main_node)
+        #layout.addWidget(self.node_editor)
+        self.getDesignWidget().addTab(self.node_editor, 'Params')
+        self.getDesignWidget().addTab(QLineEdit(), 'Test')
 
     def getEventTypes(self):
         """
@@ -110,6 +111,23 @@ class SimpleToolEditor(AbstractSuperToolEditor):
                     print('-----|', arg_name, arg_note)
 
 
+class NodeEditor(QWidget):
+    def __init__(self, parent, node):
+        super(NodeEditor, self).__init__(parent)
+        self.main_node = node
+
+        # create gui
+        layout = QVBoxLayout(self)
+
+        self.nodegraph_widget = NodegraphWidget(self, node=self.main_node)
+        self.parameters_widget = ParametersDisplayWidget(self, node=self.main_node)
+
+        layout.addWidget(self.nodegraph_widget)
+        layout.addWidget(self.parameters_widget)
+
+        self.setFocusPolicy(Qt.WheelFocus)
+
+
 class NodegraphWidget(AbstractNodegraphWidget):
     def __init__(self, parent=None, node=None):
         super(NodegraphWidget, self).__init__(parent)
@@ -119,9 +137,22 @@ class NodegraphWidget(AbstractNodegraphWidget):
         AbstractNodegraphWidget.displayMenus(False, self.getPanel())
         self.enableScrollWheel(False)
         self.goToNode(node)
+        # scroll_area = self.parent().getKatanaParamsScrollAreaWidget().parent()
+        # print(scroll_area)
+        # scroll_area.installEventFilter(self)
 
-    def wheelEvent(self, event):
-        return
+    # def eventFilter(self, obj, event):
+    #     if event.type() == QEvent.Wheel:
+    #         event.ignore()
+    #         print("wheel filter")
+    #         return True
+    #     return AbstractNodegraphWidget.eventFilter(self, obj, event)
+    #
+    # def wheelEvent(self, event):
+    #     print('wheel event')
+    #     event.ignore()
+    #     return
+
 
 class ParametersDisplayWidget(AbstractParametersDisplayWidget):
     """

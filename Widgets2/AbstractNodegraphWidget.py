@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout
-from PyQt5.QtCore import QEvent
+from PyQt5.QtCore import QEvent, Qt
 
 from Katana import NodeGraphView, UI4, Utils
 
@@ -37,6 +37,11 @@ class AbstractNodegraphWidget(QWidget):
         #widget = self.getWidget()
         widget = self.getPanel()
         self.displayMenus(display_menus, widget)
+        # self.setFocusPolicy(Qt.WheelFocus)
+        # self.getWidget().setFocusPolicy(Qt.WheelFocus)
+        # self.getTab().setFocusPolicy(Qt.WheelFocus)
+        # self.getPanel().setFocusPolicy(Qt.WheelFocus)
+
 
     @staticmethod
     def __createNodegraph():
@@ -65,7 +70,6 @@ class AbstractNodegraphWidget(QWidget):
         """
 
         if value is False:
-            print (nodegraph_widget)
             ngw_menu_bar = nodegraph_widget.getMenuBar()
             ngw_menu_bar.setParent(None)
 

@@ -1556,7 +1556,6 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         # create live dir
         live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
         mkdirRecursive(live_directory)
-        #print('publishing %s' % item.text(0))
         # set display text
 
     def __setBesterestButtonStyle(self):
