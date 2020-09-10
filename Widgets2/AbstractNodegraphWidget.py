@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication
 from PyQt5.QtCore import QEvent, Qt
 
 from Katana import NodeGraphView, UI4, Utils
@@ -34,14 +34,14 @@ class AbstractNodegraphWidget(QWidget):
         self.setTab(self.__createNodegraph())
 
         # setup nodegraph display
-        #widget = self.getWidget()
-        widget = self.getPanel()
-        self.displayMenus(display_menus, widget)
-        # self.setFocusPolicy(Qt.WheelFocus)
-        # self.getWidget().setFocusPolicy(Qt.WheelFocus)
-        # self.getTab().setFocusPolicy(Qt.WheelFocus)
-        # self.getPanel().setFocusPolicy(Qt.WheelFocus)
+        panel = self.getPanel()
+        panel.installEventFilter(self)
+        self.getWidget().installEventFilter(self)
 
+        self.panel_scroll_area = self.getKatanaTab(self)
+        self.panel_scroll_area.viewport().installEventFilter(self)
+        # display menus
+        self.displayMenus(display_menus, panel)
 
     @staticmethod
     def __createNodegraph():
@@ -75,11 +75,36 @@ class AbstractNodegraphWidget(QWidget):
 
             nodegraph_widget.layout().itemAt(0).widget().hide()
 
+    """ WHEEL EVENT OVERRIDES """
+    def wheelEventFilter(self, obj, event):
+        # scroll wheel
+        if obj == self.getPanel():
+            if event.type() == QEvent.Wheel:
+                modifiers = event.modifiers()
+                if modifiers == Qt.ControlModifier:
+                    self.enableScrollWheel(False)
+                    return False
+                else:
+                    self.enableScrollWheel(True)
+                    return False
+                event.ignore()
+
+        # scroll area panel
+        if obj == self.panel_scroll_area.viewport():
+            if event.type() == QEvent.Wheel:
+                modifiers = event.modifiers()
+                if modifiers == Qt.ControlModifier:
+                    self.enableScrollWheel(False)
+                    return False
+                else:
+                    return True
+
     def enableScrollWheel(self, enable):
         """
         Determines if the scroll wheel should be allowed.  This is good to turn off
         especially for parameters due to the double scrolling effect
         """
+        self._scroll_enabled = enable
         self.getWidget()._NodegraphWidget__zoomLayer._ZoomInteractionLayer__allowMouseWheel = enable
 
     def goToNode(self, node):
@@ -110,17 +135,43 @@ class AbstractNodegraphWidget(QWidget):
         )
 
         # additional widgets closed to destroy this...
-        for widget in widget_list:
-            widget.installEventFilter(self)
+        #QApplication.processEvents()
+        #Utils.EventModule.ProcessAllEvents()
+        self.parameters_panel = self.panel_scroll_area.parent()
+        self.parameters_panel.installEventFilter(self)
 
-    def eventFilter(self, obj, event):
+        if widget_list:
+            for widget in widget_list:
+                widget.installEventFilter(self)
+
+    def getKatanaTab(self, widget):
+        """
+        Gets the katana panel (hopefully)
+        """
+        from UI4.Widgets import PanelScrollArea
+        if isinstance(widget, PanelScrollArea):
+            return widget
+        else:
+            return self.getKatanaTab(widget.parent())
+
+    def destroyNodegraphEventFilter(self, obj, event):
+        """
+        When the katana tab is closed, this will destroy the nodegraph
+        """
         event_type = event.type()
         if event_type == QEvent.Close:
             self.destroyNodegraph()
             obj.removeEventFilter(self)
-            return True
 
-        return super(AbstractNodegraphWidget, self).eventFilter(obj, event)
+    def eventFilter(self, obj, event):
+        should_return = self.wheelEventFilter(obj, event)
+        if should_return: return True
+
+        self.destroyNodegraphEventFilter(obj, event)
+
+        return_val = super(AbstractNodegraphWidget, self).eventFilter(obj, event)
+
+        return return_val
 
     def nodeDelete(self, args):
         node = self.getNode()

@@ -185,8 +185,10 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         self.layout().addWidget(resize_widget)
 
         # set up node graph destruction handler
-        param_widget = self.parent().parent().parent().parent().parent().parent()
-        self.main_widget.variable_manager_widget.nodegraph_widget.setupDestroyNodegraphEvent(widget_list=[param_widget])
+        #param_widget = self.parent().parent().parent().parent().parent().parent()
+        #print('param widget == ', param_widget)
+        #self.main_widget.variable_manager_widget.nodegraph_widget.setupDestroyNodegraphEvent(widget_list=[param_widget])
+        self.main_widget.variable_manager_widget.nodegraph_widget.setupDestroyNodegraphEvent()
 
         # update on init
         self._should_update = True

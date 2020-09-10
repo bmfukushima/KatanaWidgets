@@ -89,7 +89,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.node = node
         self.main_node = node.getChildByIndex(0)
         #layout = QVBoxLayout(self)
-        self.node_editor = NodeEditor(self, self.main_node)
+        self.node_editor = NodeEditor(self, self.node, self.main_node)
         #layout.addWidget(self.node_editor)
         self.getDesignWidget().addTab(self.node_editor, 'Params')
         self.getDesignWidget().addTab(QLineEdit(), 'Test')
@@ -112,14 +112,15 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
 
 class NodeEditor(QWidget):
-    def __init__(self, parent, node):
+    def __init__(self, parent, node, main_node):
         super(NodeEditor, self).__init__(parent)
-        self.main_node = node
+        self.node = node
+        self.main_node = main_node
 
         # create gui
         layout = QVBoxLayout(self)
 
-        self.nodegraph_widget = NodegraphWidget(self, node=self.main_node)
+        self.nodegraph_widget = NodegraphWidget(self, node=node)
         self.parameters_widget = ParametersDisplayWidget(self, node=self.main_node)
 
         layout.addWidget(self.nodegraph_widget)
@@ -132,26 +133,12 @@ class NodegraphWidget(AbstractNodegraphWidget):
     def __init__(self, parent=None, node=None):
         super(NodegraphWidget, self).__init__(parent)
         # setup attrs
-        self.node = node
+        self.setNode(node)
 
         AbstractNodegraphWidget.displayMenus(False, self.getPanel())
         self.enableScrollWheel(False)
-        self.goToNode(node)
-        # scroll_area = self.parent().getKatanaParamsScrollAreaWidget().parent()
-        # print(scroll_area)
-        # scroll_area.installEventFilter(self)
-
-    # def eventFilter(self, obj, event):
-    #     if event.type() == QEvent.Wheel:
-    #         event.ignore()
-    #         print("wheel filter")
-    #         return True
-    #     return AbstractNodegraphWidget.eventFilter(self, obj, event)
-    #
-    # def wheelEvent(self, event):
-    #     print('wheel event')
-    #     event.ignore()
-    #     return
+        self.goToNode(node.getChildByIndex(0))
+        self.setupDestroyNodegraphEvent()
 
 
 class ParametersDisplayWidget(AbstractParametersDisplayWidget):
