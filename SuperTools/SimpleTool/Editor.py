@@ -69,19 +69,6 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         should_update (bool): determines if this tool should have
             its GUI updated or not during the next event idle process.
 
-    Note:
-        Args dict stores information like this...
-        args_dict {
-            event_type: {
-                'note': 'description',
-                'args': [{'arg': argName, 'note': 'description']
-            },
-            event_type: { 'args': [] , 'description': 'note'},
-            "nodegraph_loadBegin" : {
-                "note" : "About to load nodes from a node graph document.",
-                "args" : []
-            },
-        }
     """
     def __init__(self, parent, node):
         super(SimpleToolEditor, self).__init__(parent, node)

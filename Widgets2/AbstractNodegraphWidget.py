@@ -1,7 +1,10 @@
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication
 from PyQt5.QtCore import QEvent, Qt
 
-from Katana import NodeGraphView, UI4, Utils
+try:
+    from Katana import NodeGraphView, UI4, Utils
+except ModuleNotFoundError:
+    pass
 
 
 from Utils2 import getWidgetAncestor

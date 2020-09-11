@@ -3,7 +3,10 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import Qt
 
-from Katana import UI4, QT4FormWidgets, NodegraphAPI, Utils
+try:
+    from Katana import UI4, QT4FormWidgets, NodegraphAPI, Utils
+except ModuleNotFoundError:
+    pass
 
 
 class AbstractParametersDisplayWidget(QScrollArea):

@@ -4,8 +4,10 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QEvent, Qt
 
-from Katana import UI4
-
+try:
+    from Katana import UI4
+except ModuleNotFoundError:
+    pass
 # local import... because PYTHONPATH is not registered yet
 from .AbstractSuperToolEditor import AbstractSuperToolEditor
 

@@ -1,4 +1,7 @@
-import NodegraphAPI
+try:
+    import NodegraphAPI
+except ModuleNotFoundError:
+    pass
 
 
 def createNewPattern(pattern, variable, set=False):

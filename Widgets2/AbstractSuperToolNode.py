@@ -1,4 +1,7 @@
-from Katana import NodegraphAPI
+try:
+    from Katana import NodegraphAPI
+except ModuleNotFoundError:
+    pass
 
 
 class AbstractSuperToolNode(NodegraphAPI.SuperTool):

@@ -9,6 +9,9 @@ from .AbstractFileBrowser import AbstractFileBrowser
 from .AbstractNodegraphWidget import AbstractNodegraphWidget
 from .AbstractParametersDisplayWidget import AbstractParametersDisplayWidget
 from .AbstractSuperToolEditor import AbstractSuperToolEditor
-from .AbstractSuperToolNode import AbstractSuperToolNode
+try:
+    from .AbstractSuperToolNode import AbstractSuperToolNode
+except NameError:
+    pass
 from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
 from .TwoFaceSuperToolWidget import TwoFacedSuperToolWidget

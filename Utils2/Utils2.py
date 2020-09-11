@@ -2,8 +2,8 @@ import math
 import os
 try:
     from Katana import Utils, UI4
-except ImportError:
-    import Utils, UI4
+except ModuleNotFoundError:
+    pass
 
 
 def createValueParam(self, name):

@@ -4,7 +4,11 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import QEvent
 
 from Utils2 import getWidgetAncestor
-from UI4.Widgets import PanelScrollArea
+
+try:
+    from UI4.Widgets import PanelScrollArea
+except ModuleNotFoundError:
+    pass
 
 
 class AbstractSuperToolEditor(QWidget):

@@ -1,4 +1,7 @@
-import NodegraphAPI
+try:
+    import NodegraphAPI
+except ModuleNotFoundError:
+    pass
 
 
 def connectInsideGroup(node_list, parent_node):
