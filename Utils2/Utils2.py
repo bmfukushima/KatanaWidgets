@@ -76,6 +76,19 @@ def disconnectNode(node, input=False, output=False):
                 port.disconnect(output)
 
 
+def getWidgetAncestor(widget, instance_type):
+    """
+    Recursively searches up from the current widget
+    until an widget of the specified instance is found
+
+
+    """
+    if isinstance(widget, instance_type):
+        return widget
+    else:
+        return getWidgetAncestor(widget.parent(), instance_type)
+
+
 def mkdirRecursive(path):
     """
     Creates a directory and all parent directories leading

@@ -3,6 +3,9 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QEvent
 
+from Utils2 import getWidgetAncestor
+from UI4.Widgets import PanelScrollArea
+
 
 class AbstractSuperToolEditor(QWidget):
     """
@@ -53,6 +56,10 @@ class AbstractSuperToolEditor(QWidget):
         return QWidget.showEvent(self, event)
 
     """ UTILS """
+    def getParametersPanel(self):
+        panel_scroll_area = getWidgetAncestor(self, PanelScrollArea)
+        return panel_scroll_area.parent()
+
     def updateSize(self):
         """
         Updates the size of the GUI to match that of the parameters pane...

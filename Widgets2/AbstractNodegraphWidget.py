@@ -4,6 +4,9 @@ from PyQt5.QtCore import QEvent, Qt
 from Katana import NodeGraphView, UI4, Utils
 
 
+from Utils2 import getWidgetAncestor
+
+
 class AbstractNodegraphWidget(QWidget):
     """
     The abstract class for creating a stand alone Nodegraph.  This will need to
@@ -35,11 +38,15 @@ class AbstractNodegraphWidget(QWidget):
 
         # setup nodegraph display
         panel = self.getPanel()
+
+        from UI4.Widgets import PanelScrollArea
+        self.panel_scroll_area = getWidgetAncestor(self, PanelScrollArea)
+
+        # install event filters
         panel.installEventFilter(self)
+        self.panel_scroll_area.viewport().installEventFilter(self)
         self.getWidget().installEventFilter(self)
 
-        self.panel_scroll_area = self.getKatanaTab(self)
-        self.panel_scroll_area.viewport().installEventFilter(self)
         # display menus
         self.displayMenus(display_menus, panel)
 
@@ -144,15 +151,15 @@ class AbstractNodegraphWidget(QWidget):
             for widget in widget_list:
                 widget.installEventFilter(self)
 
-    def getKatanaTab(self, widget):
-        """
-        Gets the katana panel (hopefully)
-        """
-        from UI4.Widgets import PanelScrollArea
-        if isinstance(widget, PanelScrollArea):
-            return widget
-        else:
-            return self.getKatanaTab(widget.parent())
+    # def getKatanaTab(self, widget):
+    #     """
+    #     Gets the katana panel (hopefully)
+    #     """
+    #     from UI4.Widgets import PanelScrollArea
+    #     if isinstance(widget, PanelScrollArea):
+    #         return widget
+    #     else:
+    #         return self.getKatanaTab(widget.parent())
 
     def destroyNodegraphEventFilter(self, obj, event):
         """

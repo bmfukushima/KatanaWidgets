@@ -45,7 +45,7 @@ TODO:
 """
 
 from PyQt5.QtWidgets import (
-    QLineEdit, QVBoxLayout, QWidget
+    QLabel, QVBoxLayout, QWidget
 )
 
 from PyQt5.QtCore import Qt, QEvent
@@ -91,8 +91,11 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         #layout = QVBoxLayout(self)
         self.node_editor = NodeEditor(self, self.node, self.main_node)
         #layout.addWidget(self.node_editor)
-        self.getDesignWidget().addTab(self.node_editor, 'Params')
-        self.getDesignWidget().addTab(QLineEdit(), 'Test')
+        self.getDesignWidget().insertTab(0, self.node_editor, 'Params')
+        self.getDesignWidget().insertTab(1, QLabel('Events'), 'Events')
+        self.getDesignWidget().insertTab(2, QLabel('GUI Designer'), 'GUI Designer')
+        self.getDesignWidget().insertTab(3, QLabel('User Params'), 'User Params')
+        #self.getDesignWidget().insertTab(1, QLabel('Events'), 'Events')
 
     def getEventTypes(self):
         """
