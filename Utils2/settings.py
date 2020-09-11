@@ -1,8 +1,10 @@
 import os
 
 """ GIFS """
-__gif_dir = '{directory}/gif'.format(
-    directory=os.path.dirname(__file__)
+__base_dir = '/'.join(os.path.dirname(__file__).split('/')[:-1])
+print('base dir')
+__icons_dir = '{directory}/Icons'.format(
+    directory=__base_dir
 )
-ACCEPT_GIF = __gif_dir + '/accept.gif'
-CANCEL_GIF = __gif_dir + '/cancel.gif'
+ACCEPT_GIF = __icons_dir + '/accept.gif'
+CANCEL_GIF = __icons_dir + '/cancel.gif'
