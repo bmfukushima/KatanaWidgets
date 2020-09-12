@@ -23,11 +23,15 @@ def createParametersMenuButton(args):
     as the parameters widgets needs to finish making before our new menu
     can be inserted into it
     """
+    # imports
     from Katana import UI4, Utils, NodegraphAPI
-
     from .ParametersMenuWidgets import ParametersMenuButton
     global should_recurse
+
+    # get all params tabs
     param_tabs = UI4.App.Tabs.GetTabsByType('Parameters')
+
+    # check
     for tab in param_tabs:
         scroll_area = tab._ParameterPanel__panelScrollArea
         layout = scroll_area.widget().layout()
@@ -35,7 +39,6 @@ def createParametersMenuButton(args):
         if widget:
             control_widgets = widget.getRightControlFWidgets()
             if not hasattr(control_widgets, 'params_button'):
-                #global should_recurse
                 # create custom menu button
                 control_widgets.params_button = ParametersMenuButton(node=args[0][2]['node'])
                 control_widgets.addWidget(control_widgets.params_button)
@@ -43,7 +46,6 @@ def createParametersMenuButton(args):
                 return
             else:
                 # reselect node
-                #global should_recurse
                 if should_recurse is True:
                     reselectNodesHack()
                     should_recurse = False

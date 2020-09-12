@@ -1,8 +1,6 @@
 from PyQt5.QtWidgets import (
-    QLabel, QMenu, QApplication
+    QLabel, QMenu
 )
-
-from PyQt5.QtCore import QPoint
 
 from PyQt5.QtGui import QPixmap
 
@@ -19,9 +17,16 @@ class ParametersMenuButton(QLabel):
         menu (ParametersMenu): The menu that will be displayed when the
             user clicks on the button.
         is_pressed (bool): if the button is currently pressed or not
+        is_selected (bool): determines if the button is currently selected or not
+            This is slightly different than pressed.  As pressed is only when the user
+            actually clicks on the button.  Is select can exist on a hover as well.
         node (Node): Current node that this button interacts with
+
+        SIZE (int): size of pixmap
+        OFFSET (int): how far to offset in the X coord from the other widgets in the bar
     """
-    SIZE = 20
+    SIZE = 15
+    OFFSET = SIZE * 0.5
 
     def __init__(self, parent=None, node=None):
         super(ParametersMenuButton, self).__init__(parent)
@@ -29,17 +34,25 @@ class ParametersMenuButton(QLabel):
         self.setNode(node)
         self.setIsPressed(False)
         self.__setPixmap(BEBOP_OFF_JPG)
-
+        self.setContentsMargins(
+            ParametersMenuButton.OFFSET, 0, ParametersMenuButton.OFFSET, 0)
         # create custom menu
         self.menu = ParametersMenu(self)
 
+        # set style sheet to mimic katana =\
+        self.setStyleSheet("""
+            QLabel::hover{background-color: rgb(80, 80, 80)};
+            QLabel[_is_pressed=true]{background-color: rgb(80, 80, 80)};
+        """)
+
     """ EVENTS """
     def enterEvent(self, event):
-        self.__setPixmap(BEBOP_ON_JPG)
+        self.setIsSelected(True)
         return QLabel.enterEvent(self, event)
 
     def leaveEvent(self, event):
-        self.__setPixmap(BEBOP_OFF_JPG)
+        if not self.isPressed():
+            self.setIsSelected(False)
         return QLabel.leaveEvent(self, event)
 
     def __setPixmap(self, pixmap):
@@ -47,20 +60,33 @@ class ParametersMenuButton(QLabel):
         pixmap = pixmap.scaledToHeight(ParametersMenuButton.SIZE)
         self.setPixmap(pixmap)
 
+    def isSelected(self):
+        return self._is_selected
+
+    def setIsSelected(self, is_selected):
+        # set property
+        self._is_selected = is_selected
+
+        # set pixmap
+        if is_selected:
+            self.__setPixmap(BEBOP_ON_JPG)
+        else:
+            self.__setPixmap(BEBOP_OFF_JPG)
+
+        # update style sheet
+        self.style().unpolish(self)
+        self.style().polish(self)
+        self.update()
+
     def isPressed(self):
         return self._is_pressed
 
     def setIsPressed(self, is_pressed):
         self._is_pressed = is_pressed
-        if is_pressed:
-            self.__setPixmap(BEBOP_ON_JPG)
-        else:
-            self.__setPixmap(BEBOP_OFF_JPG)
 
     def mousePressEvent(self, event):
         self.setIsPressed(True)
-        pos = self.parent().mapToGlobal(self.pos())
-        pos = QPoint(pos.x(), pos.y() + ParametersMenuButton.SIZE)
+        pos = self.parent().mapToGlobal(self.geometry().bottomLeft())
         self.menu.popup(pos)
         return QLabel.mousePressEvent(self, event)
 
@@ -84,4 +110,21 @@ class ParametersMenu(QMenu):
 
     def closeEvent(self, event):
         self.parent().setIsPressed(False)
+        self.parent().setIsSelected(False)
         return QMenu.closeEvent(self, event)
+
+
+if __name__ == "__main__":
+    import sys
+    from PyQt5.QtWidgets import QApplication
+    from PyQt5.QtGui import QCursor
+
+    app = QApplication(sys.argv)
+
+    mw = ParametersMenuButton()
+    mw.setStyleSheet("""
+        QLabel::hover{background-color: rgb(128,255,128)};
+    """)
+    mw.show()
+    mw.move(QCursor().pos())
+    sys.exit(app.exec_())
