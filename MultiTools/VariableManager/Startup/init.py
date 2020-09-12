@@ -1,4 +1,8 @@
-from Katana import Utils
+from PyQt5.QtWidgets import QLabel, QMenu
+from PyQt5.QtGui import QPixmap
+from Katana import Utils, UI4
+
+from Utils2.settings import BEBOP_ON_JPG, BEBOP_OFF_JPG
 
 def onGSVChange(args):
     #import NodegraphAPI
@@ -10,7 +14,13 @@ def onGSVChange(args):
             pass
             #print (node.getName())
 
+
 def createNewPatternEvent():
     #print('start')
     Utils.EventModule.RegisterCollapsedHandler(onGSVChange, 'parameter_setValue')
     #print('end register')
+
+
+
+
+

@@ -1,8 +1,9 @@
 from PyQt5.QtWidgets import (
     QWidget, QStackedWidget, QTabWidget, QVBoxLayout, QLabel,
-    QStackedLayout, QHBoxLayout
+    QStackedLayout, QHBoxLayout, QMenu
 )
 from PyQt5.QtCore import QEvent, Qt
+from PyQt5.QtGui import QPixmap
 
 try:
     from Katana import UI4
@@ -11,11 +12,15 @@ except ModuleNotFoundError:
 # local import... because PYTHONPATH is not registered yet
 from .AbstractSuperToolEditor import AbstractSuperToolEditor
 
+from Utils2 import getWidgetAncestor
+
 from Utils2.colors import (
     MAYBE_HOVER_COLOR_RGBA,
     KATANA_LOCAL_YELLOW,
     TEXT_COLOR
 )
+
+
 
 
 class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
@@ -62,6 +67,16 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
         self.layout().addWidget(self.main_widget)
         self.layout().addWidget(resize_widget)
+        #
+        # self.bebop_button = TwoFacedMenuButton(self)
+        #
+        # from UI4.Widgets import PanelScrollArea
+        # panel_scroll_area = getWidgetAncestor(self, PanelScrollArea)
+        #
+        # layout = panel_scroll_area.widget().layout()
+        # widget = layout.itemAt(0).widget()
+        # rightf = widget.getRightControlFWidgets()
+        # rightf.layout().insertWidget(0, self.bebop_button)
 
     """ PROPERTIES ( WIDGET )"""
     def getDesignWidget(self):
@@ -225,88 +240,4 @@ class TwoFacedViewWidget(QWidget):
         super(TwoFacedViewWidget, self).__init__(parent)
         QVBoxLayout(self)
         self.layout().addWidget(QLabel('View Widget'))
-
-
-class ResizeFilter(QWidget):
-    """
-    Event filter for auto resizing the GUI
-    """
-    def eventFilter(self, obj, event):
-        if event.type() == QEvent.Resize:
-            """
-            This is a horrible function that is going to implode later...
-            but removes the horrid fixed size of the params pane which
-            drives me borderline insane.
-            """
-            # widget below the scroll area...
-            self.parent().updateSize()
-            return True
-        return super(ResizeFilter, self).eventFilter(obj, event)
-
-
-class iParameter(object):
-    """
-    Parameter interface to register custom parameters.  The methods
-    setEditingFinishedFunction() and setNewGetValueFunction() MUST
-    be overloaded to make this work...
-
-    This should be used with multiple inheritance when creating widgets
-    ie class MyParam(QWidget, iParameter):
-
-    Attributes:
-        location (str): path to location of the parameter with . syntax
-                ie user.somegroup.param
-        parameter (parameter): Katana parameter that this widget should
-            be linking to
-        data_type (iParameter.TYPE): Data type from the iParameter
-            class.
-    """
-    INT = 0
-    STRING = 1
-    def __init__(self):
-        self._location = ''
-
-    """ TRIGGER """
-    def getNewValue(self):
-        value = self.__getNewValue()
-        return value
-
-    def setGetNewValueFunction(self, function):
-        self.__getNewValue = function
-
-    def finishedEditing(self):
-        """
-        Wrapper to set the parameter
-        """
-        self.__finished_editing()
-        new_value = self.__getNewValue
-        self.setValue(new_value)
-
-    def setEditingFinishedFunction(self, function):
-        self.__finished_editing = function
-
-    """ PROPERTIES """
-    def getValue(self):
-        return self.getParameter().getValue(0)
-
-    def setValue(self, value):
-        self.getParameter().setValue(value, 0)
-
-    def getDataType(self):
-        return self._data_type
-
-    def setDataType(self, data_type):
-        self._data_type = data_type
-
-    def getLocation(self):
-        return self._location
-
-    def setLocation(self, location):
-        self._location = location
-
-    def getParameter(self):
-        return self._parameter
-
-    def setParameter(self, parameter):
-        self._parameter = parameter
 

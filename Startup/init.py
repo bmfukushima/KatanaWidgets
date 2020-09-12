@@ -1,4 +1,5 @@
-# add global dir here with something like
-import sys
-import os
-import inspect
+from Katana import Utils
+
+# initialize bebop menu
+from Utils2.ParametersMenu import createParametersMenuButton
+Utils.EventModule.RegisterCollapsedHandler(createParametersMenuButton, 'node_setEdited')
