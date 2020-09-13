@@ -207,7 +207,7 @@ class VariableManagerWidget(QWidget):
 
     """ EVENTS """
     @staticmethod
-    def toggleFullView(splitter):
+    def toggleFullScreenView(splitter):
         """
         Toggles between the full view of either the parameters
         or the creation portion of this widget.  This is to help
@@ -266,7 +266,9 @@ class VariableManagerWidget(QWidget):
     def keyPressEvent(self, event):
         if event.key() == 96:
             # ~ KEY... can't find this in the Qt.Key_Tilda...
-            VariableManagerWidget.toggleFullView(self.splitter)
+            print('1')
+            #self.splitter.toggleFullScreenView()
+            #VariableManagerWidget.toggleFullScreenView(self.splitter)
 
 
 class VariableManagerCreateNewItemWidget(QWidget):
@@ -1989,7 +1991,8 @@ class VariableManagerBrowser(QTreeWidget):
 
         elif event.key() == 96:
             # ~ Tilda pressed
-            VariableManagerWidget.toggleFullView(self.main_widget.variable_manager_widget.splitter)
+            print('2')
+            self.main_widget.variable_manager_widget.splitter.toggleFullScreenView()
 
         return QTreeWidget.keyPressEvent(self, event, *args, **kwargs)
 

@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QSplitter, qApp
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QCursor
 
 from Utils2.colors import(
     GRID_COLOR,
@@ -76,18 +77,19 @@ class AbstractSplitterWidget(QSplitter):
         Args:
             widget (QWidget): Widget to set searching from, this is set
                 to the current widget under the cursor
-        Returns (int):
+        Returns (int, widget):
             if returns None, then bypass everything.
         """
+        print(widget)
         if widget.parent():
             if isinstance(widget.parent(), AbstractSplitterWidget):
-                return widget.parent().indexOf(widget)
+                return widget.parent().indexOf(widget), widget
             else:
                 return AbstractSplitterWidget.getIndexOfWidget(widget.parent())
         else:
-            return None
+            return None, None
 
-    def toggleFullView(self):
+    def toggleFullScreenView(self):
         """
         Toggles between the full view of either the parameters
         or the creation portion of this widget.  This is to help
@@ -99,7 +101,9 @@ class AbstractSplitterWidget(QSplitter):
 
     def keyPressEvent(self, event):
         if event.key() == self.fullScreenHotkey():
-            self.toggleFullView()
+            self.toggleFullScreenView()
+            event.ignore()
+            return
         elif event.key() == Qt.Key_Escape:
             if self.isFullScreen() is True:
                 self.setIsFullScreen(False)
@@ -115,22 +119,27 @@ class AbstractSplitterWidget(QSplitter):
         all of the space inside of the splitter by hiding the rest of the
         widgets.
         """
+        print('==================')
         # get attrs
-        pos1 = QCursor.pos()
-        widget = qApp.widgetAt(pos1)
-        current_index = self.getIndexOfWidget(widget)
-
+        #pos1 = QCursor.pos()
+        widget = qApp.widgetAt(QCursor.pos())
+        current_index, current_widget = self.getIndexOfWidget(widget)
+        current_splitter = current_widget.parent()
+        try:
+            print(self.objectName(), widget.text(), current_index, current_widget)
+        except:
+            pass
         # enter full screen
         if is_fullscreen is True:
-            self.__displayAllWidgets(False)
-            widget.show()
+            current_splitter.__displayAllWidgets(False)
+            current_widget.show()
         # exit full screen
         else:
-            self.__displayAllWidgets(True)
+            current_splitter.__displayAllWidgets(True)
 
         # set attrs
         self.setCurrentIndex(current_index)
-        self.setCurrentWidget(self.widget(current_index))
+        self.setCurrentWidget(current_widget)
         self._is_fullscreen = is_fullscreen
 
     def fullScreenHotkey(self):
@@ -158,11 +167,20 @@ if __name__ == "__main__":
     from PyQt5.QtGui import QCursor
     app = QApplication(sys.argv)
 
-    w = AbstractSplitterWidget()
+    main_splitter = AbstractSplitterWidget()
+    main_splitter.setObjectName("main")
+    main_splitter.addWidget(QLabel('a'))
+    main_splitter.addWidget(QLabel('b'))
+    main_splitter.addWidget(QLabel('c'))
+
+    splitter1 = AbstractSplitterWidget(orientation=Qt.Horizontal)
+    splitter1.setObjectName("embed")
     for x in range(3):
         l = QLabel(str(x))
-        w.addWidget(l)
-    w.show()
-    w.move(QCursor.pos())
+        splitter1.addWidget(l)
+
+    main_splitter.addWidget(splitter1)
+    main_splitter.show()
+    main_splitter.move(QCursor.pos())
     sys.exit(app.exec_())
 
