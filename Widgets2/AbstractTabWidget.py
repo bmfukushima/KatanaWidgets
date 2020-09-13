@@ -55,6 +55,20 @@ class AbstractTabWidget(QWidget):
         bar: refers to the bar at the top containing all of the afformentioned tabs
         widget: refers to the area that displays the GUI for each tab
 
+    Widgets:
+        |-- QBoxLayout
+                |-- TabLabelBarWidget
+                        |-- QBoxLayout
+                                |-* TabLabelWidget
+                |-- main_layout
+                        This needs to be changed...
+                        This is the control for dynamic vs stacked...
+                        and it essentially swaps the layouts
+                        - move to abstractSplitterWidget
+                        - SplitterStackedWidget
+                            - get index
+                            - set index
+
     """
     NORTH = 'north'
     SOUTH = 'south'
@@ -66,6 +80,7 @@ class AbstractTabWidget(QWidget):
     STACKED = 'stacked'
     DYNAMIC = 'dynamic'
     MULTI = 'multi'
+    TYPE = STACKED
 
     def __init__(self, parent=None, direction=NORTH):
         super(AbstractTabWidget, self).__init__(parent)
@@ -77,8 +92,9 @@ class AbstractTabWidget(QWidget):
         self.layout().addWidget(self.tab_label_bar_widget)
 
         # set default attrs
-        self._type = AbstractTabWidget.STACKED
-        self.setMainLayout(QVBoxLayout())
+        #self._type = AbstractTabWidget.STACKED
+        #self.setMainLayout(QVBoxLayout())
+        self.setType(AbstractTabWidget.TYPE)
 
         # set direction
         self.setTabPosition(direction)
@@ -183,12 +199,15 @@ class AbstractTabWidget(QWidget):
         if value == AbstractTabWidget.STACKED:
             layout = QStackedLayout()
         elif value == AbstractTabWidget.DYNAMIC:
+            # preflight check
             if not dynamic_widget:
                 print ("provide a widget to use...")
                 return
             if not dynamic_function:
                 print ("provide a function to use...")
                 return
+
+            # setup dynamic setup
             layout = QBoxLayout(QBoxLayout.LeftToRight)
             self.setDynamicMainWidget(dynamic_widget)
             self.setDynamicUpdateFunction(dynamic_function)

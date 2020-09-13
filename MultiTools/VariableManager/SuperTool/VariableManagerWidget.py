@@ -36,9 +36,6 @@ from .ItemTypes import (
 from .Settings import (
     PATTERN_PREFIX,
     BLOCK_PREFIX,
-    SPLITTER_STYLE_SHEET,
-    SPLITTER_STYLE_SHEET_HIDE,
-    SPLITTER_HANDLE_WIDTH,
     PUBLISH_DIR
     )
 
@@ -72,7 +69,8 @@ from Widgets2 import(
     AbstractComboBox,
     AbstractFileBrowser,
     AbstractNodegraphWidget,
-    AbstractParametersDisplayWidget
+    AbstractParametersDisplayWidget,
+    AbstractSplitterWidget
 )
 
 from Widgets2.AbstractSuperToolEditor import iParameter
@@ -137,9 +135,10 @@ class VariableManagerWidget(QWidget):
         self.r2_hbox = QHBoxLayout(self.r2_widget)
         self.r2_hbox.addWidget(self.publish_dir)
 
-        self.splitter = QSplitter(Qt.Vertical)
+        self.splitter = AbstractSplitterWidget(self, orientation=Qt.Vertical)
+        #self.splitter = QSplitter(Qt.Vertical)
         self.splitter.setObjectName('main_splitter')
-        self.splitter.setStyleSheet(SPLITTER_STYLE_SHEET)
+        #self.splitter.setStyleSheet(SPLITTER_STYLE_SHEET)
 
         # row 2.1
         self.variable_stack = self.createVariableStack()
@@ -188,11 +187,11 @@ class VariableManagerWidget(QWidget):
         widget.setLayout(vbox)
 
         # Create Widgets
-        self.variable_splitter = QSplitter()
-        self.variable_splitter.setStyleSheet(SPLITTER_STYLE_SHEET)
-        self.variable_splitter.setHandleWidth(
-            SPLITTER_HANDLE_WIDTH
-        )
+        self.variable_splitter = AbstractSplitterWidget(self, orientation=Qt.Horizontal)
+        # self.variable_splitter.setStyleSheet(SPLITTER_STYLE_SHEET)
+        # self.variable_splitter.setHandleWidth(
+        #     SPLITTER_HANDLE_WIDTH
+        # )
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
         self.variable_browser_widget.setObjectName("Variable Browser Widget")
@@ -205,22 +204,6 @@ class VariableManagerWidget(QWidget):
         vbox.addWidget(self.variable_splitter)
 
         return widget
-
-    # def createParamsWidget(self):
-    #     """
-    #     Creates the widget that will display the parameters
-    #     back to the user when a node is selected in the mini nodegraph.
-    #     """
-    #     params_widget = QWidget()
-    #     params_widget.setObjectName("params widget")
-    #     self.params_layout = QVBoxLayout(params_widget)
-    #     self.params_layout.setAlignment(Qt.AlignTop)
-    #
-    #     self.params_widget = QScrollArea()
-    #     self.params_widget.setWidget(params_widget)
-    #     self.params_widget.setWidgetResizable(True)
-    #
-    #     return params_widget
 
     """ EVENTS """
     @staticmethod
@@ -1789,13 +1772,13 @@ class VariableManagerBrowser(QTreeWidget):
                 goToNode(node, frame=True, nodegraph_panel=nodegraph_panel)
 
                 # resize splitter to let user know that they can do this now...
-                variable_manager_widget.variable_splitter.setHandleWidth(
-                    SPLITTER_HANDLE_WIDTH
-                )
-
-                variable_manager_widget.variable_splitter.setStyleSheet(
-                    SPLITTER_STYLE_SHEET
-                )
+                # variable_manager_widget.variable_splitter.setHandleWidth(
+                #     SPLITTER_HANDLE_WIDTH
+                # )
+                #
+                # variable_manager_widget.variable_splitter.setStyleSheet(
+                #     SPLITTER_STYLE_SHEET
+                # )
                 if nodegraph_widget.isVisible() is False:
                     variable_manager_widget = self.main_widget.variable_manager_widget
                     variable_manager_widget.nodegraph_widget.show()

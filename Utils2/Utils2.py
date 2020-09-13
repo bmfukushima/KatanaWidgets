@@ -81,8 +81,11 @@ def getWidgetAncestor(widget, instance_type):
     Recursively searches up from the current widget
     until an widget of the specified instance is found
 
-
+    Args:
+        widget (QWidget): widget to search from
+        instance_type (object): Object type to find
     """
+
     if isinstance(widget, instance_type):
         return widget
     else:
