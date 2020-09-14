@@ -69,13 +69,18 @@ class AbstractSplitterWidget(QSplitter):
             else:
                 widget.hide()
 
-    def clear(self):
+    def clear(self, exclusion_list=[]):
         """
         Removes all the widgets
+
+        Args:
+            exclusion_list (list): of widgets.  If widget is in this list,
+                it will not be removed during this operation
         """
         for index in reversed(range(self.count())):
             widget = self.widget(index)
-            widget.setParent(None)
+            if widget not in exclusion_list:
+                widget.setParent(None)
 
     @staticmethod
     def getIndexOfWidget(widget):
@@ -109,9 +114,7 @@ class AbstractSplitterWidget(QSplitter):
         self.setIsSoloView(not self.isSoloView())
 
     def keyPressEvent(self, event):
-        print('um?')
         if event.key() == self.soloViewHotkey():
-            print('solo?"')
             self.setIsSoloView(True)
             event.ignore()
             return

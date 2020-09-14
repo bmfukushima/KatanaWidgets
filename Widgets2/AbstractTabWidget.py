@@ -106,20 +106,58 @@ class AbstractTabWidget(QWidget):
 
         self._selected_labels_list = []
 
-    """ UTILS """
+    """ DONT REALLY NEED THIS ANY MORE... =("""
     def updateGUI(self):
         """
         Updates the main splitters gui based off of the currently selected
         labels by the user.
         """
-        self.tab_label_bar_widget.clearSelectedTabs()
-        for label in self.getSelectedLabelsList():
-            # update tabs
-            label.is_selected = True
+        # update stacked
+        all_labels = self.tab_label_bar_widget.getAllLabels()
+        widgets_list = []
 
-        widgets_list = [label.tab_widget for label in self.getSelectedLabelsList()]
+        # update label
+        for label in all_labels:
+            if label.is_selected:
+                if self.getType() == AbstractTabWidget.STACKED:
+                    widget = self.__updateStackedGUI(label)
+                elif self.getType() == AbstractTabWidget.DYNAMIC:
+                    widget = self.__updateDynamicGUI(label)
+
+        widgets_list.append(widget)
+
         self.main_widget.isolateWidgets(widgets_list)
 
+    def __updateStackedGUI(self, label):
+        """
+        Update event for the GUI when it is set to STACKED mode
+
+        Args:
+            label
+        returns the widget
+        """
+        # clear all tabs
+
+        return label.tab_widget
+
+        # # clear all tabs
+        # self.tab_label_bar_widget.clearSelectedTabs()
+        #
+        # # reselect tabs
+        # for label in self.getSelectedLabelsList():
+        #     # update tabs
+        #     label.is_selected = True
+        #
+        # widgets_list = [label.tab_widget for label in self.getSelectedLabelsList()]
+        # self.main_widget.isolateWidgets(widgets_list)
+
+    def __updateDynamicGUI(self, label):
+        """
+        Update event for the GUI when it is set to STACKED mode
+        """
+        return
+
+    """ UTILS """
     def setTabPosition(self, direction):
         """
         Sets position of the tab label bar.
@@ -180,10 +218,10 @@ class AbstractTabWidget(QWidget):
             label.index = index
 
     """ DYNAMIC WIDGET """
-    def setDynamicMainWidget(self, dynamic_widget):
-        self._dynamic_widget = dynamic_widget
-        #self.layout().addWidget(self._dynamic_widget)
-        self.main_widget.addWidget(self._dynamic_widget)
+    def createNewDynamicWidget(self):
+        dynamic_widget_class = self.getDynamicWidgetBaseClass()
+        new_widget = dynamic_widget_class()
+        return new_widget
 
     def getDynamicMainWidget(self):
         return self._dynamic_widget
@@ -194,8 +232,26 @@ class AbstractTabWidget(QWidget):
     def setDynamicUpdateFunction(self, function):
         self.__dynamicWidgetFunction = function
 
-    def updateDynamicWidget(self, label, *args, **kwargs):
-        self.__dynamicWidgetFunction(label, *args, **kwargs)
+    def setDynamicWidgetBaseClass(self, widget):
+        """
+        Sets the constructor for the dynamic widget.  Everytime
+        a new dynamic widget is created. It will use this base class
+        """
+        self._dynamic_widget_base_class = widget
+
+    def getDynamicWidgetBaseClass(self):
+        return self._dynamic_widget_base_class
+
+    def updateDynamicWidget(self, widget, label, *args, **kwargs):
+        """
+        Updates the dynamic widget
+
+        Args:
+            widget (DynamicWidget) The dynamic widget that should be updated
+            label (TabLabelWidget): The tab label that should be updated
+        """
+        # needs to pick which to update...
+        self.__dynamicWidgetFunction(widget, label, *args, **kwargs)
 
     """ PROPERTIES """
     def setMultiSelect(self, enabled):
@@ -211,7 +267,7 @@ class AbstractTabWidget(QWidget):
         orientation (Qt.ORIENTATION): ie Qt.Vertical or Qt.Horizontal
         """
         pass
-        #self.main_widget.setOrientation(orientation)
+        self.main_widget.setOrientation(orientation)
 
     def getMultiSelectDirection(self):
         return self.main_widget.orientation()
@@ -234,6 +290,9 @@ class AbstractTabWidget(QWidget):
         self.tab_label_bar_widget = TabLabelBarWidget(self)
         self.layout().insertWidget(0, self.tab_label_bar_widget)
 
+        # clear layout
+        self.main_widget.clear()
+
         # update layout
         if value == AbstractTabWidget.STACKED:
             pass
@@ -245,15 +304,11 @@ class AbstractTabWidget(QWidget):
             if not dynamic_function:
                 print ("provide a function to use...")
                 return
-
-            self.setDynamicMainWidget(dynamic_widget)
+            self.setDynamicWidgetBaseClass(dynamic_widget)
             self.setDynamicUpdateFunction(dynamic_function)
-        elif value == AbstractTabWidget.MULTI:
-            pass
 
-        # clear layout
-        self.main_widget.clear()
-        # update layout
+            self.dynamic_widget = self.createNewDynamicWidget()
+            self.main_widget.addWidget(self.dynamic_widget)
 
         # update attr
         self._type = value
@@ -345,16 +400,17 @@ class TabLabelWidget(QLabel):
         # set up display
         self.setAlignment(Qt.AlignCenter)
         self.is_selected = False
-        self.setupStyleSheet()
+        TabLabelWidget.setupStyleSheet(self)
         self.setMinimumSize(35, 35)
         #self.setSizePolicy()
 
-    def setupStyleSheet(self):
+    @staticmethod
+    def setupStyleSheet(item):
         """
         Sets the style sheet for the outline based off of the direction of the parent.
 
         """
-        tab_widget = getWidgetAncestor(self, AbstractTabWidget)
+        tab_widget = getWidgetAncestor(item, AbstractTabWidget)
         direction = tab_widget.direction
         style_sheet_args = [
             repr(AbstractTabWidget.OUTLINE_COLOR),
@@ -421,7 +477,7 @@ class TabLabelWidget(QLabel):
                 color: rgba{1};
             }}
             """.format(*style_sheet_args)
-        self.setStyleSheet(style_sheet)
+        item.setStyleSheet(style_sheet)
 
     def mousePressEvent(self, event):
         # get attrs
@@ -435,31 +491,68 @@ class TabLabelWidget(QLabel):
             if modifiers == Qt.ControlModifier:
                 labels_list = top_level_widget.getSelectedLabelsList()
                 if self in labels_list:
+                    self.is_selected = False
                     top_level_widget.removeLabelFromList(self)
                 else:
+                    self.is_selected = True
                     top_level_widget.appendLabelToList(self)
-
             # reset list
             else:
-                top_level_widget.setSelectedLabelsList([self])
+                TabLabelWidget.__setExclusiveSelect(self)
         # set up single select
         else:
-            top_level_widget.setSelectedLabelsList([self])
+            TabLabelWidget.__setExclusiveSelect(self)
 
-        top_level_widget.updateGUI()
+    @staticmethod
+    def __setExclusiveSelect(item):
+        """
+        Sets this to be the ONLY tab selected by the user
+        """
 
+        top_level_widget = getWidgetAncestor(item, AbstractTabWidget)
+        item.parent().clearSelectedTabs()
+        item.is_selected = True
 
-        # top_level_widget = getWidgetAncestor(self, AbstractTabWidget)
-        # if top_level_widget.getType() == AbstractTabWidget.STACKED:
-        #     top_level_widget.main_widget.isolateWidget(self.tab_widget)
-        # elif top_level_widget.getType() == AbstractTabWidget.DYNAMIC:
-        #     top_level_widget.updateDynamicWidget(self)
-        #
-        # # reset all other tabs to not current
-        # self.parent().clearSelectedTabs()
-        # # set this to current
-        # self.is_selected = True
-        # print('yello?')
+        # isolate widget
+        if top_level_widget.getType() == AbstractTabWidget.STACKED:
+            top_level_widget.main_widget.isolateWidgets([item.tab_widget])
+
+        elif top_level_widget.getType() == AbstractTabWidget.DYNAMIC:
+            top_level_widget.main_widget.clear(exclusion_list=[top_level_widget.dynamic_widget])
+            top_level_widget.updateDynamicWidget(top_level_widget.dynamic_widget, item)
+
+        # append to selection list
+        top_level_widget.setSelectedLabelsList([item])
+
+    @staticmethod
+    def updateDisplay(item):
+        """
+        Determines whether or not an items tab_widget should be
+        displayed/updated/destroyed.
+        """
+        # update display
+        if not hasattr(item, 'tab_widget'): return
+
+        top_level_widget = getWidgetAncestor(item, AbstractTabWidget)
+
+        # update static widgets
+        if top_level_widget.getType() == AbstractTabWidget.STACKED:
+            if item.is_selected:
+                item.tab_widget.show()
+            else:
+                item.tab_widget.hide()
+
+        # update dynamic widgets
+        if top_level_widget.getType() == AbstractTabWidget.DYNAMIC:
+            if item.is_selected:
+                # create new dynamic widget...
+                new_dynamic_widget = top_level_widget.createNewDynamicWidget()
+                top_level_widget.main_widget.addWidget(new_dynamic_widget)
+                item.tab_widget = new_dynamic_widget
+                top_level_widget.updateDynamicWidget(new_dynamic_widget, item)
+            else:
+                # destroy widget
+                item.tab_widget.setParent(None)
 
     """ PROPERTIES """
     @property
@@ -473,6 +566,8 @@ class TabLabelWidget(QLabel):
         self.style().unpolish(self)
         self.style().polish(self)
         self.update()
+
+        TabLabelWidget.updateDisplay(self)
 
     @property
     def index(self):
@@ -503,9 +598,10 @@ class TabDynamicWidgetExample(QWidget):
         self.label = QLabel('init')
         self.layout().addWidget(self.label)
 
-    def updateGUI(self, label):
+    @staticmethod
+    def updateGUI(widget, label):
         if label:
-            self.label.setText(label.text())
+            widget.label.setText(label.text())
 
 
 if __name__ == "__main__":
@@ -515,19 +611,20 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     w = AbstractTabWidget()
+
+    # stacked widget example
+    w.setType(AbstractTabWidget.STACKED)
+    w.setTabPosition(AbstractTabWidget.NORTH)
     w.setMultiSelect(True)
     w.setMultiSelectDirection(Qt.Horizontal)
-    # stacked widget example
-    #w.setType(AbstractTabWidget.STACKED)
-    w.setTabPosition(AbstractTabWidget.NORTH)
     #
     # for x in range(3):
     #     nw = QLabel(str(x))
     #     w.insertTab(0, nw, str(x))
 
     # # dynamic widget example
-    # dw = TabDynamicWidgetExample()
-    # w.setType(AbstractTabWidget.DYNAMIC, dynamic_widget=dw, dynamic_function=dw.updateGUI)
+    #dw = TabDynamicWidgetExample
+    w.setType(AbstractTabWidget.DYNAMIC, dynamic_widget=TabDynamicWidgetExample, dynamic_function=TabDynamicWidgetExample.updateGUI)
 
     for x in range(3):
         nw = QLabel(str(x))
