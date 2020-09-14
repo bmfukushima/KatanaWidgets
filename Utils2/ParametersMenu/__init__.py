@@ -1,1 +1,1 @@
-from .CreateParametersMenu import createParametersMenuButton
+from .CreateParametersMenu import installCustomParametersMenu
