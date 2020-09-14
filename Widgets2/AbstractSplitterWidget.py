@@ -69,6 +69,14 @@ class AbstractSplitterWidget(QSplitter):
             else:
                 widget.hide()
 
+    def clear(self):
+        """
+        Removes all the widgets
+        """
+        for index in reversed(range(self.count())):
+            widget = self.widget(index)
+            widget.setParent(None)
+
     @staticmethod
     def getIndexOfWidget(widget):
         """
@@ -101,14 +109,23 @@ class AbstractSplitterWidget(QSplitter):
         self.setIsSoloView(not self.isSoloView())
 
     def keyPressEvent(self, event):
+        print('um?')
         if event.key() == self.soloViewHotkey():
-            #self.toggleSoloViewView()
+            print('solo?"')
             self.setIsSoloView(True)
             event.ignore()
             return
         elif event.key() == Qt.Key_Escape:
             self.setIsSoloView(False)
         return QSplitter.keyPressEvent(self, event)
+
+    def isolateWidgets(self, widget_list):
+        """
+        Shows only the widgets provided to the widget list
+        """
+        self.__displayAllWidgets(False)
+        for widget in widget_list:
+            widget.show()
 
     """ PROPERTIES """
     def isSoloView(self):
@@ -119,6 +136,14 @@ class AbstractSplitterWidget(QSplitter):
         Sets the widget that the mouse is currently over to take up
         all of the space inside of the splitter by hiding the rest of the
         widgets.
+
+        If it is already taking up all of the space, it will look for the next
+        AbstractSplitter and set that one to take up the entire space.  It
+        will continue doing this recursively both up/down until there it is
+        either fully expanded or fully collapsed.
+
+        TODO:
+            This works... but really needs to be cleaned up...
         """
 
         # get the current splitter
@@ -136,17 +161,20 @@ class AbstractSplitterWidget(QSplitter):
                     parent_splitter = current_widget.parent()
                     parent_splitter.setIsSoloView(True, current_splitter)
                     parent_splitter._is_solo_view = True
+                    current_widget1.setFocus()
             # adjust current widget
             elif current_splitter.isSoloView() is False:
                 current_splitter.__displayAllWidgets(False)
                 current_widget.show()
                 current_splitter._is_solo_view = True
+                current_widget.setFocus()
         # exit full screen
         else:
             # adjust current widget
             if current_splitter.isSoloView() is True:
                 current_splitter.__displayAllWidgets(True)
                 current_splitter._is_solo_view = False
+                current_widget.setFocus()
             # adjust parent widget
             elif current_splitter.isSoloView() is False:
                 current_index1, current_widget1 = self.getIndexOfWidget(current_splitter)
@@ -154,11 +182,12 @@ class AbstractSplitterWidget(QSplitter):
                     parent_splitter = current_widget.parent()
                     parent_splitter.setIsSoloView(False, current_splitter)
                     parent_splitter._is_solo_view = False
+                    parent_splitter.setFocus()
+                    current_widget1.setFocus()
 
         # set attrs
         current_splitter.setCurrentIndex(current_index)
         current_splitter.setCurrentWidget(current_widget)
-        #current_splitter._is_solo_view = is_solo_view
 
     def soloViewHotkey(self):
         return self._solo_view_hotkey
