@@ -1,20 +1,13 @@
 import os
-import math
 
 from PyQt5.QtWidgets import (
-    qApp, QWidget,  QVBoxLayout, QHBoxLayout,
-    QScrollArea, QSplitter, QPushButton, QLineEdit, QTreeWidget,
-    QApplication, QHeaderView, QAbstractItemView,
-    QMenu, QTreeWidgetItem
-)
-from PyQt5.QtCore import (
-    Qt
-)
-
+    QWidget,  QVBoxLayout, QHBoxLayout,
+    QPushButton, QLineEdit, QTreeWidget,
+    QHeaderView, QAbstractItemView,
+    QMenu, QTreeWidgetItem)
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import (
-    QColor, QPixmap, QIcon, QCursor, QBrush
-)
-
+    QColor, QPixmap, QIcon, QCursor, QBrush)
 
 try:
     from Katana import UI4, QT4Widgets, QT4FormWidgets
@@ -136,15 +129,12 @@ class VariableManagerWidget(QWidget):
         self.r2_hbox.addWidget(self.publish_dir)
 
         self.splitter = AbstractSplitterWidget(self, orientation=Qt.Vertical)
-        #self.splitter = QSplitter(Qt.Vertical)
         self.splitter.setObjectName('main_splitter')
-        #self.splitter.setStyleSheet(SPLITTER_STYLE_SHEET)
 
         # row 2.1
         self.variable_stack = self.createVariableStack()
 
         # row 2.2
-        #self.params_widget = self.createParamsWidget()
         self.params_widget = AbstractParametersDisplayWidget(self)
         self.splitter.addWidget(self.variable_stack)
         self.splitter.addWidget(self.params_widget)
@@ -188,10 +178,6 @@ class VariableManagerWidget(QWidget):
 
         # Create Widgets
         self.variable_splitter = AbstractSplitterWidget(self, orientation=Qt.Horizontal)
-        # self.variable_splitter.setStyleSheet(SPLITTER_STYLE_SHEET)
-        # self.variable_splitter.setHandleWidth(
-        #     SPLITTER_HANDLE_WIDTH
-        # )
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
         self.variable_browser_widget.setObjectName("Variable Browser Widget")
@@ -204,71 +190,6 @@ class VariableManagerWidget(QWidget):
         vbox.addWidget(self.variable_splitter)
 
         return widget
-
-    """ EVENTS """
-    @staticmethod
-    def toggleFullScreenView(splitter):
-        """
-        Toggles between the full view of either the parameters
-        or the creation portion of this widget.  This is to help
-        to try and provide more screen real estate to this widget
-        which already does not have enough
-        """
-        def getSplitterIndexOfWidget(widget, splitter):
-            """
-            Recursive function to find the index of this widget's parent widget
-            that is a child of the main splitter, and then return that widgets index
-            under the main splitter.
-
-            Args:
-                widget (QWidget): Widget to set searching from, this is set
-                    to the current widget under the cursor
-            Returns (int):
-                if returns None, then bypass everything.
-            """
-            if widget.parent():
-                if widget.parent() == splitter:
-                    return splitter.indexOf(widget)
-                    return widget.parent()
-                else:
-                    return getSplitterIndexOfWidget(widget.parent(), splitter)
-            else:
-                return None
-
-        # do checks
-        pos1 = QCursor.pos()
-        widget = qApp.widgetAt(pos1)
-        current_index = getSplitterIndexOfWidget(widget, splitter)
-
-        if current_index is not None:
-            unused_index = math.fabs(current_index - 1)
-            unused_widget = splitter.widget(unused_index)
-
-            # Return to default view
-            if unused_widget.isHidden() is True:
-                unused_widget.show()
-                splitter.parent().r1_widget.show()
-                splitter.parent().r2_widget.show()
-
-            # Make full screen
-            elif unused_widget.isHidden() is False:
-                # hide unused widget
-                splitter.widget(unused_index).hide()
-                splitter.parent().r1_widget.hide()
-                splitter.parent().r2_widget.hide()
-
-        # reset focus
-        QApplication.processEvents()
-        resolved_pos = QCursor.pos()
-        new_widget = qApp.widgetAt(resolved_pos)
-        new_widget.setFocus()
-
-    def keyPressEvent(self, event):
-        if event.key() == 96:
-            # ~ KEY... can't find this in the Qt.Key_Tilda...
-            print('1')
-            #self.splitter.toggleFullScreenView()
-            #VariableManagerWidget.toggleFullScreenView(self.splitter)
 
 
 class VariableManagerCreateNewItemWidget(QWidget):
@@ -1992,7 +1913,7 @@ class VariableManagerBrowser(QTreeWidget):
         elif event.key() == 96:
             # ~ Tilda pressed
             print('2')
-            self.main_widget.variable_manager_widget.splitter.toggleFullScreenView()
+            self.main_widget.variable_manager_widget.splitter.toggleSoloViewView()
 
         return QTreeWidget.keyPressEvent(self, event, *args, **kwargs)
 

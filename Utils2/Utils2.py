@@ -89,7 +89,11 @@ def getWidgetAncestor(widget, instance_type):
     if isinstance(widget, instance_type):
         return widget
     else:
-        return getWidgetAncestor(widget.parent(), instance_type)
+        parent = widget.parent()
+        if parent:
+            return getWidgetAncestor(widget.parent(), instance_type)
+        else:
+            return None
 
 
 def mkdirRecursive(path):

@@ -7,6 +7,8 @@ from Utils2.colors import(
     GRID_HOVER_COLOR
 )
 
+from Utils2 import getWidgetAncestor
+
 
 class AbstractSplitterWidget(QSplitter):
     """
@@ -14,10 +16,10 @@ class AbstractSplitterWidget(QSplitter):
     class for everything that will be used through this library.
 
     Attributes:
-        isFullScreen (bool): If this is in full screen mode.  Full screen mode
+        isSoloView (bool): If this is in full screen mode.  Full screen mode
             allows the user to press a hotkey to make a widget take up the
             entire space of this splitter.  The default hotkey for this is ~ but can be
-            set with the setFullScreenHotkey() call.
+            set with the setSoloViewHotkey() call.
 
         # not used... but I set them up anyways lol
         currentIndex (int): The current index
@@ -35,8 +37,8 @@ class AbstractSplitterWidget(QSplitter):
 
         self._current_index = None
         self._current_widget = None
-        self._is_fullscreen = False
-        self._fullscreen_hotkey = AbstractSplitterWidget.FULLSCREEN_HOTKEY
+        self._is_solo_view = False
+        self._solo_view_hotkey = AbstractSplitterWidget.FULLSCREEN_HOTKEY
         self.setOrientation(orientation)
 
         style_sheet = """
@@ -80,7 +82,6 @@ class AbstractSplitterWidget(QSplitter):
         Returns (int, widget):
             if returns None, then bypass everything.
         """
-        print(widget)
         if widget.parent():
             if isinstance(widget.parent(), AbstractSplitterWidget):
                 return widget.parent().indexOf(widget), widget
@@ -89,7 +90,7 @@ class AbstractSplitterWidget(QSplitter):
         else:
             return None, None
 
-    def toggleFullScreenView(self):
+    def toggleSoloViewView(self):
         """
         Toggles between the full view of either the parameters
         or the creation portion of this widget.  This is to help
@@ -97,56 +98,73 @@ class AbstractSplitterWidget(QSplitter):
         which already does not have enough
         """
         # toggle attrs
-        self.setIsFullScreen(not self.isFullScreen())
+        self.setIsSoloView(not self.isSoloView())
 
     def keyPressEvent(self, event):
-        if event.key() == self.fullScreenHotkey():
-            self.toggleFullScreenView()
+        if event.key() == self.soloViewHotkey():
+            #self.toggleSoloViewView()
+            self.setIsSoloView(True)
             event.ignore()
             return
         elif event.key() == Qt.Key_Escape:
-            if self.isFullScreen() is True:
-                self.setIsFullScreen(False)
+            self.setIsSoloView(False)
         return QSplitter.keyPressEvent(self, event)
 
     """ PROPERTIES """
-    def isFullScreen(self):
-        return self._is_fullscreen
+    def isSoloView(self):
+        return self._is_solo_view
 
-    def setIsFullScreen(self, is_fullscreen):
+    def setIsSoloView(self, is_solo_view, widget=None):
         """
         Sets the widget that the mouse is currently over to take up
         all of the space inside of the splitter by hiding the rest of the
         widgets.
         """
-        print('==================')
-        # get attrs
-        #pos1 = QCursor.pos()
-        widget = qApp.widgetAt(QCursor.pos())
+
+        # get the current splitter
+        if not widget:
+            widget = qApp.widgetAt(QCursor.pos())
         current_index, current_widget = self.getIndexOfWidget(widget)
         current_splitter = current_widget.parent()
-        try:
-            print(self.objectName(), widget.text(), current_index, current_widget)
-        except:
-            pass
+
         # enter full screen
-        if is_fullscreen is True:
-            current_splitter.__displayAllWidgets(False)
-            current_widget.show()
+        if is_solo_view is True:
+            # adjust parent widget
+            if current_splitter.isSoloView() is True:
+                current_index1, current_widget1 = self.getIndexOfWidget(current_splitter)
+                if current_widget1:
+                    parent_splitter = current_widget.parent()
+                    parent_splitter.setIsSoloView(True, current_splitter)
+                    parent_splitter._is_solo_view = True
+            # adjust current widget
+            elif current_splitter.isSoloView() is False:
+                current_splitter.__displayAllWidgets(False)
+                current_widget.show()
+                current_splitter._is_solo_view = True
         # exit full screen
         else:
-            current_splitter.__displayAllWidgets(True)
+            # adjust current widget
+            if current_splitter.isSoloView() is True:
+                current_splitter.__displayAllWidgets(True)
+                current_splitter._is_solo_view = False
+            # adjust parent widget
+            elif current_splitter.isSoloView() is False:
+                current_index1, current_widget1 = self.getIndexOfWidget(current_splitter)
+                if current_widget1:
+                    parent_splitter = current_widget.parent()
+                    parent_splitter.setIsSoloView(False, current_splitter)
+                    parent_splitter._is_solo_view = False
 
         # set attrs
-        self.setCurrentIndex(current_index)
-        self.setCurrentWidget(current_widget)
-        self._is_fullscreen = is_fullscreen
+        current_splitter.setCurrentIndex(current_index)
+        current_splitter.setCurrentWidget(current_widget)
+        #current_splitter._is_solo_view = is_solo_view
 
-    def fullScreenHotkey(self):
-        return self._fullscreen_hotkey
+    def soloViewHotkey(self):
+        return self._solo_view_hotkey
 
-    def setFullScreenHotkey(self, fullscreen_hotkey):
-        self._fullscreen_hotkey = fullscreen_hotkey
+    def setSoloViewHotkey(self, solo_view_hotkey):
+        self._solo_view_hotkey = solo_view_hotkey
 
     def getCurrentWidget(self):
         return self._current_widget
@@ -181,6 +199,7 @@ if __name__ == "__main__":
 
     main_splitter.addWidget(splitter1)
     main_splitter.show()
+    main_splitter.setFixedSize(400,400)
     main_splitter.move(QCursor.pos())
     sys.exit(app.exec_())
 
