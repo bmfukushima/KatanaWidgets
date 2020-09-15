@@ -1,8 +1,5 @@
 from .Utils2 import *
-try:
-    import ParametersMenu
-except ModuleNotFoundError:
-    pass
+
 try:
     # loading int katana
     import gsvutils

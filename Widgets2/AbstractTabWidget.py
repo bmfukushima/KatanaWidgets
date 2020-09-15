@@ -26,7 +26,7 @@ from Utils2.colors import (
 
 from Utils2 import getWidgetAncestor
 
-from AbstractSplitterWidget import AbstractSplitterWidget
+from .AbstractSplitterWidget import AbstractSplitterWidget
 
 
 class AbstractTabWidget(QWidget):

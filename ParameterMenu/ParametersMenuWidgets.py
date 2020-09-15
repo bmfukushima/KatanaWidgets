@@ -1,10 +1,14 @@
 from PyQt5.QtWidgets import (
-    QLabel, QMenu
+    QLabel, QMenu, QVBoxLayout
 )
 
 from PyQt5.QtGui import QPixmap
 
 from Utils2.settings import BEBOP_ON_JPG, BEBOP_OFF_JPG
+
+from Utils2 import getWidgetAncestor
+
+from .NodeShapeAttributesWidget import NodeShapeAttrsWidget
 
 
 class ParametersMenuButton(QLabel):
@@ -101,9 +105,25 @@ class ParametersMenuButton(QLabel):
 class ParametersMenu(QMenu):
     def __init__(self, parent=None):
         super(ParametersMenu, self).__init__(parent)
+        self.addAction('Node Shape Attrs', self.showNodeShapeAttrsWidget)
         self.addAction('test', self.test)
         self.addAction('test', self.test)
-        self.addAction('test', self.test)
+
+    def showNodeShapeAttrsWidget(self):
+        form_widget = self.parent().parent()
+
+        # create widget if it doesnt exist
+        if not hasattr(form_widget, 'node_shape_attrs_widget'):
+            node_shape_attrs_widget = NodeShapeAttrsWidget(form_widget)
+            form_widget.node_shape_attrs_widget = node_shape_attrs_widget
+            form_widget.layout().insertWidget(1, node_shape_attrs_widget)
+
+        # toggle display on node shape attrs widget
+        if form_widget.node_shape_attrs_widget.isVisible():
+            form_widget.node_shape_attrs_widget.hide()
+        else:
+            form_widget.node_shape_attrs_widget.show()
+            form_widget.node_shape_attrs_widget.update()
 
     def test(self):
         print (self.parent().getNode())

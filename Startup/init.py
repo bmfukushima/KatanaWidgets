@@ -1,7 +1,5 @@
 from Katana import Utils
 
 # initialize bebop menu
-from Utils2.ParametersMenu import installCustomParametersMenu
+from ParameterMenu import installCustomParametersMenu
 installCustomParametersMenu()
-print('startup?')
-#Utils.EventModule.RegisterCollapsedHandler(createParametersMenuButton, 'node_setEdited')
