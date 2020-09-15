@@ -1,3 +1,14 @@
+"""
+TODO:
+    *   Boolean widgets
+            - Set initial values (1.0 vs 0.0)
+            - Set Colors for selected/unselected...
+    *   Splitter
+            - change width way to big atm...
+    *   Allow for parameters with special syntax
+            Booleans --> context menu --> select param?
+
+"""
 
 from Widgets2 import AbstractTabWidget
 
@@ -11,22 +22,6 @@ try:
 except ModuleNotFoundError:
     pass
 
-# DrawingModule.nodeWorld_setShapeAttr(node, 'badgeText', badgeText)
-"""
-def _AddGlow(node):
-    DrawingModule.nodeWorld_setShapeAttr(node, 'glowColorR', 1.0)
-    DrawingModule.nodeWorld_setShapeAttr(node, 'glowColorG', 0.0)
-    DrawingModule.nodeWorld_setShapeAttr(node, 'glowColorB', 0.0)
-    NodegraphAPI.SetNodeShapeAttr(node, 'errorGlow', 1.0)
-    Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
-
-
-def _RemoveGlow(node):
-    DrawingModule.nodeWorld_setShapeAttr(node, 'removeGlowColor', True)
-    NodegraphAPI.SetNodeShapeAttr(node, 'errorGlow', 0.0)
-    Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
-"""
-
 
 class NodeShapeAttrsTab(AbstractTabWidget):
     """
@@ -36,9 +31,9 @@ class NodeShapeAttrsTab(AbstractTabWidget):
     NodeShapeTypes = {
         "badgeText": {"type":str, "value":""},
         "drawBadge":{"type":bool, "value":False},
-        "glowColorR":{"type":float, "value":0.5},
-        "glowColorG":{"type":float, "value":0.5},
-        "glowColorB":{"type":float, "value":0.5},
+        "glowColorR":{"type":float, "value":0.0},
+        "glowColorG":{"type":float, "value":0.0},
+        "glowColorB":{"type":float, "value":0.0},
         "errorGlow":{"type":bool, "value":False}
     }
 
@@ -50,15 +45,20 @@ class NodeShapeAttrsTab(AbstractTabWidget):
         self.setMultiSelectDirection(Qt.Vertical)
         self.setNode(node)
 
+        # create all widgets
         for i, shape_name in enumerate(sorted(NodeShapeAttrsTab.NodeShapeTypes.keys())):
-            default_value = NodeShapeAttrsTab.NodeShapeTypes[shape_name]['value']
+            # get attrs
+            attrs = node.getAttributes()
+            try:
+                default_value = attrs['ns_{shape_name}'.format(shape_name=shape_name)]
+            except KeyError:
+                default_value = NodeShapeAttrsTab.NodeShapeTypes[shape_name]['value']
+
             value_type = NodeShapeAttrsTab.NodeShapeTypes[shape_name]['type']
+
+            # create widget
             widget = NodeShapeAttrsWidget(self, node, shape_name, default_value, value_type)
             self.insertTab(i, widget, shape_name)
-            # shape name
-            # default value
-        # w.setType(AbstractTabWidget.DYNAMIC, dynamic_widget=TabDynamicWidgetExample,
-        #           dynamic_function=TabDynamicWidgetExample.updateGUI)
 
     def getNode(self):
         return self._node
@@ -69,10 +69,17 @@ class NodeShapeAttrsTab(AbstractTabWidget):
 
 class NodeShapeAttrsWidget(QWidget):
     """
-    Individual widget holding the GUI to change a shape
-    node
-    value
-    update function?
+    Individual widget holding the GUI to change a shape.
+    Attributes:
+        node (node): The node to set this shape on
+        shape_name (str): the name of the shape to be set
+        default_value (value): The original value
+        value_type (type): What type of value should be returned for this
+            type of shape
+    Widgets
+        | -- HBox
+                | -- Label
+                | -- Edit Widget (createUserInputWidget)
     """
     def __init__(self, parent, node, shape_name, default_value, value_type):
         super(NodeShapeAttrsWidget, self).__init__(parent)
@@ -86,9 +93,6 @@ class NodeShapeAttrsWidget(QWidget):
         QHBoxLayout(self)
         label = QLabel(shape_name)
         self.user_input_widget = self.createUserInputWidget()
-        # edit_field = QLineEdit()
-        # edit_field.setText(str(default_value))
-        # edit_field.editingFinished.connect(self.test)
 
         # setup layout
         self.layout().addWidget(label)
@@ -101,7 +105,6 @@ class NodeShapeAttrsWidget(QWidget):
         """
         value_type = self.getValueType()
         if value_type in [str, float]:
-            print('string')
             widget = QLineEdit()
             widget.setText(str(self.getDefaultValue()))
             widget.editingFinished.connect(self.userInputEvent)
@@ -112,6 +115,10 @@ class NodeShapeAttrsWidget(QWidget):
         return widget
 
     def userInputEvent(self):
+        """
+        The primary event that is triggered whenever the user finishes inputting
+        some values
+        """
         value_type = self.getValueType()
         if value_type == str:
             value = str(self.user_input_widget.text())

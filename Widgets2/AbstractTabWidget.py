@@ -1,15 +1,8 @@
 """
 TODO:
-    Multi Display mode:
-        clicking on tabs will append them to the operation and ADD
-        them to the layout.  So that you can look at multiple tabs at the
-        same time...
-            - QStackedLayout vs HBox vs VBox?
-            - Potentially Layout needs to be subclassed?
-    Default Widget Type:
-        instead of every label having its own widget.  Creating one
-        base class to always populate from, and dynamically
-        creating the widget on each update.
+    - Default sizes
+    - set up colors
+    - set up handle widths
 
 """
 

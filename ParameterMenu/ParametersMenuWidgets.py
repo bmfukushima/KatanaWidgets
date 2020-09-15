@@ -1,12 +1,10 @@
 from PyQt5.QtWidgets import (
-    QLabel, QMenu, QVBoxLayout
+    QLabel, QMenu
 )
 
 from PyQt5.QtGui import QPixmap
 
 from Utils2.settings import BEBOP_ON_JPG, BEBOP_OFF_JPG
-
-from Utils2 import getWidgetAncestor
 
 from .NodeShapeAttributesWidget import NodeShapeAttrsTab
 
@@ -40,6 +38,7 @@ class ParametersMenuButton(QLabel):
         self.__setPixmap(BEBOP_OFF_JPG)
         self.setContentsMargins(
             ParametersMenuButton.OFFSET, 0, ParametersMenuButton.OFFSET, 0)
+
         # create custom menu
         self.menu = ParametersMenu(self)
 
@@ -103,13 +102,18 @@ class ParametersMenuButton(QLabel):
 
 
 class ParametersMenu(QMenu):
+    """
+    Drop down menu that is displayed when the user clicks on the bebop menu
+    """
     def __init__(self, parent=None):
         super(ParametersMenu, self).__init__(parent)
-        self.addAction('Node Shape Attrs', self.showNodeShapeAttrsTab)
-        self.addAction('test', self.test)
-        self.addAction('test', self.test)
+        self.addAction('Toggle Node Shape Adjust', self.toggleNodeShapeWidget)
 
-    def showNodeShapeAttrsTab(self):
+    def toggleNodeShapeWidget(self):
+        """
+        Toggles between dispalying and hidnig the shape nodes adjustment
+        widget.
+        """
         form_widget = self.parent().parent()
 
         # create widget if it doesnt exist
