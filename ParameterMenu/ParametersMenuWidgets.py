@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtGui import QPixmap
 
 from Utils2.settings import BEBOP_ON_JPG, BEBOP_OFF_JPG
+from Utils2.colors import RGBA_SELECTION_BG
 
 from .NodeShapeAttributesWidget import NodeShapeAttrsTab
 
@@ -44,9 +45,9 @@ class ParametersMenuButton(QLabel):
 
         # set style sheet to mimic katana =\
         self.setStyleSheet("""
-            QLabel::hover{background-color: rgb(80, 80, 80)};
-            QLabel[_is_pressed=true]{background-color: rgb(80, 80, 80)};
-        """)
+            QLabel::hover{{background-color: rgba{bg_color}}};
+            QLabel[_is_pressed=true]{{background-color: rgba{bg_color}}};
+        """.format(bg_color=repr(RGBA_SELECTION_BG)))
 
     """ EVENTS """
     def enterEvent(self, event):

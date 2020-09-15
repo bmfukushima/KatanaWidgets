@@ -25,10 +25,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
     VBox
         |-- QStackedWidget
         |       |-- ViewWidget ( QWidget )
-        |       |-- DesignWidget ( CustomTab )
-        |               |-- TwoFacedTabBarWidget ( This can flop around... )
-                                NOTE: If only 1 node is being edited... then...
-                                    this will display at the top of the params?
+        |       |-- DesignWidget ( TansuTabWidget )
         |               |-- tab_content_layout ( StackedLayout )
         |                   |-- User Params ( Create GUI)
         |                   |-- Triggers ( Setup Signals )
