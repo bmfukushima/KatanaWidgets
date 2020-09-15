@@ -1,6 +1,3 @@
-import os
-
-from Utils2.colors import GRID_COLOR, GRID_HOVER_COLOR
 
 try:
     from Katana import NodegraphAPI, KatanaResources

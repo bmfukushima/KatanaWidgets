@@ -137,11 +137,11 @@ from .Utils import (
     transferNodeReferences
 )
 
-from Utils2.colors import(
-    ACCEPT_COLOR_RGBA,
-    MAYBE_COLOR_RGBA,
-    ACCEPT_HOVER_COLOR_RGBA,
-    MAYBE_HOVER_COLOR_RGBA
+from cgwidgets.settings.colors import(
+    RGBA_ACCEPT,
+    RGBA_MAYBE,
+    RGBA_ACCEPT_HOVER,
+    RGBA_MAYBE_HOVER
 )
 
 from Utils2 import(
@@ -1566,12 +1566,12 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         on its current publish status
         """
         if self._publish_state % 2 == 0:
-            self.besterest_button_color = repr(MAYBE_COLOR_RGBA)
-            self.besterest_button_hover_color = repr(MAYBE_HOVER_COLOR_RGBA)
+            self.besterest_button_color = repr(RGBA_MAYBE)
+            self.besterest_button_hover_color = repr(RGBA_MAYBE_HOVER)
             self.besterest_button.setText('Simply not the best... Not better than all the rest')
         elif self._publish_state % 2 == 1:
-            self.besterest_button_color = repr(ACCEPT_COLOR_RGBA)
-            self.besterest_button_hover_color = repr(ACCEPT_HOVER_COLOR_RGBA)
+            self.besterest_button_color = repr(RGBA_ACCEPT)
+            self.besterest_button_hover_color = repr(RGBA_ACCEPT_HOVER)
             self.besterest_button.setText("""
 BESTEREST
 * Tina Turner Voice *

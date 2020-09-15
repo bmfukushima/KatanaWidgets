@@ -50,12 +50,15 @@ from Utils2 import (
 )
 
 from Utils2.colors import(
-    DISABLED_KATANA_LOCAL_YELLOW,
-    DISABLED_TEXT_COLOR,
-    ERROR_COLOR_RGBA,
-    GRID_COLOR,
-    KATANA_LOCAL_YELLOW,
-    TEXT_COLOR
+    RGBA_KATANA_LOCAL_YELLOW_DISABLED,
+    RGBA_TEXT_COLOR_DISABLED,
+    RGBA_KATANA_LOCAL_YELLOW,
+    RGBA_TEXT_COLOR
+)
+
+from cgwidgets.settings.colors import (
+    RGBA_ERROR,
+    RGBA_TANSU_HANDLE
 )
 
 from Widgets2 import(
@@ -63,7 +66,7 @@ from Widgets2 import(
     AbstractFileBrowser,
     AbstractNodegraphWidget,
     AbstractParametersDisplayWidget,
-    BaseSplitterWidget
+    BaseTansuWidget
 )
 
 from Widgets2.AbstractSuperToolEditor import iParameter
@@ -128,7 +131,7 @@ class VariableManagerWidget(QWidget):
         self.r2_hbox = QHBoxLayout(self.r2_widget)
         self.r2_hbox.addWidget(self.publish_dir)
 
-        self.splitter = BaseSplitterWidget(self, orientation=Qt.Vertical)
+        self.splitter = BaseTansuWidget(self, orientation=Qt.Vertical)
         self.splitter.setObjectName('main_splitter')
 
         # row 2.1
@@ -177,7 +180,7 @@ class VariableManagerWidget(QWidget):
         widget.setLayout(vbox)
 
         # Create Widgets
-        self.variable_splitter = BaseSplitterWidget(self, orientation=Qt.Horizontal)
+        self.variable_splitter = BaseTansuWidget(self, orientation=Qt.Horizontal)
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
         self.variable_browser_widget.setObjectName("Variable Browser Widget")
@@ -257,18 +260,18 @@ class VariableManagerCreateNewItemWidget(QWidget):
 
         self.item_type_button.setStyleSheet("""
             outline: None;
-            border-right: {spacing}px solid rgba{grid_color};
+            border-right: {spacing}px solid rgba{tansu_handle};
         """.format(
             spacing=str(self.spacing),
-            grid_color=GRID_COLOR
+            tansu_handle=RGBA_TANSU_HANDLE
         ))
 
         self.enter_button.setStyleSheet("""
             outline: None;
-            border-left: {spacing}px solid rgba{grid_color};
+            border-left: {spacing}px solid rgba{tansu_handle};
         """.format(
             spacing=str(self.spacing),
-            grid_color=GRID_COLOR
+            tansu_handle=RGBA_TANSU_HANDLE
         ))
 
     """ EVENTS """
@@ -694,8 +697,8 @@ class VariableManagerBrowser(QTreeWidget):
                 border-radius:5px;
                 color:rgba%s;}
         """%(
-            repr(KATANA_LOCAL_YELLOW),
-            repr(DISABLED_KATANA_LOCAL_YELLOW)
+            repr(RGBA_KATANA_LOCAL_YELLOW),
+            repr(RGBA_KATANA_LOCAL_YELLOW_DISABLED)
              ))
 
     def updateDisplay(self, update=False, reset=False, check_besterest=True):
@@ -2209,12 +2212,12 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         # disabled
         if self.isDisabled() is True:
-            new_colors = DISABLED_TEXT_COLOR
+            new_colors = RGBA_TEXT_COLOR_DISABLED
         elif self.isDisabled() is False:
-            new_colors = TEXT_COLOR
+            new_colors = RGBA_TEXT_COLOR
         # broken
         if self.getIsBroken() is True:
-            new_colors = ERROR_COLOR_RGBA
+            new_colors = RGBA_ERROR
 
         # set brush
         new_brush = QBrush(QColor(*new_colors))
