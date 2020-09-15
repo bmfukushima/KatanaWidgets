@@ -14,7 +14,7 @@ TODO:
 """
 
 from PyQt5.QtWidgets import (
-    QWidget, QLabel, QBoxLayout, QStackedLayout, QVBoxLayout
+    QWidget, QLabel, QBoxLayout, QStackedLayout, QVBoxLayout, QSizePolicy
 )
 from PyQt5.QtCore import Qt
 
@@ -26,10 +26,13 @@ from Utils2.colors import (
 
 from Utils2 import getWidgetAncestor
 
-from .AbstractSplitterWidget import AbstractSplitterWidget
+try:
+    from .AbstractSplitterWidget import AbstractSplitterWidget
+except ImportError:
+    from AbstractSplitterWidget import AbstractSplitterWidget
 
 
-class AbstractTabWidget(QWidget):
+class AbstractTabWidget(AbstractSplitterWidget):
     """
     This is the designing portion of this editor.  This is where the TD
     will design a custom UI/hooks/handlers for the tool for the end user,
@@ -85,18 +88,26 @@ class AbstractTabWidget(QWidget):
 
     def __init__(self, parent=None, direction=NORTH):
         super(AbstractTabWidget, self).__init__(parent)
-        QBoxLayout(QBoxLayout.LeftToRight, self)
-        self.layout().setSpacing(0)
+        # set up splitter
+        self.setHandleWidth(0)
+        style_sheet = """
+            QSplitter::handle {
+                border: None;
+            }
+        """
+        self.setStyleSheet(style_sheet)
 
         # create widgets
         self.tab_label_bar_widget = TabLabelBarWidget(self)
         self.main_widget = AbstractSplitterWidget(self)
 
-        self.layout().addWidget(self.tab_label_bar_widget)
-        self.layout().addWidget(self.main_widget)
+        self.addWidget(self.tab_label_bar_widget)
+        self.addWidget(self.main_widget)
 
         # set default attrs
         self.setType(AbstractTabWidget.TYPE)
+        # self.tab_width = 100
+        # self.tab_height = 35
 
         # set direction
         self.setTabPosition(direction)
@@ -106,77 +117,62 @@ class AbstractTabWidget(QWidget):
 
         self._selected_labels_list = []
 
-    """ DONT REALLY NEED THIS ANY MORE... =("""
-    def updateGUI(self):
-        """
-        Updates the main splitters gui based off of the currently selected
-        labels by the user.
-        """
-        # update stacked
-        all_labels = self.tab_label_bar_widget.getAllLabels()
-        widgets_list = []
-
-        # update label
-        for label in all_labels:
-            if label.is_selected:
-                if self.getType() == AbstractTabWidget.STACKED:
-                    widget = self.__updateStackedGUI(label)
-                elif self.getType() == AbstractTabWidget.DYNAMIC:
-                    widget = self.__updateDynamicGUI(label)
-
-        widgets_list.append(widget)
-
-        self.main_widget.isolateWidgets(widgets_list)
-
-    def __updateStackedGUI(self, label):
-        """
-        Update event for the GUI when it is set to STACKED mode
-
-        Args:
-            label
-        returns the widget
-        """
-        # clear all tabs
-
-        return label.tab_widget
-
-        # # clear all tabs
-        # self.tab_label_bar_widget.clearSelectedTabs()
-        #
-        # # reselect tabs
-        # for label in self.getSelectedLabelsList():
-        #     # update tabs
-        #     label.is_selected = True
-        #
-        # widgets_list = [label.tab_widget for label in self.getSelectedLabelsList()]
-        # self.main_widget.isolateWidgets(widgets_list)
-
-    def __updateDynamicGUI(self, label):
-        """
-        Update event for the GUI when it is set to STACKED mode
-        """
-        return
-
     """ UTILS """
     def setTabPosition(self, direction):
         """
-        Sets position of the tab label bar.
+        Sets the orientation of the tab bar relative to the main widget.
+        This is done by setting the direction on this widget, and then
+        setting the layout direction on the tab label bar widget
+
+        Args:
+            direction (QVBoxLayout.DIRECTION): The direction that this widget
+                should be layed out in.  Where the tab label bar will always be
+                the first widget added
         """
-        self.direction = direction
+        self.tab_direction = direction
 
         if direction == AbstractTabWidget.NORTH:
-            self.layout().setDirection(QBoxLayout.TopToBottom)
+            self.setDirection(QBoxLayout.TopToBottom)
             self.tab_label_bar_widget.layout().setDirection(QBoxLayout.LeftToRight)
         elif direction == AbstractTabWidget.SOUTH:
-            self.layout().setDirection(QBoxLayout.BottomToTop)
+            self.setDirection(QBoxLayout.BottomToTop)
             self.tab_label_bar_widget.layout().setDirection(QBoxLayout.LeftToRight)
         elif direction == AbstractTabWidget.EAST:
-            self.layout().setDirection(QBoxLayout.RightToLeft)
+            self.setDirection(QBoxLayout.RightToLeft)
             self.tab_label_bar_widget.layout().setDirection(QBoxLayout.TopToBottom)
         elif direction == AbstractTabWidget.WEST:
-            self.layout().setDirection(QBoxLayout.LeftToRight)
+            self.setDirection(QBoxLayout.LeftToRight)
             self.tab_label_bar_widget.layout().setDirection(QBoxLayout.TopToBottom)
         self.tab_label_bar_widget.updateStyleSheets()
+
+    def getDirection(self):
+        return self._direction
+
+    def setDirection(self, direction):
+        """
+        Sets the current direction this widget.  This is the orientation of
+        where the tab labels will be vs where the main widget will be, where
+        the tab labels bar will always be the first widget.
+        """
+        self._direction = direction
+        self.main_widget.setParent(None)
+        self.tab_label_bar_widget.setParent(None)
+        if direction == QBoxLayout.LeftToRight:
+            self.addWidget(self.tab_label_bar_widget)
+            self.addWidget(self.main_widget)
+            self.setOrientation(Qt.Horizontal)
+        elif direction == QBoxLayout.RightToLeft:
+            self.addWidget(self.main_widget)
+            self.addWidget(self.tab_label_bar_widget)
+            self.setOrientation(Qt.Horizontal)
+        elif direction == QBoxLayout.TopToBottom:
+            self.addWidget(self.tab_label_bar_widget)
+            self.addWidget(self.main_widget)
+            self.setOrientation(Qt.Vertical)
+        elif direction == QBoxLayout.BottomToTop:
+            self.addWidget(self.main_widget)
+            self.addWidget(self.tab_label_bar_widget)
+            self.setOrientation(Qt.Vertical)
 
     def insertTab(self, index, widget, name, tab_label=None):
         """
@@ -253,6 +249,23 @@ class AbstractTabWidget(QWidget):
         # needs to pick which to update...
         self.__dynamicWidgetFunction(widget, label, *args, **kwargs)
 
+    """ EVENTS """
+    def showEvent(self, event):
+        # super(AbstractTabWidget, self).showEvent(event)
+        # direction = self.getDirection()
+        # all_labels = self.tab_label_bar_widget.getAllLabels()
+        #
+        # # horizontal
+        # if direction in [QBoxLayout.LeftToRight, QBoxLayout.RightToLeft]:
+        #     for label in all_labels:
+        #         label.setFixedHeight(self.tab_width)
+        #     pass
+        # # vertical
+        # elif direction in [QBoxLayout.TopToBottom, QBoxLayout.BottomToTop]:
+        #     for label in all_labels:
+        #         label.setFixedWidth(self.tab_height)
+        return AbstractSplitterWidget.showEvent(self, event)
+
     """ PROPERTIES """
     def setMultiSelect(self, enabled):
         self._multi_select = enabled
@@ -288,7 +301,7 @@ class AbstractTabWidget(QWidget):
         if hasattr(self, 'tab_label_bar_widget'):
             self.tab_label_bar_widget.setParent(None)
         self.tab_label_bar_widget = TabLabelBarWidget(self)
-        self.layout().insertWidget(0, self.tab_label_bar_widget)
+        self.insertWidget(0, self.tab_label_bar_widget)
 
         # clear layout
         self.main_widget.clear()
@@ -329,12 +342,28 @@ class AbstractTabWidget(QWidget):
         self.getSelectedLabelsList().remove(label)
 
     @property
-    def direction(self):
-        return self._direction
+    def tab_direction(self):
+        return self._tab_direction
 
-    @direction.setter
-    def direction(self, direction):
-        self._direction = direction
+    @tab_direction.setter
+    def tab_direction(self, tab_direction):
+        self._tab_direction = tab_direction
+
+    @property
+    def tab_width(self):
+        return self._tab_width
+
+    @tab_width.setter
+    def tab_width(self, tab_width):
+        self._tab_width = tab_width
+
+    @property
+    def tab_height(self):
+        return self._tab_height
+
+    @tab_height.setter
+    def tab_height(self, tab_height):
+        self._tab_height = tab_height
 
 
 class TabLabelBarWidget(QWidget):
@@ -402,7 +431,6 @@ class TabLabelWidget(QLabel):
         self.is_selected = False
         TabLabelWidget.setupStyleSheet(self)
         self.setMinimumSize(35, 35)
-        #self.setSizePolicy()
 
     @staticmethod
     def setupStyleSheet(item):
@@ -411,7 +439,7 @@ class TabLabelWidget(QLabel):
 
         """
         tab_widget = getWidgetAncestor(item, AbstractTabWidget)
-        direction = tab_widget.direction
+        direction = tab_widget.tab_direction
         style_sheet_args = [
             repr(AbstractTabWidget.OUTLINE_COLOR),
             repr(AbstractTabWidget.SELECTED_COLOR),
