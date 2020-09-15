@@ -10,7 +10,7 @@ TODO:
 
 """
 
-from cgwidgets.widgets import BaseTabWidget
+from cgwidgets.widgets import TansuTabWidget
 
 from PyQt5.QtWidgets import  (
     QWidget, QLabel, QHBoxLayout, QLineEdit, QPushButton
@@ -23,7 +23,7 @@ except ModuleNotFoundError:
     pass
 
 
-class NodeShapeAttrsTab(BaseTabWidget):
+class NodeShapeAttrsTab(TansuTabWidget):
     """
     Widget that holds all of the shape attributes available for the user to
     adjust on the node
@@ -39,8 +39,8 @@ class NodeShapeAttrsTab(BaseTabWidget):
 
     def __init__(self, parent, node):
         super(NodeShapeAttrsTab, self).__init__(parent)
-        self.setType(BaseTabWidget.STACKED)
-        self.setTabPosition(BaseTabWidget.WEST)
+        self.setType(TansuTabWidget.STACKED)
+        self.setTabPosition(TansuTabWidget.WEST)
         self.setMultiSelect(True)
         self.setMultiSelectDirection(Qt.Vertical)
         self.setNode(node)
