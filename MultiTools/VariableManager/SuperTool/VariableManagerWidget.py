@@ -18,6 +18,12 @@ except ImportError:
     import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
     import UniqueName, FormMaster, Utils
 
+from cgwidgets.settings.colors import (
+    RGBA_ERROR,
+    RGBA_TANSU_HANDLE
+)
+
+from cgwidgets.widgets import BaseTansuWidget
 
 from .ItemTypes import (
     MASTER_ITEM,
@@ -55,18 +61,11 @@ from Utils2.colors import(
     RGBA_KATANA_LOCAL_YELLOW,
     RGBA_TEXT_COLOR
 )
-
-from cgwidgets.settings.colors import (
-    RGBA_ERROR,
-    RGBA_TANSU_HANDLE
-)
-
 from Widgets2 import(
     AbstractComboBox,
     AbstractFileBrowser,
     AbstractNodegraphWidget,
     AbstractParametersDisplayWidget,
-    BaseTansuWidget
 )
 
 from Widgets2.AbstractSuperToolEditor import iParameter
