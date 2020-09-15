@@ -25,6 +25,8 @@ from cgwidgets.settings.colors import (
 
 from cgwidgets.widgets import BaseTansuWidget
 
+from cgwidgets.utils import updateStyleSheet
+
 from .ItemTypes import (
     MASTER_ITEM,
     PATTERN_ITEM,
@@ -910,9 +912,7 @@ class VariableManagerBrowser(QTreeWidget):
         self.setProperty(property, value)
 
         # update stylesheet
-        self.style().unpolish(self)
-        self.style().polish(self)
-        self.update()
+        updateStyleSheet(self)
 
     def __reparentItem(self, item, new_parent_item, index=0):
         """

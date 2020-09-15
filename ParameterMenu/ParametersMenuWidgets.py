@@ -9,6 +9,8 @@ from Utils2.colors import RGBA_SELECTION_BG
 
 from .NodeShapeAttributesWidget import NodeShapeAttrsTab
 
+from cgwidgets.utils import updateStyleSheet
+
 
 class ParametersMenuButton(QLabel):
     """
@@ -78,9 +80,7 @@ class ParametersMenuButton(QLabel):
             self.__setPixmap(BEBOP_OFF_JPG)
 
         # update style sheet
-        self.style().unpolish(self)
-        self.style().polish(self)
-        self.update()
+        updateStyleSheet(self)
 
     def isPressed(self):
         return self._is_pressed
