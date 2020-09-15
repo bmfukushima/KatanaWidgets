@@ -7,7 +7,7 @@ except ModuleNotFoundError:
     pass
 
 
-from Utils2 import getWidgetAncestor
+from cgwidgets.utils import getWidgetAncestor
 
 
 class AbstractNodegraphWidget(QWidget):

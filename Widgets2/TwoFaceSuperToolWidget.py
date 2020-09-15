@@ -9,7 +9,7 @@ except ModuleNotFoundError:
 # local import... because PYTHONPATH is not registered yet
 from .AbstractSuperToolEditor import AbstractSuperToolEditor
 
-from Widgets2 import AbstractTabWidget
+from cgwidgets.widgets import BaseTabWidget
 
 
 class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
@@ -47,8 +47,8 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
         QVBoxLayout(self)
 
         self.main_widget = QStackedWidget(self)
-        self._design_widget = AbstractTabWidget(self)
-        #self._design_widget.setType(AbstractTabWidget.STACKED)
+        self._design_widget = BaseTabWidget(self)
+        #self._design_widget.setType(BaseTabWidget.STACKED)
         self._view_widget = TwoFacedViewWidget(self)
         resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
 

@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QEvent
 
-from Utils2 import getWidgetAncestor
+from cgwidgets.utils import getWidgetAncestor
 
 try:
     from UI4.Widgets import PanelScrollArea

@@ -63,7 +63,7 @@ from Widgets2 import(
     AbstractFileBrowser,
     AbstractNodegraphWidget,
     AbstractParametersDisplayWidget,
-    AbstractSplitterWidget
+    BaseSplitterWidget
 )
 
 from Widgets2.AbstractSuperToolEditor import iParameter
@@ -128,7 +128,7 @@ class VariableManagerWidget(QWidget):
         self.r2_hbox = QHBoxLayout(self.r2_widget)
         self.r2_hbox.addWidget(self.publish_dir)
 
-        self.splitter = AbstractSplitterWidget(self, orientation=Qt.Vertical)
+        self.splitter = BaseSplitterWidget(self, orientation=Qt.Vertical)
         self.splitter.setObjectName('main_splitter')
 
         # row 2.1
@@ -177,7 +177,7 @@ class VariableManagerWidget(QWidget):
         widget.setLayout(vbox)
 
         # Create Widgets
-        self.variable_splitter = AbstractSplitterWidget(self, orientation=Qt.Horizontal)
+        self.variable_splitter = BaseSplitterWidget(self, orientation=Qt.Horizontal)
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
         self.variable_browser_widget.setObjectName("Variable Browser Widget")
