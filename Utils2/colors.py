@@ -1,4 +1,4 @@
-from cgwidgets.utils import multiplyRGBAValues
+from cgwidgets.settings.colors import multiplyRGBAValues
 
 ################################
 #########    COLORS    ###########

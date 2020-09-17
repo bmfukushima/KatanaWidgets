@@ -1914,7 +1914,6 @@ class VariableManagerBrowser(QTreeWidget):
 
         elif event.key() == 96:
             # ~ Tilda pressed
-            print('2')
             self.main_widget.variable_manager_widget.splitter.toggleSoloViewView()
 
         return QTreeWidget.keyPressEvent(self, event, *args, **kwargs)

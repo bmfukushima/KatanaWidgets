@@ -7,7 +7,7 @@ except ModuleNotFoundError:
     pass
 
 
-from cgwidgets.utils import getWidgetAncestor
+from cgwidgets.utils import getWidgetAncestor, getWidgetUnderCursor
 
 
 class AbstractNodegraphWidget(QWidget):
@@ -29,12 +29,14 @@ class AbstractNodegraphWidget(QWidget):
         widget (nodegraph widget): The actual nodegraph widget where users
             can manipulate nodes
     """
+
     def __init__(self, parent=None, display_menus=True, node=None):
         super(AbstractNodegraphWidget, self).__init__(parent)
         QVBoxLayout(self)
 
         # set up attrs
         self.setNode(node)
+        self._is_scrolling = False
 
         # create node graph
         self.setTab(self.__createNodegraph())
@@ -87,10 +89,18 @@ class AbstractNodegraphWidget(QWidget):
 
     """ WHEEL EVENT OVERRIDES """
     def wheelEventFilter(self, obj, event):
-        # scroll wheel
-        if obj == self.getPanel():
+        #scroll wheel  and AbstractNodegraphWidget.is_scrolling is True
+        current_widget = getWidgetUnderCursor()
+        if current_widget == self.getWidget():
             if event.type() == QEvent.Wheel:
                 modifiers = event.modifiers()
+                # block double scroll ( params panel event )
+                if obj == self.panel_scroll_area.viewport():
+                    if modifiers == Qt.ControlModifier:
+                        return False
+                    return True
+
+                # do scrolling ( Nodegraph event )
                 if modifiers == Qt.ControlModifier:
                     self.enableScrollWheel(False)
                     return False
@@ -98,16 +108,6 @@ class AbstractNodegraphWidget(QWidget):
                     self.enableScrollWheel(True)
                     return False
                 event.ignore()
-
-        # scroll area panel
-        if obj == self.panel_scroll_area.viewport():
-            if event.type() == QEvent.Wheel:
-                modifiers = event.modifiers()
-                if modifiers == Qt.ControlModifier:
-                    self.enableScrollWheel(False)
-                    return False
-                else:
-                    return True
 
     def enableScrollWheel(self, enable):
         """
