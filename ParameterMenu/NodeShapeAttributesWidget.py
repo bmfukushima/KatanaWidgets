@@ -40,7 +40,7 @@ class NodeShapeAttrsTab(TabTansuWidget):
     def __init__(self, parent, node):
         super(NodeShapeAttrsTab, self).__init__(parent)
         self.setType(TabTansuWidget.STACKED)
-        self.setTabPosition(TabTansuWidget.WEST)
+        self.setTabBarPosition(TabTansuWidget.WEST)
         self.setMultiSelect(True)
         self.setMultiSelectDirection(Qt.Vertical)
         self.setNode(node)
@@ -58,7 +58,7 @@ class NodeShapeAttrsTab(TabTansuWidget):
 
             # create widget
             widget = NodeShapeAttrsWidget(self, node, shape_name, default_value, value_type)
-            self.insertTab(i, widget, shape_name)
+            self.insertTab(i, shape_name, widget)
 
     def getNode(self):
         return self._node

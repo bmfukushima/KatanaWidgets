@@ -79,10 +79,10 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
         self.node_editor = NodeEditor(self, self.node, self.main_node)
 
-        self.getDesignWidget().insertTab(0, self.node_editor, 'Params')
-        self.getDesignWidget().insertTab(1, QLabel('Events'), 'Events')
-        self.getDesignWidget().insertTab(2, QLabel('GUI Designer'), 'GUI Designer')
-        self.getDesignWidget().insertTab(3, QLabel('User Params'), 'User Params')
+        self.getDesignWidget().insertTab(0, 'Params', self.node_editor)
+        self.getDesignWidget().insertTab(1, 'Events', QLabel('Events'))
+        self.getDesignWidget().insertTab(2, 'GUI Designer', QLabel('GUI Designer'))
+        self.getDesignWidget().insertTab(3, 'User Params', QLabel('User Params'))
 
         self.getDesignWidget().setTabLabelBarToDefaultSize()
         #self.getDesignWidget().show()

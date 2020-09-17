@@ -23,7 +23,7 @@ from cgwidgets.settings.colors import (
     RGBA_TANSU_HANDLE
 )
 
-from cgwidgets.widgets import BaseTansuWidget
+from cgwidgets.widgets import BaseTansuWidget, ListInputWidget
 
 from cgwidgets.utils import updateStyleSheet
 
@@ -64,7 +64,6 @@ from Utils2.colors import(
     RGBA_TEXT_COLOR
 )
 from Widgets2 import(
-    AbstractComboBox,
     AbstractFileBrowser,
     AbstractNodegraphWidget,
     AbstractParametersDisplayWidget,
@@ -427,7 +426,7 @@ class VariableManagerCreateNewItemTextWidget(QLineEdit):
         self._is_toggled = is_toggled
 
 
-class VariableManagerGSVMenu(AbstractComboBox):
+class VariableManagerGSVMenu(ListInputWidget):
     """
     Drop down menu with autocomplete for the user to select
     what GSV that they wish for the Variable Manager to control
@@ -498,7 +497,7 @@ class VariableManagerGSVMenu(AbstractComboBox):
         self.setExistsFlag(False)
         self.update()
         self.setExistsFlag(True)
-        return AbstractComboBox.mousePressEvent(self, *args, **kwargs)
+        return ListInputWidget.mousePressEvent(self, *args, **kwargs)
 
     def indexChanged(self, event):
         """
@@ -527,7 +526,7 @@ If you choose to accept you will change the GSV:
                 )
 
 
-class VariableManagerNodeMenu(AbstractComboBox):
+class VariableManagerNodeMenu(ListInputWidget):
     """
     Drop down menu with autocomplete for the user to select
     what Node Type that they wish for the Variable Manager to control
@@ -604,7 +603,7 @@ class VariableManagerNodeMenu(AbstractComboBox):
         self.setExistsFlag(False)
         self.update()
         self.setExistsFlag(True)
-        return AbstractComboBox.mousePressEvent(self, *args, **kwargs)
+        return ListInputWidget.mousePressEvent(self, *args, **kwargs)
 
     def indexChanged(self):
         """

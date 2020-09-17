@@ -1,53 +1,47 @@
 import sys
 
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QApplication, QLineEdit, QWidget, QVBoxLayout,
-    QHBoxLayout, QLabel, QListWidget, QListWidgetItem,
-    QSplitter
+    QHBoxLayout, QLabel, QPushButton
 )
 
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QCursor
-from Widgets2 import AbstractComboBox
+from qtpy.QtCore import Qt
+from qtpy.QtGui import QCursor
+from cgwidgets.widgets import ListInputWidget
+
+from cgwidgets.widgets import TabTansuWidget
 
 
 class EventWidget(QWidget):
     """
     The main widget for setting up the events triggers on the node.
-    HBox
-        |-- VBox
-        |       |-- NewEventButton
-        |       |-- EventListWidget
-        |-- VBox
-                |-- EventArgsWidget
-                        |-- VBox
-                            |-- EventTypesMenu
-                            |-- Script Argument
-                            |-- EventTypeArgumentsWidget
+
     """
     def __init__(self, parent=None):
         super(EventWidget, self).__init__(parent)
-        QHBoxLayout(self)
-        self.splitter = QSplitter()
-        self.splitter.setOrientation(Qt.Horizontal)
+        QVBoxLayout(self)
 
-        self.events_list_widget = EventListWidget(self)
+        self.new_event_button = QPushButton('new_event')
+        self.new_event_button.clicked.connect(self.createNewEvent)
+        self.main_widget = self.setupEventsWidget()
         self.events_args_widget = EventsArgsMainWidget(self)
 
-        self.splitter.addWidget(self.events_list_widget)
-        self.splitter.addWidget(self.events_args_widget)
-        self.layout().addWidget(self.splitter)
-        self.splitter.setSizes([300, 700])
+        self.layout().addWidget(self.new_event_button)
+        self.layout().addWidget(self.main_widget)
 
+    def createNewEvent(self):
+        self.main_widget.insertTab(0, "New Event")
 
-class EventListWidget(QListWidget):
-    def __init__(self, parent=None):
-        super(EventListWidget, self).__init__(parent)
+    def setupEventsWidget(self):
+        main_widget = TabTansuWidget(self)
+        main_widget.setTabBarPosition(TabTansuWidget.WEST)
+        main_widget.setType(
+            TabTansuWidget.DYNAMIC,
+            dynamic_widget=EventsArgsMainWidget,
+            dynamic_function=EventsArgsMainWidget.updateGUI
+        )
 
-
-class EventListWidgetItem(QListWidgetItem):
-    def __init__(self, parent=None):
-        super(EventListWidgetItem, self).__init__(parent)
+        return main_widget
 
 
 class EventsArgsMainWidget(QWidget):
@@ -115,8 +109,20 @@ class EventsArgsMainWidget(QWidget):
     def getEventType(self):
         return self._event_type
 
+    @staticmethod
+    def updateGUI(widget, label):
+        """
+        widget (tab widget widget)
+        label (tab bar label)
+        """
+        print(widget, label)
+        if label:
+            widget.setTitle(label.text())
+            # update
+            #widget.getMainWidget().label.setText(label.text())
 
-class EventTypesMenu(AbstractComboBox):
+
+class EventTypesMenu(ListInputWidget):
     """
     Drop down menu containing all of the different event types
     that the user can choose from for a specific operation
@@ -189,9 +195,58 @@ class EventTypeArgWidget(QWidget):
         self.layout().addWidget(self.lineedit)
 
 
-app = QApplication(sys.argv)
-mw = EventWidget()
-mw.show()
-mw.move(QCursor().pos())
-sys.exit(app.exec_())
+if __name__ == "__main__":
+    # import sys
+    # from PyQt5.QtWidgets import QApplication
+    # from PyQt5.QtGui import QCursor
+    # app = QApplication(sys.argv)
+    #
+    # w = TabTansuWidget()
+    #
+    # # stacked widget example
+    # w.setType(TabTansuWidget.STACKED)
+    # w.setTabBarPosition(TabTansuWidget.WEST)
+    # w.setMultiSelect(True)
+    # w.setMultiSelectDirection(Qt.Horizontal)
+    #
+    # # for x in range(3):
+    # #     nw = BaseTansuWidget(w)
+    # #     for b in ['a','b','c']:
+    # #         nw.addWidget(QLabel(b))
+    # #     w.insertTab(0, nw, str(x))
+    #
+    # #
+    #
+    #
+    # # # dynamic widget example
+    # dw = TabDynamicWidgetExample
+    # w.setType(
+    #     TabTansuWidget.DYNAMIC,
+    #     dynamic_widget=TabDynamicWidgetExample,
+    #     dynamic_function=TabDynamicWidgetExample.updateGUI
+    # )
+    # for x in range(3):
+    #     nw = QLabel(str(x))
+    #     w.insertTab(0, nw, str(x))
+    # # for x in range(3):
+    # #     nw = BaseTansuWidget(w)
+    # #     for b in ['a','b','c']:
+    # #         nw.addWidget(QLabel(b))
+    # #     w.insertTab(0, nw, str(x))
+    #
+    #
+    #
+    # w.resize(500,500)
+    # w.show()
+    # #w.setCurrentIndex(0)
+    # w.setTabLabelBarToDefaultSize()
+    # #w.main_widget.setSizes([200,800])
+    # w.move(QCursor.pos())
+    # sys.exit(app.exec_())
+
+    app = QApplication(sys.argv)
+    mw = EventWidget()
+    mw.show()
+    mw.move(QCursor().pos())
+    sys.exit(app.exec_())
 

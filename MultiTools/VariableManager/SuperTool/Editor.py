@@ -127,10 +127,9 @@ from .Settings import (
     )
 
 
-from .VariableManagerWidget import VariableManagerWidget, VariableManagerBrowser
+from .VariableManagerWidget import VariableManagerWidget
 
 from .Utils import (
-    checkBesterestVersion,
     getMainWidget,
     getNextVersion,
     goToNode,
@@ -143,6 +142,7 @@ from cgwidgets.settings.colors import(
     RGBA_ACCEPT_HOVER,
     RGBA_MAYBE_HOVER
 )
+from cgwidgets.widgets import ListInputWidget
 
 from Utils2 import(
     disconnectNode,
@@ -153,7 +153,6 @@ from Utils2 import(
 
 from Widgets2 import (
     AbstractSuperToolEditor,
-    AbstractComboBox,
     AbstractUserBooleanWidget
 )
 
@@ -1128,12 +1127,12 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self._gui = gui
 
 
-class VersionsDisplayMenu(AbstractComboBox):
+class VersionsDisplayMenu(ListInputWidget):
     '''
     Inside of the VersionsDisplayWidget, this is the drop down
     menu that will display the versions to the user to be selected
 
-    Need to make this inherit from AbstractComboBox...
+    Need to make this inherit from ListInputWidget...
     notes_label (QLabel): The widget that will display the notes
         to the user from a specific version of the publish.
     '''

@@ -7,7 +7,6 @@ really think this through very well lmao)
 """
 
 
-from .AbstractComboBox import AbstractComboBox
 from .AbstractFileBrowser import AbstractFileBrowser
 from .AbstractNodegraphWidget import AbstractNodegraphWidget
 from .AbstractParametersDisplayWidget import AbstractParametersDisplayWidget
