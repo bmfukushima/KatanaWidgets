@@ -45,7 +45,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
         self.main_widget = QStackedWidget(self)
         self._design_widget = TabTansuWidget(self)
-        #self._design_widget.setType(TabTansuWidget.STACKED)
+        self._design_widget.setObjectName('design widget')
         self._view_widget = TwoFacedViewWidget(self)
         resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
 

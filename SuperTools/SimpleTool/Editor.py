@@ -51,11 +51,12 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QEvent
 
 from Widgets2 import (
-    AbstractSuperToolEditor,
     AbstractNodegraphWidget,
     AbstractParametersDisplayWidget,
     TwoFacedSuperToolWidget
 )
+
+from cgwidgets.widgets import BaseTansuWidget
 
 from Katana import UI4
 
@@ -75,14 +76,16 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         # set up attrs
         self.node = node
         self.main_node = node.getChildByIndex(0)
-        #layout = QVBoxLayout(self)
+
         self.node_editor = NodeEditor(self, self.node, self.main_node)
-        #layout.addWidget(self.node_editor)
+
         self.getDesignWidget().insertTab(0, self.node_editor, 'Params')
         self.getDesignWidget().insertTab(1, QLabel('Events'), 'Events')
         self.getDesignWidget().insertTab(2, QLabel('GUI Designer'), 'GUI Designer')
         self.getDesignWidget().insertTab(3, QLabel('User Params'), 'User Params')
-        #self.getDesignWidget().insertTab(1, QLabel('Events'), 'Events')
+
+        self.getDesignWidget().setTabLabelBarToDefaultSize()
+        #self.getDesignWidget().show()
 
     def getEventTypes(self):
         """
@@ -100,21 +103,25 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
                     arg_note = arg['note']
                     print('-----|', arg_name, arg_note)
 
+    def showEvent(self, event):
+        self.getDesignWidget().show()
+        return TwoFacedSuperToolWidget.showEvent(self, event)
 
-class NodeEditor(QWidget):
+
+class NodeEditor(BaseTansuWidget):
     def __init__(self, parent, node, main_node):
         super(NodeEditor, self).__init__(parent)
+        self.setOrientation(Qt.Vertical)
         self.node = node
         self.main_node = main_node
 
         # create gui
-        layout = QVBoxLayout(self)
-
         self.nodegraph_widget = NodegraphWidget(self, node=node)
         self.parameters_widget = ParametersDisplayWidget(self, node=self.main_node)
 
-        layout.addWidget(self.nodegraph_widget)
-        layout.addWidget(self.parameters_widget)
+        self.addWidget(QLabel("klasjdfklsajflasfklja"))
+        self.addWidget(self.nodegraph_widget)
+        self.addWidget(self.parameters_widget)
 
         self.setFocusPolicy(Qt.WheelFocus)
 
