@@ -7,24 +7,32 @@ from qtpy.QtWidgets import (
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor
-from cgwidgets.widgets import ListInputWidget
-
-from cgwidgets.widgets import TabTansuWidget
+from cgwidgets.widgets import ListInputWidget, TabLabelWidget, TabTansuWidget
 
 
 class EventWidget(QWidget):
     """
     The main widget for setting up the events triggers on the node.
-
+    Widgets:
+        | -- VBox
+                | -- new_event_button (PushButton)
+                | -- main_widget (TabTansuWidget)
+                        | -- label type (EventsLabelWidget --> TansuLabelWidget)
+                        | -- Dynamic Widget (EventsArgsMainWidget --> QWidget)
+                            | -- VBox
+                                    | -- events_type_menu ( EventTypesMenu)
+                                    | -- script_widget (EventTypeArgWidget)
+                                    | -- dynamic_args_widget (EventTypeDynamicArgsWidget)
+                                            | -* EventTypeArgWidget
     """
     def __init__(self, parent=None):
         super(EventWidget, self).__init__(parent)
-        QVBoxLayout(self)
 
+        # setup layout
+        QVBoxLayout(self)
         self.new_event_button = QPushButton('new_event')
         self.new_event_button.clicked.connect(self.createNewEvent)
         self.main_widget = self.setupEventsWidget()
-        self.events_args_widget = EventsArgsMainWidget(self)
 
         self.layout().addWidget(self.new_event_button)
         self.layout().addWidget(self.main_widget)
@@ -33,7 +41,11 @@ class EventWidget(QWidget):
         self.main_widget.insertTab(0, "New Event")
 
     def setupEventsWidget(self):
+        """
+        Sets up the main Tansu widget that is showing the events to the user
+        """
         main_widget = TabTansuWidget(self)
+        main_widget.setTabLabelInstanceType(EventsLabelWidget)
         main_widget.setTabBarPosition(TabTansuWidget.WEST)
         main_widget.setType(
             TabTansuWidget.DYNAMIC,
@@ -42,6 +54,16 @@ class EventWidget(QWidget):
         )
 
         return main_widget
+
+
+class EventsLabelWidget(TabLabelWidget):
+    """
+    The label that is displayed back to the user to be selected to show off
+    this events arguments
+    """
+    def __init__(self, parent, text, index):
+        super(EventsLabelWidget, self).__init__(parent, text, index)
+        self.setReadOnly(False)
 
 
 class EventsArgsMainWidget(QWidget):
