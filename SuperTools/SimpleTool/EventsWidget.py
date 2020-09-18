@@ -1,14 +1,22 @@
 """
 TODO:
-    *    How to handle script widget?
-            same as args?
-    *   EventType change
-            errors out if invalid selection?
+    *   Tansu dynamic...
+            Show null widget to start?
+    *   Test multi select
+    *   Build out uber function?
+    *   Model
+            {
+                nodeid
+                eventid
     *   EventsLabelWidget
         --> Context Menu...
-                | -- enable
+                | -- enabled
+                        Set text styles...
                 | -- disable
+                        Set text styles...
                 | -- delete
+                        overlay red/green widet
+                            accept / cancel
         --> editing finished
                 | -- update model
 """
@@ -17,7 +25,7 @@ import sys
 
 from qtpy.QtWidgets import (
     QApplication, QLineEdit, QWidget, QVBoxLayout,
-    QHBoxLayout, QLabel, QPushButton
+    QHBoxLayout, QLabel, QPushButton, QMenu
 )
 
 from qtpy.QtCore import Qt
@@ -120,7 +128,7 @@ class EventWidget(QWidget):
 
     def removeEvent(self, event_item):
         self.getEventsModel().remove(event_item)
-        self.main_widget.removeTab(event_item.index())
+        self.main_widget.removeTab(event_item.getIndex())
         self.updateAllEventItemsIndexes()
         # remove tab label / item
 
@@ -129,7 +137,7 @@ class EventWidget(QWidget):
         Updates all of the event indexes to the correct index in the model
         """
         for index, event_item in enumerate(self.getEventsModel()):
-            event_item.index = index
+            event_item.setIndex(index)
 
 
 class EventsLabelWidget(TabLabelWidget):
@@ -141,6 +149,7 @@ class EventsLabelWidget(TabLabelWidget):
         super(EventsLabelWidget, self).__init__(parent, text, index)
         self.setReadOnly(False)
         self.editingFinished.connect(self.nameChanged)
+        self.setStyleSheet('background-color: rgb(128,128,0)')
 
     def nameChanged(self):
         self.item().setName(self.text())
@@ -151,6 +160,39 @@ class EventsLabelWidget(TabLabelWidget):
 
     def item(self):
         return self._item
+
+    def setItemEnable(self, enabled):
+        self.item().setEnable(enabled)
+
+    def deleteItem(self):
+        main_widget = getWidgetAncestor(self, EventWidget)
+        main_widget.removeEvent(self.item())
+        print ("are you sure?")
+
+    def contextMenuEvent(self, event):
+        # create menu
+        menu = QMenu(self)
+        if self.item().getEnable() is True:
+            set_disabled = menu.addAction("Disable")
+        else:
+            set_enabled = menu.addAction("Enable")
+        menu.addSeparator()
+        delete = menu.addAction("Delete")
+
+        # do menu actions
+        action = menu.exec_(self.mapToGlobal(event.pos()))
+
+        try:
+            if action == set_disabled:
+                self.setItemEnable(False)
+
+            if action == set_enabled:
+                self.setItemEnable(True)
+        except UnboundLocalError:
+            pass
+
+        if action == delete:
+            self.deleteItem()
 
 
 class UserInputMainWidget(QWidget):
@@ -213,10 +255,11 @@ class UserInputMainWidget(QWidget):
                     #print('-----|', arg_name, arg_note)
 
     def setEventType(self, event_type):
-        self._event_type = event_type
-        self.dynamic_args_widget.event_type = event_type
-        self.dynamic_args_widget.update()
-        self.item().setEventType(event_type)
+        if hasattr(self, '_item'):
+            self._event_type = event_type
+            self.dynamic_args_widget.event_type = event_type
+            self.dynamic_args_widget.update()
+            self.item().setEventType(event_type)
 
     def getEventType(self):
         return self._event_type
@@ -274,6 +317,10 @@ class EventTypeInputWidget(ListInputWidget):
         self.setSelectionChangedEmitEvent(self.eventTypeChanged)
 
     def eventTypeChanged(self):
+        """
+        Event that is triggered when the user changes the event type
+        selection.
+        """
         event_type = str(self.currentText())
         if event_type:
             if event_type in self.getItemList():
@@ -361,7 +408,7 @@ class ArgInputWidget(QWidget):
         self.label = QLabel(name)
         self.label.setToolTip(note)
         self.lineedit = QLineEdit()
-        self.lineedit.editingFinished.connect(self.userInput)
+        self.lineedit.editingFinished.connect(self.userInputEvent)
         self.layout().addWidget(self.label)
         self.layout().addWidget(self.lineedit)
 
@@ -371,7 +418,11 @@ class ArgInputWidget(QWidget):
     def currentText(self):
         return self.lineedit.text()
 
-    def userInput(self):
+    def userInputEvent(self):
+        """
+        When the user inputs something into the arg, this event is triggered
+        updating the model item
+        """
         main_widget = getWidgetAncestor(self, UserInputMainWidget)
         main_widget.item().setArg(self.arg, self.currentText())
 
@@ -393,7 +444,7 @@ class InputScriptWidget(ArgInputWidget):
         note = "path on disk to the script you want to run"
         super(InputScriptWidget, self).__init__(parent, name=name, note=note)
 
-    def userInput(self):
+    def userInputEvent(self):
         main_widget = getWidgetAncestor(self, UserInputMainWidget)
         main_widget.item().setScript(self.currentText())
 
@@ -405,14 +456,17 @@ class EventTypeModelItem(dict):
     script (path): path on disk to .py file to run as script
     args (dict): dictionary of all the args
     index (int): current index that this item is holding in the model
+    enabled (bool): If this event should be enabledd/disabled
     """
-    def __init__(self, name=None, event_type=None, script=None, args=None):
+    def __init__(self, name=None, event_type=None, script=None, args=None, index=0, enabled=True):
         self['name'] = name
         self['event_type'] = event_type
         self['script'] = script
         if not args:
             args = {}
         self['args'] = args
+        self['index'] = index
+        self['enabled'] = enabled
 
     def setName(self, name):
         self['name'] = name
@@ -432,13 +486,17 @@ class EventTypeModelItem(dict):
     def getScript(self):
         return self['script']
 
-    @property
-    def index(self):
-        return self._index
+    def setEnable(self, enabled):
+        self['enabled'] = enabled
 
-    @index.setter
-    def index(self, index):
-        self._index = index
+    def getEnable(self):
+        return self['enabled']
+
+    def getIndex(self):
+        return self['index']
+
+    def setIndex(self, index):
+        self['index'] = index
 
     """ args"""
     def setArg(self, arg, value):
