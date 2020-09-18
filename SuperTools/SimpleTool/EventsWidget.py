@@ -1,5 +1,9 @@
 """
 TODO:
+    *    How to handle script widget?
+            same as args?
+    *   EventType change
+            errors out if invalid selection?
     *   EventsLabelWidget
         --> Context Menu...
                 | -- enable
@@ -26,23 +30,31 @@ from cgwidgets.utils import getWidgetAncestor
 class EventWidget(QWidget):
     """
     The main widget for setting up the events triggers on the node.
+
+    Attributes:
+        events_model (list): of EventTypeModelItem's.  This list is the model
+            for all of the events.
+
+            All of the tab labels/widgets will automatically call back to this list for
+            updating.
+
     Widgets:
         | -- VBox
                 | -- new_event_button (PushButton)
                 | -- main_widget (TabTansuWidget)
                         | -- label type (EventsLabelWidget --> TansuLabelWidget)
-                        | -- Dynamic Widget (EventsArgsMainWidget --> QWidget)
+                        | -- Dynamic Widget (UserInputMainWidget --> QWidget)
                             | -- VBox
-                                    | -- events_type_menu ( EventTypesMenuWidget)
-                                    | -- script_widget (EventTypeArgWidget)
-                                    | -- dynamic_args_widget (EventTypeDynamicArgsWidget)
-                                            | -* EventTypeArgWidget
+                                    | -- events_type_menu ( EventTypeInputWidget)
+                                    | -- script_widget (ArgInputWidget)
+                                    | -- dynamic_args_widget (ArgsInputMainWidget)
+                                            | -* ArgInputWidget
     """
     def __init__(self, parent=None):
         super(EventWidget, self).__init__(parent)
 
         # setup attrs
-        self._events_list = []
+        self._events_model = []
 
         # setup layout
         QVBoxLayout(self)
@@ -62,8 +74,8 @@ class EventWidget(QWidget):
         main_widget.setTabBarPosition(TabTansuWidget.WEST)
         main_widget.setType(
             TabTansuWidget.DYNAMIC,
-            dynamic_widget=EventsArgsMainWidget,
-            dynamic_function=EventsArgsMainWidget.updateGUI
+            dynamic_widget=UserInputMainWidget,
+            dynamic_function=UserInputMainWidget.updateGUI
         )
 
         return main_widget
@@ -74,21 +86,50 @@ class EventWidget(QWidget):
         """
         # create model item
         new_event_item = EventTypeModelItem()
-        self.insertEventIntoEventsList(new_event_item)
+        self.insertEventIntoEventsModel(new_event_item)
 
         # create new tab label/widget
         tab_label = self.main_widget.insertTab(0, "New Event")
         tab_label.setItem(new_event_item)
 
     """ PROPERTIES """
-    def getEventsList(self):
-        return self._events_list
+    def getEventsModel(self):
+        return self._events_model
 
-    def setEventsList(self, _events_list):
-        return self._events_list
+    def setEventsModel(self, _events_model):
+        return self._events_model
 
-    def insertEventIntoEventsList(self, _event, index=0):
-        self.getEventsList().insert(index, _event)
+    def insertEventIntoEventsModel(self, _event, index=0):
+        """
+        Inserts a new event into the model
+
+        event (EventTypeModelItem): The new event to be added
+        index (int): the index to insert the new item into the model
+        """
+        self.getEventsModel().insert(index, _event)
+        self.updateAllEventItemsIndexes()
+
+    def removeEventByIndex(self, index):
+        """
+        Removes an event by a specified index
+        """
+        self.getEventsModel().pop(index)
+        self.main_widget.removeTab(index)
+        self.updateAllEventItemsIndexes()
+        # remove tab label / item
+
+    def removeEvent(self, event_item):
+        self.getEventsModel().remove(event_item)
+        self.main_widget.removeTab(event_item.index())
+        self.updateAllEventItemsIndexes()
+        # remove tab label / item
+
+    def updateAllEventItemsIndexes(self):
+        """
+        Updates all of the event indexes to the correct index in the model
+        """
+        for index, event_item in enumerate(self.getEventsModel()):
+            event_item.index = index
 
 
 class EventsLabelWidget(TabLabelWidget):
@@ -112,8 +153,10 @@ class EventsLabelWidget(TabLabelWidget):
         return self._item
 
 
-class EventsArgsMainWidget(QWidget):
+class UserInputMainWidget(QWidget):
     """
+    Main widgets for inputting args to the Events widget.  This is the dynamic
+    widget that will be used for the tansu widget.
 
     Attributes:
         events_dict (JSON): json dict containing all of the relevant information for
@@ -132,22 +175,22 @@ class EventsArgsMainWidget(QWidget):
 
     """
     def __init__(self, parent=None):
-        super(EventsArgsMainWidget, self).__init__(parent)
+        super(UserInputMainWidget, self).__init__(parent)
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
 
         self.loadEventTypesDict()
 
         # create events type menu
-        self.events_type_menu = EventTypesMenuWidget(self)
+        self.events_type_menu = EventTypeInputWidget(self)
         event_types = list(self.event_dict.keys())
         self.events_type_menu.populate(event_types)
 
         # create scripts thingy
-        self.script_widget = EventTypeArgWidget(self, "script", "path on disk to the script you want to run")
+        self.script_widget = InputScriptWidget(self)
 
         # create event type args widget
-        self.dynamic_args_widget = EventTypeDynamicArgsWidget(self)
+        self.dynamic_args_widget = ArgsInputMainWidget(self)
 
         self.layout().addWidget(self.events_type_menu)
         self.layout().addWidget(self.script_widget)
@@ -221,35 +264,40 @@ class EventsArgsMainWidget(QWidget):
         return self._item
 
 
-class EventTypesMenuWidget(ListInputWidget):
+class EventTypeInputWidget(ListInputWidget):
     """
     Drop down menu containing all of the different event types
     that the user can choose from for a specific operation
     """
     def __init__(self, parent=None):
-        super(EventTypesMenuWidget, self).__init__(parent)
+        super(EventTypeInputWidget, self).__init__(parent)
         self.setSelectionChangedEmitEvent(self.eventTypeChanged)
 
     def eventTypeChanged(self):
         event_type = str(self.currentText())
         if event_type:
-            self.parent().setEventType(event_type)
-            note = self.parent().event_dict[event_type]['note']
-            self.setToolTip(note)
+            if event_type in self.getItemList():
+                self.parent().setEventType(event_type)
+                note = self.parent().event_dict[event_type]['note']
+                self.setToolTip(note)
+                return
+
+        # if invalid input reset texta
+        self.setCurrentIndexToText(self.previous_text)
 
 
-class EventTypeDynamicArgsWidget(QWidget):
+class ArgsInputMainWidget(QWidget):
     """
     The widget that contains all of the options for a specific event type.  This
     will dynamically populate when the event type changes in the parent.
-    EventTypeDynamicArgsWidget
-        | -* EventTypeArgWidget
+    ArgsInputMainWidget
+        | -* ArgInputWidget
     Attributes:
         widget_dict (dict): key pair values of args to widgets
         event_type (str): the current event type that is set
     """
     def __init__(self, parent=None):
-        super(EventTypeDynamicArgsWidget, self).__init__(parent)
+        super(ArgsInputMainWidget, self).__init__(parent)
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
         self._widget_dict = {}
@@ -269,7 +317,7 @@ class EventTypeDynamicArgsWidget(QWidget):
         for arg in args_list:
             arg_name = arg['arg']
             arg_note = arg['note']
-            widget = EventTypeArgWidget(self, arg_name, arg_note)
+            widget = ArgInputWidget(self, arg_name, arg_note)
             self.layout().addWidget(widget)
             self.widget_dict[arg_name] = widget
 
@@ -294,7 +342,7 @@ class EventTypeDynamicArgsWidget(QWidget):
         self._event_type = event_type
 
 
-class EventTypeArgWidget(QWidget):
+class ArgInputWidget(QWidget):
     """
     One individual arg
 
@@ -304,7 +352,7 @@ class EventTypeArgWidget(QWidget):
 
     """
     def __init__(self, parent=None, name='', note=''):
-        super(EventTypeArgWidget, self).__init__(parent)
+        super(ArgInputWidget, self).__init__(parent)
         # setup args
         self.arg = name
 
@@ -324,7 +372,7 @@ class EventTypeArgWidget(QWidget):
         return self.lineedit.text()
 
     def userInput(self):
-        main_widget = getWidgetAncestor(self, EventsArgsMainWidget)
+        main_widget = getWidgetAncestor(self, UserInputMainWidget)
         main_widget.item().setArg(self.arg, self.currentText())
 
     @property
@@ -336,12 +384,27 @@ class EventTypeArgWidget(QWidget):
         self._arg = arg
 
 
+class InputScriptWidget(ArgInputWidget):
+    """
+    The script input widget
+    """
+    def __init__(self, parent=None):
+        name = 'script'
+        note = "path on disk to the script you want to run"
+        super(InputScriptWidget, self).__init__(parent, name=name, note=note)
+
+    def userInput(self):
+        main_widget = getWidgetAncestor(self, UserInputMainWidget)
+        main_widget.item().setScript(self.currentText())
+
+
 class EventTypeModelItem(dict):
     """
     name (str): name given to this event by the user
     event_type (str): katana event type
     script (path): path on disk to .py file to run as script
     args (dict): dictionary of all the args
+    index (int): current index that this item is holding in the model
     """
     def __init__(self, name=None, event_type=None, script=None, args=None):
         self['name'] = name
@@ -369,6 +432,15 @@ class EventTypeModelItem(dict):
     def getScript(self):
         return self['script']
 
+    @property
+    def index(self):
+        return self._index
+
+    @index.setter
+    def index(self, index):
+        self._index = index
+
+    """ args"""
     def setArg(self, arg, value):
         self['args'][arg] = value
 
