@@ -1,3 +1,14 @@
+"""
+TODO:
+    *   EventsLabelWidget
+        --> Context Menu...
+                | -- enable
+                | -- disable
+                | -- delete
+        --> editing finished
+                | -- update model
+"""
+
 import sys
 
 from qtpy.QtWidgets import (
@@ -8,6 +19,8 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor
 from cgwidgets.widgets import ListInputWidget, TabLabelWidget, TabTansuWidget
+
+from cgwidgets.utils import getWidgetAncestor
 
 
 class EventWidget(QWidget):
@@ -20,7 +33,7 @@ class EventWidget(QWidget):
                         | -- label type (EventsLabelWidget --> TansuLabelWidget)
                         | -- Dynamic Widget (EventsArgsMainWidget --> QWidget)
                             | -- VBox
-                                    | -- events_type_menu ( EventTypesMenu)
+                                    | -- events_type_menu ( EventTypesMenuWidget)
                                     | -- script_widget (EventTypeArgWidget)
                                     | -- dynamic_args_widget (EventTypeDynamicArgsWidget)
                                             | -* EventTypeArgWidget
@@ -28,19 +41,19 @@ class EventWidget(QWidget):
     def __init__(self, parent=None):
         super(EventWidget, self).__init__(parent)
 
+        # setup attrs
+        self._events_list = []
+
         # setup layout
         QVBoxLayout(self)
         self.new_event_button = QPushButton('new_event')
         self.new_event_button.clicked.connect(self.createNewEvent)
-        self.main_widget = self.setupEventsWidget()
+        self.main_widget = self.setupEventsWidgetGUI()
 
         self.layout().addWidget(self.new_event_button)
         self.layout().addWidget(self.main_widget)
 
-    def createNewEvent(self):
-        self.main_widget.insertTab(0, "New Event")
-
-    def setupEventsWidget(self):
+    def setupEventsWidgetGUI(self):
         """
         Sets up the main Tansu widget that is showing the events to the user
         """
@@ -55,6 +68,28 @@ class EventWidget(QWidget):
 
         return main_widget
 
+    def createNewEvent(self):
+        """
+        Creates a new event item
+        """
+        # create model item
+        new_event_item = EventTypeModelItem()
+        self.insertEventIntoEventsList(new_event_item)
+
+        # create new tab label/widget
+        tab_label = self.main_widget.insertTab(0, "New Event")
+        tab_label.setItem(new_event_item)
+
+    """ PROPERTIES """
+    def getEventsList(self):
+        return self._events_list
+
+    def setEventsList(self, _events_list):
+        return self._events_list
+
+    def insertEventIntoEventsList(self, _event, index=0):
+        self.getEventsList().insert(index, _event)
+
 
 class EventsLabelWidget(TabLabelWidget):
     """
@@ -64,6 +99,17 @@ class EventsLabelWidget(TabLabelWidget):
     def __init__(self, parent, text, index):
         super(EventsLabelWidget, self).__init__(parent, text, index)
         self.setReadOnly(False)
+        self.editingFinished.connect(self.nameChanged)
+
+    def nameChanged(self):
+        self.item().setName(self.text())
+
+    """ PROPERTIES """
+    def setItem(self, item):
+        self._item = item
+
+    def item(self):
+        return self._item
 
 
 class EventsArgsMainWidget(QWidget):
@@ -93,7 +139,7 @@ class EventsArgsMainWidget(QWidget):
         self.loadEventTypesDict()
 
         # create events type menu
-        self.events_type_menu = EventTypesMenu(self)
+        self.events_type_menu = EventTypesMenuWidget(self)
         event_types = list(self.event_dict.keys())
         self.events_type_menu.populate(event_types)
 
@@ -116,17 +162,18 @@ class EventsArgsMainWidget(QWidget):
         with open('args.json', 'r') as args:
             self.event_dict = json.load(args)
             for event_type in self.event_dict.keys():
-                print('')
-                print(event_type, self.event_dict[event_type]['note'])
+                #print('')
+                #print(event_type, self.event_dict[event_type]['note'])
                 for arg in self.event_dict[event_type]['args']:
                     arg_name = arg['arg']
                     arg_note = arg['note']
-                    print('-----|', arg_name, arg_note)
+                    #print('-----|', arg_name, arg_note)
 
     def setEventType(self, event_type):
         self._event_type = event_type
         self.dynamic_args_widget.event_type = event_type
         self.dynamic_args_widget.update()
+        self.item().setEventType(event_type)
 
     def getEventType(self):
         return self._event_type
@@ -135,22 +182,52 @@ class EventsArgsMainWidget(QWidget):
     def updateGUI(widget, label):
         """
         widget (tab widget widget)
+            can get main widget with widget.getMainWidget()
         label (tab bar label)
         """
-        print(widget, label)
-        if label:
-            widget.setTitle(label.text())
-            # update
-            #widget.getMainWidget().label.setText(label.text())
+        # preflight
+        if not label: return
+
+        # set title
+        widget.setTitle(label.text())
+
+        # set item
+        main_widget = widget.getMainWidget()
+        main_widget.setItem(label.item())
+
+        # update event type
+        event_type = label.item().getEventType()
+        main_widget.events_type_menu.setCurrentIndexToText(event_type)
+
+        # set script widget to label.item().getScript()
+        script_location = label.item().getScript()
+        main_widget.script_widget.setText(script_location)
+
+        # update dynamic args widget
+        main_widget.dynamic_args_widget.event_type = event_type
+        main_widget.dynamic_args_widget.update()
+
+        # set dynamic args values
+        if main_widget.events_type_menu.currentText() != '':
+            for arg in label.item().getArgsList():
+                arg_value = label.item().getArg(arg)
+                main_widget.dynamic_args_widget.widget_dict[arg].setText(arg_value)
+
+    """ PROPERTIES """
+    def setItem(self, item):
+        self._item = item
+
+    def item(self):
+        return self._item
 
 
-class EventTypesMenu(ListInputWidget):
+class EventTypesMenuWidget(ListInputWidget):
     """
     Drop down menu containing all of the different event types
     that the user can choose from for a specific operation
     """
     def __init__(self, parent=None):
-        super(EventTypesMenu, self).__init__(parent)
+        super(EventTypesMenuWidget, self).__init__(parent)
         self.setSelectionChangedEmitEvent(self.eventTypeChanged)
 
     def eventTypeChanged(self):
@@ -165,29 +242,48 @@ class EventTypeDynamicArgsWidget(QWidget):
     """
     The widget that contains all of the options for a specific event type.  This
     will dynamically populate when the event type changes in the parent.
+    EventTypeDynamicArgsWidget
+        | -* EventTypeArgWidget
+    Attributes:
+        widget_dict (dict): key pair values of args to widgets
+        event_type (str): the current event type that is set
     """
     def __init__(self, parent=None):
         super(EventTypeDynamicArgsWidget, self).__init__(parent)
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
+        self._widget_dict = {}
 
     def clear(self):
+        self.widget_dict = {}
         for index in reversed(range(self.layout().count())):
             widget = self.layout().itemAt(index).widget()
             if widget:
                 widget.setParent(None)
 
     def populate(self):
-        args_list = self.parent().event_dict[self.event_type]['args']
+        try:
+            args_list = self.parent().event_dict[self.event_type]['args']
+        except KeyError:
+            return
         for arg in args_list:
             arg_name = arg['arg']
             arg_note = arg['note']
             widget = EventTypeArgWidget(self, arg_name, arg_note)
             self.layout().addWidget(widget)
+            self.widget_dict[arg_name] = widget
 
     def update(self):
         self.clear()
         self.populate()
+
+    @property
+    def widget_dict(self):
+        return self._widget_dict
+
+    @widget_dict.setter
+    def widget_dict(self, widget_dict):
+        self._widget_dict = widget_dict
 
     @property
     def event_type(self):
@@ -209,12 +305,81 @@ class EventTypeArgWidget(QWidget):
     """
     def __init__(self, parent=None, name='', note=''):
         super(EventTypeArgWidget, self).__init__(parent)
+        # setup args
+        self.arg = name
+
+        # setup layout
         QHBoxLayout(self)
         self.label = QLabel(name)
         self.label.setToolTip(note)
         self.lineedit = QLineEdit()
+        self.lineedit.editingFinished.connect(self.userInput)
         self.layout().addWidget(self.label)
         self.layout().addWidget(self.lineedit)
+
+    def setText(self, text):
+        self.lineedit.setText(text)
+
+    def currentText(self):
+        return self.lineedit.text()
+
+    def userInput(self):
+        main_widget = getWidgetAncestor(self, EventsArgsMainWidget)
+        main_widget.item().setArg(self.arg, self.currentText())
+
+    @property
+    def arg(self):
+        return self._arg
+
+    @arg.setter
+    def arg(self, arg):
+        self._arg = arg
+
+
+class EventTypeModelItem(dict):
+    """
+    name (str): name given to this event by the user
+    event_type (str): katana event type
+    script (path): path on disk to .py file to run as script
+    args (dict): dictionary of all the args
+    """
+    def __init__(self, name=None, event_type=None, script=None, args=None):
+        self['name'] = name
+        self['event_type'] = event_type
+        self['script'] = script
+        if not args:
+            args = {}
+        self['args'] = args
+
+    def setName(self, name):
+        self['name'] = name
+
+    def getName(self):
+        return self['name']
+
+    def setEventType(self, event_type):
+        self['event_type'] = event_type
+
+    def getEventType(self):
+        return self['event_type']
+
+    def setScript(self, script):
+        self['script'] = script
+
+    def getScript(self):
+        return self['script']
+
+    def setArg(self, arg, value):
+        self['args'][arg] = value
+
+    def getArg(self, arg):
+        return self['args'][arg]
+
+    def getArgsList(self):
+        return list(self['args'].keys())
+
+    def removeArg(self, arg):
+        self.pop(arg, None)
 
 
 if __name__ == "__main__":
@@ -271,4 +436,3 @@ if __name__ == "__main__":
     mw.show()
     mw.move(QCursor().pos())
     sys.exit(app.exec_())
-
