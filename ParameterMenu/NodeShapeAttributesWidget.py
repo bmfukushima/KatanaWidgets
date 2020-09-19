@@ -45,6 +45,8 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
         self.setMultiSelectDirection(Qt.Vertical)
         self.setNode(node)
 
+        self.setFixedHeight(200)
+
         # create all widgets
         for i, shape_name in enumerate(sorted(NodeShapeAttrsTab.NodeShapeTypes.keys())):
             # get attrs
