@@ -30,7 +30,7 @@ from qtpy.QtWidgets import (
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor
-from cgwidgets.widgets import ListInputWidget, TabLabelWidget, TabTansuWidget
+from cgwidgets.widgets import ListInputWidget, TabTansuLabelWidget, TabTansuWidget
 
 from cgwidgets.utils import getWidgetAncestor
 
@@ -140,7 +140,7 @@ class EventWidget(QWidget):
             event_item.setIndex(index)
 
 
-class EventsLabelWidget(TabLabelWidget):
+class EventsLabelWidget(TabTansuLabelWidget):
     """
     The label that is displayed back to the user to be selected to show off
     this events arguments
@@ -167,6 +167,9 @@ class EventsLabelWidget(TabLabelWidget):
     def deleteItem(self):
         main_widget = getWidgetAncestor(self, EventWidget)
         main_widget.removeEvent(self.item())
+
+        # reparent and overlay?
+        # this thing really needs a model...
         print ("are you sure?")
 
     def contextMenuEvent(self, event):
@@ -536,11 +539,11 @@ if __name__ == "__main__":
     #
     #
     # # # dynamic widget example
-    # dw = TabDynamicWidgetExample
+    # dw = TabTansuDynamicWidgetExample
     # w.setType(
     #     TabTansuWidget.DYNAMIC,
-    #     dynamic_widget=TabDynamicWidgetExample,
-    #     dynamic_function=TabDynamicWidgetExample.updateGUI
+    #     dynamic_widget=TabTansuDynamicWidgetExample,
+    #     dynamic_function=TabTansuDynamicWidgetExample.updateGUI
     # )
     # for x in range(3):
     #     nw = QLabel(str(x))
