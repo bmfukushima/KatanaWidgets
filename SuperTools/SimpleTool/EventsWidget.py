@@ -30,7 +30,9 @@ from qtpy.QtWidgets import (
 
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor
-from cgwidgets.widgets import ListInputWidget, TabTansuLabelWidget, TabTansuWidget
+from cgwidgets.widgets import (
+    ListInputWidget, TabTansuLabelWidget, TabTansuWidget, TansuModelViewWidget, TansuListView, TansuModelItem
+)
 
 from cgwidgets.utils import getWidgetAncestor
 
@@ -77,10 +79,13 @@ class EventWidget(QWidget):
         """
         Sets up the main Tansu widget that is showing the events to the user
         """
-        main_widget = TabTansuWidget(self)
-        main_widget.setTabLabelInstanceType(EventsLabelWidget)
-        main_widget.setTabBarPosition(TabTansuWidget.WEST)
-        main_widget.setType(
+        main_widget = TansuModelViewWidget(self)
+        main_widget.model().setItemType(EventTypeModelItem)
+        events_view = EventsUserInputWidget()
+        main_widget.setViewWidget(events_view)
+
+        main_widget.setViewPosition(TabTansuWidget.WEST)
+        main_widget.setDelegateType(
             TabTansuWidget.DYNAMIC,
             dynamic_widget=UserInputMainWidget,
             dynamic_function=UserInputMainWidget.updateGUI
@@ -93,51 +98,81 @@ class EventWidget(QWidget):
         Creates a new event item
         """
         # create model item
-        new_event_item = EventTypeModelItem()
-        self.insertEventIntoEventsModel(new_event_item)
-
-        # create new tab label/widget
-        tab_label = self.main_widget.insertTab(0, "New Event")
-        tab_label.setItem(new_event_item)
+        self.main_widget.insertViewItem(0, "New Event")
 
     """ PROPERTIES """
-    def getEventsModel(self):
-        return self._events_model
-
-    def setEventsModel(self, _events_model):
-        return self._events_model
-
-    def insertEventIntoEventsModel(self, _event, index=0):
-        """
-        Inserts a new event into the model
-
-        event (EventTypeModelItem): The new event to be added
-        index (int): the index to insert the new item into the model
-        """
-        self.getEventsModel().insert(index, _event)
-        self.updateAllEventItemsIndexes()
-
     def removeEventByIndex(self, index):
         """
         Removes an event by a specified index
         """
         self.getEventsModel().pop(index)
         self.main_widget.removeTab(index)
-        self.updateAllEventItemsIndexes()
+        #self.updateAllEventItemsIndexes()
         # remove tab label / item
 
     def removeEvent(self, event_item):
         self.getEventsModel().remove(event_item)
         self.main_widget.removeTab(event_item.getIndex())
-        self.updateAllEventItemsIndexes()
+        #self.updateAllEventItemsIndexes()
         # remove tab label / item
 
-    def updateAllEventItemsIndexes(self):
-        """
-        Updates all of the event indexes to the correct index in the model
-        """
-        for index, event_item in enumerate(self.getEventsModel()):
-            event_item.setIndex(index)
+
+class EventsUserInputWidget(TansuListView):
+    def __init__(self, parent=None):
+        super(EventsUserInputWidget, self).__init__(parent)
+
+    def selectionChanged(self, selected, deselected):
+        print("selection == %s"%selected.indexes())
+        for index in selected.indexes():
+            print(index.internalPointer())
+        return TansuListView.selectionChanged(self, selected, deselected)
+
+    def setItemEnable(self, enabled):
+        self.item().setEnable(enabled)
+
+    def deleteItem(self):
+        main_widget = getWidgetAncestor(self, EventWidget)
+        main_widget.removeEvent(self.item())
+
+        # reparent and overlay?
+        # this thing really needs a model...
+        print ("are you sure?")
+
+    def keyPressEvent(self, event):
+        index = self.getIndexUnderCursor()
+        # pos = self.mapFromGlobal(QCursor.pos())
+        # index = self.indexAt(pos)
+        # item = index.internalPointer()
+
+
+    def contextMenuEvent(self, event):
+        index = self.getIndexUnderCursor()
+        # create menu
+        menu = QMenu(self)
+        menu.addAction('test"')
+        action = menu.exec_(self.mapToGlobal(event.pos()))
+        # item = self.model().item
+        # if self.item().getEnable() is True:
+        #     set_disabled = menu.addAction("Disable")
+        # else:
+        #     set_enabled = menu.addAction("Enable")
+        # menu.addSeparator()
+        # delete = menu.addAction("Delete")
+        #
+        # # do menu actions
+        # action = menu.exec_(self.mapToGlobal(event.pos()))
+        #
+        # try:
+        #     if action == set_disabled:
+        #         self.setItemEnable(False)
+        #
+        #     if action == set_enabled:
+        #         self.setItemEnable(True)
+        # except UnboundLocalError:
+        #     pass
+        #
+        # if action == delete:
+        #     self.deleteItem()
 
 
 class EventsLabelWidget(TabTansuLabelWidget):
@@ -160,42 +195,6 @@ class EventsLabelWidget(TabTansuLabelWidget):
 
     def item(self):
         return self._item
-
-    def setItemEnable(self, enabled):
-        self.item().setEnable(enabled)
-
-    def deleteItem(self):
-        main_widget = getWidgetAncestor(self, EventWidget)
-        main_widget.removeEvent(self.item())
-
-        # reparent and overlay?
-        # this thing really needs a model...
-        print ("are you sure?")
-
-    def contextMenuEvent(self, event):
-        # create menu
-        menu = QMenu(self)
-        if self.item().getEnable() is True:
-            set_disabled = menu.addAction("Disable")
-        else:
-            set_enabled = menu.addAction("Enable")
-        menu.addSeparator()
-        delete = menu.addAction("Delete")
-
-        # do menu actions
-        action = menu.exec_(self.mapToGlobal(event.pos()))
-
-        try:
-            if action == set_disabled:
-                self.setItemEnable(False)
-
-            if action == set_enabled:
-                self.setItemEnable(True)
-        except UnboundLocalError:
-            pass
-
-        if action == delete:
-            self.deleteItem()
 
 
 class UserInputMainWidget(QWidget):
@@ -268,28 +267,30 @@ class UserInputMainWidget(QWidget):
         return self._event_type
 
     @staticmethod
-    def updateGUI(widget, label):
+    def updateGUI(widget, item):
         """
         widget (tab widget widget)
             can get main widget with widget.getMainWidget()
         label (tab bar label)
         """
         # preflight
-        if not label: return
+        if not item: return
+
+        print(item, widget)
 
         # set title
-        widget.setTitle(label.text())
+        widget.setTitle(item.name())
 
         # set item
         main_widget = widget.getMainWidget()
-        main_widget.setItem(label.item())
+        main_widget.setItem(item)
 
         # update event type
-        event_type = label.item().getEventType()
+        event_type = item.getEventType()
         main_widget.events_type_menu.setCurrentIndexToText(event_type)
 
         # set script widget to label.item().getScript()
-        script_location = label.item().getScript()
+        script_location = item.getScript()
         main_widget.script_widget.setText(script_location)
 
         # update dynamic args widget
@@ -298,8 +299,8 @@ class UserInputMainWidget(QWidget):
 
         # set dynamic args values
         if main_widget.events_type_menu.currentText() != '':
-            for arg in label.item().getArgsList():
-                arg_value = label.item().getArg(arg)
+            for arg in item.getArgsList():
+                arg_value = item.getArg(arg)
                 main_widget.dynamic_args_widget.widget_dict[arg].setText(arg_value)
 
     """ PROPERTIES """
@@ -452,7 +453,7 @@ class InputScriptWidget(ArgInputWidget):
         main_widget.item().setScript(self.currentText())
 
 
-class EventTypeModelItem(dict):
+class EventTypeModelItem(TansuModelItem):
     """
     name (str): name given to this event by the user
     event_type (str): katana event type
@@ -461,55 +462,56 @@ class EventTypeModelItem(dict):
     index (int): current index that this item is holding in the model
     enabled (bool): If this event should be enabledd/disabled
     """
-    def __init__(self, name=None, event_type=None, script=None, args=None, index=0, enabled=True):
-        self['name'] = name
-        self['event_type'] = event_type
-        self['script'] = script
+    def __init__(self, name=None, event_type=None, script=None, args={}, index=0, enabled=True):
+        super(EventTypeModelItem, self).__init__(name)
+        self._name = name
+        self._event_type = event_type
+        self._script = script
         if not args:
             args = {}
-        self['args'] = args
-        self['index'] = index
-        self['enabled'] = enabled
+        self._args = args
+        #self['index'] = index
+        self._enabled = enabled
 
     def setName(self, name):
-        self['name'] = name
+        self._name = name
 
     def getName(self):
-        return self['name']
+        return self._name
 
     def setEventType(self, event_type):
-        self['event_type'] = event_type
+        self._event_type = event_type
 
     def getEventType(self):
-        return self['event_type']
+        return self._event_type
 
     def setScript(self, script):
-        self['script'] = script
+        self._script = script
 
     def getScript(self):
-        return self['script']
+        return self._script
 
     def setEnable(self, enabled):
-        self['enabled'] = enabled
+        self._enabled = enabled
 
     def getEnable(self):
-        return self['enabled']
+        return self._enabled
 
-    def getIndex(self):
-        return self['index']
-
-    def setIndex(self, index):
-        self['index'] = index
+    # def getIndex(self):
+    #     return self['index']
+    #
+    # def setIndex(self, index):
+    #     self['index'] = index
 
     """ args"""
     def setArg(self, arg, value):
-        self['args'][arg] = value
+        self._args[arg] = value
 
     def getArg(self, arg):
-        return self['args'][arg]
+        return self._args[arg]
 
     def getArgsList(self):
-        return list(self['args'].keys())
+        return list(self._args.keys())
 
     def removeArg(self, arg):
         self.pop(arg, None)

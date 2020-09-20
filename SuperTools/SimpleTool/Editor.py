@@ -78,13 +78,18 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.main_node = node.getChildByIndex(0)
 
         self.node_editor = NodeEditor(self, self.node, self.main_node)
+        #insertViewItem(self, row, name, parent=None, widget=None)
+        # self.getDesignWidget().insertTab(0, 'Params', self.node_editor)
+        # self.getDesignWidget().insertTab(1, 'Events', QLabel('Events'))
+        # self.getDesignWidget().insertTab(2, 'GUI Designer', QLabel('GUI Designer'))
+        # self.getDesignWidget().insertTab(3, 'User Params', QLabel('User Params'))
+        self.getDesignWidget().insertViewItem(0, "Params", widget=self.node_editor)
+        self.getDesignWidget().insertViewItem(1, 'Events', widget=QLabel('Events'))
+        self.getDesignWidget().insertViewItem(2, 'GUI Designer', widget=QLabel('GUI Designer'))
+        self.getDesignWidget().insertViewItem(3, 'User Params', widget=QLabel('User Params'))
 
-        self.getDesignWidget().insertTab(0, 'Params', self.node_editor)
-        self.getDesignWidget().insertTab(1, 'Events', QLabel('Events'))
-        self.getDesignWidget().insertTab(2, 'GUI Designer', QLabel('GUI Designer'))
-        self.getDesignWidget().insertTab(3, 'User Params', QLabel('User Params'))
 
-        self.getDesignWidget().setTabLabelBarToDefaultSize()
+        #self.getDesignWidget().setTabLabelBarToDefaultSize()
         #self.getDesignWidget().show()
 
     def getEventTypes(self):

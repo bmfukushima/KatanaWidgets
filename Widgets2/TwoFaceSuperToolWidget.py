@@ -9,7 +9,7 @@ except ModuleNotFoundError:
 # local import... because PYTHONPATH is not registered yet
 from .AbstractSuperToolEditor import AbstractSuperToolEditor
 
-from cgwidgets.widgets import TabTansuWidget
+from cgwidgets.widgets import TabTansuWidget, TansuModelViewWidget
 
 
 class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
@@ -25,7 +25,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
     VBox
         |-- QStackedWidget
         |       |-- ViewWidget ( QWidget )
-        |       |-- DesignWidget ( TabTansuWidget )
+        |       |-- DesignWidget ( TansuModelViewWidget )
         |               |-- tab_content_layout ( StackedLayout )
         |                   |-- User Params ( Create GUI)
         |                   |-- Triggers ( Setup Signals )
@@ -44,7 +44,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
         QVBoxLayout(self)
 
         self.main_widget = QStackedWidget(self)
-        self._design_widget = TabTansuWidget(self)
+        self._design_widget = TansuModelViewWidget(self)
         self._design_widget.setObjectName('design widget')
         self._view_widget = TwoFacedViewWidget(self)
         resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
@@ -54,6 +54,8 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
         self.layout().addWidget(self.main_widget)
         self.layout().addWidget(resize_widget)
+
+
 
     """ PROPERTIES ( WIDGET )"""
     def getDesignWidget(self):
