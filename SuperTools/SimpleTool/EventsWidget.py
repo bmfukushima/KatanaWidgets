@@ -31,7 +31,7 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor
 from cgwidgets.widgets import (
-    ListInputWidget, TabTansuLabelWidget, TabTansuWidget, TansuModelViewWidget, TansuListView, TansuModelItem
+    ListInputWidget, TansuModelViewWidget, TansuListView, TansuModelItem
 )
 
 from cgwidgets.utils import getWidgetAncestor
@@ -51,7 +51,7 @@ class EventWidget(QWidget):
     Widgets:
         | -- VBox
                 | -- new_event_button (PushButton)
-                | -- main_widget (TabTansuWidget)
+                | -- main_widget (TansuModelViewWidget)
                         | -- label type (EventsLabelWidget --> TansuLabelWidget)
                         | -- Dynamic Widget (UserInputMainWidget --> QWidget)
                             | -- VBox
@@ -84,9 +84,9 @@ class EventWidget(QWidget):
         events_view = EventsUserInputWidget()
         main_widget.setViewWidget(events_view)
 
-        main_widget.setViewPosition(TabTansuWidget.WEST)
+        main_widget.setViewPosition(TansuModelViewWidget.WEST)
         main_widget.setDelegateType(
-            TabTansuWidget.DYNAMIC,
+            TansuModelViewWidget.DYNAMIC,
             dynamic_widget=UserInputMainWidget,
             dynamic_function=UserInputMainWidget.updateGUI
         )
@@ -175,28 +175,6 @@ class EventsUserInputWidget(TansuListView):
         #     self.deleteItem()
 
 
-class EventsLabelWidget(TabTansuLabelWidget):
-    """
-    The label that is displayed back to the user to be selected to show off
-    this events arguments
-    """
-    def __init__(self, parent, text, index):
-        super(EventsLabelWidget, self).__init__(parent, text, index)
-        self.setReadOnly(False)
-        self.editingFinished.connect(self.nameChanged)
-        self.setStyleSheet('background-color: rgb(128,128,0)')
-
-    def nameChanged(self):
-        self.item().setName(self.text())
-
-    """ PROPERTIES """
-    def setItem(self, item):
-        self._item = item
-
-    def item(self):
-        return self._item
-
-
 class UserInputMainWidget(QWidget):
     """
     Main widgets for inputting args to the Events widget.  This is the dynamic
@@ -279,7 +257,7 @@ class UserInputMainWidget(QWidget):
         print(item, widget)
 
         # set title
-        widget.setTitle(item.name())
+        widget.group_box.setTitle(item.name())
 
         # set item
         main_widget = widget.getMainWidget()

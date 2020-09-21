@@ -9,7 +9,7 @@ except ModuleNotFoundError:
 # local import... because PYTHONPATH is not registered yet
 from .AbstractSuperToolEditor import AbstractSuperToolEditor
 
-from cgwidgets.widgets import TabTansuWidget, TansuModelViewWidget
+from cgwidgets.widgets import TansuModelViewWidget
 
 
 class TwoFacedSuperToolWidget(AbstractSuperToolEditor):

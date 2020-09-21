@@ -56,9 +56,12 @@ from Widgets2 import (
     TwoFacedSuperToolWidget
 )
 
-from cgwidgets.widgets import BaseTansuWidget
+from cgwidgets.widgets import BaseTansuWidget, TansuListView
 
-from Katana import UI4
+try:
+    from Katana import UI4
+except ModuleNotFoundError:
+    pass
 
 
 class SimpleToolEditor(TwoFacedSuperToolWidget):
@@ -113,6 +116,11 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         return TwoFacedSuperToolWidget.showEvent(self, event)
 
 
+class SimpleToolViewWidget(TansuListView):
+    def __init__(self, parent=None):
+        super(SimpleToolViewWidget, self).__init__(parent)
+
+
 class NodeEditor(BaseTansuWidget):
     def __init__(self, parent, node, main_node):
         super(NodeEditor, self).__init__(parent)
@@ -164,3 +172,36 @@ class ParametersDisplayWidget(AbstractParametersDisplayWidget):
         if node.getParent() != self.node: return False
 
         return True
+
+
+if __name__ == "__main__":
+    import sys
+    from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout
+    from PyQt5.QtGui import QCursor
+    from cgwidgets.widgets import TansuModelViewWidget
+    app = QApplication(sys.argv)
+
+    w = TansuModelViewWidget()
+    w.setViewPosition(TansuModelViewWidget.NORTH)
+    w.setMultiSelect(True)
+    w.setMultiSelectDirection(Qt.Vertical)
+
+    new_view = SimpleToolViewWidget()
+    w.setViewWidget(new_view)
+
+    # dw = TabTansuDynamicWidgetExample
+    # w.setDelegateType(
+    #     TansuModelViewWidget.DYNAMIC,
+    #     dynamic_widget=TabTansuDynamicWidgetExample,
+    #     dynamic_function=TabTansuDynamicWidgetExample.updateGUI
+    # )
+
+    for x in range(3):
+        widget = QLabel(str(x))
+        w.insertViewItem(x, str(x), widget=widget)
+
+    w.resize(500, 500)
+
+    w.show()
+    w.move(QCursor.pos())
+    sys.exit(app.exec_())
