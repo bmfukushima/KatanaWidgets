@@ -11,10 +11,7 @@ from Utils2.settings import (
     CANCEL_GIF,
 )
 
-from cgwidgets.settings.colors import (
-    RGBA_ACCEPT,
-    RGBA_CANCEL
-)
+from cgwidgets.settings.colors import iColor
 
 from .GifPlayer import GifPlayer
 
@@ -58,8 +55,8 @@ class AbstractUserBooleanWidget(QWidget):
         self.accept_button.clicked.connect(self.acceptPressed)
         self.cancel_button.clicked.connect(self.cancelPressed)
         """
-        self.accept_button = GifPlayer(ACCEPT_GIF, hover_color=RGBA_ACCEPT)
-        self.cancel_button = GifPlayer(CANCEL_GIF, hover_color=RGBA_CANCEL)
+        self.accept_button = GifPlayer(ACCEPT_GIF, hover_color=iColor.rgba_accept)
+        self.cancel_button = GifPlayer(CANCEL_GIF, hover_color=iColor.rgba_cancel)
         self.accept_button.setMousePressAction(self.acceptPressed)
         self.cancel_button.setMousePressAction(self.cancelPressed)
 

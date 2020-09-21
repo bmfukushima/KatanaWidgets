@@ -79,11 +79,13 @@ class EventWidget(QWidget):
         """
         Sets up the main Tansu widget that is showing the events to the user
         """
+        # create widget
         main_widget = TansuModelViewWidget(self)
         main_widget.model().setItemType(EventTypeModelItem)
         events_view = EventsUserInputWidget()
         main_widget.setViewWidget(events_view)
 
+        # set type / position
         main_widget.setViewPosition(TansuModelViewWidget.WEST)
         main_widget.setDelegateType(
             TansuModelViewWidget.DYNAMIC,
@@ -117,6 +119,70 @@ class EventWidget(QWidget):
         # remove tab label / item
 
 
+class EventTypeModelItem(TansuModelItem):
+    """
+    name (str): name given to this event by the user
+    event_type (str): katana event type
+    script (path): path on disk to .py file to run as script
+    args (dict): dictionary of all the args
+    index (int): current index that this item is holding in the model
+    enabled (bool): If this event should be enabledd/disabled
+    """
+    def __init__(self, name=None, event_type=None, script=None, args={}, index=0, enabled=True):
+        super(EventTypeModelItem, self).__init__(name)
+        self._name = name
+        self._event_type = event_type
+        self._script = script
+        if not args:
+            args = {}
+        self._args = args
+        #self['index'] = index
+        self._enabled = enabled
+
+    def setName(self, name):
+        self._name = name
+
+    def getName(self):
+        return self._name
+
+    def setEventType(self, event_type):
+        self._event_type = event_type
+
+    def getEventType(self):
+        return self._event_type
+
+    def setScript(self, script):
+        self._script = script
+
+    def getScript(self):
+        return self._script
+
+    def setEnable(self, enabled):
+        self._enabled = enabled
+
+    def getEnable(self):
+        return self._enabled
+
+    # def getIndex(self):
+    #     return self['index']
+    #
+    # def setIndex(self, index):
+    #     self['index'] = index
+
+    """ args"""
+    def setArg(self, arg, value):
+        self._args[arg] = value
+
+    def getArg(self, arg):
+        return self._args[arg]
+
+    def getArgsList(self):
+        return list(self._args.keys())
+
+    def removeArg(self, arg):
+        self.pop(arg, None)
+
+
 class EventsUserInputWidget(TansuListView):
     def __init__(self, parent=None):
         super(EventsUserInputWidget, self).__init__(parent)
@@ -143,7 +209,6 @@ class EventsUserInputWidget(TansuListView):
         # pos = self.mapFromGlobal(QCursor.pos())
         # index = self.indexAt(pos)
         # item = index.internalPointer()
-
 
     def contextMenuEvent(self, event):
         index = self.getIndexUnderCursor()
@@ -175,10 +240,19 @@ class EventsUserInputWidget(TansuListView):
         #     self.deleteItem()
 
 
+""" INPUT WIDGETS"""
 class UserInputMainWidget(QWidget):
     """
     Main widgets for inputting args to the Events widget.  This is the dynamic
     widget that will be used for the tansu widget.
+
+    Widgets
+    UserInputMainWidget
+        | -- QVBoxLayout
+                | -- events_type_menu (EventTypeInputWidget)
+                | -- script_widget (ScriptInputWidget)
+                | -- dynamic_args_widget (ArgsInputMainWidget)
+                        | -- ArgInputWidget
 
     Attributes:
         events_dict (JSON): json dict containing all of the relevant information for
@@ -209,7 +283,7 @@ class UserInputMainWidget(QWidget):
         self.events_type_menu.populate(event_types)
 
         # create scripts thingy
-        self.script_widget = InputScriptWidget(self)
+        self.script_widget = ScriptInputWidget(self)
 
         # create event type args widget
         self.dynamic_args_widget = ArgsInputMainWidget(self)
@@ -289,6 +363,52 @@ class UserInputMainWidget(QWidget):
         return self._item
 
 
+class ArgInputWidget(QWidget):
+    """
+    One individual arg
+
+    TODO:
+        Connect the signal changes in the line edit to where I'm going
+        to store this JSON date type container thingy...
+
+    """
+    def __init__(self, parent=None, name='', note=''):
+        super(ArgInputWidget, self).__init__(parent)
+        # setup args
+        self.arg = name
+
+        # setup layout
+        QHBoxLayout(self)
+        self.label = QLabel(name)
+        self.label.setToolTip(note)
+        self.lineedit = QLineEdit()
+        self.lineedit.editingFinished.connect(self.userInputEvent)
+        self.layout().addWidget(self.label)
+        self.layout().addWidget(self.lineedit)
+
+    def setText(self, text):
+        self.lineedit.setText(text)
+
+    def currentText(self):
+        return self.lineedit.text()
+
+    def userInputEvent(self):
+        """
+        When the user inputs something into the arg, this event is triggered
+        updating the model item
+        """
+        main_widget = getWidgetAncestor(self, UserInputMainWidget)
+        main_widget.item().setArg(self.arg, self.currentText())
+
+    @property
+    def arg(self):
+        return self._arg
+
+    @arg.setter
+    def arg(self, arg):
+        self._arg = arg
+
+
 class EventTypeInputWidget(ListInputWidget):
     """
     Drop down menu containing all of the different event types
@@ -313,6 +433,20 @@ class EventTypeInputWidget(ListInputWidget):
 
         # if invalid input reset texta
         self.setCurrentIndexToText(self.previous_text)
+
+
+class ScriptInputWidget(ArgInputWidget):
+    """
+    The script input widget
+    """
+    def __init__(self, parent=None):
+        name = 'script'
+        note = "path on disk to the script you want to run"
+        super(ScriptInputWidget, self).__init__(parent, name=name, note=note)
+
+    def userInputEvent(self):
+        main_widget = getWidgetAncestor(self, UserInputMainWidget)
+        main_widget.item().setScript(self.currentText())
 
 
 class ArgsInputMainWidget(QWidget):
@@ -370,129 +504,6 @@ class ArgsInputMainWidget(QWidget):
     def event_type(self, event_type):
         self._event_type = event_type
 
-
-class ArgInputWidget(QWidget):
-    """
-    One individual arg
-
-    TODO:
-        Connect the signal changes in the line edit to where I'm going
-        to store this JSON date type container thingy...
-
-    """
-    def __init__(self, parent=None, name='', note=''):
-        super(ArgInputWidget, self).__init__(parent)
-        # setup args
-        self.arg = name
-
-        # setup layout
-        QHBoxLayout(self)
-        self.label = QLabel(name)
-        self.label.setToolTip(note)
-        self.lineedit = QLineEdit()
-        self.lineedit.editingFinished.connect(self.userInputEvent)
-        self.layout().addWidget(self.label)
-        self.layout().addWidget(self.lineedit)
-
-    def setText(self, text):
-        self.lineedit.setText(text)
-
-    def currentText(self):
-        return self.lineedit.text()
-
-    def userInputEvent(self):
-        """
-        When the user inputs something into the arg, this event is triggered
-        updating the model item
-        """
-        main_widget = getWidgetAncestor(self, UserInputMainWidget)
-        main_widget.item().setArg(self.arg, self.currentText())
-
-    @property
-    def arg(self):
-        return self._arg
-
-    @arg.setter
-    def arg(self, arg):
-        self._arg = arg
-
-
-class InputScriptWidget(ArgInputWidget):
-    """
-    The script input widget
-    """
-    def __init__(self, parent=None):
-        name = 'script'
-        note = "path on disk to the script you want to run"
-        super(InputScriptWidget, self).__init__(parent, name=name, note=note)
-
-    def userInputEvent(self):
-        main_widget = getWidgetAncestor(self, UserInputMainWidget)
-        main_widget.item().setScript(self.currentText())
-
-
-class EventTypeModelItem(TansuModelItem):
-    """
-    name (str): name given to this event by the user
-    event_type (str): katana event type
-    script (path): path on disk to .py file to run as script
-    args (dict): dictionary of all the args
-    index (int): current index that this item is holding in the model
-    enabled (bool): If this event should be enabledd/disabled
-    """
-    def __init__(self, name=None, event_type=None, script=None, args={}, index=0, enabled=True):
-        super(EventTypeModelItem, self).__init__(name)
-        self._name = name
-        self._event_type = event_type
-        self._script = script
-        if not args:
-            args = {}
-        self._args = args
-        #self['index'] = index
-        self._enabled = enabled
-
-    def setName(self, name):
-        self._name = name
-
-    def getName(self):
-        return self._name
-
-    def setEventType(self, event_type):
-        self._event_type = event_type
-
-    def getEventType(self):
-        return self._event_type
-
-    def setScript(self, script):
-        self._script = script
-
-    def getScript(self):
-        return self._script
-
-    def setEnable(self, enabled):
-        self._enabled = enabled
-
-    def getEnable(self):
-        return self._enabled
-
-    # def getIndex(self):
-    #     return self['index']
-    #
-    # def setIndex(self, index):
-    #     self['index'] = index
-
-    """ args"""
-    def setArg(self, arg, value):
-        self._args[arg] = value
-
-    def getArg(self, arg):
-        return self._args[arg]
-
-    def getArgsList(self):
-        return list(self._args.keys())
-
-    def removeArg(self, arg):
-        self.pop(arg, None)
 
 
 if __name__ == "__main__":
