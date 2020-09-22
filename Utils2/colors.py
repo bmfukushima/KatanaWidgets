@@ -5,8 +5,6 @@ from cgwidgets.settings.colors import multiplyRGBAValues
 ################################
 
 # hacky color resets
-RGBA_TEXT_COLOR = (192, 192, 192, 255)
-RGBA_TEXT_COLOR_DISABLED = multiplyRGBAValues(RGBA_TEXT_COLOR, mult=0.75)
 
 RGBA_KATANA_LOCAL_YELLOW = (255, 200, 0, 255)
 RGBA_KATANA_LOCAL_YELLOW_DISABLED = multiplyRGBAValues(RGBA_KATANA_LOCAL_YELLOW, mult=0.75)

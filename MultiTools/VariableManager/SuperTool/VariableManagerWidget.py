@@ -19,8 +19,8 @@ except ImportError:
     import UniqueName, FormMaster, Utils
 
 from cgwidgets.settings.colors import (
-    RGBA_ERROR,
-    RGBA_TANSU_HANDLE
+    iColor,
+    RGBA_TANSU_HANDLE,
 )
 
 from cgwidgets.widgets import BaseTansuWidget, ListInputWidget
@@ -59,10 +59,9 @@ from Utils2 import (
 
 from Utils2.colors import(
     RGBA_KATANA_LOCAL_YELLOW_DISABLED,
-    RGBA_TEXT_COLOR_DISABLED,
     RGBA_KATANA_LOCAL_YELLOW,
-    RGBA_TEXT_COLOR
 )
+
 from Widgets2 import(
     AbstractFileBrowser,
     AbstractNodegraphWidget,
@@ -2209,12 +2208,12 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         # disabled
         if self.isDisabled() is True:
-            new_colors = RGBA_TEXT_COLOR_DISABLED
+            new_colors = iColor.rgba_text_color_disabled
         elif self.isDisabled() is False:
-            new_colors = RGBA_TEXT_COLOR
+            new_colors = iColor.rgba_text_color
         # broken
         if self.getIsBroken() is True:
-            new_colors = RGBA_ERROR
+            new_colors = iColor.rgba_error
 
         # set brush
         new_brush = QBrush(QColor(*new_colors))
