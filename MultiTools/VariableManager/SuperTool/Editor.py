@@ -1560,12 +1560,12 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         on its current publish status
         """
         if self._publish_state % 2 == 0:
-            self.besterest_button_color = repr(iColor.rgba_maybe)
-            self.besterest_button_hover_color = repr(iColor.rgba_maybe_hover)
+            self.besterest_button_color = repr(iColor["rgba_maybe"])
+            self.besterest_button_hover_color = repr(iColor["rgba_maybe_hover"])
             self.besterest_button.setText('Simply not the best... Not better than all the rest')
         elif self._publish_state % 2 == 1:
-            self.besterest_button_color = repr(iColor.rgba_accept)
-            self.besterest_button_hover_color = repr(iColor.rgba_accept_hover)
+            self.besterest_button_color = repr(iColor["rgba_accept"])
+            self.besterest_button_hover_color = repr(iColor["rgba_accept_hover"])
             self.besterest_button.setText("""
 BESTEREST
 * Tina Turner Voice *
