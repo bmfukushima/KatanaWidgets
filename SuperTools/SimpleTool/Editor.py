@@ -80,7 +80,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.node = node
         self.main_node = node.getChildByIndex(0)
 
-        self.node_editor = NodeEditor(self, self.node, self.main_node)
+        self.node_editor = GroupEditor(self, self.node, self.main_node)
         #insertViewItem(self, row, name, parent=None, widget=None)
         # self.getDesignWidget().insertTab(0, 'Params', self.node_editor)
         # self.getDesignWidget().insertTab(1, 'Events', QLabel('Events'))
@@ -121,6 +121,18 @@ class SimpleToolViewWidget(TansuListView):
         super(SimpleToolViewWidget, self).__init__(parent)
 
 
+class GroupEditor(QWidget):
+    def __init__(self, parent, node, main_node):
+        super(GroupEditor, self).__init__(parent)
+        QVBoxLayout(self)
+
+        self.live_group_widget = QLabel("Live Group")
+        self.node_editor_widget = NodeEditor(self, node , main_node)
+
+        self.layout().addWidget(self.live_group_widget)
+        self.layout().addWidget(self.node_editor_widget)
+
+
 class NodeEditor(BaseTansuWidget):
     def __init__(self, parent, node, main_node):
         super(NodeEditor, self).__init__(parent)
@@ -132,11 +144,12 @@ class NodeEditor(BaseTansuWidget):
         self.nodegraph_widget = NodegraphWidget(self, node=node)
         self.parameters_widget = ParametersDisplayWidget(self, node=self.main_node)
 
-        self.addWidget(QLabel("klasjdfklsajflasfklja"))
         self.addWidget(self.nodegraph_widget)
         self.addWidget(self.parameters_widget)
 
         self.setFocusPolicy(Qt.WheelFocus)
+
+        self.setStyleSheet("border:None")
 
 
 class NodegraphWidget(AbstractNodegraphWidget):
@@ -149,6 +162,7 @@ class NodegraphWidget(AbstractNodegraphWidget):
         self.enableScrollWheel(False)
         self.goToNode(node.getChildByIndex(0))
         self.setupDestroyNodegraphEvent()
+
 
 
 class ParametersDisplayWidget(AbstractParametersDisplayWidget):

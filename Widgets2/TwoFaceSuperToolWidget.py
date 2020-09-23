@@ -45,7 +45,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
         self.main_widget = QStackedWidget(self)
         self._design_widget = TansuModelViewWidget(self)
-        self._design_widget.show()
+        #self._design_widget.show()
         #self._design_widget._temp_proxy_widget.show()
         self._design_widget.setObjectName('design widget')
         self._view_widget = TwoFacedViewWidget(self)
@@ -56,8 +56,6 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
         self.layout().addWidget(self.main_widget)
         self.layout().addWidget(resize_widget)
-
-
 
     """ PROPERTIES ( WIDGET )"""
     def getDesignWidget(self):
