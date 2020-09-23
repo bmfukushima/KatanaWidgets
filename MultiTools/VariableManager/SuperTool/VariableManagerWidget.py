@@ -19,8 +19,7 @@ except ImportError:
     import UniqueName, FormMaster, Utils
 
 from cgwidgets.settings.colors import (
-    iColor,
-    RGBA_TANSU_HANDLE,
+    iColor
 )
 
 from cgwidgets.widgets import BaseTansuWidget, ListInputWidget
@@ -262,7 +261,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
             border-right: {spacing}px solid rgba{tansu_handle};
         """.format(
             spacing=str(self.spacing),
-            tansu_handle=RGBA_TANSU_HANDLE
+            tansu_handle=iColor['rgba_tansu_handle']
         ))
 
         self.enter_button.setStyleSheet("""
@@ -270,7 +269,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
             border-left: {spacing}px solid rgba{tansu_handle};
         """.format(
             spacing=str(self.spacing),
-            tansu_handle=RGBA_TANSU_HANDLE
+            tansu_handle=iColor['rgba_tansu_handle']
         ))
 
     """ EVENTS """
