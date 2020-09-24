@@ -13,14 +13,27 @@ TODO:
 from cgwidgets.widgets import TansuModelViewWidget
 
 from qtpy.QtWidgets import  (
-    QWidget, QLabel, QHBoxLayout, QLineEdit, QPushButton
+    QWidget, QLabel, QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout
 )
 from qtpy.QtCore import Qt
 
 try:
-    from Katana import NodegraphAPI, Utils
+    from Katana import NodegraphAPI, Utils, UI4
 except ModuleNotFoundError:
     pass
+
+
+class NodeShapeAttrsTabMainWidget(QWidget):
+    def __init__(self, parent=None, node=None):
+        super(NodeShapeAttrsTabMainWidget, self).__init__(parent)
+        QVBoxLayout(self)
+        main_widget = NodeShapeAttrsTab(self, node)
+        resizer = UI4.Widgets.VBoxLayoutResizer(self)
+
+        self.layout().addWidget(main_widget)
+        self.layout().addWidget(resizer)
+
+        self.setFixedHeight(200)
 
 
 class NodeShapeAttrsTab(TansuModelViewWidget):
@@ -29,12 +42,12 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
     adjust on the node
     """
     NodeShapeTypes = {
-        "badgeText": {"type":str, "value":""},
-        "drawBadge":{"type":bool, "value":False},
-        "glowColorR":{"type":float, "value":0.0},
-        "glowColorG":{"type":float, "value":0.0},
-        "glowColorB":{"type":float, "value":0.0},
-        "errorGlow":{"type":bool, "value":False}
+        "badgeText": {"type" : str, "value" : ""},
+        "drawBadge" : {"type" : bool, "value" : False},
+        "glowColorR" : {"type" : float, "value" : 0.0},
+        "glowColorG" : {"type" : float, "value" : 0.0},
+        "glowColorB" : {"type" : float, "value" : 0.0},
+        "errorGlow" : {"type" : bool, "value" : False}
     }
 
     def __init__(self, parent, node):
@@ -45,7 +58,6 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
         self.setMultiSelectDirection(Qt.Vertical)
         self.setNode(node)
 
-        self.setFixedHeight(200)
 
         # create all widgets
         for i, shape_name in enumerate(sorted(NodeShapeAttrsTab.NodeShapeTypes.keys())):
@@ -72,6 +84,8 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
 
 class NodeShapeAttrsWidget(QWidget):
     """
+    TODO:
+        These need to get replaced with UserInputWidgets / Custom inputs
     Individual widget holding the GUI to change a shape.
     Attributes:
         node (node): The node to set this shape on

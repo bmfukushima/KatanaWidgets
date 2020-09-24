@@ -2207,9 +2207,9 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
 
         # disabled
         if self.isDisabled() is True:
-            new_colors = iColor["rgba_text_color_disabled"]
+            new_colors = iColor["rgba_text_disabled"]
         elif self.isDisabled() is False:
-            new_colors = iColor["rgba_text_color"]
+            new_colors = iColor["rgba_text"]
         # broken
         if self.getIsBroken() is True:
             new_colors = iColor["rgba_error"]

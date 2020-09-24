@@ -170,6 +170,7 @@ class AbstractSuperToolEditor(QWidget):
         return param
 
     def __setParam(self, event_signal):
+        # ????
         event_signal()
         self.node.setParameter()
         pass

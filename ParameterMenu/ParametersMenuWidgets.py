@@ -7,7 +7,7 @@ from qtpy.QtGui import QPixmap
 from Utils2.settings import BEBOP_ON_JPG, BEBOP_OFF_JPG
 from Utils2.colors import RGBA_SELECTION_BG
 
-from .NodeShapeAttributesWidget import NodeShapeAttrsTab
+from .NodeShapeAttributesWidget import NodeShapeAttrsTabMainWidget
 
 from cgwidgets.utils import updateStyleSheet
 
@@ -119,7 +119,7 @@ class ParametersMenu(QMenu):
 
         # create widget if it doesnt exist
         if not hasattr(form_widget, 'node_shape_attrs_widget'):
-            node_shape_attrs_widget = NodeShapeAttrsTab(form_widget, self.parent().getNode())
+            node_shape_attrs_widget = NodeShapeAttrsTabMainWidget(form_widget, self.parent().getNode())
             form_widget.node_shape_attrs_widget = node_shape_attrs_widget
             form_widget.layout().insertWidget(1, node_shape_attrs_widget)
 
