@@ -1,5 +1,10 @@
 """
 TODO:
+    Group Editor:
+        Appears to have two levels of Tansus... for some reason...
+                Model Tansu View
+                    --> Base tansu
+                for some reason the base tansu is not working...
     Extract:
         Variable Manager:
             *   Nodegraph Widget
@@ -44,15 +49,13 @@ TODO:
                     iParameter interface...
 """
 
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QLabel, QVBoxLayout, QWidget
 )
 
-from PyQt5.QtCore import Qt, QEvent
+from qtpy.QtCore import Qt, QEvent
 
 from Widgets2 import (
-    AbstractNodegraphWidget,
-    AbstractParametersDisplayWidget,
     TwoFacedSuperToolWidget
 )
 
@@ -62,6 +65,8 @@ try:
     from Katana import UI4
 except ModuleNotFoundError:
     pass
+
+from .GroupNodeEditor import GroupNodeEditorMainWidget
 
 
 class SimpleToolEditor(TwoFacedSuperToolWidget):
@@ -80,20 +85,12 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.node = node
         self.main_node = node.getChildByIndex(0)
 
-        self.node_editor = GroupEditor(self, self.node, self.main_node)
-        #insertViewItem(self, row, name, parent=None, widget=None)
-        # self.getDesignWidget().insertTab(0, 'Params', self.node_editor)
-        # self.getDesignWidget().insertTab(1, 'Events', QLabel('Events'))
-        # self.getDesignWidget().insertTab(2, 'GUI Designer', QLabel('GUI Designer'))
-        # self.getDesignWidget().insertTab(3, 'User Params', QLabel('User Params'))
-        self.getDesignWidget().insertViewItem(0, "Params", widget=self.node_editor)
+        self.group_node_editor = GroupNodeEditorMainWidget(self, self.node, self.main_node)
+
+        self.getDesignWidget().insertViewItem(0, "Params", widget=self.group_node_editor)
         self.getDesignWidget().insertViewItem(1, 'Events', widget=QLabel('Events'))
         self.getDesignWidget().insertViewItem(2, 'GUI Designer', widget=QLabel('GUI Designer'))
         self.getDesignWidget().insertViewItem(3, 'User Params', widget=QLabel('User Params'))
-
-
-        #self.getDesignWidget().setTabLabelBarToDefaultSize()
-        #self.getDesignWidget().show()
 
     def getEventTypes(self):
         """
@@ -121,77 +118,11 @@ class SimpleToolViewWidget(TansuListView):
         super(SimpleToolViewWidget, self).__init__(parent)
 
 
-class GroupEditor(QWidget):
-    def __init__(self, parent, node, main_node):
-        super(GroupEditor, self).__init__(parent)
-        QVBoxLayout(self)
-
-        self.live_group_widget = QLabel("Live Group")
-        self.node_editor_widget = NodeEditor(self, node , main_node)
-
-        self.layout().addWidget(self.live_group_widget)
-        self.layout().addWidget(self.node_editor_widget)
-
-
-class NodeEditor(BaseTansuWidget):
-    def __init__(self, parent, node, main_node):
-        super(NodeEditor, self).__init__(parent)
-        self.setOrientation(Qt.Vertical)
-        self.node = node
-        self.main_node = main_node
-
-        # create gui
-        self.nodegraph_widget = NodegraphWidget(self, node=node)
-        self.parameters_widget = ParametersDisplayWidget(self, node=self.main_node)
-
-        self.addWidget(self.nodegraph_widget)
-        self.addWidget(self.parameters_widget)
-
-        self.setFocusPolicy(Qt.WheelFocus)
-
-        self.setStyleSheet("border:None")
-
-
-class NodegraphWidget(AbstractNodegraphWidget):
-    def __init__(self, parent=None, node=None):
-        super(NodegraphWidget, self).__init__(parent)
-        # setup attrs
-        self.setNode(node)
-
-        AbstractNodegraphWidget.displayMenus(False, self.getPanel())
-        self.enableScrollWheel(False)
-        self.goToNode(node.getChildByIndex(0))
-        self.setupDestroyNodegraphEvent()
-
-
-
-class ParametersDisplayWidget(AbstractParametersDisplayWidget):
-    """
-    The widget that will display all of the parameters to the user.
-    """
-    def __init__(self, parent=None, node=None):
-        super(ParametersDisplayWidget, self).__init__(parent)
-        self.node = node
-        self.setNodeFilter(self.nodeFilter)
-        self.enableSelectionDisplay(True)
-
-    def nodeFilter(self, node):
-        """
-        Filter for the node list to ensure that the selected nodes are a child of this one
-
-        Args:
-            node (Node): The node that is being filtered
-        """
-        if not node: return False
-        if node.getParent() != self.node: return False
-
-        return True
-
 
 if __name__ == "__main__":
     import sys
-    from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout
-    from PyQt5.QtGui import QCursor
+    from qtpy.QtWidgets import QApplication, QLabel, QVBoxLayout
+    from qtpy.QtGui import QCursor
     from cgwidgets.widgets import TansuModelViewWidget
     app = QApplication(sys.argv)
 

@@ -508,8 +508,8 @@ class ArgsInputMainWidget(QWidget):
 
 if __name__ == "__main__":
     # import sys
-    # from PyQt5.QtWidgets import QApplication
-    # from PyQt5.QtGui import QCursor
+    # from qtpy.QtWidgets import QApplication
+    # from qtpy.QtGui import QCursor
     # app = QApplication(sys.argv)
     #
     # w = TabTansuWidget()

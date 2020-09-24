@@ -1,12 +1,12 @@
 import os
 
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QWidget,  QVBoxLayout, QHBoxLayout,
     QPushButton, QLineEdit, QTreeWidget,
     QHeaderView, QAbstractItemView,
     QMenu, QTreeWidgetItem)
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import (
+from qtpy.QtCore import Qt
+from qtpy.QtGui import (
     QColor, QPixmap, QIcon, QCursor, QBrush)
 
 try:

@@ -1,7 +1,7 @@
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QWidget, QStackedLayout, QTabWidget, QVBoxLayout
 )
-from PyQt5.QtCore import QEvent
+from qtpy.QtCore import QEvent
 
 from cgwidgets.utils import getWidgetAncestor
 

@@ -1,16 +1,16 @@
 import os
 
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QComboBox, QLineEdit, QCompleter, QWidget,
     QHBoxLayout, QPushButton, QSizePolicy,
     QLabel, QVBoxLayout
 )
 
-from PyQt5.QtGui import (
+from qtpy.QtGui import (
     QMovie
 )
 
-from PyQt5.QtCore import (
+from qtpy.QtCore import (
     Qt, QByteArray, QSize
 )
 

@@ -12,10 +12,10 @@ TODO:
 
 from cgwidgets.widgets import TansuModelViewWidget
 
-from PyQt5.QtWidgets import  (
+from qtpy.QtWidgets import  (
     QWidget, QLabel, QHBoxLayout, QLineEdit, QPushButton
 )
-from PyQt5.QtCore import Qt
+from qtpy.QtCore import Qt
 
 try:
     from Katana import NodegraphAPI, Utils
@@ -168,8 +168,8 @@ class NodeShapeAttrsWidget(QWidget):
 
 if __name__ == "__main__":
     import sys
-    from PyQt5.QtWidgets import QApplication
-    from PyQt5.QtGui import QCursor
+    from qtpy.QtWidgets import QApplication
+    from qtpy.QtGui import QCursor
     app = QApplication(sys.argv)
 
     w = NodeShapeAttrsTab(None, 'blahblah')

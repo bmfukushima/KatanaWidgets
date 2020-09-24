@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QApplication
-from PyQt5.QtCore import QEvent, Qt
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QApplication
+from qtpy.QtCore import QEvent, Qt
 
 try:
     from Katana import NodeGraphView, UI4, Utils

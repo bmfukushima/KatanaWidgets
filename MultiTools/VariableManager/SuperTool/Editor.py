@@ -95,12 +95,12 @@ MASTER: Top most group
 
 import os
 
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QWidget, QPushButton, QLabel, QVBoxLayout, QPlainTextEdit,
     QSizePolicy, QStackedLayout,QSpacerItem
 )
-from PyQt5.QtCore import Qt, QEvent
-from PyQt5.QtGui import (
+from qtpy.QtCore import Qt, QEvent
+from qtpy.QtGui import (
     QStandardItemModel, QStandardItem,
     QBrush, QColor
 )

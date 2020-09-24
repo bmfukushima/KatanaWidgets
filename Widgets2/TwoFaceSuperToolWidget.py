@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QWidget, QStackedWidget, QVBoxLayout, QLabel,
 )
 
@@ -25,6 +25,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
     VBox
         |-- QStackedWidget
         |       |-- ViewWidget ( QWidget )
+                        User view widget
         |       |-- DesignWidget ( TansuModelViewWidget )
         |               |-- tab_content_layout ( StackedLayout )
         |                   |-- User Params ( Create GUI)
@@ -44,7 +45,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
         QVBoxLayout(self)
 
         self.main_widget = QStackedWidget(self)
-        self._design_widget = TansuModelViewWidget(self)
+        self._design_widget = TansuModelViewWidget()
         #self._design_widget.show()
         #self._design_widget._temp_proxy_widget.show()
         self._design_widget.setObjectName('design widget')

@@ -1,8 +1,8 @@
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QLabel, QMenu
 )
 
-from PyQt5.QtGui import QPixmap
+from qtpy.QtGui import QPixmap
 
 from Utils2.settings import BEBOP_ON_JPG, BEBOP_OFF_JPG
 from Utils2.colors import RGBA_SELECTION_BG
@@ -141,8 +141,8 @@ class ParametersMenu(QMenu):
 
 if __name__ == "__main__":
     import sys
-    from PyQt5.QtWidgets import QApplication
-    from PyQt5.QtGui import QCursor
+    from qtpy.QtWidgets import QApplication
+    from qtpy.QtGui import QCursor
 
     app = QApplication(sys.argv)
 

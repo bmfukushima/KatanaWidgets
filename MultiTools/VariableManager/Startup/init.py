@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QLabel, QMenu
-from PyQt5.QtGui import QPixmap
+from qtpy.QtWidgets import QLabel, QMenu
+from qtpy.QtGui import QPixmap
 from Katana import Utils, UI4
 
 from Utils2.settings import BEBOP_ON_JPG, BEBOP_OFF_JPG

@@ -1,7 +1,7 @@
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QWidget, QVBoxLayout, QScrollArea
 )
-from PyQt5.QtCore import Qt
+from qtpy.QtCore import Qt
 
 try:
     from Katana import UI4, QT4FormWidgets, NodegraphAPI, Utils

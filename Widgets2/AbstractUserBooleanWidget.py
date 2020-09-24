@@ -1,8 +1,8 @@
-from PyQt5.QtWidgets import (
+from qtpy.QtWidgets import (
     QWidget, QHBoxLayout, QSizePolicy,
 )
 
-from PyQt5.QtCore import (Qt)
+from qtpy.QtCore import (Qt)
 
 from Utils2 import suppressUndooz
 
