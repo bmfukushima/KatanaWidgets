@@ -9,7 +9,7 @@ TODO:
             Booleans --> context menu --> select param?
 
 """
-
+from cgwidgets.utils import attrs
 from cgwidgets.widgets import TansuModelViewWidget
 
 from qtpy.QtWidgets import  (
@@ -53,11 +53,13 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
     def __init__(self, parent, node):
         super(NodeShapeAttrsTab, self).__init__(parent)
         self.setDelegateType(TansuModelViewWidget.STACKED)
-        self.setViewPosition(TansuModelViewWidget.WEST)
+        # todo fix scope out
+        # why does this scope out?
+        from cgwidgets.utils import attrs
+        self.setViewPosition(attrs.WEST)
         self.setMultiSelect(True)
         self.setMultiSelectDirection(Qt.Vertical)
         self.setNode(node)
-
 
         # create all widgets
         for i, shape_name in enumerate(sorted(NodeShapeAttrsTab.NodeShapeTypes.keys())):
