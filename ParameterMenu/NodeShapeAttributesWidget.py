@@ -9,8 +9,10 @@ TODO:
             Booleans --> context menu --> select param?
 
 """
-from cgwidgets.utils import attrs
-from cgwidgets.widgets import TansuModelViewWidget
+#from cgwidgets.utils.attrs
+from cgwidgets.widgets import (
+    TansuModelViewWidget, ColorInputWidget, StringInputWidget, BooleanInputWidget
+)
 
 from qtpy.QtWidgets import  (
     QWidget, QLabel, QHBoxLayout, QLineEdit, QPushButton, QVBoxLayout
@@ -44,10 +46,6 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
     NodeShapeTypes = {
         "badgeText": {"type" : str, "value" : ""},
         "drawBadge" : {"type" : bool, "value" : False},
-        "glowColorR" : {"type" : float, "value" : 0.0},
-        "glowColorG" : {"type" : float, "value" : 0.0},
-        "glowColorB" : {"type" : float, "value" : 0.0},
-        "errorGlow" : {"type" : bool, "value" : False}
     }
 
     def __init__(self, parent, node):
@@ -62,20 +60,26 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
         self.setNode(node)
 
         # create all widgets
-        for i, shape_name in enumerate(sorted(NodeShapeAttrsTab.NodeShapeTypes.keys())):
-            # get attrs
-            attrs = node.getAttributes()
-            try:
-                default_value = attrs['ns_{shape_name}'.format(shape_name=shape_name)]
-            except KeyError:
-                default_value = NodeShapeAttrsTab.NodeShapeTypes[shape_name]['value']
+        # for i, shape_name in enumerate(sorted(NodeShapeAttrsTab.NodeShapeTypes.keys())):
+        #     # get attrs
+        #     attrs = node.getAttributes()
+        #     try:
+        #         default_value = attrs['ns_{shape_name}'.format(shape_name=shape_name)]
+        #     except KeyError:
+        #         default_value = NodeShapeAttrsTab.NodeShapeTypes[shape_name]['value']
+        #
+        #     value_type = NodeShapeAttrsTab.NodeShapeTypes[shape_name]['type']
+        #
+        #     # create widget
+        #     widget = NodeShapeAttrsWidget(self, node, shape_name, default_value, value_type)
+        #     #self.insertTab(i, shape_name, widget)
+        #     self.insertViewItem(i, shape_name, widget=widget)
 
-            value_type = NodeShapeAttrsTab.NodeShapeTypes[shape_name]['type']
+        glow_input_widget = NodeShapeGlowColorWidget(self, node=node)
+        self.insertViewItem(0, 'Glow Color', widget=glow_input_widget)
 
-            # create widget
-            widget = NodeShapeAttrsWidget(self, node, shape_name, default_value, value_type)
-            #self.insertTab(i, shape_name, widget)
-            self.insertViewItem(i, shape_name, widget=widget)
+        badge_input_widget = NodeShapeTextInput(self, node=node)
+        self.insertViewItem(0, 'Sub Text', widget=badge_input_widget)
 
     def getNode(self):
         return self._node
@@ -181,6 +185,65 @@ class NodeShapeAttrsWidget(QWidget):
     def setValueType(self, value_type):
         self._value_type = value_type
 
+
+class NodeShapeGlowColorWidget(ColorInputWidget):
+    def __init__(self, parent=None, node=None):
+        super(NodeShapeGlowColorWidget, self).__init__(parent)
+        self._node = node
+
+        self.setUserInput(self.update)
+
+    def update(self, widget, color):
+        red = color.redF()
+        green = color.greenF()
+        blue = color.blueF()
+
+        NodegraphAPI.SetNodeShapeAttr(self._node, "glowColorR", red)
+        NodegraphAPI.SetNodeShapeAttr(self._node, "glowColorG", green)
+        NodegraphAPI.SetNodeShapeAttr(self._node, "glowColorB", blue)
+
+        Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(self._node), node=self._node)
+
+
+class NodeShapeTextInput(QWidget):
+    def __init__(self, parent=None, node=None):
+        super(NodeShapeTextInput, self).__init__(parent)
+        self._node = node
+
+        # set up GUI
+
+        # create widgets
+        self.user_input_widget = StringInputWidget(self)
+        self.display_toggle_widget = BooleanInputWidget(self)
+
+        # setup layout
+        QHBoxLayout(self)
+        self.layout().addWidget(self.display_toggle_widget)
+        self.layout().addWidget(self.user_input_widget)
+
+        # setup events
+        self.display_toggle_widget.setUserFinishedEditingEvent(self.setBadgeEnabled)
+        self.user_input_widget.setUserFinishedEditingEvent(self.setBadgeText)
+
+    def setBadgeEnabled(self, widget, value):
+        print('setting enabled to %s (%s)'%(value, type(value)))
+        # convert to float, because Katana
+        if value is True:
+            enabled = 1.0
+        else:
+            enabled = 0.0
+        NodegraphAPI.SetNodeShapeAttr(self._node,  "drawBadge", enabled)
+        Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(self._node), node=self._node)
+
+    def setBadgeText(self, widget, value):
+        
+        print('setting text to %s (%s)' % (value, type(value)))
+        NodegraphAPI.SetNodeShapeAttr(self._node,  "badgeText",  str(value))
+        Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(self._node), node=self._node)
+
+    # def setBadgeText(self, widget, value):
+    #     "badgeText": {"type" : str, "value" : ""},
+    #     "drawBadge" : {"type" : bool, "value" : False},
 
 if __name__ == "__main__":
     import sys
