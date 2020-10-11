@@ -6,7 +6,7 @@ from Widgets2 import (
     AbstractParametersDisplayWidget
 )
 
-from cgwidgets.widgets import BaseTansuWidget
+from cgwidgets.widgets import TansuBaseWidget
 
 try:
     from Katana import UI4
@@ -35,7 +35,7 @@ class GroupNodeEditorMainWidget(QWidget):
         QWidget
             | -- QVBoxLayout
                     | -- live_group_widget (QLabel)
-                    | -- node_editor_widget (GroupNodeEditor --> BaseTansuWidget)
+                    | -- node_editor_widget (GroupNodeEditor --> TansuBaseWidget)
                             | -- nodegraph_widget (NodegraphWidget)
                             | -- parameters_widget (ParametersDisplayWidget)
     """
@@ -61,7 +61,7 @@ class GroupNodeEditorMainWidget(QWidget):
         self.node_editor_widget.addWidget(self.parameters_widget)
 
 
-class GroupNodeEditor(BaseTansuWidget):
+class GroupNodeEditor(TansuBaseWidget):
     def __init__(self, parent):
         super(GroupNodeEditor, self).__init__(parent)
         self.setOrientation(Qt.Vertical)

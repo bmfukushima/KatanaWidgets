@@ -59,7 +59,7 @@ from Widgets2 import (
     TwoFacedSuperToolWidget
 )
 
-from cgwidgets.widgets import BaseTansuWidget, TansuListView
+from cgwidgets.widgets import TansuBaseWidget, TansuHeaderView
 
 try:
     from Katana import UI4
@@ -87,10 +87,10 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
         self.group_node_editor = GroupNodeEditorMainWidget(self, self.node, self.main_node)
 
-        self.getDesignWidget().insertViewItem(0, "Params", widget=self.group_node_editor)
-        self.getDesignWidget().insertViewItem(1, 'Events', widget=QLabel('Events'))
-        self.getDesignWidget().insertViewItem(2, 'GUI Designer', widget=QLabel('GUI Designer'))
-        self.getDesignWidget().insertViewItem(3, 'User Params', widget=QLabel('User Params'))
+        self.getDesignWidget().insertTansuWidget(0, "Params", widget=self.group_node_editor)
+        self.getDesignWidget().insertTansuWidget(1, 'Events', widget=QLabel('Events'))
+        self.getDesignWidget().insertTansuWidget(2, 'GUI Designer', widget=QLabel('GUI Designer'))
+        self.getDesignWidget().insertTansuWidget(3, 'User Params', widget=QLabel('User Params'))
 
     def getEventTypes(self):
         """
@@ -113,7 +113,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         return TwoFacedSuperToolWidget.showEvent(self, event)
 
 
-class SimpleToolViewWidget(TansuListView):
+class SimpleToolViewWidget(TansuHeaderView):
     def __init__(self, parent=None):
         super(SimpleToolViewWidget, self).__init__(parent)
 
@@ -127,12 +127,12 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     w = TansuModelViewWidget()
-    w.setViewPosition(TansuModelViewWidget.NORTH)
+    w.setHeaderPosition(TansuModelViewWidget.NORTH)
     w.setMultiSelect(True)
     w.setMultiSelectDirection(Qt.Vertical)
 
     new_view = SimpleToolViewWidget()
-    w.setViewWidget(new_view)
+    w.setHeaderWidget(new_view)
 
     # dw = TabTansuDynamicWidgetExample
     # w.setDelegateType(
@@ -143,7 +143,7 @@ if __name__ == "__main__":
 
     for x in range(3):
         widget = QLabel(str(x))
-        w.insertViewItem(x, str(x), widget=widget)
+        w.insertTansuWidget(x, str(x), widget=widget)
 
     w.resize(500, 500)
 

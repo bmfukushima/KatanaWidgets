@@ -22,7 +22,7 @@ from cgwidgets.settings.colors import (
     iColor
 )
 
-from cgwidgets.widgets import BaseTansuWidget, ListInputWidget
+from cgwidgets.widgets import TansuBaseWidget, ListInputWidget
 
 from cgwidgets.utils import updateStyleSheet
 
@@ -129,7 +129,7 @@ class VariableManagerWidget(QWidget):
         self.r2_hbox = QHBoxLayout(self.r2_widget)
         self.r2_hbox.addWidget(self.publish_dir)
 
-        self.splitter = BaseTansuWidget(self, orientation=Qt.Vertical)
+        self.splitter = TansuBaseWidget(self, orientation=Qt.Vertical)
         self.splitter.setObjectName('main_splitter')
 
         # row 2.1
@@ -178,7 +178,7 @@ class VariableManagerWidget(QWidget):
         widget.setLayout(vbox)
 
         # Create Widgets
-        self.variable_splitter = BaseTansuWidget(self, orientation=Qt.Horizontal)
+        self.variable_splitter = TansuBaseWidget(self, orientation=Qt.Horizontal)
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
         self.variable_browser_widget.setObjectName("Variable Browser Widget")

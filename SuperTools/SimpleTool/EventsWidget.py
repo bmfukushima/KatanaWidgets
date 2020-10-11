@@ -31,7 +31,7 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor
 from cgwidgets.widgets import (
-    ListInputWidget, TansuModelViewWidget, TansuListView, TansuModelItem
+    ListInputWidget, TansuModelViewWidget, TansuHeaderView, TansuModelItem
 )
 
 from cgwidgets.utils import getWidgetAncestor
@@ -83,10 +83,10 @@ class EventWidget(QWidget):
         main_widget = TansuModelViewWidget(self)
         main_widget.model().setItemType(EventTypeModelItem)
         events_view = EventsUserInputWidget()
-        main_widget.setViewWidget(events_view)
+        main_widget.setHeaderWidget(events_view)
 
         # set type / position
-        main_widget.setViewPosition(TansuModelViewWidget.WEST)
+        main_widget.setHeaderPosition(TansuModelViewWidget.WEST)
         main_widget.setDelegateType(
             TansuModelViewWidget.DYNAMIC,
             dynamic_widget=UserInputMainWidget,
@@ -100,7 +100,7 @@ class EventWidget(QWidget):
         Creates a new event item
         """
         # create model item
-        self.main_widget.insertViewItem(0, "New Event")
+        self.main_widget.insertTansuWidget(0, "New Event")
 
     """ PROPERTIES """
     def removeEventByIndex(self, index):
@@ -183,7 +183,7 @@ class EventTypeModelItem(TansuModelItem):
         self.pop(arg, None)
 
 
-class EventsUserInputWidget(TansuListView):
+class EventsUserInputWidget(TansuHeaderView):
     def __init__(self, parent=None):
         super(EventsUserInputWidget, self).__init__(parent)
 
@@ -191,7 +191,7 @@ class EventsUserInputWidget(TansuListView):
         print("selection == %s"%selected.indexes())
         for index in selected.indexes():
             print(index.internalPointer())
-        return TansuListView.selectionChanged(self, selected, deselected)
+        return TansuHeaderView.selectionChanged(self, selected, deselected)
 
     def setItemEnable(self, enabled):
         self.item().setEnable(enabled)
@@ -521,7 +521,7 @@ if __name__ == "__main__":
     # w.setMultiSelectDirection(Qt.Horizontal)
     #
     # # for x in range(3):
-    # #     nw = BaseTansuWidget(w)
+    # #     nw = TansuBaseWidget(w)
     # #     for b in ['a','b','c']:
     # #         nw.addWidget(QLabel(b))
     # #     w.insertTab(0, nw, str(x))
@@ -540,7 +540,7 @@ if __name__ == "__main__":
     #     nw = QLabel(str(x))
     #     w.insertTab(0, nw, str(x))
     # # for x in range(3):
-    # #     nw = BaseTansuWidget(w)
+    # #     nw = TansuBaseWidget(w)
     # #     for b in ['a','b','c']:
     # #         nw.addWidget(QLabel(b))
     # #     w.insertTab(0, nw, str(x))

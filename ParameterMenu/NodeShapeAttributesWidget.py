@@ -54,7 +54,7 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
         # todo fix scope out
         # why does this scope out?
         from cgwidgets.utils import attrs
-        self.setViewPosition(attrs.WEST)
+        self.setHeaderPosition(attrs.WEST)
         self.setMultiSelect(True)
         self.setMultiSelectDirection(Qt.Vertical)
         self.setNode(node)
@@ -73,13 +73,13 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
         #     # create widget
         #     widget = NodeShapeAttrsWidget(self, node, shape_name, default_value, value_type)
         #     #self.insertTab(i, shape_name, widget)
-        #     self.insertViewItem(i, shape_name, widget=widget)
+        #     self.insertTansuWidget(i, shape_name, widget=widget)
 
         glow_input_widget = NodeShapeGlowColorWidget(self, node=node)
-        self.insertViewItem(0, 'Glow Color', widget=glow_input_widget)
+        self.insertTansuWidget(0, 'Glow Color', widget=glow_input_widget)
 
         badge_input_widget = NodeShapeTextInput(self, node=node)
-        self.insertViewItem(0, 'Sub Text', widget=badge_input_widget)
+        self.insertTansuWidget(0, 'Sub Text', widget=badge_input_widget)
 
     def getNode(self):
         return self._node
@@ -187,6 +187,9 @@ class NodeShapeAttrsWidget(QWidget):
 
 
 class NodeShapeGlowColorWidget(ColorInputWidget):
+    """
+    GUI for the user to adjust the node glow color
+    """
     def __init__(self, parent=None, node=None):
         super(NodeShapeGlowColorWidget, self).__init__(parent)
         self._node = node
@@ -206,6 +209,9 @@ class NodeShapeGlowColorWidget(ColorInputWidget):
 
 
 class NodeShapeTextInput(QWidget):
+    """
+    GUI for user to adjust the Badge text
+    """
     def __init__(self, parent=None, node=None):
         super(NodeShapeTextInput, self).__init__(parent)
         self._node = node
@@ -218,6 +224,7 @@ class NodeShapeTextInput(QWidget):
 
         # setup layout
         QHBoxLayout(self)
+        self.layout().setAlignment(Qt.AlignTop)
         self.layout().addWidget(self.display_toggle_widget)
         self.layout().addWidget(self.user_input_widget)
 
@@ -226,7 +233,6 @@ class NodeShapeTextInput(QWidget):
         self.user_input_widget.setUserFinishedEditingEvent(self.setBadgeText)
 
     def setBadgeEnabled(self, widget, value):
-        print('setting enabled to %s (%s)'%(value, type(value)))
         # convert to float, because Katana
         if value is True:
             enabled = 1.0
@@ -236,14 +242,9 @@ class NodeShapeTextInput(QWidget):
         Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(self._node), node=self._node)
 
     def setBadgeText(self, widget, value):
-        
-        print('setting text to %s (%s)' % (value, type(value)))
         NodegraphAPI.SetNodeShapeAttr(self._node,  "badgeText",  str(value))
         Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(self._node), node=self._node)
 
-    # def setBadgeText(self, widget, value):
-    #     "badgeText": {"type" : str, "value" : ""},
-    #     "drawBadge" : {"type" : bool, "value" : False},
 
 if __name__ == "__main__":
     import sys
