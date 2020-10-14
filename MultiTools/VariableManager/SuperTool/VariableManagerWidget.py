@@ -22,7 +22,7 @@ from cgwidgets.settings.colors import (
     iColor
 )
 
-from cgwidgets.widgets import TansuBaseWidget, ListInputWidget
+from cgwidgets.widgets import TansuBaseWidget, ListInputWidget, FrameInputWidget
 
 from cgwidgets.utils import updateStyleSheet
 
@@ -112,17 +112,9 @@ class VariableManagerWidget(QWidget):
     def initGUI(self):
 
         QVBoxLayout(self)
-        # row 1
-        self.r1_widget = QWidget()
-        self.r1_hbox = QHBoxLayout(self.r1_widget)
+        self.__setupRow1()
 
-        self.variable_menu = VariableManagerGSVMenu(self)
         self.publish_dir = PublishDirWidget(self)
-        self.node_type_menu = VariableManagerNodeMenu(self)
-
-        self.r1_hbox.addWidget(self.variable_menu)
-        self.r1_hbox.addWidget(self.node_type_menu)
-
         # row 2
         self.r2_widget = QWidget()
 
@@ -148,6 +140,36 @@ class VariableManagerWidget(QWidget):
 
         self.r1_widget.setObjectName('r1 widget')
         self.r2_widget.setObjectName('r2 widget')
+
+    def __setupRow1(self):
+        """
+        Sets up the top most row for user input
+        """
+        # create layout / widget
+        self.r1_widget = QWidget()
+        self.r1_hbox = QHBoxLayout(self.r1_widget)
+
+        # variable menu
+        self.variable_menu_frame = FrameInputWidget(
+            parent=self,
+            name='GSV',
+            widget_type=VariableManagerGSVMenu
+        )
+        self.variable_menu_frame.setDirection(Qt.Vertical)
+        self.variable_menu = self.variable_menu_frame.getInputWidget()
+
+        # node type menu
+        self.node_type_menu_frame = FrameInputWidget(
+            parent=self,
+            name='Node Type',
+            widget_type=VariableManagerNodeMenu
+        )
+        self.node_type_menu = self.node_type_menu_frame.getInputWidget()
+        self.node_type_menu_frame.setDirection(Qt.Vertical)
+
+        # add widgets to layout
+        self.r1_hbox.addWidget(self.variable_menu_frame)
+        self.r1_hbox.addWidget(self.node_type_menu_frame)
 
     def createVariableStack(self):
         """

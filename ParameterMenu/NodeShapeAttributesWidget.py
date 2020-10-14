@@ -20,7 +20,7 @@ from qtpy.QtWidgets import  (
 from qtpy.QtCore import Qt
 
 try:
-    from Katana import NodegraphAPI, Utils, UI4
+    from Katana import NodegraphAPI, Utils, UI4, DrawingModule
 except ModuleNotFoundError:
     pass
 
@@ -74,12 +74,17 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
         #     widget = NodeShapeAttrsWidget(self, node, shape_name, default_value, value_type)
         #     #self.insertTab(i, shape_name, widget)
         #     self.insertTansuWidget(i, shape_name, widget=widget)
+        # node color
+        node_color_widget = NodeColorWidget(self, node=node)
+        self.insertTansuWidget(0, column_data={'name':'Color'}, widget=node_color_widget)
 
+        # glow color
         glow_input_widget = NodeShapeGlowColorWidget(self, node=node)
-        self.insertTansuWidget(0, 'Glow Color', widget=glow_input_widget)
+        self.insertTansuWidget(0, column_data={'name':'Glow Color'}, widget=glow_input_widget)
 
+        # sub text
         badge_input_widget = NodeShapeTextInput(self, node=node)
-        self.insertTansuWidget(0, 'Sub Text', widget=badge_input_widget)
+        self.insertTansuWidget(0, column_data={'name':'Sub Text'}, widget=badge_input_widget)
 
     def getNode(self):
         return self._node
@@ -206,6 +211,26 @@ class NodeShapeGlowColorWidget(ColorInputWidget):
         NodegraphAPI.SetNodeShapeAttr(self._node, "glowColorB", blue)
 
         Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(self._node), node=self._node)
+
+
+class NodeColorWidget(ColorInputWidget):
+    """
+    GUI for the user to adjust the node glow color
+    """
+    def __init__(self, parent=None, node=None):
+        super(NodeColorWidget, self).__init__(parent)
+        self._node = node
+
+        self.setUserInput(self.update)
+
+    def update(self, widget, color):
+        red = color.redF()
+        green = color.greenF()
+        blue = color.blueF()
+
+        DrawingModule.SetCustomNodeColor(self._node, red, green, blue)
+        NodegraphAPI.SetNeedsRedraw(True)
+        Utils.EventModule.ProcessAllEvents()
 
 
 class NodeShapeTextInput(QWidget):

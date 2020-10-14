@@ -59,7 +59,7 @@ from Widgets2 import (
     TwoFacedSuperToolWidget
 )
 
-from cgwidgets.widgets import TansuBaseWidget, TansuHeaderView
+from cgwidgets.widgets import TansuBaseWidget, TansuHeaderListView
 
 try:
     from Katana import UI4
@@ -87,10 +87,14 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
         self.group_node_editor = GroupNodeEditorMainWidget(self, self.node, self.main_node)
 
-        self.getDesignWidget().insertTansuWidget(0, "Params", widget=self.group_node_editor)
-        self.getDesignWidget().insertTansuWidget(1, 'Events', widget=QLabel('Events'))
-        self.getDesignWidget().insertTansuWidget(2, 'GUI Designer', widget=QLabel('GUI Designer'))
-        self.getDesignWidget().insertTansuWidget(3, 'User Params', widget=QLabel('User Params'))
+        self.getDesignWidget().insertTansuWidget(
+            0, column_data={'name':"Params"}, widget=self.group_node_editor)
+        self.getDesignWidget().insertTansuWidget(
+            1, column_data={'name':'Events'}, widget=QLabel('Events'))
+        self.getDesignWidget().insertTansuWidget(
+            2, column_data={'name':'GUI Designer'}, widget=QLabel('GUI Designer'))
+        self.getDesignWidget().insertTansuWidget(
+            3, column_data={'name':'User Params'}, widget=QLabel('User Params'))
 
     def getEventTypes(self):
         """
@@ -113,7 +117,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         return TwoFacedSuperToolWidget.showEvent(self, event)
 
 
-class SimpleToolViewWidget(TansuHeaderView):
+class SimpleToolViewWidget(TansuHeaderListView):
     def __init__(self, parent=None):
         super(SimpleToolViewWidget, self).__init__(parent)
 

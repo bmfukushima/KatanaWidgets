@@ -31,10 +31,10 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor
 from cgwidgets.widgets import (
-    ListInputWidget, TansuModelViewWidget, TansuHeaderView, TansuModelItem
+    ListInputWidget, TansuModelViewWidget, TansuHeaderListView, TansuModelItem
 )
 
-from cgwidgets.utils import getWidgetAncestor
+from cgwidgets.utils import getWidgetAncestor, attrs
 
 
 class EventWidget(QWidget):
@@ -86,7 +86,7 @@ class EventWidget(QWidget):
         main_widget.setHeaderWidget(events_view)
 
         # set type / position
-        main_widget.setHeaderPosition(TansuModelViewWidget.WEST)
+        main_widget.setHeaderPosition(attrs.WEST)
         main_widget.setDelegateType(
             TansuModelViewWidget.DYNAMIC,
             dynamic_widget=UserInputMainWidget,
@@ -183,7 +183,7 @@ class EventTypeModelItem(TansuModelItem):
         self.pop(arg, None)
 
 
-class EventsUserInputWidget(TansuHeaderView):
+class EventsUserInputWidget(TansuHeaderListView):
     def __init__(self, parent=None):
         super(EventsUserInputWidget, self).__init__(parent)
 
@@ -191,7 +191,7 @@ class EventsUserInputWidget(TansuHeaderView):
         print("selection == %s"%selected.indexes())
         for index in selected.indexes():
             print(index.internalPointer())
-        return TansuHeaderView.selectionChanged(self, selected, deselected)
+        return TansuHeaderListView.selectionChanged(self, selected, deselected)
 
     def setItemEnable(self, enabled):
         self.item().setEnable(enabled)
@@ -503,7 +503,6 @@ class ArgsInputMainWidget(QWidget):
     @event_type.setter
     def event_type(self, event_type):
         self._event_type = event_type
-
 
 
 if __name__ == "__main__":
