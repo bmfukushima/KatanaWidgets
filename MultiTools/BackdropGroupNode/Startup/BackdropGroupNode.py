@@ -13,10 +13,12 @@ def backdropGroupFunction(*args):
         @classmethod
         def mainFunction(cls, *args):
             from Katana import NodegraphAPI, UI4, DrawingModule
+            # setup default attrs
             katana_main = UI4.App.MainWindow.GetMainWindow()
             if not hasattr(katana_main, 'selected_backdrop_group_list'):
                 katana_main.selected_backdrop_group_list = []
-            print ('agogo')
+
+            # do event stuff
             for arg in args:
                 arg = arg[0]
                 katana_main = UI4.App.MainWindow.GetMainWindow()
@@ -25,6 +27,7 @@ def backdropGroupFunction(*args):
                     node = arg[2]['node']
                     if node.getType() == 'Group':
                         for backdrop_arg in katana_main.selected_backdrop_group_list:
+                            # unzip attrs
                             backdrop_node = backdrop_arg['backdrop']
                             children = backdrop_arg['children']
                             group_node = node
@@ -36,7 +39,8 @@ def backdropGroupFunction(*args):
                 if arg[0] == 'node_delete':
                     node = arg[2]['node']
                     if node.getType() == 'Group':
-                        pos = NodegraphAPI.GetNodePosition(node)
+                        if not cls.isBackdropGroupNode(node):
+                            return
 
                 # backdrop selected / deselected
                 if arg[0] == 'node_setSelected':
@@ -44,9 +48,9 @@ def backdropGroupFunction(*args):
                     Sets a hidden attr on the Katana main instance that will be a list
                     of all of the current selected Backdrop group nodes
                     """
-
                     # check selection state
                     katana_main.selected_backdrop_group_list = []
+
                     for selected_node in NodegraphAPI.GetAllSelectedNodes():
                         # preflight
                         if selected_node.getType() != "Backdrop": return
@@ -55,33 +59,19 @@ def backdropGroupFunction(*args):
                         # set node as selected
                         cls.selectBackdropNode(selected_node)
 
-                    # node = arg[2]['node']
-                    # is_backdrop_node = cls.isBackdropGroupNode(node)
-                    # if is_backdrop_node:
-                    #     if node.getType() == "Backdrop":
-                    #         # selected
-                    #         if node in NodegraphAPI.GetAllSelectedNodes():
-                    #             cls.selectBackdropNode(node)
-                    #
-                    #         # deselected
-                    #         else:
-                    #             cls.deselectBackdropNode(node)
-
                 if arg[0] == 'node_setPosition':
+                    # get attrs
                     node = arg[2]['node']
-                    is_backdrop_node = cls.isBackdropGroupNode(node)
-                    if is_backdrop_node:
-                        if node.getType() == "Group":
-                            if node.getParameter("backdrop"):
-                                # TODO Update internal nodes positions
-                                backdrop_name = node.getParameter("backdrop").getValue(0)
-                                backdrop_node = NodegraphAPI.GetNode(backdrop_name)
-                                pos = NodegraphAPI.GetNodePosition(node)
-                                NodegraphAPI.SetNodePosition(backdrop_node, pos)
-                    # is group
-                    # set backdrop?
-                    # if is_backdrop_node:
 
+                    # preflight
+                    if not cls.isBackdropGroupNode(node): return
+                    if node.getType() != "Group": return
+                    if not node.getParameter("backdrop"): return
+
+                    # update node positions
+                    cls.moveNodes(node)
+
+        """ UTILS """
         @classmethod
         def isBackdropGroupNode(cls, node):
             """
@@ -96,7 +86,7 @@ def backdropGroupFunction(*args):
             return False
 
         @classmethod
-        def get_backdrop_children(cls, backdrop_node):
+        def getBackdropChildren(cls, backdrop_node):
             """
             Gets all of the children that a full encompassed by the backdrop node.
 
@@ -164,6 +154,7 @@ def backdropGroupFunction(*args):
             for output_port in node.getOutputPorts():
                 node.removeOutputPort(output_port.getName())
 
+        """ EVENTS """
         @classmethod
         def convertBackdropToGroupNode(cls, backdrop_node, group_node, children):
             """
@@ -227,27 +218,38 @@ def backdropGroupFunction(*args):
             from Katana import NodegraphAPI, UI4, DrawingModule
             katana_main = UI4.App.MainWindow.GetMainWindow()
 
-            children = cls.get_backdrop_children(node)
+            children = cls.getBackdropChildren(node)
             katana_main.selected_backdrop_group_list.append(
                 {'backdrop': node, 'parent': node.getParent(), 'children': children}
             )
 
-        # @classmethod
-        # def deselectBackdropNode(cls, node):
-        #     katana_main = UI4.App.MainWindow.GetMainWindow()
-        #     node_list = katana_main.selected_backdrop_group_list
-        #     for index, backdrop_arg in enumerate(node_list):
-        #         if backdrop_arg['backdrop'] == node:
-        #             if node.getParent() == backdrop_arg['backdrop'].getParent():
-        #                 katana_main.selected_backdrop_group_list.pop(index)
-        #
-        #                 print('removing %s'%backdrop_arg['backdrop'])
+        @classmethod
+        def moveNodes(cls, node):
+            # get backdrop
+            backdrop_name = node.getParameter("backdrop").getValue(0)
+            backdrop_node = NodegraphAPI.GetNode(backdrop_name)
+
+            # get offset
+            old_pos = NodegraphAPI.GetNodePosition(backdrop_node)
+            new_pos = NodegraphAPI.GetNodePosition(node)
+            offset_x = new_pos[0] - old_pos[0]
+            offset_y = new_pos[1] - old_pos[1]
+
+            # get children
+            child_node_list = cls.getBackdropChildren(backdrop_node)
+            child_node_list.append(backdrop_node)
+
+            # move children to new pos
+            for child_node in child_node_list:
+                child_pos = NodegraphAPI.GetNodePosition(child_node)
+                x = child_pos[0] + offset_x
+                y = child_pos[1] + offset_y
+                NodegraphAPI.SetNodePosition(child_node, (x, y))
 
     backdropGroup.mainFunction(*args)
 
 
 def installBackdropGroupNode():
-    print('1')
     Utils.EventModule.RegisterCollapsedHandler(backdropGroupFunction, 'node_create')
     Utils.EventModule.RegisterCollapsedHandler(backdropGroupFunction, 'node_delete')
     Utils.EventModule.RegisterCollapsedHandler(backdropGroupFunction, 'node_setSelected')
