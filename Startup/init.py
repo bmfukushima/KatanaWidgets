@@ -4,6 +4,14 @@ from Katana import Utils
 from ParameterMenu import installCustomParametersMenu
 installCustomParametersMenu()
 
+# setup backdrop group
+print('a')
+from MultiTools.BackdropGroupNode import installBackdropGroupNode
+print ('b')
+installBackdropGroupNode()
+print('2')
+
+
 # def test(*args):
 #     for arg in args:
 #         arg = arg[0]
