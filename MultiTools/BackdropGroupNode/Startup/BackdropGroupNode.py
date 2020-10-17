@@ -1,3 +1,10 @@
+"""
+BUGS:
+    Port not plugged in... index out of range
+    Auto port creation
+
+"""
+
 from Katana import Callbacks, Utils
 
 """ BACK DROP"""
@@ -132,11 +139,18 @@ def backdropGroupFunction(*args):
             children.remove(backdrop_node)
             return children
 
+        """ Port Map"""
         @staticmethod
-        def __addInputPortFromProxyNode(port_map, port_name, proxy_input_port_node):
+        def __appendInputPortToPortMap(port_map, port_name, proxy_input_port_node):
             port = proxy_input_port_node.getInputPortByIndex(0)
             connect_port = port.getConnectedPorts()[0]
             port_map['input'][port_name] = connect_port
+
+        @staticmethod
+        def __appendOutputPortToPortMap(port_map, port_name, proxy_output_port_node):
+            port = proxy_output_port_node.getOutputPortByIndex(0)
+            connect_port = port.getConnectedPorts()[0]
+            port_map['output'][port_name] = connect_port
 
         @staticmethod
         def __createPortMap(input_ports, output_ports, group_node, backdrop_node):
@@ -153,7 +167,10 @@ def backdropGroupFunction(*args):
                     and tried to auto connect stuff with.
                 backdrop_node (Node): backdrop group node currently having the
                     port map created on it.
-            Returns (dict)
+            Returns (dict): Where the 'input' are a dictionary of ports that should
+                be connected to the group nodes input ports with a direct 1:1 mapping
+                of name (name of port on group node) --> port (port that should be connected
+                to the group node port from name)
                 dict['name':port]
             """
             # create port mapping from custom inputs
@@ -163,36 +180,34 @@ def backdropGroupFunction(*args):
             for input_port in input_ports:
                 port_name = input_port.getValue(0)
                 port_node = NodegraphAPI.GetNode(port_name)
-                backdropGroup.__addInputPortFromProxyNode(port_map, port_name, port_node)
+                backdropGroup.__appendInputPortToPortMap(port_map, port_name, port_node)
 
             for output_port in output_ports:
-                name = output_port.getValue(0)
-                node = NodegraphAPI.GetNode(name)
-                port = node.getOutputPortByIndex(0)
-                connect_port = port.getConnectedPorts()[0]
-                port_map['output'][name] = connect_port
+                port_name = output_port.getValue(0)
+                port_node = NodegraphAPI.GetNode(port_name)
+                backdropGroup.__appendOutputPortToPortMap(port_map, port_name, port_node)
 
             # append katana auto created ports
             # needs to map from port node token to output node?
             for port in group_node.getInputPorts():
                 # get port name
                 for connected_port in group_node.getSendPort(port.getName()).getConnectedPorts():
-                    name = connected_port.getNode().getName()
+                    input_port_name = connected_port.getNode().getName()
                     # port exists in BG Group
-                    if name in [param.getValue(0) for param in input_ports]:
+                    if input_port_name in [param.getValue(0) for param in input_ports]:
                         # get connected port
-                        #connect_port = port.getConnectedPorts()[0]
-                        port_map['input'][name] = connected_port
-                    else:
-                        createBackdropGroupNodeInputPort(backdrop_node)
-                        # todo create custom port here
-                        # create port
-                        # append to port map
-                        # position proxy port
-                        #   # get backdrop position?
-                        # connect proxy port
+                        port_map['input'][input_port_name] = port.getConnectedPorts()[0]
 
-                        pass
+                    else:
+                        # create input port
+                        input_port_display = createBackdropGroupNodeInputPort(backdrop_node)
+                        port_name = input_port_display.getParameter('port_name').getValue(0)
+                        port_map['input'][port_name] = port.getConnectedPorts()[0]
+
+                        # wire node
+                        port_node.getInputPortByIndex(0).connect(group_node.getSendPort(port.getName()))
+                        #connected_port.connect(port_node.getOutputPortByIndex(0))
+                        connected_port.connect(input_port_display.getOutputPortByIndex(0))
 
             for port in group_node.getOutputPorts():
                 # get port name
@@ -202,7 +217,7 @@ def backdropGroupFunction(*args):
                 # get connected port
                 connect_port = port.getConnectedPorts()[0]
                 port_map['output'][name] = connect_port
-
+            print (port_map)
             return port_map
 
         @staticmethod
@@ -251,20 +266,27 @@ def backdropGroupFunction(*args):
 
             # this is kinda lazy
             # create output ports
-            for output_port in output_ports:
-                name = output_port.getValue(0)
-                proxy_port_node = NodegraphAPI.GetNode(name)
-                group_node.addOutputPort(name)
-                group_node.getReturnPort(name).connect(proxy_port_node.getOutputPortByIndex(0))
-                group_node.getOutputPort(name).connect(port_map['output'][name])
 
             # create input ports
+            #Utils.EventModule.ProcessAllEvents()
+            # do this twice incase ports are made...
+            output_ports = backdrop_node.getParameter('user.output_ports').getChildren()
+            input_ports = backdrop_node.getParameter('user.input_ports').getChildren()
+            print('input ports == %s'%input_ports)
             for input_port in input_ports:
+                print(input_port)
                 name = input_port.getValue(0)
                 proxy_port_node = NodegraphAPI.GetNode(name)
                 group_node.addInputPort(name)
                 group_node.getSendPort(name).connect(proxy_port_node.getInputPortByIndex(0))
                 group_node.getInputPort(name).connect(port_map['input'][name])
+
+            # for output_port in output_ports:
+            #     name = output_port.getValue(0)
+            #     proxy_port_node = NodegraphAPI.GetNode(name)
+            #     group_node.addOutputPort(name)
+            #     group_node.getReturnPort(name).connect(proxy_port_node.getOutputPortByIndex(0))
+            #     group_node.getOutputPort(name).connect(port_map['output'][name])
 
             # reparent all children
             for child_node in children:
@@ -303,8 +325,7 @@ def createBackdropGroupNodeInputPort(backdrop_node):
         backdrop_node (Node): Backdrop Group Node to have the new port
             created on it.
 
-    Returns (Node): returns a dot node that is a proxy port to be
-        used as the display port
+    Returns (dict): {port_name : port_proxy_node}
     """
     from Katana import NodegraphAPI, UI4, DrawingModule
 
@@ -313,7 +334,8 @@ def createBackdropGroupNodeInputPort(backdrop_node):
 
     # create dot node to use as display for input port
     input_port_display = NodegraphAPI.CreateNode("Dot", backdrop_node.getParent())
-    input_port_display.setName('i{i}'.format(i=array_size))
+    input_port_name = 'i{i}'.format(i=array_size)
+    input_port_display.setName(input_port_name)
     new_attrs = input_port_display.getAttributes()
     new_attrs['ns_basicDisplay'] = 1
     input_port_display.setAttributes(new_attrs)
@@ -327,7 +349,10 @@ def createBackdropGroupNodeInputPort(backdrop_node):
     # link dot node to backdrop
     backdrop_node_param = input_port_display.getParameters().createChildString("backdrop", '')
     backdrop_node_param.setExpressionFlag(True)
-    backdrop_node_param.setExpression("@{backdrop_name}".format(backdrop_name=node.getName()))
+    backdrop_node_param.setExpression("@{backdrop_name}".format(backdrop_name=backdrop_node.getName()))
+
+    # set port name
+    input_port_display.getParameters().createChildString("port_name", input_port_name)
 
     # float nodes
     UI4.App.Tabs.FindTopTab('Node Graph').floatNodes([input_port_display])
@@ -336,6 +361,8 @@ def createBackdropGroupNodeInputPort(backdrop_node):
     DrawingModule.SetCustomNodeColor(input_port_display, 0.25, 0.25, 0.5)
     NodegraphAPI.SetNeedsRedraw(True)
     Utils.EventModule.ProcessAllEvents()
+
+    print(backdrop_node.getParameter('user.input_ports').getChildren())
 
     return input_port_display
 
