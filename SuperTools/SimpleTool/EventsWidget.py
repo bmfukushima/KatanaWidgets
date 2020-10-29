@@ -100,7 +100,7 @@ class EventWidget(QWidget):
         Creates a new event item
         """
         # create model item
-        self.main_widget.insertTansuWidget(0, "New Event")
+        self.main_widget.insertTansuWidget(0, column_data={'name': "New Event"})
 
     """ PROPERTIES """
     def removeEventByIndex(self, index):
@@ -187,11 +187,11 @@ class EventsUserInputWidget(TansuHeaderListView):
     def __init__(self, parent=None):
         super(EventsUserInputWidget, self).__init__(parent)
 
-    def selectionChanged(self, selected, deselected):
-        print("selection == %s"%selected.indexes())
-        for index in selected.indexes():
-            print(index.internalPointer())
-        return TansuHeaderListView.selectionChanged(self, selected, deselected)
+    # def selectionChanged(self, selected, deselected):
+    #     print("selection == %s"%selected.indexes())
+    #     for index in selected.indexes():
+    #         print(index.internalPointer())
+    #     return TansuHeaderListView.selectionChanged(self, selected, deselected)
 
     def setItemEnable(self, enabled):
         self.item().setEnable(enabled)
@@ -319,7 +319,7 @@ class UserInputMainWidget(QWidget):
         return self._event_type
 
     @staticmethod
-    def updateGUI(widget, item):
+    def updateGUI(parent, widget, item):
         """
         widget (tab widget widget)
             can get main widget with widget.getMainWidget()
@@ -331,7 +331,7 @@ class UserInputMainWidget(QWidget):
         print(item, widget)
 
         # set title
-        widget.group_box.setTitle(item.name())
+        widget.group_box.setTitle(item.columnData()['name'])
 
         # set item
         main_widget = widget.getMainWidget()

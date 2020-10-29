@@ -20,6 +20,7 @@ def backdropGroupFunction(*args):
             from Katana import NodegraphAPI, UI4, DrawingModule
             # setup default attrs
             katana_main = UI4.App.MainWindow.GetMainWindow()
+            if not katana_main: return
             if not hasattr(katana_main, '_selected_backdrop_group_registry'):
                 katana_main._selected_backdrop_group_registry = []
 
@@ -56,7 +57,6 @@ def backdropGroupFunction(*args):
                     cls.nodeSetSelected()
                     # check selection state
 
-
                 if arg[0] == 'node_setPosition':
                     # get attrs
                     node = arg[2]['node']
@@ -68,184 +68,6 @@ def backdropGroupFunction(*args):
 
                     # update node positions
                     cls.moveNodes(node)
-
-        @classmethod
-        def nodeSetSelected(cls):
-            """
-            When a node is selected this will look through the selection list
-            and repopulate a private attribute on the Katana main instance
-            that stores a list of all of the selected backdrop groups.
-
-            """
-            katana_main = UI4.App.MainWindow.GetMainWindow()
-            katana_main._selected_backdrop_group_registry = []
-
-            for selected_node in NodegraphAPI.GetAllSelectedNodes():
-                # preflight
-                if selected_node.getType() != "Backdrop": return
-                if not cls.isBackdropGroupNode(selected_node): return
-
-                # set node as selected
-                cls.__appendBackdropNodeToRegistry(selected_node)
-
-        @classmethod
-        def __appendBackdropNodeToRegistry(cls, node):
-            from Katana import NodegraphAPI, UI4, DrawingModule
-            katana_main = UI4.App.MainWindow.GetMainWindow()
-
-            children = cls.getBackdropChildren(node)
-            katana_main._selected_backdrop_group_registry.append(
-                {'backdrop': node, 'parent': node.getParent(), 'children': children}
-            )
-
-        """ UTILS """
-        @classmethod
-        def isBackdropGroupNode(cls, node):
-            """
-            Determines if the node is flagged as a backdrop group node.
-
-            Args:
-                node (Node): node to check to see if it is a backdrop group
-            """
-            # if node.getType() == "Backdrop":
-            if node.getParameter("is_backdrop_group"):
-                return True
-            return False
-
-        @classmethod
-        def getBackdropChildren(cls, backdrop_node):
-            """
-            Gets all of the children that a full encompassed by the backdrop node.
-
-            Args:
-                backdrop_node (Node): a node of type "Backdrop"
-
-            Returns (list): of nodes
-            """
-            from Katana import NodegraphAPI, UI4, DrawingModule
-
-            # get nodegraph
-            ng = UI4.App.Tabs.FindTopTab('Node Graph')
-            widget = ng.getNodeGraphWidget()
-
-            l, b, r, t = DrawingModule.nodeWorld_getBoundsOfListOfNodes([backdrop_node])
-            children = widget.hitTestBox(
-                (l, b),
-                (r, t),
-                viewNode=backdrop_node.getParent()
-            )
-
-            # remove backdrop
-            children.remove(backdrop_node)
-            return children
-
-        """ Port Map"""
-        @staticmethod
-        def __appendInputPortToPortMap(port_map, port_name, proxy_input_port_node):
-            port = proxy_input_port_node.getInputPortByIndex(0)
-            connect_port = port.getConnectedPorts()[0]
-            port_map['input'][port_name] = connect_port
-
-        @staticmethod
-        def __appendOutputPortToPortMap(port_map, port_name, proxy_output_port_node):
-            port = proxy_output_port_node.getOutputPortByIndex(0)
-            connect_port = port.getConnectedPorts()[0]
-            port_map['output'][port_name] = connect_port
-
-        @staticmethod
-        def __createPortMap(input_ports, output_ports, group_node, backdrop_node):
-            """
-            Creates a dictionary of mappings between a port name and the
-            port that it should be connected to.  This is for reconnecting
-            the group node once it is created.
-            Args:
-                input_ports (list): of parameters that are referenced to the name
-                    of the nodes being displayed as proxy ports
-                output_ports (list): of parameters that are referenced to the name
-                    of the nodes being displayed as proxy ports
-                group_node (Node): group node that Katana has just created
-                    and tried to auto connect stuff with.
-                backdrop_node (Node): backdrop group node currently having the
-                    port map created on it.
-            Returns (dict): Where the 'input' are a dictionary of ports that should
-                be connected to the group nodes input ports with a direct 1:1 mapping
-                of name (name of port on group node) --> port (port that should be connected
-                to the group node port from name)
-                dict['name':port]
-            """
-            # create port mapping from custom inputs
-            port_map = {}
-            port_map['input'] = {}
-            port_map['output'] = {}
-            for input_port in input_ports:
-                port_name = input_port.getValue(0)
-                port_node = NodegraphAPI.GetNode(port_name)
-                backdropGroup.__appendInputPortToPortMap(port_map, port_name, port_node)
-
-            for output_port in output_ports:
-                port_name = output_port.getValue(0)
-                port_node = NodegraphAPI.GetNode(port_name)
-                backdropGroup.__appendOutputPortToPortMap(port_map, port_name, port_node)
-
-            # append katana auto created ports
-            # needs to map from port node token to output node?
-            for port in group_node.getInputPorts():
-                # get port name
-                for connected_port in group_node.getSendPort(port.getName()).getConnectedPorts():
-                    input_port_name = connected_port.getNode().getName()
-                    # port exists in BG Group
-                    if input_port_name in [param.getValue(0) for param in input_ports]:
-                        # get connected port
-                        port_map['input'][input_port_name] = port.getConnectedPorts()[0]
-
-                    else:
-                        # create input port
-                        input_port_display = createBackdropGroupNodeInputPort(backdrop_node, float_nodes=False)
-                        port_name = input_port_display.getParameter('port_name').getValue(0)
-                        port_map['input'][port_name] = port.getConnectedPorts()[0]
-
-                        # wire node
-                        port_node.getInputPortByIndex(0).connect(group_node.getSendPort(port.getName()))
-                        #connected_port.connect(port_node.getOutputPortByIndex(0))
-                        connected_port.connect(input_port_display.getOutputPortByIndex(0))
-
-            # todo change
-            for port in group_node.getOutputPorts():
-                # get port name
-                # todo change
-                for connected_port in group_node.getReturnPort(port.getName()).getConnectedPorts():
-                    input_port_name = connected_port.getNode().getName()
-                    # port exists in BG Group
-                    if input_port_name in [param.getValue(0) for param in output_ports]:
-                        # get connected port
-                        # changed
-                        port_map['output'][input_port_name] = port.getConnectedPorts()[0]
-
-                    else:
-                        # todo change
-                        input_port_display = createBackdropGroupNodeOutputPort(backdrop_node, float_nodes=False)
-                        port_name = input_port_display.getParameter('port_name').getValue(0)
-                        # todo change
-                        port_map['output'][port_name] = port.getConnectedPorts()[0]
-
-                        # wire node
-                        # todo change
-                        port_node.getOutputPortByIndex(0).connect(group_node.getReturnPort(port.getName()))
-                        #connected_port.connect(port_node.getOutputPortByIndex(0))
-                        # todo change
-                        connected_port.connect(input_port_display.getInputPortByIndex(0))
-
-            return port_map
-
-        @staticmethod
-        def __removeExistingPorts(node):
-            for input_port in node.getInputPorts():
-                node.removeInputPort(input_port.getName())
-            for output_port in node.getOutputPorts():
-                node.removeOutputPort(output_port.getName())
-
-        def __addAndConnectPortMap(self, port_map):
-            pass
         """ EVENTS """
         @classmethod
         def convertBackdropToGroupNode(cls, backdrop_node, group_node, children):
@@ -254,6 +76,9 @@ def backdropGroupFunction(*args):
             relink expressions
             append created ports to input port list
             """
+            parameters = group_node.getParameters().createChildString('backdrop_parameters', backdrop_node.getName())
+            parameters.setHintString(repr({'widget': 'teleparam', 'hideTitle': 'True'}))
+
             # setup reference to backdrop node
             node_ref = group_node.getParameters().createChildString('backdrop', '')
             node_ref.setExpressionFlag(True)
@@ -330,6 +155,182 @@ def backdropGroupFunction(*args):
                 y = child_pos[1] + offset_y
                 NodegraphAPI.SetNodePosition(child_node, (x, y))
 
+        @classmethod
+        def nodeSetSelected(cls):
+            """
+            When a node is selected this will look through the selection list
+            and repopulate a private attribute on the Katana main instance
+            that stores a list of all of the selected backdrop groups.
+
+            """
+            katana_main = UI4.App.MainWindow.GetMainWindow()
+            katana_main._selected_backdrop_group_registry = []
+
+            for selected_node in NodegraphAPI.GetAllSelectedNodes():
+                # preflight
+                if selected_node.getType() != "Backdrop": return
+                if not cls.isBackdropGroupNode(selected_node): return
+
+                # set node as selected
+                cls.__appendBackdropNodeToRegistry(selected_node)
+
+        """ UTILS """
+        @classmethod
+        def __appendBackdropNodeToRegistry(cls, node):
+            """
+            Adds the provided backdrop node to the registry of currently
+            selected backdrop group nodes.
+
+            Args:
+                node (BackdropGroupNode): BackdropGroupNode to add
+                    to the registry.
+            """
+            from Katana import NodegraphAPI, UI4, DrawingModule
+            katana_main = UI4.App.MainWindow.GetMainWindow()
+
+            children = cls.getBackdropChildren(node)
+            katana_main._selected_backdrop_group_registry.append(
+                {'backdrop': node, 'parent': node.getParent(), 'children': children}
+            )
+
+        @classmethod
+        def isBackdropGroupNode(cls, node):
+            """
+            Determines if the node is flagged as a backdrop group node.
+
+            Args:
+                node (Node): node to check to see if it is a backdrop group
+            """
+            if node.getParameter("is_backdrop_group"):
+                return True
+            return False
+
+        @classmethod
+        def getBackdropChildren(cls, backdrop_node):
+            """
+            Gets all of the children that a full encompassed by the backdrop node.
+
+            Args:
+                backdrop_node (Node): a node of type "Backdrop"
+
+            Returns (list): of nodes
+            """
+            from Katana import NodegraphAPI, UI4, DrawingModule
+
+            # get nodegraph
+            ng = UI4.App.Tabs.FindTopTab('Node Graph')
+            widget = ng.getNodeGraphWidget()
+
+            l, b, r, t = DrawingModule.nodeWorld_getBoundsOfListOfNodes([backdrop_node])
+            children = widget.hitTestBox(
+                (l, b),
+                (r, t),
+                viewNode=backdrop_node.getParent()
+            )
+
+            # remove backdrop
+            children.remove(backdrop_node)
+            return children
+
+        """ Port Map"""
+        @staticmethod
+        def __createPortMap(input_ports, output_ports, group_node, backdrop_node):
+            """
+            Creates a dictionary of mappings between a port name and the
+            port that it should be connected to.  This is for reconnecting
+            the group node once it is created.
+            Args:
+                input_ports (list): of parameters that are referenced to the name
+                    of the nodes being displayed as proxy ports
+                output_ports (list): of parameters that are referenced to the name
+                    of the nodes being displayed as proxy ports
+                group_node (Node): group node that Katana has just created
+                    and tried to auto connect stuff with.
+                backdrop_node (Node): backdrop group node currently having the
+                    port map created on it.
+            Returns (dict): Where the 'input' are a dictionary of ports that should
+                be connected to the group nodes input ports with a direct 1:1 mapping
+                of name (name of port on group node) --> port (port that should be connected
+                to the group node port from name)
+                dict['name':port]
+            """
+            # create port mapping from custom inputs
+            port_map = {}
+            port_map['input'] = {}
+            port_map['output'] = {}
+
+            # populate port map from proxy ports
+            for input_port in input_ports:
+                port_name = input_port.getValue(0)
+                port_node = NodegraphAPI.GetNode(port_name)
+                backdropGroup.__appendInputPortToPortMap(port_map, port_name, port_node)
+
+            for output_port in output_ports:
+                port_name = output_port.getValue(0)
+                port_node = NodegraphAPI.GetNode(port_name)
+                backdropGroup.__appendOutputPortToPortMap(port_map, port_name, port_node)
+
+            # append katana auto created ports
+            for port in group_node.getInputPorts():
+                # get port name
+                for connected_port in group_node.getSendPort(port.getName()).getConnectedPorts():
+                    input_port_name = connected_port.getNode().getName()
+                    # found proxy port
+                    if input_port_name in [param.getValue(0) for param in input_ports]:
+                        # get connected port
+                        port_map['input'][input_port_name] = port.getConnectedPorts()[0]
+
+                    # did not find proxy port
+                    else:
+                        # create input port
+                        input_port_display = createBackdropGroupNodeInputPort(backdrop_node, float_nodes=False)
+                        port_name = input_port_display.getParameter('port_name').getValue(0)
+                        port_map['input'][port_name] = port.getConnectedPorts()[0]
+
+                        # wire node
+                        port_node.getInputPortByIndex(0).connect(group_node.getSendPort(port.getName()))
+                        connected_port.connect(input_port_display.getOutputPortByIndex(0))
+
+            for port in group_node.getOutputPorts():
+                # get port name
+                # todo change
+                for connected_port in group_node.getReturnPort(port.getName()).getConnectedPorts():
+                    input_port_name = connected_port.getNode().getName()
+                    # found proxy port
+                    if input_port_name in [param.getValue(0) for param in output_ports]:
+                        port_map['output'][input_port_name] = port.getConnectedPorts()[0]
+
+                    # did not find proxy port
+                    else:
+                        input_port_display = createBackdropGroupNodeOutputPort(backdrop_node, float_nodes=False)
+                        port_name = input_port_display.getParameter('port_name').getValue(0)
+                        port_map['output'][port_name] = port.getConnectedPorts()[0]
+
+                        # wire node
+                        port_node.getOutputPortByIndex(0).connect(group_node.getReturnPort(port.getName()))
+                        connected_port.connect(input_port_display.getInputPortByIndex(0))
+
+            return port_map
+
+        @staticmethod
+        def __appendInputPortToPortMap(port_map, port_name, proxy_input_port_node):
+            port = proxy_input_port_node.getInputPortByIndex(0)
+            connect_port = port.getConnectedPorts()[0]
+            port_map['input'][port_name] = connect_port
+
+        @staticmethod
+        def __appendOutputPortToPortMap(port_map, port_name, proxy_output_port_node):
+            port = proxy_output_port_node.getOutputPortByIndex(0)
+            connect_port = port.getConnectedPorts()[0]
+            port_map['output'][port_name] = connect_port
+
+        @staticmethod
+        def __removeExistingPorts(node):
+            for input_port in node.getInputPorts():
+                node.removeInputPort(input_port.getName())
+            for output_port in node.getOutputPorts():
+                node.removeOutputPort(output_port.getName())
+
     backdropGroup.mainFunction(*args)
 
 def createBackdropGroupNodeInputPort(backdrop_node, float_nodes=True):
@@ -378,7 +379,6 @@ def createBackdropGroupNodeInputPort(backdrop_node, float_nodes=True):
     NodegraphAPI.SetNeedsRedraw(True)
     Utils.EventModule.ProcessAllEvents()
 
-    print(backdrop_node.getParameter('user.input_ports').getChildren())
 
     return input_port_display
 
