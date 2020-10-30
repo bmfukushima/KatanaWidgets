@@ -361,7 +361,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         # update variable menu
         variable = self.node.getParameter('variable').getValue(0)
         self.main_widget.setVariable(variable)
-        variable_manager.variable_menu.setCurrentIndexToText(variable)
+        variable_manager.variable_menu.setText(variable)
 
         # update node menu
         node_type = self.node.getParameter('node_type').getValue(0)
@@ -484,7 +484,7 @@ class VariableManagerMainWidget(QWidget):
             self.setVariable(variable)
 
             # setup gsv change
-            self.variable_manager_widget.variable_menu.setCurrentIndexToText(variable)
+            self.variable_manager_widget.variable_menu.setText(variable)
             self.updateOptionsList()
 
             # initialize node type menu
@@ -1068,7 +1068,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         root_publish_dir = self.main_widget.getRootPublishDir()
         self.main_widget.node.getParameter('publish_dir').setValue(root_publish_dir, 0)
         self.main_widget.setVariable(self.previous_variable)
-        self.main_widget.variable_manager_widget.variable_menu.setCurrentIndexToText(self.previous_variable)
+        self.main_widget.variable_manager_widget.variable_menu.setText(self.previous_variable)
         self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.previous_variable)
         self.gui = False
         self.main_widget.layout().setCurrentIndex(0)

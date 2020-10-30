@@ -22,7 +22,7 @@ from cgwidgets.settings.colors import (
     iColor
 )
 
-from cgwidgets.widgets import TansuBaseWidget, ListInputWidget, FrameInputWidget
+from cgwidgets.widgets import TansuBaseWidget, ListInputWidget, FrameInputWidget, NewListInputWidget
 
 from cgwidgets.utils import updateStyleSheet
 
@@ -446,7 +446,7 @@ class VariableManagerCreateNewItemTextWidget(QLineEdit):
         self._is_toggled = is_toggled
 
 
-class VariableManagerGSVMenu(ListInputWidget):
+class VariableManagerGSVMenu(NewListInputWidget):
     """
     Drop down menu with autocomplete for the user to select
     what GSV that they wish for the Variable Manager to control
@@ -460,14 +460,10 @@ class VariableManagerGSVMenu(ListInputWidget):
         # setup attrs
         self.main_widget = getMainWidget(self)
         self.previous_text = self.main_widget.node.getVariable()
-
-        # setup signals
-        self.currentIndexChanged.connect(self.indexChanged)
+        self.setUserFinishedEditingEvent(self.indexChanged)
+        self.populate(gsvutils.getAllVariables())
         self.setCleanItemsFunction(gsvutils.getAllVariables)
-
-        # populate
-        self.populate(self.getCleanItems())
-        self.setCurrentIndexToText(self.previous_text)
+        self.dynamic_update = True
 
     """ UTILS """
     def gsvChanged(self):
@@ -477,7 +473,7 @@ class VariableManagerGSVMenu(ListInputWidget):
         """
         # get attributes
         variable_browser = self.main_widget.variable_manager_widget.variable_browser
-        variable = str(self.currentText())
+        variable = str(self.text())
         node = self.main_widget.getNode()
 
         # create new pattern if it doesn't exist
@@ -500,36 +496,40 @@ class VariableManagerGSVMenu(ListInputWidget):
 
     def accepted(self):
         self.main_widget.layout().setCurrentIndex(0)
+        self.previous_text = self.text()
         makeUndoozable(
             self.gsvChanged,
             self.main_widget,
-            str(self.currentText()),
+            str(self.text()),
             'Change GSV'
         )
 
+        self._updateModel()
+
     def cancelled(self):
         self.main_widget.layout().setCurrentIndex(0)
-        self.setCurrentIndexToText(self.main_widget.getVariable())
+        self.setText(self.previous_text)
+        #self.setCurrentIndexToText(self.main_widget.getVariable())
         self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.main_widget.variable)
 
     """ EVENTS """
     def mousePressEvent(self, *args, **kwargs):
-        self.setExistsFlag(False)
         self.update()
-        self.setExistsFlag(True)
-        return ListInputWidget.mousePressEvent(self, *args, **kwargs)
+        return NewListInputWidget.mousePressEvent(self, *args, **kwargs)
 
-    def indexChanged(self, event):
+    def indexChanged(self, widget, value):
         """
         When the user changes the value in the GSV dropdown menu,
         this event is run.  It will first ask the user if they wish to proceed,
         as doing so will essentially reinstated this node back to an initial setting.
         """
+        # preflight
+        if self.previous_text == self.text(): return
+        if not hasattr(self.main_widget.variable_manager_widget, 'variable_browser'): return
+
         # pop up warning box to ask user if they wish to change the variable
-        if self.getExistsFlag() is True:
-            if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
-                warning_text = "Changing the GSV will delete all of your unsaved work..."
-                detailed_warning_text = """
+        warning_text = "Changing the GSV will delete all of your unsaved work..."
+        detailed_warning_text = """
 Publish your work if you want to save it, either in a file save,
 or with the internal publishing mechanism on this node.  If you
 continue from here, all unsaved work will be deleted...
@@ -538,12 +538,12 @@ If you choose to accept you will change the GSV:
 
 {old_variable} ==> {new_variable}
 """.format(
-                    old_variable=self.main_widget.getVariable(),
-                    new_variable=str(self.currentText())
-                )
-                self.main_widget.showWarningBox(
-                    warning_text, self.accepted, self.cancelled, detailed_warning_text
-                )
+            old_variable=self.main_widget.getVariable(),
+            new_variable=str(self.text())
+        )
+        self.main_widget.showWarningBox(
+            warning_text, self.accepted, self.cancelled, detailed_warning_text
+        )
 
 
 class VariableManagerNodeMenu(ListInputWidget):
@@ -612,7 +612,7 @@ class VariableManagerNodeMenu(ListInputWidget):
 
             # check variable menu
             variable_menu = self.main_widget.variable_manager_widget.variable_menu
-            if variable_menu.currentText() == '':
+            if variable_menu.text() == '':
                 return
 
             # update
