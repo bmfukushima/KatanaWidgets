@@ -137,7 +137,7 @@ from .Utils import (
 )
 
 from cgwidgets.settings.colors import iColor
-from cgwidgets.widgets import ListInputWidget
+from cgwidgets.widgets import NewListInputWidget
 
 from Utils2 import(
     disconnectNode,
@@ -247,7 +247,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         # if the user is in the middle of an event, cancel that event
         current_index = self.main_widget.layout().currentIndex()
         if current_index == 1:
-            self.main_widget.self.versions_display_widget.cancelPressed()
+            self.main_widget.versions_display_widget.cancelPressed()
         elif current_index == 2:
             self.main_widget.publish_display_widget.cancelPressed()
         elif current_index == 3:
@@ -366,7 +366,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         # update node menu
         node_type = self.node.getParameter('node_type').getValue(0)
         self.main_widget.node_type = node_type
-        variable_manager.node_type_menu.setCurrentIndexToText(node_type)
+        variable_manager.node_type_menu.setText(node_type)
 
         # update publish dir
         publish_dir = self.node.getParameter('publish_dir').getValue(0)
@@ -491,7 +491,7 @@ class VariableManagerMainWidget(QWidget):
             node_type = self.node.getParameter('node_type').getValue(0)
             self.setNodeType(node_type)
             node_type_menu = self.variable_manager_widget.node_type_menu
-            node_type_menu.setCurrentIndexToText(node_type)
+            node_type_menu.setText(node_type)
 
     """ UPDATE VARIABLE SWITCH"""
     @staticmethod
@@ -951,7 +951,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
 
         # get publish directory
         if not version:
-            version = str(self.version_combobox.currentText())
+            version = str(self.version_combobox.text())
 
         publish_dir = '{publish_dir}/{version}/something.livegroup'.format(
             publish_dir=self.main_widget.getItemPublishDir(include_publish_type=publish_type),
@@ -1027,7 +1027,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=publish_type)
         besterest_version = self.getBesterestVersion(publish_dir)
 
-        self.version_combobox.setCurrentIndexToText(besterest_version)
+        self.version_combobox.setText(besterest_version)
 
     def update(
         self,
@@ -1122,15 +1122,18 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self._gui = gui
 
 
-class VersionsDisplayMenu(ListInputWidget):
-    '''
+class VersionsDisplayMenu(NewListInputWidget):
+    """''
     Inside of the VersionsDisplayWidget, this is the drop down
     menu that will display the versions to the user to be selected
 
     Need to make this inherit from ListInputWidget...
     notes_label (QLabel): The widget that will display the notes
         to the user from a specific version of the publish.
-    '''
+
+    TODO:
+        update versions to NewListInput
+    '"""
     def __init__(
         self,
         parent,
@@ -1138,8 +1141,10 @@ class VersionsDisplayMenu(ListInputWidget):
     ):
         super(VersionsDisplayMenu, self).__init__(parent)
         self.label = notes_label
+
         # connect signals
-        self.currentIndexChanged.connect(self.updateNoteText)
+        #self.setUserFinishedEditingEvent(self.updateNoteText)
+        self.textChanged.connect(self.updateNoteText)
 
     def updateNoteText(self):
         """
@@ -1147,22 +1152,22 @@ class VersionsDisplayMenu(ListInputWidget):
         the note that is displayed to the user.
         """
         # Set Color
-        live_dir = '%s/%s/live.csv' % (self.publish_dir, self.currentText())
+        live_dir = '%s/%s/live.csv' % (self.publish_dir, self.text())
         version_dir_list = []
         for version in os.listdir(self.publish_dir):
             live_file = '/'.join([self.publish_dir, version, 'live.csv'])
             if os.path.exists(live_file) is True:
                 version_dir_list.append(version)
         if os.path.exists(live_dir):
-            if max(version_dir_list) == self.currentText():
-                self.lineEdit().setStyleSheet("background-color: rgb(60,94,60);border: none;")
+            if max(version_dir_list) == self.text():
+                self.setStyleSheet("background-color: rgb(60,94,60);border: none;")
             else:
-                self.lineEdit().setStyleSheet("background-color: rgb(94,94,60);border: none;")
+                self.setStyleSheet("background-color: rgb(94,94,60);border: none;")
         else:
-            self.lineEdit().setStyleSheet("")
+            self.setStyleSheet("")
 
         # Write Notes
-        notes_dir = '%s/%s/notes.csv' % (self.publish_dir, self.currentText())
+        notes_dir = '%s/%s/notes.csv' % (self.publish_dir, self.text())
         if os.path.exists(notes_dir):
             with open(notes_dir, 'rb') as csvfile:
                 note = csvfile.readlines()
@@ -1183,14 +1188,9 @@ class VersionsDisplayMenu(ListInputWidget):
                 Not really sure why Im' setting this here...
         """
         self.publish_dir = publish_dir
-        self.populate()
+        self._updateModel(self._getVersionsList())
 
-    def populate(self):
-        """
-        adds all of the items to the model widget
-        adds color to the items
-        """
-        model = QStandardItemModel()
+    def _getVersionsList(self):
         live_item = None
         version_list = sorted(os.listdir(self.publish_dir))
         for i, version in enumerate(reversed(version_list)):
@@ -1204,10 +1204,8 @@ class VersionsDisplayMenu(ListInputWidget):
                 brush = QBrush(color)
                 item.setBackground(brush)
                 live_item = item
-            model.setItem(i, 0, item)
 
-        self.setModel(model)
-        self.setModelColumn(0)
+        return version_list
 
 
 class PublishDisplayWidget(AbstractUserBooleanWidget):

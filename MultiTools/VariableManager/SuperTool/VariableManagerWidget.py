@@ -484,7 +484,7 @@ class VariableManagerGSVMenu(NewListInputWidget):
         node.getParameter('variable').setValue(variable, 0)
 
         # if node type is not set yet, then return
-        if self.main_widget.variable_manager_widget.node_type_menu.currentText() == '':
+        if self.main_widget.variable_manager_widget.node_type_menu.text() == '':
             return
 
         # update
@@ -546,7 +546,7 @@ If you choose to accept you will change the GSV:
         )
 
 
-class VariableManagerNodeMenu(ListInputWidget):
+class VariableManagerNodeMenu(NewListInputWidget):
     """
     Drop down menu with autocomplete for the user to select
     what Node Type that they wish for the Variable Manager to control
@@ -556,13 +556,11 @@ class VariableManagerNodeMenu(ListInputWidget):
         self.main_widget = getMainWidget(self)
         self.previous_text = self.main_widget.node.getNodeType()
 
-        # setup signals
-        self.currentIndexChanged.connect(self.indexChanged)
-        self.setCleanItemsFunction(self.__getAllNodes)
+        self.setUserFinishedEditingEvent(self.indexChanged)
+        self.populate(self.__getAllNodes())
 
-        # populate
-        self.populate(self.getCleanItems())
-        self.setCurrentIndexToText(self.previous_text)
+        self.setCleanItemsFunction(self.__getAllNodes)
+        self.dynamic_update = True
 
     @staticmethod
     def __getAllNodes():
@@ -577,23 +575,24 @@ class VariableManagerNodeMenu(ListInputWidget):
         does_node_variable_exist = self.isUserInputValid()
         if does_node_variable_exist is False:
             node_type = self.main_widget.node.getParameter('node_type').getValue(0)
-            self.setCurrentIndexToText(node_type)
+            self.setText(node_type)
             return
 
     def accepted(self):
         self.main_widget.layout().setCurrentIndex(0)
+        self.previous_text = self.text()
+
         makeUndoozable(
             self.changeNodeType,
             self.main_widget,
-            str(self.currentText()),
+            str(self.text()),
             'Change Node Type'
         )
 
     def cancelled(self):
         self.main_widget.layout().setCurrentIndex(0)
-        self.setExistsFlag(False)
         node_type = self.main_widget.node.getParameter('node_type').getValue(0)
-        self.setCurrentIndexToText(node_type)
+        self.setText(node_type)
 
     def changeNodeType(self):
         """
@@ -604,7 +603,7 @@ class VariableManagerNodeMenu(ListInputWidget):
             # get attrs
             variable_browser = self.main_widget.variable_manager_widget.variable_browser
             node = self.main_widget.getNode()
-            node_type = str(self.currentText())
+            node_type = str(self.text())
 
             # set attrs
             node.getParameter('node_type').setValue(node_type, 0)
@@ -620,36 +619,40 @@ class VariableManagerNodeMenu(ListInputWidget):
 
     """ EVENTS """
     def mousePressEvent(self, *args, **kwargs):
-        self.setExistsFlag(False)
         self.update()
-        self.setExistsFlag(True)
-        return ListInputWidget.mousePressEvent(self, *args, **kwargs)
+        return NewListInputWidget.mousePressEvent(self, *args, **kwargs)
 
-    def indexChanged(self):
+    def indexChanged(self, widget, value):
+        """
+        When the user changes the value in the GSV dropdown menu,
+        this event is run.  It will first ask the user if they wish to proceed,
+        as doing so will essentially reinstated this node back to an initial setting.
+        """
+        # preflight
+        if self.previous_text == self.text(): return
         """
         # without this it randomly allows the user to change to a
         # new node type =\
         """
         # preflight checks
         # return if this node type does not exist
-        if self.currentText() not in NodegraphAPI.GetNodeTypes(): return
+        if self.text() not in NodegraphAPI.GetNodeTypes(): return
 
         # show warning box
-        if self.getExistsFlag() is True:
-            warning_text = "This will delete all of your unsaved work"
-            detailed_warning_text = """
+        warning_text = "This will delete all of your unsaved work"
+        detailed_warning_text = """
 Publish your work if you want to save it, either in a file save,
 or with the internal publishing mechanism on this node.  If you
 continue from here, all unsaved work will be deleted...
 
 {old_node_type} ==> {new_node_type}
 """.format(
-                    old_node_type=self.main_widget.node.getParameter('node_type').getValue(0),
-                    new_node_type=str(self.currentText())
-                )
-            self.main_widget.showWarningBox(
-                warning_text, self.accepted, self.cancelled, detailed_warning_text
+                old_node_type=self.main_widget.node.getParameter('node_type').getValue(0),
+                new_node_type=str(self.text())
             )
+        self.main_widget.showWarningBox(
+            warning_text, self.accepted, self.cancelled, detailed_warning_text
+        )
 
 
 class VariableManagerBrowser(QTreeWidget):
@@ -909,7 +912,6 @@ class VariableManagerBrowser(QTreeWidget):
         Deletes all of the top level items in.  This is essentially
         clearing the state of the browser so that it can be repopulated.
         """
-        #print ('==== reset start ====')
         self.clear()
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
@@ -917,7 +919,6 @@ class VariableManagerBrowser(QTreeWidget):
         node._reset(variable=variable, node_type=node_type)
         self.populate(check_besterest=check_besterest)
         self.main_widget.updateOptionsList()
-        #print('==== reset end ====')
 
     def updateStyleSheet(self, property, value):
         """
@@ -1435,7 +1436,7 @@ class VariableManagerBrowser(QTreeWidget):
             root_node=pattern_node,
             unique_hash=unique_hash
         )
-        #print(item.text(0), parent_item.text(0), parent_item)
+
         # create variable switch connections
         current_root_node = item.parent().getRootNode()
         new_pattern = PATTERN_PREFIX+pattern
