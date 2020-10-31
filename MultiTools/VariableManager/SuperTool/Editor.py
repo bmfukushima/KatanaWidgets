@@ -137,7 +137,8 @@ from .Utils import (
 )
 
 from cgwidgets.settings.colors import iColor
-from cgwidgets.widgets import NewListInputWidget
+from cgwidgets.widgets import ListInputWidget
+
 
 from Utils2 import(
     disconnectNode,
@@ -1122,7 +1123,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self._gui = gui
 
 
-class VersionsDisplayMenu(NewListInputWidget):
+class VersionsDisplayMenu(ListInputWidget):
     """''
     Inside of the VersionsDisplayWidget, this is the drop down
     menu that will display the versions to the user to be selected
@@ -1141,9 +1142,9 @@ class VersionsDisplayMenu(NewListInputWidget):
     ):
         super(VersionsDisplayMenu, self).__init__(parent)
         self.label = notes_label
-
+        self.filter_results = False
+        self.display_item_colors = True
         # connect signals
-        #self.setUserFinishedEditingEvent(self.updateNoteText)
         self.textChanged.connect(self.updateNoteText)
 
     def updateNoteText(self):
@@ -1191,19 +1192,21 @@ class VersionsDisplayMenu(NewListInputWidget):
         self._updateModel(self._getVersionsList())
 
     def _getVersionsList(self):
+        """
+        Returns a list of versions
+        """
         live_item = None
-        version_list = sorted(os.listdir(self.publish_dir))
-        for i, version in enumerate(reversed(version_list)):
-            item = QStandardItem(version)
+        version_list = []
+        __version_list = sorted(os.listdir(self.publish_dir))
+        for i, version in enumerate(reversed(__version_list)):
+            new_version = [version]
             # setup colors
             if os.path.exists('%s/%s/live.csv' % (self.publish_dir, version)):
-                color = QColor(60, 94, 60, 255)
+                color = iColor["rgba_accept"]
                 if live_item:
-                    color = QColor(94, 94, 60, 255)
-                    brush = QBrush(color)
-                brush = QBrush(color)
-                item.setBackground(brush)
-                live_item = item
+                    color = iColor["rgba_maybe"]
+                new_version.append(color)
+            version_list.append(new_version)
 
         return version_list
 

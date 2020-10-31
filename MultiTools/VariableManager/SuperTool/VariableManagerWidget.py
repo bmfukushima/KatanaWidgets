@@ -4,7 +4,7 @@ from qtpy.QtWidgets import (
     QWidget,  QVBoxLayout, QHBoxLayout,
     QPushButton, QLineEdit, QTreeWidget,
     QHeaderView, QAbstractItemView,
-    QMenu, QTreeWidgetItem)
+    QMenu, QTreeWidgetItem, QApplication)
 from qtpy.QtCore import Qt
 from qtpy.QtGui import (
     QColor, QPixmap, QIcon, QCursor, QBrush)
@@ -22,9 +22,9 @@ from cgwidgets.settings.colors import (
     iColor
 )
 
-from cgwidgets.widgets import TansuBaseWidget, ListInputWidget, FrameInputWidget, NewListInputWidget
+from cgwidgets.widgets import TansuBaseWidget, FrameInputWidget, ListInputWidget
+from cgwidgets.utils import updateStyleSheet, getFontSize
 
-from cgwidgets.utils import updateStyleSheet
 
 from .ItemTypes import (
     MASTER_ITEM,
@@ -446,7 +446,7 @@ class VariableManagerCreateNewItemTextWidget(QLineEdit):
         self._is_toggled = is_toggled
 
 
-class VariableManagerGSVMenu(NewListInputWidget):
+class VariableManagerGSVMenu(ListInputWidget):
     """
     Drop down menu with autocomplete for the user to select
     what GSV that they wish for the Variable Manager to control
@@ -461,11 +461,14 @@ class VariableManagerGSVMenu(NewListInputWidget):
         self.main_widget = getMainWidget(self)
         self.previous_text = self.main_widget.node.getVariable()
         self.setUserFinishedEditingEvent(self.indexChanged)
-        self.populate(gsvutils.getAllVariables())
-        self.setCleanItemsFunction(gsvutils.getAllVariables)
+        self.populate(self.getAllVariables())
+        self.setCleanItemsFunction(self.getAllVariables)
         self.dynamic_update = True
 
     """ UTILS """
+    def getAllVariables(self):
+        return [[variable] for variable in gsvutils.getAllVariables()]
+
     def gsvChanged(self):
         """
         When the user changes the GSV and accepts the change,
@@ -515,7 +518,7 @@ class VariableManagerGSVMenu(NewListInputWidget):
     """ EVENTS """
     def mousePressEvent(self, *args, **kwargs):
         self.update()
-        return NewListInputWidget.mousePressEvent(self, *args, **kwargs)
+        return ListInputWidget.mousePressEvent(self, *args, **kwargs)
 
     def indexChanged(self, widget, value):
         """
@@ -546,7 +549,7 @@ If you choose to accept you will change the GSV:
         )
 
 
-class VariableManagerNodeMenu(NewListInputWidget):
+class VariableManagerNodeMenu(ListInputWidget):
     """
     Drop down menu with autocomplete for the user to select
     what Node Type that they wish for the Variable Manager to control
@@ -564,7 +567,7 @@ class VariableManagerNodeMenu(NewListInputWidget):
 
     @staticmethod
     def __getAllNodes():
-        return NodegraphAPI.GetNodeTypes()
+        return [[node] for node in NodegraphAPI.GetNodeTypes()]
 
     def checkUserInput(self):
         """
@@ -620,7 +623,7 @@ class VariableManagerNodeMenu(NewListInputWidget):
     """ EVENTS """
     def mousePressEvent(self, *args, **kwargs):
         self.update()
-        return NewListInputWidget.mousePressEvent(self, *args, **kwargs)
+        return ListInputWidget.mousePressEvent(self, *args, **kwargs)
 
     def indexChanged(self, widget, value):
         """
@@ -2215,7 +2218,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
             color = QColor(*MASTER_ITEM.COLOR)
 
         # set display flag
-        pixmap = QPixmap(7, 7)
+        pixmap = QPixmap(getFontSize(QApplication) * 0.5, getFontSize(QApplication) * 0.5)
         pixmap.fill(color)
 
         icon = QIcon(pixmap)
