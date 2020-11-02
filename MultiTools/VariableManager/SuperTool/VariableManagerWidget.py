@@ -22,7 +22,8 @@ from cgwidgets.settings.colors import (
     iColor
 )
 
-from cgwidgets.widgets import TansuBaseWidget, FrameInputWidget, ListInputWidget
+from cgwidgets.widgets import (
+    TansuBaseWidget, FrameInputWidget, ListInputWidget, FileBrowserInputWidget)
 from cgwidgets.utils import updateStyleSheet, getFontSize
 
 
@@ -62,7 +63,6 @@ from Utils2.colors import(
 )
 
 from Widgets2 import(
-    AbstractFileBrowser,
     AbstractNodegraphWidget,
     AbstractParametersDisplayWidget,
 )
@@ -2355,7 +2355,7 @@ class VariableManagerBrowserItem(QTreeWidgetItem):
         self.publish_dir = publish_dir
 
 
-class PublishDirWidget(AbstractFileBrowser, iParameter):
+class PublishDirWidget(FileBrowserInputWidget, iParameter):
     """
     Custom parameter widget type thing.  This will be the File Path browser
     widget for the user to change their publish directory with.

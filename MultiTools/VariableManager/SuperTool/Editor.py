@@ -1,5 +1,7 @@
 """
 TODO:
+    *   When clicking between areas that have a popup, and when defocusing
+            will cause an update, the popup will show over the boolean widget
     *   Clean up of everything...
     SUCKS =\
         *   Defocus events when changing between widgets loses
@@ -7,7 +9,6 @@ TODO:
     CLEANUP:
         *   getNode --> AbstractSuperTool
         *   setCurrentIndex --> class variables
-        *   GSV/Node Menu need to be added as custom params
     Potential Bugs:
         *   Pattern Item Duplicates
             This could cause a bug with loading the versions due to not
