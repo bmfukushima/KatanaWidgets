@@ -31,7 +31,8 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor
 from cgwidgets.widgets import (
-    ListInputWidget, TansuModelViewWidget, TansuHeaderListView, TansuModelItem
+    ListInputWidget, FrameInputWidget, StringInputWidget, IntInputWidget, FloatInputWidget,
+    TansuModelViewWidget, TansuHeaderListView, TansuModelItem
 )
 
 from cgwidgets.utils import getWidgetAncestor, attrs
@@ -279,7 +280,7 @@ class UserInputMainWidget(QWidget):
 
         # create events type menu
         self.events_type_menu = EventTypeInputWidget(self)
-        event_types = list(self.event_dict.keys())
+        event_types = [[item] for item in list(self.event_dict.keys())]
         self.events_type_menu.populate(event_types)
 
         # create scripts thingy
@@ -328,8 +329,6 @@ class UserInputMainWidget(QWidget):
         # preflight
         if not item: return
 
-        print(item, widget)
-
         # set title
         widget.group_box.setTitle(item.columnData()['name'])
 
@@ -339,7 +338,7 @@ class UserInputMainWidget(QWidget):
 
         # update event type
         event_type = item.getEventType()
-        main_widget.events_type_menu.setCurrentIndexToText(event_type)
+        main_widget.events_type_menu.setText(event_type)
 
         # set script widget to label.item().getScript()
         script_location = item.getScript()
@@ -350,7 +349,7 @@ class UserInputMainWidget(QWidget):
         main_widget.dynamic_args_widget.update()
 
         # set dynamic args values
-        if main_widget.events_type_menu.currentText() != '':
+        if main_widget.events_type_menu.text() != '':
             for arg in item.getArgsList():
                 arg_value = item.getArg(arg)
                 main_widget.dynamic_args_widget.widget_dict[arg].setText(arg_value)
@@ -363,7 +362,7 @@ class UserInputMainWidget(QWidget):
         return self._item
 
 
-class ArgInputWidget(QWidget):
+class ArgInputWidget(FrameInputWidget):
     """
     One individual arg
 
@@ -372,33 +371,26 @@ class ArgInputWidget(QWidget):
         to store this JSON date type container thingy...
 
     """
-    def __init__(self, parent=None, name='', note=''):
-        super(ArgInputWidget, self).__init__(parent)
+    def __init__(self, parent=None, name='', note='', widget_type=StringInputWidget):
+        super(ArgInputWidget, self).__init__(parent, name=name, widget_type=StringInputWidget)
         # setup args
         self.arg = name
-
-        # setup layout
-        QHBoxLayout(self)
-        self.label = QLabel(name)
-        self.label.setToolTip(note)
-        self.lineedit = QLineEdit()
-        self.lineedit.editingFinished.connect(self.userInputEvent)
-        self.layout().addWidget(self.label)
-        self.layout().addWidget(self.lineedit)
+        self.setToolTip(note)
+        self.setUserFinishedEditingEvent(self.userInputEvent)
 
     def setText(self, text):
-        self.lineedit.setText(text)
+        self.getInputWidget().setText(text)
 
-    def currentText(self):
-        return self.lineedit.text()
+    def text(self):
+        return self.getInputWidget().text()
 
-    def userInputEvent(self):
+    def userInputEvent(self, widget, value):
         """
         When the user inputs something into the arg, this event is triggered
         updating the model item
         """
         main_widget = getWidgetAncestor(self, UserInputMainWidget)
-        main_widget.item().setArg(self.arg, self.currentText())
+        main_widget.item().setArg(self.arg, value)
 
     @property
     def arg(self):
@@ -416,23 +408,24 @@ class EventTypeInputWidget(ListInputWidget):
     """
     def __init__(self, parent=None):
         super(EventTypeInputWidget, self).__init__(parent)
-        self.setSelectionChangedEmitEvent(self.eventTypeChanged)
+        self.setUserFinishedEditingEvent(self.eventTypeChanged)
 
-    def eventTypeChanged(self):
+    def eventTypeChanged(self, widget, value):
         """
         Event that is triggered when the user changes the event type
         selection.
         """
-        event_type = str(self.currentText())
+        # preflight
+        if self.previous_text == self.text(): return
+        event_type = str(self.text())
         if event_type:
-            if event_type in self.getItemList():
-                self.parent().setEventType(event_type)
-                note = self.parent().event_dict[event_type]['note']
-                self.setToolTip(note)
-                return
+            self.parent().setEventType(event_type)
+            note = self.parent().event_dict[event_type]['note']
+            self.setToolTip(note)
+            return
 
-        # if invalid input reset texta
-        self.setCurrentIndexToText(self.previous_text)
+        # if invalid input reset text
+        self.setText(self.previous_text)
 
 
 class ScriptInputWidget(ArgInputWidget):
@@ -444,9 +437,9 @@ class ScriptInputWidget(ArgInputWidget):
         note = "path on disk to the script you want to run"
         super(ScriptInputWidget, self).__init__(parent, name=name, note=note)
 
-    def userInputEvent(self):
+    def userInputEvent(self, widget, value):
         main_widget = getWidgetAncestor(self, UserInputMainWidget)
-        main_widget.item().setScript(self.currentText())
+        main_widget.item().setScript(self.text())
 
 
 class ArgsInputMainWidget(QWidget):
@@ -478,16 +471,15 @@ class ArgsInputMainWidget(QWidget):
         except KeyError:
             return
         for arg in args_list:
-            arg_name = arg['arg']
-            arg_note = arg['note']
-            widget = ArgInputWidget(self, arg_name, arg_note)
+            widget = ArgInputWidget(self, name=arg['arg'], note=arg['note'])
             self.layout().addWidget(widget)
-            self.widget_dict[arg_name] = widget
+            self.widget_dict[arg['arg']] = widget
 
     def update(self):
         self.clear()
         self.populate()
 
+    """ PROPERTIES """
     @property
     def widget_dict(self):
         return self._widget_dict
