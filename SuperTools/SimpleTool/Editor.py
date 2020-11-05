@@ -87,6 +87,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
         self.group_node_editor = GroupNodeEditorMainWidget(self, self.node, self.main_node)
 
+        # setup tabs
         self.getDesignWidget().insertTansuWidget(
             0, column_data={'name':"Params"}, widget=self.group_node_editor)
         self.getDesignWidget().insertTansuWidget(
@@ -95,6 +96,11 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
             2, column_data={'name':'GUI Designer'}, widget=QLabel('GUI Designer'))
         self.getDesignWidget().insertTansuWidget(
             3, column_data={'name':'User Params'}, widget=QLabel('User Params'))
+
+        # setup flags
+        self.getDesignWidget().setHeaderIsDragEnabled(False)
+        self.getDesignWidget().setHeaderIsDropEnabled(False)
+        self.getDesignWidget().setHeaderIsEditable(False)
 
     def getEventTypes(self):
         """

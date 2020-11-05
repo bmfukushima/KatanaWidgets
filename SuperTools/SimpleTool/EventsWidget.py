@@ -86,6 +86,7 @@ class EventWidget(QWidget):
         """
         # create widget
         main_widget = TansuModelViewWidget(self)
+        main_widget.setHeaderIsDropEnabled(False)
         main_widget.model().setItemType(EventTypeModelItem)
         events_view = EventsUserInputWidget()
         main_widget.setHeaderWidget(events_view)
@@ -201,7 +202,6 @@ class EventTypeModelItem(TansuModelItem):
 class EventsUserInputWidget(TansuHeaderListView):
     def __init__(self, parent=None):
         super(EventsUserInputWidget, self).__init__(parent)
-
     # def selectionChanged(self, selected, deselected):
     #     print("selection == %s"%selected.indexes())
     #     for index in selected.indexes():
