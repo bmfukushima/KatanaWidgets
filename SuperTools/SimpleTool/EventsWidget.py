@@ -57,9 +57,9 @@ class EventWidget(QWidget):
                         | -- Dynamic Widget (UserInputMainWidget --> QWidget)
                             | -- VBox
                                     | -- events_type_menu ( EventTypeInputWidget)
-                                    | -- script_widget (ArgInputWidget)
-                                    | -- dynamic_args_widget (ArgsInputMainWidget)
-                                            | -* ArgInputWidget
+                                    | -- script_widget (DynamicArgsInputWidget)
+                                    | -- dynamic_args_widget (DynamicArgsWidget)
+                                            | -* DynamicArgsInputWidget
     """
     def __init__(self, parent=None):
         super(EventWidget, self).__init__(parent)
@@ -75,6 +75,10 @@ class EventWidget(QWidget):
 
         self.layout().addWidget(self.new_event_button)
         self.layout().addWidget(self.main_widget)
+
+        temp_button = QPushButton("test get event dict")
+        temp_button.clicked.connect(self.getEventsDict)
+        self.layout().addWidget(temp_button)
 
     def setupEventsWidgetGUI(self):
         """
@@ -102,6 +106,21 @@ class EventWidget(QWidget):
         """
         # create model item
         self.main_widget.insertTansuWidget(0, column_data={'name': "New Event"})
+
+    def getEventsDict(self):
+        root_item = self.main_widget.model().getRootItem()
+        events_dict = {}
+        # get all children
+        for child in root_item.children():
+            event_name = child.columnData()['name']
+            events_dict[event_name] ={}
+            events_dict[event_name]['script'] = child.getScript()
+            events_dict[event_name]['type'] = child.getEventType()
+            for arg in child.getArgsList():
+                events_dict[event_name][arg] = child.getArg(arg)
+
+        print(events_dict)
+        return events_dict
 
     """ PROPERTIES """
     def removeEventByIndex(self, index):
@@ -131,7 +150,8 @@ class EventTypeModelItem(TansuModelItem):
     """
     def __init__(self, name=None, event_type=None, script=None, args={}, index=0, enabled=True):
         super(EventTypeModelItem, self).__init__(name)
-        self._name = name
+        self.columnData()['name'] = name
+        #self._name = name
         self._event_type = event_type
         self._script = script
         if not args:
@@ -140,11 +160,11 @@ class EventTypeModelItem(TansuModelItem):
         #self['index'] = index
         self._enabled = enabled
 
-    def setName(self, name):
-        self._name = name
-
-    def getName(self):
-        return self._name
+    # def setName(self, name):
+    #     self._name = name
+    #
+    # def getName(self):
+    #     return self._name
 
     def setEventType(self, event_type):
         self._event_type = event_type
@@ -164,24 +184,18 @@ class EventTypeModelItem(TansuModelItem):
     def getEnable(self):
         return self._enabled
 
-    # def getIndex(self):
-    #     return self['index']
-    #
-    # def setIndex(self, index):
-    #     self['index'] = index
-
-    """ args"""
+    """ args """
     def setArg(self, arg, value):
-        self._args[arg] = value
+        self.columnData()[arg] = value
 
     def getArg(self, arg):
-        return self._args[arg]
+        return self.columnData()[arg]
 
     def getArgsList(self):
-        return list(self._args.keys())
+        return list(self.columnData().keys())
 
     def removeArg(self, arg):
-        self.pop(arg, None)
+        self.columnData().pop(arg, None)
 
 
 class EventsUserInputWidget(TansuHeaderListView):
@@ -252,8 +266,8 @@ class UserInputMainWidget(QWidget):
         | -- QVBoxLayout
                 | -- events_type_menu (EventTypeInputWidget)
                 | -- script_widget (ScriptInputWidget)
-                | -- dynamic_args_widget (ArgsInputMainWidget)
-                        | -- ArgInputWidget
+                | -- dynamic_args_widget (DynamicArgsWidget)
+                        | -- DynamicArgsInputWidget
 
     Attributes:
         events_dict (JSON): json dict containing all of the relevant information for
@@ -287,7 +301,7 @@ class UserInputMainWidget(QWidget):
         self.script_widget = ScriptInputWidget(self)
 
         # create event type args widget
-        self.dynamic_args_widget = ArgsInputMainWidget(self)
+        self.dynamic_args_widget = DynamicArgsWidget(self)
 
         self.layout().addWidget(self.events_type_menu)
         self.layout().addWidget(self.script_widget)
@@ -351,8 +365,11 @@ class UserInputMainWidget(QWidget):
         # set dynamic args values
         if main_widget.events_type_menu.text() != '':
             for arg in item.getArgsList():
-                arg_value = item.getArg(arg)
-                main_widget.dynamic_args_widget.widget_dict[arg].setText(arg_value)
+                try:
+                    arg_value = item.getArg(arg)
+                    main_widget.dynamic_args_widget.widget_dict[arg].setText(arg_value)
+                except KeyError:
+                    pass
 
     """ PROPERTIES """
     def setItem(self, item):
@@ -362,7 +379,7 @@ class UserInputMainWidget(QWidget):
         return self._item
 
 
-class ArgInputWidget(FrameInputWidget):
+class DynamicArgsInputWidget(FrameInputWidget):
     """
     One individual arg
 
@@ -372,7 +389,7 @@ class ArgInputWidget(FrameInputWidget):
 
     """
     def __init__(self, parent=None, name='', note='', widget_type=StringInputWidget):
-        super(ArgInputWidget, self).__init__(parent, name=name, widget_type=StringInputWidget)
+        super(DynamicArgsInputWidget, self).__init__(parent, name=name, widget_type=StringInputWidget)
         # setup args
         self.arg = name
         self.setToolTip(note)
@@ -417,18 +434,22 @@ class EventTypeInputWidget(ListInputWidget):
         """
         # preflight
         if self.previous_text == self.text(): return
+
         event_type = str(self.text())
         if event_type:
-            self.parent().setEventType(event_type)
-            note = self.parent().event_dict[event_type]['note']
-            self.setToolTip(note)
-            return
+            event_list = list(getWidgetAncestor(self, UserInputMainWidget).event_dict.keys())
+            if event_type in event_list:
+                self.parent().setEventType(event_type)
+                note = self.parent().event_dict[event_type]['note']
+                self.setToolTip(note)
+                self.previous_text = event_type
+                return
 
         # if invalid input reset text
         self.setText(self.previous_text)
 
 
-class ScriptInputWidget(ArgInputWidget):
+class ScriptInputWidget(DynamicArgsInputWidget):
     """
     The script input widget
     """
@@ -442,18 +463,18 @@ class ScriptInputWidget(ArgInputWidget):
         main_widget.item().setScript(self.text())
 
 
-class ArgsInputMainWidget(QWidget):
+class DynamicArgsWidget(QWidget):
     """
     The widget that contains all of the options for a specific event type.  This
     will dynamically populate when the event type changes in the parent.
-    ArgsInputMainWidget
-        | -* ArgInputWidget
+    DynamicArgsWidget
+        | -* DynamicArgsInputWidget
     Attributes:
         widget_dict (dict): key pair values of args to widgets
         event_type (str): the current event type that is set
     """
     def __init__(self, parent=None):
-        super(ArgsInputMainWidget, self).__init__(parent)
+        super(DynamicArgsWidget, self).__init__(parent)
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
         self._widget_dict = {}
@@ -471,7 +492,7 @@ class ArgsInputMainWidget(QWidget):
         except KeyError:
             return
         for arg in args_list:
-            widget = ArgInputWidget(self, name=arg['arg'], note=arg['note'])
+            widget = DynamicArgsInputWidget(self, name=arg['arg'], note=arg['note'])
             self.layout().addWidget(widget)
             self.widget_dict[arg['arg']] = widget
 
