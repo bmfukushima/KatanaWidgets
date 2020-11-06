@@ -90,11 +90,15 @@ class EventWidget(QWidget):
         """
         # create widget
         main_widget = TansuModelViewWidget(self)
-        main_widget.setHeaderIsDropEnabled(False)
-        main_widget.model().setItemType(EventTypeModelItem)
+
+        # setup header
         events_view = EventsUserInputWidget()
         main_widget.setHeaderWidget(events_view)
+        main_widget.setHeaderData(['event_type'])
 
+        # setup signals
+        main_widget.setHeaderIsDropEnabled(False)
+        main_widget.model().setItemType(EventTypeModelItem)
         main_widget.setHeaderTextChangedEvent(self.eventTypeChanged)
 
         # set type / position
@@ -121,24 +125,23 @@ class EventWidget(QWidget):
         # get all children
         for child in root_item.children():
             if child != item:
-                event_name = child.columnData()['name']
+                event_name = child.columnData()['event_type']
                 if event_name == new_value:
-                    item.setArg('name', '')
-                    item.setEventType('')
+                    item.setArg('event_type', '<New Event>')
+                    item.setEventType('<New Event>')
                     return
 
         # update display
         else:
-            item.setEventType(new_value)
+            item.setArg('event_type', new_value)
             self.main_widget.updateDelegateDisplay()
-# TODO bypass / set selected if it exists
 
     def createNewEvent(self):
         """
         Creates a new event item
         """
         # create model item
-        self.main_widget.insertTansuWidget(0, column_data={'name': "New Event"})
+        self.main_widget.insertTansuWidget(0, column_data={'event_type': "<New Event>"})
 
     def removeEventByIndex(self, index):
         """
@@ -208,13 +211,14 @@ class EventWidget(QWidget):
         events_dict = {}
         # get all children
         for child in root_item.children():
-            event_name = child.columnData()['name']
-            events_dict[event_name] = {}
-            events_dict[event_name]['script'] = child.getScript()
-            events_dict[event_name]['type'] = child.getEventType()
-            for arg in child.getArgsList():
-                events_dict[event_name][arg] = child.getArg(arg)
-
+            event_name = child.columnData()['event_type']
+            if event_name != '<New Event>':
+                events_dict[event_name] = {}
+                events_dict[event_name]['script'] = child.getScript()
+                #events_dict[event_name]['type'] = child.getEventType()
+                for arg in child.getArgsList():
+                    events_dict[event_name][arg] = child.getArg(arg)
+        print(events_dict)
         return events_dict
 
     def loadEventTypesDict(self):
@@ -250,7 +254,7 @@ class EventTypeModelItem(TansuModelItem):
     """
     def __init__(self, name=None, event_type=None, script=None, args={}, index=0, enabled=True):
         super(EventTypeModelItem, self).__init__(name)
-        self.columnData()['name'] = name
+        self.columnData()['event_type'] = name
         #self._name = name
         self._event_type = event_type
         self._script = script
@@ -266,11 +270,12 @@ class EventTypeModelItem(TansuModelItem):
     # def getName(self):
     #     return self._name
 
-    def setEventType(self, event_type):
-        self._event_type = event_type
-
-    def getEventType(self):
-        return self._event_type
+    # TODO Do I need the event type? Now that this is set as the 'event_type' arg?
+    # def setEventType(self, event_type):
+    #     self._event_type = event_type
+    #
+    # def getEventType(self):
+    #     return self._event_type
 
     def setScript(self, script):
         self._script = script
@@ -432,14 +437,15 @@ class UserInputMainWidget(QWidget):
         if not item: return
 
         # set title
-        widget.group_box.setTitle(item.columnData()['name'])
+        widget.group_box.setTitle(item.columnData()['event_type'])
 
         # set item
         main_widget = widget.getMainWidget()
         main_widget.setItem(item)
 
         # # update event type
-        event_type = item.getEventType()
+        #event_type = item.getEventType()
+        event_type = item.getArg('event_type')
         # main_widget.events_type_menu.setText(event_type)
 
         # set script widget to label.item().getScript()
