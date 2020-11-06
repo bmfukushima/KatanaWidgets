@@ -34,10 +34,10 @@ from cgwidgets.widgets import (
     ListInputWidget, FrameInputWidget, StringInputWidget, IntInputWidget, FloatInputWidget,
     TansuModelViewWidget, TansuHeaderListView, TansuModelItem
 )
-
+from cgwidgets.views import AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestor, attrs
 
-from Katana import Utils
+#from Katana import Utils
 
 
 class EventWidget(QWidget):
@@ -80,7 +80,8 @@ class EventWidget(QWidget):
         self.layout().addWidget(self.main_widget)
 
         temp_button = QPushButton("test get event dict")
-        temp_button.clicked.connect(self.updateEvents)
+        #temp_button.clicked.connect(self.updateEvents)
+        temp_button.clicked.connect(self.getEventsDict)
         self.layout().addWidget(temp_button)
 
     def setupEventsWidgetGUI(self):
@@ -94,6 +95,8 @@ class EventWidget(QWidget):
         events_view = EventsUserInputWidget()
         main_widget.setHeaderWidget(events_view)
 
+        main_widget.setHeaderTextChangedEvent(self.eventTypeChanged)
+
         # set type / position
         main_widget.setHeaderPosition(attrs.WEST)
         main_widget.setDelegateType(
@@ -103,6 +106,32 @@ class EventWidget(QWidget):
         )
 
         return main_widget
+
+    def eventTypeChanged(self, item, old_value, new_value):
+        """
+        When the user updates the event_type by editing the views
+        header.  This will set the event type on the item so that it
+        can be properly updated by the dynamic display.
+
+        If an event of that type already exists, this will reset to a null value
+        to avoid double event registry in Katana.
+        """
+        # preflight
+        root_item = self.main_widget.model().getRootItem()
+        # get all children
+        for child in root_item.children():
+            if child != item:
+                event_name = child.columnData()['name']
+                if event_name == new_value:
+                    item.setArg('name', '')
+                    item.setEventType('')
+                    return
+
+        # update display
+        else:
+            item.setEventType(new_value)
+            self.main_widget.updateDelegateDisplay()
+# TODO bypass / set selected if it exists
 
     def createNewEvent(self):
         """
@@ -131,8 +160,20 @@ class EventWidget(QWidget):
             arg = arg[0]
             #katana_main = UI4.App.MainWindow.GetMainWindow()
             # Convert backdrop to group
+            print("==================")
             print(arg)
             # todo run through self.getEventsDict() and do stuff...
+
+            events_dict = self.getEventsDict()
+            print(events_dict)
+            for key in events_dict:
+                event_data = events_dict[key]
+                event_type = event_data['type']
+                # correct event
+                if event_type == arg[0]:
+                    # check event data
+                    print(event_data)
+
             if arg[0] == 'node_create':
                 node = arg[2]['node']
         pass
@@ -197,6 +238,7 @@ class EventWidget(QWidget):
     def getAvailableEventsList(self):
         return self.event_dict
 
+
 class EventTypeModelItem(TansuModelItem):
     """
     name (str): name given to this event by the user
@@ -259,11 +301,8 @@ class EventTypeModelItem(TansuModelItem):
 class EventsUserInputWidget(TansuHeaderListView):
     def __init__(self, parent=None):
         super(EventsUserInputWidget, self).__init__(parent)
-    # def selectionChanged(self, selected, deselected):
-    #     print("selection == %s"%selected.indexes())
-    #     for index in selected.indexes():
-    #         print(index.internalPointer())
-    #     return TansuHeaderListView.selectionChanged(self, selected, deselected)
+        delegate = EventTypeDelegate(self)
+        self.setItemDelegate(delegate)
 
     def setItemEnable(self, enabled):
         self.item().setEnable(enabled)
@@ -346,13 +385,7 @@ class UserInputMainWidget(QWidget):
         super(UserInputMainWidget, self).__init__(parent)
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
-
         self.loadEventTypesDict()
-
-        # create events type menu
-        self.events_type_menu = EventTypeInputWidget(self)
-        event_types = [[item] for item in list(self.event_dict.keys())]
-        self.events_type_menu.populate(event_types)
 
         # create scripts thingy
         self.script_widget = ScriptInputWidget(self)
@@ -360,21 +393,19 @@ class UserInputMainWidget(QWidget):
         # create event type args widget
         self.dynamic_args_widget = DynamicArgsWidget(self)
 
-        self.layout().addWidget(self.events_type_menu)
         self.layout().addWidget(self.script_widget)
         self.layout().addWidget(self.dynamic_args_widget)
 
     def loadEventTypesDict(self):
         """
-        Right now this is just printing out all the different args and what not...
+        Sets up the event_dict to be usd as global list of possible events
+        that the user can create.
         """
         # todo Qt Legacy?
         args_file = os.path.dirname(__file__) + '/args.json'
         with open(args_file, 'r') as args:
             self.event_dict = json.load(args)
             for event_type in self.event_dict.keys():
-                #print('')
-                #print(event_type, self.event_dict[event_type]['note'])
                 for arg in self.event_dict[event_type]['args']:
                     arg_name = arg['arg']
                     arg_note = arg['note']
@@ -407,9 +438,9 @@ class UserInputMainWidget(QWidget):
         main_widget = widget.getMainWidget()
         main_widget.setItem(item)
 
-        # update event type
+        # # update event type
         event_type = item.getEventType()
-        main_widget.events_type_menu.setText(event_type)
+        # main_widget.events_type_menu.setText(event_type)
 
         # set script widget to label.item().getScript()
         script_location = item.getScript()
@@ -420,13 +451,13 @@ class UserInputMainWidget(QWidget):
         main_widget.dynamic_args_widget.update()
 
         # set dynamic args values
-        if main_widget.events_type_menu.text() != '':
-            for arg in item.getArgsList():
-                try:
-                    arg_value = item.getArg(arg)
-                    main_widget.dynamic_args_widget.widget_dict[arg].setText(arg_value)
-                except KeyError:
-                    pass
+        #if main_widget.events_type_menu.text() != '':
+        for arg in item.getArgsList():
+            try:
+                arg_value = item.getArg(arg)
+                main_widget.dynamic_args_widget.widget_dict[arg].setText(arg_value)
+            except KeyError:
+                pass
 
     """ PROPERTIES """
     def setItem(self, item):
@@ -490,6 +521,7 @@ class EventTypeInputWidget(ListInputWidget):
         selection.
         """
         # preflight
+
         if self.previous_text == self.text(): return
 
         event_type = str(self.text())
@@ -500,10 +532,28 @@ class EventTypeInputWidget(ListInputWidget):
                 note = self.parent().event_dict[event_type]['note']
                 self.setToolTip(note)
                 self.previous_text = event_type
+
+                # update
                 return
 
         # if invalid input reset text
         self.setText(self.previous_text)
+
+
+class EventTypeDelegate(AbstractDragDropModelDelegate):
+    def __init__(self, parent=None):
+        super(EventTypeDelegate, self).__init__(parent)
+        self.setDelegateWidget(EventTypeInputWidget)
+        self._parent = parent
+
+    def createEditor(self, parent, option, index):
+        delegate_widget = self.delegateWidget(parent)
+
+        # populate events
+        event_list = list(getWidgetAncestor(parent, EventWidget).getAvailableEventsList())
+        delegate_widget.populate([[item] for item in event_list])
+
+        return delegate_widget
 
 
 class ScriptInputWidget(DynamicArgsInputWidget):
@@ -535,8 +585,12 @@ class DynamicArgsWidget(QWidget):
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
         self._widget_dict = {}
+        self._event_type = ''
 
     def clear(self):
+        """
+        Removes all of the dynamic widgets
+        """
         self.widget_dict = {}
         for index in reversed(range(self.layout().count())):
             widget = self.layout().itemAt(index).widget()
@@ -544,10 +598,15 @@ class DynamicArgsWidget(QWidget):
                 widget.setParent(None)
 
     def populate(self):
-        try:
-            args_list = self.parent().event_dict[self.event_type]['args']
-        except KeyError:
-            return
+        """
+        Populates all of the dynamic widgets that are based on each individual
+        model items args
+        """
+        # preflight
+        try: args_list = self.parent().event_dict[self.event_type]['args']
+        except KeyError: return
+
+        # update dynamic widget
         for arg in args_list:
             widget = DynamicArgsInputWidget(self, name=arg['arg'], note=arg['note'])
             self.layout().addWidget(widget)
