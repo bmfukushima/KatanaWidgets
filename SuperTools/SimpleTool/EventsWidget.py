@@ -21,7 +21,7 @@ TODO:
                 | -- update model
 """
 
-import sys
+import sys, os, json
 
 from qtpy.QtWidgets import (
     QApplication, QLineEdit, QWidget, QVBoxLayout,
@@ -36,6 +36,8 @@ from cgwidgets.widgets import (
 )
 
 from cgwidgets.utils import getWidgetAncestor, attrs
+
+from Katana import Utils
 
 
 class EventWidget(QWidget):
@@ -63,6 +65,7 @@ class EventWidget(QWidget):
     """
     def __init__(self, parent=None):
         super(EventWidget, self).__init__(parent)
+        self.loadEventTypesDict()
 
         # setup attrs
         self._events_model = []
@@ -77,7 +80,7 @@ class EventWidget(QWidget):
         self.layout().addWidget(self.main_widget)
 
         temp_button = QPushButton("test get event dict")
-        temp_button.clicked.connect(self.getEventsDict)
+        temp_button.clicked.connect(self.updateEvents)
         self.layout().addWidget(temp_button)
 
     def setupEventsWidgetGUI(self):
@@ -108,22 +111,6 @@ class EventWidget(QWidget):
         # create model item
         self.main_widget.insertTansuWidget(0, column_data={'name': "New Event"})
 
-    def getEventsDict(self):
-        root_item = self.main_widget.model().getRootItem()
-        events_dict = {}
-        # get all children
-        for child in root_item.children():
-            event_name = child.columnData()['name']
-            events_dict[event_name] ={}
-            events_dict[event_name]['script'] = child.getScript()
-            events_dict[event_name]['type'] = child.getEventType()
-            for arg in child.getArgsList():
-                events_dict[event_name][arg] = child.getArg(arg)
-
-        print(events_dict)
-        return events_dict
-
-    """ PROPERTIES """
     def removeEventByIndex(self, index):
         """
         Removes an event by a specified index
@@ -139,6 +126,76 @@ class EventWidget(QWidget):
         #self.updateAllEventItemsIndexes()
         # remove tab label / item
 
+    def eventHandler(self, *args, **kwargs):
+        for arg in args:
+            arg = arg[0]
+            #katana_main = UI4.App.MainWindow.GetMainWindow()
+            # Convert backdrop to group
+            print(arg)
+            # todo run through self.getEventsDict() and do stuff...
+            if arg[0] == 'node_create':
+                node = arg[2]['node']
+        pass
+
+    def updateEvents(self):
+        """
+        In charge of installing / uninstalling events.
+
+        This should be called everytime the user hits the update button
+        todo
+            * should this be a user input?  Or dynamically updating?
+            * uninstall event filters
+            * items need enabled / disabled flag to call
+        """
+        events_dict = self.getEventsDict()
+        for key in events_dict:
+            event_data = events_dict[key]
+            event_type = event_data['type']
+            enabled = True
+            #event_list = list(getWidgetAncestor(self, UserInputMainWidget).event_dict.keys())
+            print(event_type, list(events_dict.keys()))
+            if event_type in self.getAvailableEventsList():
+                print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
+                Utils.EventModule.RegisterCollapsedHandler(
+                    self.eventHandler, event_type, enabled=enabled
+                )
+
+        pass
+
+    def getEventsDict(self):
+        root_item = self.main_widget.model().getRootItem()
+        events_dict = {}
+        # get all children
+        for child in root_item.children():
+            event_name = child.columnData()['name']
+            events_dict[event_name] = {}
+            events_dict[event_name]['script'] = child.getScript()
+            events_dict[event_name]['type'] = child.getEventType()
+            for arg in child.getArgsList():
+                events_dict[event_name][arg] = child.getArg(arg)
+
+        return events_dict
+
+    def loadEventTypesDict(self):
+
+        """
+        Right now this is just printing out all the different args and what not...
+        todo
+            duplicate code...
+                issue with dynamic widgets and populating... should be a tech debt
+            legacy qt relative path stuff?
+        """
+        args_file = os.path.dirname(__file__) + '/args.json'
+        with open(args_file, 'r') as args:
+            self.event_dict = json.load(args)
+            for event_type in self.event_dict.keys():
+                for arg in self.event_dict[event_type]['args']:
+                    arg_name = arg['arg']
+                    arg_note = arg['note']
+                    #print('-----|', arg_name, arg_note)
+
+    def getAvailableEventsList(self):
+        return self.event_dict
 
 class EventTypeModelItem(TansuModelItem):
     """
@@ -311,9 +368,9 @@ class UserInputMainWidget(QWidget):
         """
         Right now this is just printing out all the different args and what not...
         """
-        import json
-
-        with open('args.json', 'r') as args:
+        # todo Qt Legacy?
+        args_file = os.path.dirname(__file__) + '/args.json'
+        with open(args_file, 'r') as args:
             self.event_dict = json.load(args)
             for event_type in self.event_dict.keys():
                 #print('')
@@ -437,7 +494,7 @@ class EventTypeInputWidget(ListInputWidget):
 
         event_type = str(self.text())
         if event_type:
-            event_list = list(getWidgetAncestor(self, UserInputMainWidget).event_dict.keys())
+            event_list = list(getWidgetAncestor(self, EventWidget).getAvailableEventsList())
             if event_type in event_list:
                 self.parent().setEventType(event_type)
                 note = self.parent().event_dict[event_type]['note']

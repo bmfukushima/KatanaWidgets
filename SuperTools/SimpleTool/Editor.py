@@ -67,6 +67,7 @@ except ModuleNotFoundError:
     pass
 
 from .GroupNodeEditor import GroupNodeEditorMainWidget
+from .EventsWidget import EventWidget
 
 
 class SimpleToolEditor(TwoFacedSuperToolWidget):
@@ -86,16 +87,16 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.main_node = node.getChildByIndex(0)
 
         self.group_node_editor = GroupNodeEditorMainWidget(self, self.node, self.main_node)
-
+        self.events_widget = EventWidget(self)
         # setup tabs
         self.getDesignWidget().insertTansuWidget(
             0, column_data={'name':"Params"}, widget=self.group_node_editor)
         self.getDesignWidget().insertTansuWidget(
-            1, column_data={'name':'Events'}, widget=QLabel('Events'))
-        self.getDesignWidget().insertTansuWidget(
-            2, column_data={'name':'GUI Designer'}, widget=QLabel('GUI Designer'))
-        self.getDesignWidget().insertTansuWidget(
-            3, column_data={'name':'User Params'}, widget=QLabel('User Params'))
+            1, column_data={'name':'Events'}, widget=self.events_widget)
+        # self.getDesignWidget().insertTansuWidget(
+        #     2, column_data={'name':'GUI Designer'}, widget=QLabel('GUI Designer'))
+        # self.getDesignWidget().insertTansuWidget(
+        #     3, column_data={'name':'User Params'}, widget=QLabel('User Params'))
 
         # setup flags
         self.getDesignWidget().setHeaderIsDragEnabled(False)
