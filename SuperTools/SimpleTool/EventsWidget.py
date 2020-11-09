@@ -98,6 +98,8 @@ class EventWidget(QWidget):
 
         # setup signals
         main_widget.setHeaderIsDropEnabled(False)
+        main_widget.setHeaderItemIsEnableable(True)
+        main_widget.setHeaderItemIsDeleteEnabled(True)
         main_widget.model().setItemType(EventTypeModelItem)
         main_widget.setHeaderTextChangedEvent(self.eventTypeChanged)
 
@@ -122,13 +124,11 @@ class EventWidget(QWidget):
         """
         # preflight
         root_item = self.main_widget.model().getRootItem()
-        # get all children
         for child in root_item.children():
             if child != item:
                 event_name = child.columnData()['event_type']
                 if event_name == new_value:
                     item.setArg('event_type', '<New Event>')
-                    item.setEventType('<New Event>')
                     return
 
         # update display
@@ -194,10 +194,9 @@ class EventWidget(QWidget):
         events_dict = self.getEventsDict()
         for key in events_dict:
             event_data = events_dict[key]
+            enabled = event_data['enabled']
             event_type = event_data['type']
-            enabled = True
-            #event_list = list(getWidgetAncestor(self, UserInputMainWidget).event_dict.keys())
-            print(event_type, list(events_dict.keys()))
+
             if event_type in self.getAvailableEventsList():
                 print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
                 Utils.EventModule.RegisterCollapsedHandler(
@@ -215,6 +214,8 @@ class EventWidget(QWidget):
             if event_name != '<New Event>':
                 events_dict[event_name] = {}
                 events_dict[event_name]['script'] = child.getScript()
+                events_dict['enabled'] = child.isEnabled()
+
                 #events_dict[event_name]['type'] = child.getEventType()
                 for arg in child.getArgsList():
                     events_dict[event_name][arg] = child.getArg(arg)
@@ -264,30 +265,11 @@ class EventTypeModelItem(TansuModelItem):
         #self['index'] = index
         self._enabled = enabled
 
-    # def setName(self, name):
-    #     self._name = name
-    #
-    # def getName(self):
-    #     return self._name
-
-    # TODO Do I need the event type? Now that this is set as the 'event_type' arg?
-    # def setEventType(self, event_type):
-    #     self._event_type = event_type
-    #
-    # def getEventType(self):
-    #     return self._event_type
-
     def setScript(self, script):
         self._script = script
 
     def getScript(self):
         return self._script
-
-    def setEnable(self, enabled):
-        self._enabled = enabled
-
-    def getEnable(self):
-        return self._enabled
 
     """ args """
     def setArg(self, arg, value):
@@ -309,22 +291,22 @@ class EventsUserInputWidget(TansuHeaderListView):
         delegate = EventTypeDelegate(self)
         self.setItemDelegate(delegate)
 
-    def setItemEnable(self, enabled):
-        self.item().setEnable(enabled)
+    # def setItemEnable(self, enabled):
+    #     self.item().setEnable(enabled)
+    #
+    # def deleteItem(self):
+    #     main_widget = getWidgetAncestor(self, EventWidget)
+    #     main_widget.removeEvent(self.item())
+    #
+    #     # reparent and overlay?
+    #     # this thing really needs a model...
+    #     print ("are you sure?")
 
-    def deleteItem(self):
-        main_widget = getWidgetAncestor(self, EventWidget)
-        main_widget.removeEvent(self.item())
-
-        # reparent and overlay?
-        # this thing really needs a model...
-        print ("are you sure?")
-
-    def keyPressEvent(self, event):
-        index = self.getIndexUnderCursor()
-        # pos = self.mapFromGlobal(QCursor.pos())
-        # index = self.indexAt(pos)
-        # item = index.internalPointer()
+    # def keyPressEvent(self, event):
+    #     index = self.getIndexUnderCursor()
+    #     # pos = self.mapFromGlobal(QCursor.pos())
+    #     # index = self.indexAt(pos)
+    #     # item = index.internalPointer()
 
     def contextMenuEvent(self, event):
         index = self.getIndexUnderCursor()
@@ -421,7 +403,6 @@ class UserInputMainWidget(QWidget):
             self._event_type = event_type
             self.dynamic_args_widget.event_type = event_type
             self.dynamic_args_widget.update()
-            self.item().setEventType(event_type)
 
     def getEventType(self):
         return self._event_type
