@@ -37,7 +37,7 @@ from cgwidgets.widgets import (
 from cgwidgets.views import AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestor, attrs
 
-#from Katana import Utils
+from Katana import Utils
 
 
 class EventWidget(QWidget):
@@ -80,8 +80,8 @@ class EventWidget(QWidget):
         self.layout().addWidget(self.main_widget)
 
         temp_button = QPushButton("test get event dict")
-        #temp_button.clicked.connect(self.updateEvents)
-        temp_button.clicked.connect(self.getEventsDict)
+        temp_button.clicked.connect(self.updateEvents)
+        #temp_button.clicked.connect(self.getEventsDict)
         self.layout().addWidget(temp_button)
 
     def setupEventsWidgetGUI(self):
@@ -96,11 +96,17 @@ class EventWidget(QWidget):
         main_widget.setHeaderWidget(events_view)
         main_widget.setHeaderData(['event_type'])
 
-        # setup signals
+        # setup custom item type
+        main_widget.model().setItemType(EventTypeModelItem)
+
+        # setup flags
         main_widget.setHeaderIsDropEnabled(False)
         main_widget.setHeaderItemIsEnableable(True)
         main_widget.setHeaderItemIsDeleteEnabled(True)
-        main_widget.model().setItemType(EventTypeModelItem)
+
+        # setup signals
+        main_widget.setHeaderItemDeleteEvent(self.removeItemEvent)
+        main_widget.setHeaderItemEnabledEvent(self._updateEvents)
         main_widget.setHeaderTextChangedEvent(self.eventTypeChanged)
 
         # set type / position
@@ -143,20 +149,20 @@ class EventWidget(QWidget):
         # create model item
         self.main_widget.insertTansuWidget(0, column_data={'event_type': "<New Event>"})
 
-    def removeEventByIndex(self, index):
-        """
-        Removes an event by a specified index
-        """
-        self.getEventsModel().pop(index)
-        self.main_widget.removeTab(index)
-        #self.updateAllEventItemsIndexes()
-        # remove tab label / item
+    # def removeEventByIndex(self, index):
+    #     """
+    #     Removes an event by a specified index
+    #     """
+    #     self.getEventsModel().pop(index)
+    #     self.main_widget.removeTab(index)
+    #     #self.updateAllEventItemsIndexes()
+    #     # remove tab label / item
 
-    def removeEvent(self, event_item):
-        self.getEventsModel().remove(event_item)
-        self.main_widget.removeTab(event_item.getIndex())
-        #self.updateAllEventItemsIndexes()
-        # remove tab label / item
+    # def removeEvent(self, event_item):
+    #     self.getEventsModel().remove(event_item)
+    #     self.main_widget.removeTab(event_item.getIndex())
+    #     #self.updateAllEventItemsIndexes()
+    #     # remove tab label / item
 
     def eventHandler(self, *args, **kwargs):
         for arg in args:
@@ -171,7 +177,7 @@ class EventWidget(QWidget):
             print(events_dict)
             for key in events_dict:
                 event_data = events_dict[key]
-                event_type = event_data['type']
+                event_type = event_data['event_type']
                 # correct event
                 if event_type == arg[0]:
                     # check event data
@@ -181,7 +187,28 @@ class EventWidget(QWidget):
                 node = arg[2]['node']
         pass
 
+    def removeItemEvent(self, item):
+        item.setIsEnabled(False)
+        self.updateEvents()
+        # TODO disable item
+        # get item dict
+        # disable item
+        pass
+
     def updateEvents(self):
+        events_dict = self.getEventsDict()
+        for key in events_dict:
+            event_data = events_dict[key]
+            enabled = event_data['enabled']
+            event_type = event_data['event_type']
+
+            if event_type in self.getAvailableEventsList():
+                print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
+                Utils.EventModule.RegisterCollapsedHandler(
+                    self.eventHandler, event_type, enabled=enabled
+                )
+
+    def _updateEvents(self, item, enabled):
         """
         In charge of installing / uninstalling events.
 
@@ -191,19 +218,8 @@ class EventWidget(QWidget):
             * uninstall event filters
             * items need enabled / disabled flag to call
         """
-        events_dict = self.getEventsDict()
-        for key in events_dict:
-            event_data = events_dict[key]
-            enabled = event_data['enabled']
-            event_type = event_data['type']
+        self.updateEvents()
 
-            if event_type in self.getAvailableEventsList():
-                print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
-                Utils.EventModule.RegisterCollapsedHandler(
-                    self.eventHandler, event_type, enabled=enabled
-                )
-
-        pass
 
     def getEventsDict(self):
         root_item = self.main_widget.model().getRootItem()
@@ -214,7 +230,7 @@ class EventWidget(QWidget):
             if event_name != '<New Event>':
                 events_dict[event_name] = {}
                 events_dict[event_name]['script'] = child.getScript()
-                events_dict['enabled'] = child.isEnabled()
+                events_dict[event_name]['enabled'] = child.isEnabled()
 
                 #events_dict[event_name]['type'] = child.getEventType()
                 for arg in child.getArgsList():
@@ -290,23 +306,6 @@ class EventsUserInputWidget(TansuHeaderListView):
         super(EventsUserInputWidget, self).__init__(parent)
         delegate = EventTypeDelegate(self)
         self.setItemDelegate(delegate)
-
-    # def setItemEnable(self, enabled):
-    #     self.item().setEnable(enabled)
-    #
-    # def deleteItem(self):
-    #     main_widget = getWidgetAncestor(self, EventWidget)
-    #     main_widget.removeEvent(self.item())
-    #
-    #     # reparent and overlay?
-    #     # this thing really needs a model...
-    #     print ("are you sure?")
-
-    # def keyPressEvent(self, event):
-    #     index = self.getIndexUnderCursor()
-    #     # pos = self.mapFromGlobal(QCursor.pos())
-    #     # index = self.indexAt(pos)
-    #     # item = index.internalPointer()
 
     def contextMenuEvent(self, event):
         index = self.getIndexUnderCursor()
