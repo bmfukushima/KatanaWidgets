@@ -21,7 +21,7 @@ TODO:
                 | -- update model
 """
 
-import sys, os, json
+import sys, os, json, imp
 
 from qtpy.QtWidgets import (
     QApplication, QLineEdit, QWidget, QVBoxLayout,
@@ -37,7 +37,13 @@ from cgwidgets.widgets import (
 from cgwidgets.views import AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestor, attrs
 
-#from Katana import Utils
+# TODO Temp
+try:
+    # katana
+    from Katana import Utils
+except:
+    # local
+    pass
 
 
 class EventWidget(QWidget):
@@ -79,9 +85,14 @@ class EventWidget(QWidget):
         self.layout().addWidget(self.new_event_button)
         self.layout().addWidget(self.main_widget)
 
+        # TODO Temp
         temp_button = QPushButton("test get event dict")
-        #temp_button.clicked.connect(self.updateEvents)
-        temp_button.clicked.connect(self.getEventsDict)
+        try:
+            # katana
+            temp_button.clicked.connect(self.updateEvents)
+        except:
+            # local
+            temp_button.clicked.connect(self.getEventsDict)
         self.layout().addWidget(temp_button)
 
     def setupEventsWidgetGUI(self):
@@ -129,17 +140,16 @@ class EventWidget(QWidget):
         to avoid double event registry in Katana.
         """
         # preflight
-        print('changed')
         root_item = self.main_widget.model().getRootItem()
-        # if it exists
+
+        # duplicate event type
         for child in root_item.children():
             if child != item:
                 event_name = child.columnData()['event_type']
                 if event_name == new_value:
                     item.setArg('event_type', '<New Event>')
                     return
-
-        # if not in event list
+        # invalid event type
         events_list = self.getAvailableEventsList()
         if new_value not in events_list:
             item.setArg('event_type', '<New Event>')
@@ -157,43 +167,29 @@ class EventWidget(QWidget):
         # create model item
         self.main_widget.insertTansuWidget(0, column_data={'event_type': "<New Event>"})
 
-    # def removeEventByIndex(self, index):
-    #     """
-    #     Removes an event by a specified index
-    #     """
-    #     self.getEventsModel().pop(index)
-    #     self.main_widget.removeTab(index)
-    #     #self.updateAllEventItemsIndexes()
-    #     # remove tab label / item
-
-    # def removeEvent(self, event_item):
-    #     self.getEventsModel().remove(event_item)
-    #     self.main_widget.removeTab(event_item.getIndex())
-    #     #self.updateAllEventItemsIndexes()
-    #     # remove tab label / item
-
     def eventHandler(self, *args, **kwargs):
         for arg in args:
             arg = arg[0]
-            #katana_main = UI4.App.MainWindow.GetMainWindow()
-            # Convert backdrop to group
-            print("==================")
-            print(arg)
-            # todo run through self.getEventsDict() and do stuff...
+            event_type = arg[0]
+            event_data = arg[2]
 
-            events_dict = self.getEventsDict()
-            print(events_dict)
-            for key in events_dict:
-                event_data = events_dict[key]
-                event_type = event_data['event_type']
-                # correct event
-                if event_type == arg[0]:
-                    # check event data
-                    print(event_data)
+            user_event_data = self.getEventsDict()
+            if event_type in list(user_event_data.keys()):
+                user_data = user_event_data[event_type]
+                filepath = user_data['script']
 
-            if arg[0] == 'node_create':
-                node = arg[2]['node']
-        pass
+                # check params
+                for key in user_data.keys():
+                    try:
+                        if not event_data[key] == user_data[key]:
+                            return
+                    except KeyError:
+                        pass
+
+                # run script
+                if os.path.exists(filepath):
+                    with open(filepath) as script_descriptor:
+                        exec(script_descriptor.read(), event_data)
 
     def removeItemEvent(self, item):
         item.setIsEnabled(False)
@@ -204,19 +200,6 @@ class EventWidget(QWidget):
         pass
 
     def updateEvents(self):
-        events_dict = self.getEventsDict()
-        for key in events_dict:
-            event_data = events_dict[key]
-            enabled = event_data['enabled']
-            event_type = event_data['event_type']
-
-            if event_type in self.getAvailableEventsList():
-                print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
-                Utils.EventModule.RegisterCollapsedHandler(
-                    self.eventHandler, event_type, enabled=enabled
-                )
-
-    def _updateEvents(self, item, enabled):
         """
         In charge of installing / uninstalling events.
 
@@ -225,6 +208,23 @@ class EventWidget(QWidget):
             * should this be a user input?  Or dynamically updating?
             * uninstall event filters
             * items need enabled / disabled flag to call
+        """
+        events_dict = self.getEventsDict()
+        for key in events_dict:
+            event_data = events_dict[key]
+            enabled = event_data['enabled']
+            event_type = event_data['event_type']
+
+            if event_type in self.getAvailableEventsList():
+                #print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
+                Utils.EventModule.RegisterCollapsedHandler(
+                    self.eventHandler, event_type, enabled=enabled
+                )
+
+    def _updateEvents(self, item, enabled):
+        """
+        Wrapper for updateEvents so that it can be used when the user
+        disabled an event.
         """
         self.updateEvents()
 
@@ -238,11 +238,9 @@ class EventWidget(QWidget):
                 events_dict[event_name] = {}
                 events_dict[event_name]['script'] = child.getScript()
                 events_dict[event_name]['enabled'] = child.isEnabled()
-
-                #events_dict[event_name]['type'] = child.getEventType()
                 for arg in child.getArgsList():
                     events_dict[event_name][arg] = child.getArg(arg)
-        print(events_dict)
+
         return events_dict
 
     def loadEventTypesDict(self):
