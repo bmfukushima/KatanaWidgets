@@ -37,7 +37,7 @@ from cgwidgets.widgets import (
 from cgwidgets.views import AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestor, attrs
 
-from Katana import Utils
+#from Katana import Utils
 
 
 class EventWidget(QWidget):
@@ -80,8 +80,8 @@ class EventWidget(QWidget):
         self.layout().addWidget(self.main_widget)
 
         temp_button = QPushButton("test get event dict")
-        temp_button.clicked.connect(self.updateEvents)
-        #temp_button.clicked.connect(self.getEventsDict)
+        #temp_button.clicked.connect(self.updateEvents)
+        temp_button.clicked.connect(self.getEventsDict)
         self.layout().addWidget(temp_button)
 
     def setupEventsWidgetGUI(self):
@@ -129,13 +129,21 @@ class EventWidget(QWidget):
         to avoid double event registry in Katana.
         """
         # preflight
+        print('changed')
         root_item = self.main_widget.model().getRootItem()
+        # if it exists
         for child in root_item.children():
             if child != item:
                 event_name = child.columnData()['event_type']
                 if event_name == new_value:
                     item.setArg('event_type', '<New Event>')
                     return
+
+        # if not in event list
+        events_list = self.getAvailableEventsList()
+        if new_value not in events_list:
+            item.setArg('event_type', '<New Event>')
+            return
 
         # update display
         else:
@@ -219,7 +227,6 @@ class EventWidget(QWidget):
             * items need enabled / disabled flag to call
         """
         self.updateEvents()
-
 
     def getEventsDict(self):
         root_item = self.main_widget.model().getRootItem()
@@ -492,44 +499,10 @@ class DynamicArgsInputWidget(FrameInputWidget):
         self._arg = arg
 
 
-class EventTypeInputWidget(ListInputWidget):
-    """
-    Drop down menu containing all of the different event types
-    that the user can choose from for a specific operation
-    """
-    def __init__(self, parent=None):
-        super(EventTypeInputWidget, self).__init__(parent)
-        self.setUserFinishedEditingEvent(self.eventTypeChanged)
-
-    def eventTypeChanged(self, widget, value):
-        """
-        Event that is triggered when the user changes the event type
-        selection.
-        """
-        # preflight
-
-        if self.previous_text == self.text(): return
-
-        event_type = str(self.text())
-        if event_type:
-            event_list = list(getWidgetAncestor(self, EventWidget).getAvailableEventsList())
-            if event_type in event_list:
-                self.parent().setEventType(event_type)
-                note = self.parent().event_dict[event_type]['note']
-                self.setToolTip(note)
-                self.previous_text = event_type
-
-                # update
-                return
-
-        # if invalid input reset text
-        self.setText(self.previous_text)
-
-
 class EventTypeDelegate(AbstractDragDropModelDelegate):
     def __init__(self, parent=None):
         super(EventTypeDelegate, self).__init__(parent)
-        self.setDelegateWidget(EventTypeInputWidget)
+        self.setDelegateWidget(ListInputWidget)
         self._parent = parent
 
     def createEditor(self, parent, option, index):
