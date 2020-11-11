@@ -40,7 +40,7 @@ from cgwidgets.utils import getWidgetAncestor, attrs
 # TODO Temp
 try:
     # katana
-    from Katana import Utils
+    from Katana import Utils, NodegraphAPI
 except:
     # local
     pass
@@ -167,7 +167,80 @@ class EventWidget(QWidget):
         # create model item
         self.main_widget.insertTansuWidget(0, column_data={'event_type': "<New Event>"})
 
+    def __checkUserData(self, event_data, user_data):
+        """
+        Types:
+            Port
+            Parameter
+
+        """
+        # Get Node
+        try:
+            node_name = user_data["node"]
+            node = NodegraphAPI.GetNode(node_name)
+        except KeyError:
+            node = None
+
+        for key in event_data.keys():
+            event_arg_data = event_data[key]
+            try:
+                user_arg_data = user_data[key]
+                #print(key, type(event_data[key]), event_data[key], user_arg_data)
+
+                # Port
+                # if isinstance(event_arg_data, "Port"):
+                if type(event_arg_data) == "Port":
+                    # output = 0
+                    # input = 1
+                    port_type = event_arg_data.getType()
+                    if port_type == 0:
+                        port = NodegraphAPI.GetOutputPort(user_arg_data)
+                    else:
+                        port = NodegraphAPI.GetInputPort(user_arg_data)
+                    if port != event_arg_data:
+                        return False
+
+                # Param
+                # if isinstance(event_arg_data, "Parameter"):
+                elif type(event_arg_data) == "Parameter":
+                    param = node.getParameter(user_arg_data)
+                    if param != event_arg_data:
+                        return False
+                    pass
+
+                # Node
+                elif key == "node":
+                    if node:
+                        if node != event_arg_data:
+                            return False
+                    else:
+                        return False
+
+                # PyXmlIO
+
+                # default data types
+                else:
+                    if event_arg_data != user_arg_data:
+                        return False
+
+                print("arbitrary args passed")
+            except KeyError:
+                pass
+
+        # passed all checks
+        return True
+
     def eventHandler(self, *args, **kwargs):
+        """
+        This is run every time Katana does an event that is registered with this
+        node.  This will filter through the current events dict, and run a script
+        based off of the parameters provided.  The event data is provided to this
+        script so that all of the variables that are seen can be used inside of the
+        script as local variables.
+
+        TODO: preflight for args...
+            do I even need this?  You could do preflight in the script?
+        """
         for arg in args:
             arg = arg[0]
             event_type = arg[0]
@@ -179,12 +252,7 @@ class EventWidget(QWidget):
                 filepath = user_data['script']
 
                 # check params
-                for key in user_data.keys():
-                    try:
-                        if not event_data[key] == user_data[key]:
-                            return
-                    except KeyError:
-                        pass
+                if not self.__checkUserData(event_data, user_data): return
 
                 # run script
                 if os.path.exists(filepath):
@@ -217,6 +285,7 @@ class EventWidget(QWidget):
 
             if event_type in self.getAvailableEventsList():
                 #print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
+                # TODO If already registered creates warning
                 Utils.EventModule.RegisterCollapsedHandler(
                     self.eventHandler, event_type, enabled=enabled
                 )
@@ -239,7 +308,9 @@ class EventWidget(QWidget):
                 events_dict[event_name]['script'] = child.getScript()
                 events_dict[event_name]['enabled'] = child.isEnabled()
                 for arg in child.getArgsList():
-                    events_dict[event_name][arg] = child.getArg(arg)
+                    value = child.getArg(arg)
+                    if value:
+                        events_dict[event_name][arg] = value
 
         return events_dict
 
