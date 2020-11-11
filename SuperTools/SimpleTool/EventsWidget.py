@@ -252,9 +252,8 @@ class EventWidget(QWidget):
         except ValueError:
             return
 
-        print(json_data)
         for event_type in json_data:
-            event = json_data[event_type]
+            event = json_data[str(event_type)]
             self.createNewEvent(column_data=event)
 
     """ EVENTS """
@@ -285,6 +284,7 @@ class EventWidget(QWidget):
 
         # update display
         else:
+            item.clearArgsList()
             item.setArg('event_type', new_value)
             self.main_widget.updateDelegateDisplay()
 
@@ -296,12 +296,18 @@ class EventWidget(QWidget):
             column_data = {'event_type': "<New Event>"}
         # create model item
         new_index = self.main_widget.insertTansuWidget(0, column_data=column_data)
+        item = new_index.internalPointer()
+
+        # update script / enabled args
+        # TODO get defaults - these should probably be moved to args?
         try:
-            item = new_index.internalPointer()
             item.setScript(column_data['script'])
         except KeyError:
             pass
-        # TODO Handle script input?
+        try:
+            self.main_widget.model().setItemEnabled(item, column_data['enabled'])
+        except KeyError:
+            pass
 
     def eventHandler(self, *args, **kwargs):
         """
@@ -330,6 +336,7 @@ class EventWidget(QWidget):
                 # run script
                 if os.path.exists(filepath):
                     with open(filepath) as script_descriptor:
+                        event_data['self'] = self.main_node.getParent()
                         exec(script_descriptor.read(), event_data)
 
     def removeItemEvent(self, item):
@@ -417,6 +424,10 @@ class EventTypeModelItem(TansuModelItem):
 
     def removeArg(self, arg):
         self.columnData().pop(arg, None)
+
+    def clearArgsList(self):
+        for key in list(self.columnData().keys()):
+            self.columnData().pop(key, None)
 
 
 class EventsUserInputWidget(TansuHeaderListView):
@@ -621,7 +632,7 @@ class EventTypeDelegate(AbstractDragDropModelDelegate):
 
         # populate events
         event_list = list(getWidgetAncestor(parent, EventWidget).getDefaultEventsDict())
-        delegate_widget.populate([[item] for item in event_list])
+        delegate_widget.populate([[item] for item in sorted(event_list)])
 
         return delegate_widget
 
