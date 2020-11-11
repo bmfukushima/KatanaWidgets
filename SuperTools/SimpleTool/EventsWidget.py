@@ -69,10 +69,10 @@ class EventWidget(QWidget):
                                     | -- dynamic_args_widget (DynamicArgsWidget)
                                             | -* DynamicArgsInputWidget
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, node=None):
         super(EventWidget, self).__init__(parent)
         self.loadEventTypesDict()
-
+        self.main_node = node
         # setup attrs
         self._events_model = []
 
@@ -92,8 +92,11 @@ class EventWidget(QWidget):
             temp_button.clicked.connect(self.updateEvents)
         except:
             # local
-            temp_button.clicked.connect(self.getEventsDict)
+            temp_button.clicked.connect(self.getUserEventsDict)
         self.layout().addWidget(temp_button)
+
+        # load events
+        self.loadEventsDataFromJSON()
 
     def setupEventsWidgetGUI(self):
         """
@@ -130,49 +133,17 @@ class EventWidget(QWidget):
 
         return main_widget
 
-    def eventTypeChanged(self, item, old_value, new_value):
-        """
-        When the user updates the event_type by editing the views
-        header.  This will set the event type on the item so that it
-        can be properly updated by the dynamic display.
-
-        If an event of that type already exists, this will reset to a null value
-        to avoid double event registry in Katana.
-        """
-        # preflight
-        root_item = self.main_widget.model().getRootItem()
-
-        # duplicate event type
-        for child in root_item.children():
-            if child != item:
-                event_name = child.columnData()['event_type']
-                if event_name == new_value:
-                    item.setArg('event_type', '<New Event>')
-                    return
-        # invalid event type
-        events_list = self.getAvailableEventsList()
-        if new_value not in events_list:
-            item.setArg('event_type', '<New Event>')
-            return
-
-        # update display
-        else:
-            item.setArg('event_type', new_value)
-            self.main_widget.updateDelegateDisplay()
-
-    def createNewEvent(self):
-        """
-        Creates a new event item
-        """
-        # create model item
-        self.main_widget.insertTansuWidget(0, column_data={'event_type': "<New Event>"})
-
+    """ UTILS """
     def __checkUserData(self, event_data, user_data):
         """
-        Types:
-            Port
-            Parameter
+        Checks the user data against the event data to determine
+        if the the script should be running during an event
 
+        Args:
+            event_data (dict):
+            user_data (dict):
+
+        Returns (bool):
         """
         # Get Node
         try:
@@ -223,12 +194,114 @@ class EventWidget(QWidget):
                     if event_arg_data != user_arg_data:
                         return False
 
-                print("arbitrary args passed")
             except KeyError:
                 pass
 
         # passed all checks
         return True
+
+    """ EVENTS DICT """
+    def getUserEventsDict(self):
+        """
+        Returns the dictionary of events data that was set up by the user.
+        This is also stored in the parameter on the main node as "events_data"
+        """
+        root_item = self.main_widget.model().getRootItem()
+        events_dict = {}
+        # get all children
+        for child in root_item.children():
+            event_name = child.columnData()['event_type']
+            if event_name != '<New Event>':
+                events_dict[event_name] = {}
+                events_dict[event_name]['script'] = child.getScript()
+                events_dict[event_name]['enabled'] = child.isEnabled()
+                for arg in child.getArgsList():
+                    value = child.getArg(arg)
+                    if value:
+                        events_dict[event_name][arg] = value
+
+        return events_dict
+
+    def loadEventTypesDict(self):
+        """
+        Creates a dictionary which has all of the default event data.
+        """
+        args_file = os.path.dirname(__file__) + '/args.json'
+        with open(args_file, 'r') as args:
+            self.event_dict = json.load(args)
+            for event_type in self.event_dict.keys():
+                for arg in self.event_dict[event_type]['args']:
+                    arg_name = arg['arg']
+                    arg_note = arg['note']
+                    #print('-----|', arg_name, arg_note)
+
+    def getDefaultEventsDict(self):
+        """
+        returns
+        """
+        return self.event_dict
+
+    def saveEventsDataToJSON(self):
+        events_dict = self.getUserEventsDict()
+        events_string = json.dumps(events_dict)
+        self.main_node.getParameter("events_data").setValue(events_string, 0)
+
+    def loadEventsDataFromJSON(self):
+        try:
+            json_data = json.loads(self.main_node.getParameter("events_data").getValue(0))
+        except ValueError:
+            return
+
+        print(json_data)
+        for event_type in json_data:
+            event = json_data[event_type]
+            self.createNewEvent(column_data=event)
+
+    """ EVENTS """
+    def eventTypeChanged(self, item, old_value, new_value):
+        """
+        When the user updates the event_type by editing the views
+        header.  This will set the event type on the item so that it
+        can be properly updated by the dynamic display.
+
+        If an event of that type already exists, this will reset to a null value
+        to avoid double event registry in Katana.
+        """
+        # preflight
+        root_item = self.main_widget.model().getRootItem()
+
+        # duplicate event type
+        for child in root_item.children():
+            if child != item:
+                event_name = child.columnData()['event_type']
+                if event_name == new_value:
+                    item.setArg('event_type', '<New Event>')
+                    return
+        # invalid event type
+        events_list = self.getDefaultEventsDict()
+        if new_value not in events_list:
+            item.setArg('event_type', '<New Event>')
+            return
+
+        # update display
+        else:
+            item.setArg('event_type', new_value)
+            self.main_widget.updateDelegateDisplay()
+
+    def createNewEvent(self, column_data=None):
+        """
+        Creates a new event item
+        """
+        if not column_data:
+            column_data = {'event_type': "<New Event>"}
+        # create model item
+        new_index = self.main_widget.insertTansuWidget(0, column_data=column_data)
+        try:
+            item = new_index.internalPointer()
+            item.setScript(column_data['script'])
+        except KeyError:
+            pass
+        # TODO Handle script input?
 
     def eventHandler(self, *args, **kwargs):
         """
@@ -246,7 +319,7 @@ class EventWidget(QWidget):
             event_type = arg[0]
             event_data = arg[2]
 
-            user_event_data = self.getEventsDict()
+            user_event_data = self.getUserEventsDict()
             if event_type in list(user_event_data.keys()):
                 user_data = user_event_data[event_type]
                 filepath = user_data['script']
@@ -277,18 +350,25 @@ class EventWidget(QWidget):
             * uninstall event filters
             * items need enabled / disabled flag to call
         """
-        events_dict = self.getEventsDict()
+        events_dict = self.getUserEventsDict()
         for key in events_dict:
             event_data = events_dict[key]
             enabled = event_data['enabled']
             event_type = event_data['event_type']
 
-            if event_type in self.getAvailableEventsList():
+            if event_type in self.getDefaultEventsDict():
                 #print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
                 # TODO If already registered creates warning
-                Utils.EventModule.RegisterCollapsedHandler(
-                    self.eventHandler, event_type, enabled=enabled
-                )
+                try:
+                    Utils.EventModule.RegisterCollapsedHandler(
+                        self.eventHandler, event_type, enabled=enabled
+                    )
+                except ValueError:
+                    # pass if the handler exists
+                    pass
+
+        # save to param
+        self.saveEventsDataToJSON()
 
     def _updateEvents(self, item, enabled):
         """
@@ -296,44 +376,6 @@ class EventWidget(QWidget):
         disabled an event.
         """
         self.updateEvents()
-
-    def getEventsDict(self):
-        root_item = self.main_widget.model().getRootItem()
-        events_dict = {}
-        # get all children
-        for child in root_item.children():
-            event_name = child.columnData()['event_type']
-            if event_name != '<New Event>':
-                events_dict[event_name] = {}
-                events_dict[event_name]['script'] = child.getScript()
-                events_dict[event_name]['enabled'] = child.isEnabled()
-                for arg in child.getArgsList():
-                    value = child.getArg(arg)
-                    if value:
-                        events_dict[event_name][arg] = value
-
-        return events_dict
-
-    def loadEventTypesDict(self):
-
-        """
-        Right now this is just printing out all the different args and what not...
-        todo
-            duplicate code...
-                issue with dynamic widgets and populating... should be a tech debt
-            legacy qt relative path stuff?
-        """
-        args_file = os.path.dirname(__file__) + '/args.json'
-        with open(args_file, 'r') as args:
-            self.event_dict = json.load(args)
-            for event_type in self.event_dict.keys():
-                for arg in self.event_dict[event_type]['args']:
-                    arg_name = arg['arg']
-                    arg_note = arg['note']
-                    #print('-----|', arg_name, arg_note)
-
-    def getAvailableEventsList(self):
-        return self.event_dict
 
 
 class EventTypeModelItem(TansuModelItem):
@@ -578,7 +620,7 @@ class EventTypeDelegate(AbstractDragDropModelDelegate):
         delegate_widget = self.delegateWidget(parent)
 
         # populate events
-        event_list = list(getWidgetAncestor(parent, EventWidget).getAvailableEventsList())
+        event_list = list(getWidgetAncestor(parent, EventWidget).getDefaultEventsDict())
         delegate_widget.populate([[item] for item in event_list])
 
         return delegate_widget

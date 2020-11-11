@@ -85,9 +85,12 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         # set up attrs
         self.node = node
         self.main_node = node.getChildByIndex(0)
+        self.events_param = self.main_node.getParameters().createChildString("events_data", "")
 
+        # create widgets
         self.group_node_editor = GroupNodeEditorMainWidget(self, self.node, self.main_node)
-        self.events_widget = EventWidget(self)
+        self.events_widget = EventWidget(self, self.main_node)
+
         # setup tabs
         self.getDesignWidget().insertTansuWidget(
             0, column_data={'name':"Params"}, widget=self.group_node_editor)
@@ -103,21 +106,21 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.getDesignWidget().setHeaderIsDropEnabled(False)
         self.getDesignWidget().setHeaderIsEditable(False)
 
-    def getEventTypes(self):
-        """
-        Right now this is just printing out all the different args and what not...
-        """
-        import json
-
-        with open('args.json', 'r') as args:
-            args_dict = json.load(args)
-            for event_type in args_dict.keys():
-                print('')
-                print(event_type, args_dict[event_type]['note'])
-                for arg in args_dict[event_type]['args']:
-                    arg_name = arg['arg']
-                    arg_note = arg['note']
-                    print('-----|', arg_name, arg_note)
+    # def getEventTypes(self):
+    #     """
+    #     Right now this is just printing out all the different args and what not...
+    #     """
+    #     import json
+    #
+    #     with open('args.json', 'r') as args:
+    #         args_dict = json.load(args)
+    #         for event_type in args_dict.keys():
+    #             print('')
+    #             print(event_type, args_dict[event_type]['note'])
+    #             for arg in args_dict[event_type]['args']:
+    #                 arg_name = arg['arg']
+    #                 arg_note = arg['note']
+    #                 print('-----|', arg_name, arg_note)
 
     def showEvent(self, event):
         self.getDesignWidget().show()
