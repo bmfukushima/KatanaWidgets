@@ -16,3 +16,4 @@ except NameError:
     pass
 from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
 from .TwoFaceSuperToolWidget import TwoFacedSuperToolWidget
+from .TwoFaceSuperToolNode import TwoFaceSuperToolNode

@@ -40,21 +40,21 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
                 NodeActionDelegate.UpdateWrenchMenuWithDelegates(menu, node, hints)
     """
     def __init__(self, parent, node):
-
         super(TwoFacedSuperToolWidget, self).__init__(parent, node)
+
+        # create main layout
         QVBoxLayout(self)
 
+        # create stacked widget
         self.main_widget = QStackedWidget(self)
         self._design_widget = TansuModelViewWidget()
-        #self._design_widget.show()
-        #self._design_widget._temp_proxy_widget.show()
         self._design_widget.setObjectName('design widget')
         self._view_widget = TwoFacedViewWidget(self)
-        resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
-
         self.main_widget.addWidget(self._design_widget)
         self.main_widget.addWidget(self._view_widget)
 
+        # setup main layout
+        resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
         self.layout().addWidget(self.main_widget)
         self.layout().addWidget(resize_widget)
 

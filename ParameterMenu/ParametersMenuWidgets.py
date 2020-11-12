@@ -1,7 +1,8 @@
+import math
+
 from qtpy.QtWidgets import (
     QLabel, QMenu
 )
-
 from qtpy.QtGui import QPixmap
 
 from Utils2.settings import BEBOP_ON_JPG, BEBOP_OFF_JPG
@@ -108,7 +109,49 @@ class ParametersMenu(QMenu):
     """
     def __init__(self, parent=None):
         super(ParametersMenu, self).__init__(parent)
+        self.installNodeActions()
+
+    def installNodeActions(self):
+
+        # Shape Nodes
         self.addAction('Toggle Node Shape Adjust', self.toggleNodeShapeWidget)
+        self.addSeparator()
+
+        # install two faced widget toggle
+        two_face_widget_list = ['SimpleTool']
+        if self.__getNode().getName() in two_face_widget_list:
+            self.addAction('Toggle Two Faced Node Appearance', self.toggleTwoFacedNodeAppearance)
+
+    """ UTILS """
+    def __getSuperToolEditor(self):
+        """
+        Gets the editor for SuperTools
+
+        Returns (SuperToolEditorWidget)
+        """
+        popdown = self.parent().parent().getPopdownWidget()
+        editor = popdown.layout().itemAt(0).widget()
+        return editor
+
+    def __getNode(self):
+        return self.parent().getNode()
+
+    """ ACTIONS"""
+    def toggleTwoFacedNodeAppearance(self):
+        # get attrs
+        node = self.__getNode()
+        editor = self.__getSuperToolEditor()
+
+        # update param
+        display_mode_param = node.getParameter('display_mode')
+        display_mode = display_mode_param.getValue(0)
+        index = math.fabs(display_mode - 1)
+        display_mode_param.setValue(index, 0)
+
+        # update display
+        editor.main_widget.setCurrentIndex(index)
+        # get editor here...
+        pass
 
     def toggleNodeShapeWidget(self):
         """
@@ -130,8 +173,9 @@ class ParametersMenu(QMenu):
             form_widget.node_shape_attrs_widget.show()
             form_widget.node_shape_attrs_widget.update()
 
-    def test(self):
-        print (self.parent().getNode())
+    """ EVENTS"""
+    # def test(self):
+    #     print (self.parent().getNode())
 
     def closeEvent(self, event):
         self.parent().setIsPressed(False)

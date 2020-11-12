@@ -59,21 +59,6 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
         self.setMultiSelectDirection(Qt.Vertical)
         self.setNode(node)
 
-        # create all widgets
-        # for i, shape_name in enumerate(sorted(NodeShapeAttrsTab.NodeShapeTypes.keys())):
-        #     # get attrs
-        #     attrs = node.getAttributes()
-        #     try:
-        #         default_value = attrs['ns_{shape_name}'.format(shape_name=shape_name)]
-        #     except KeyError:
-        #         default_value = NodeShapeAttrsTab.NodeShapeTypes[shape_name]['value']
-        #
-        #     value_type = NodeShapeAttrsTab.NodeShapeTypes[shape_name]['type']
-        #
-        #     # create widget
-        #     widget = NodeShapeAttrsWidget(self, node, shape_name, default_value, value_type)
-        #     #self.insertTab(i, shape_name, widget)
-        #     self.insertTansuWidget(i, shape_name, widget=widget)
         # node color
         node_color_widget = NodeColorWidget(self, node=node)
         self.insertTansuWidget(0, column_data={'name':'Color'}, widget=node_color_widget)

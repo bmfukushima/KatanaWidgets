@@ -1,3 +1,5 @@
+import math
+
 try:
     import NodegraphAPI
 except ModuleNotFoundError:
@@ -34,6 +36,12 @@ def connectInsideGroup(node_list, parent_node):
         node_list[0].getInputPortByIndex(0).connect(send_port)
         node_list[-1].getOutputPortByIndex(0).connect(return_port)
         NodegraphAPI.SetNodePosition(node_list[-1], (0, len(node_list) * -100))
+
+
+def toggleTwoFacedNodeAppearance(node):
+    display_mode_param = node.getParameter('display_mode')
+    display_mode = display_mode_param.getValue(0)
+    display_mode_param.setValue(math.fabs(display_mode - 1))
 
 
 def insertNode(node, parent_node):

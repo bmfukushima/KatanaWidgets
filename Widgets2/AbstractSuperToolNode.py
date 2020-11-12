@@ -5,7 +5,6 @@ except ModuleNotFoundError:
 
 
 class AbstractSuperToolNode(NodegraphAPI.SuperTool):
-
     def __init__(self):
         pass
 

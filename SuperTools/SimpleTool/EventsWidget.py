@@ -327,11 +327,12 @@ class EventWidget(QWidget):
 
             user_event_data = self.getUserEventsDict()
             if event_type in list(user_event_data.keys()):
-                user_data = user_event_data[event_type]
+                user_data = user_event_data[str(event_type)]
                 filepath = user_data['script']
 
                 # check params
                 if not self.__checkUserData(event_data, user_data): return
+                if not filepath: return
 
                 # run script
                 if os.path.exists(filepath):

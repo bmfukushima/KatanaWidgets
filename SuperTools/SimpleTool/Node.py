@@ -1,16 +1,17 @@
 from Katana import NodegraphAPI
 
 from Widgets2 import (
-    AbstractSuperToolNode
+    TwoFaceSuperToolNode
 )
 
 
-class SimpleToolNode(AbstractSuperToolNode):
+class SimpleToolNode(TwoFaceSuperToolNode):
     def __init__(self):
+        super(SimpleToolNode, self).__init__()
         self.setGroupDisplay(False)
 
         # add input ports...
-        self.createIOPorts()
+        # self.createIOPorts()
 
         # create main node
         self.main_node = self.createGroupNode(self, 'Basic')
