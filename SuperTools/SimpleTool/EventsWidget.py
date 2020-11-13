@@ -114,14 +114,14 @@ class EventWidget(QWidget):
         main_widget.model().setItemType(EventTypeModelItem)
 
         # setup flags
-        main_widget.setHeaderIsDropEnabled(False)
+        main_widget.setHeaderItemIsDropEnabled(False)
         main_widget.setHeaderItemIsEnableable(True)
         main_widget.setHeaderItemIsDeleteEnabled(True)
 
         # setup signals
         main_widget.setHeaderItemDeleteEvent(self.removeItemEvent)
         main_widget.setHeaderItemEnabledEvent(self._updateEvents)
-        main_widget.setHeaderTextChangedEvent(self.eventTypeChanged)
+        main_widget.setHeaderItemTextChangedEvent(self.eventTypeChanged)
 
         # set type / position
         main_widget.setHeaderPosition(attrs.WEST)

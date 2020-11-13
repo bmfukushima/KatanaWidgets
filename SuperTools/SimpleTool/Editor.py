@@ -102,9 +102,9 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         #     3, column_data={'name':'User Params'}, widget=QLabel('User Params'))
 
         # setup flags
-        self.getDesignWidget().setHeaderIsDragEnabled(False)
-        self.getDesignWidget().setHeaderIsDropEnabled(False)
-        self.getDesignWidget().setHeaderIsEditable(False)
+        self.getDesignWidget().setHeaderItemIsDragEnabled(False)
+        self.getDesignWidget().setHeaderItemIsDropEnabled(False)
+        self.getDesignWidget().setHeaderItemIsEditable(False)
 
     # def getEventTypes(self):
     #     """
