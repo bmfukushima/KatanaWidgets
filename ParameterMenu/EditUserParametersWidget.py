@@ -80,6 +80,8 @@ class EditUserParametersWidget(TansuModelViewWidget):
 
         # set up event
         self.setHeaderItemDropEvent(self.paramDropEvent)
+        self.setHeaderItemTextChangedEvent(self.paramNameChangedEvent)
+        self.setHeaderItemDeleteEvent(self.paramDeleteEvent)
 
     def __populate(self, node):
         # get node
@@ -113,9 +115,11 @@ class EditUserParametersWidget(TansuModelViewWidget):
             for row, child in enumerate(children):
                 self.__populateParameters(row, child, parent=new_model_index)
 
+    """ EVENTS """
     def paramDropEvent(self, row, indexes, parent):
         """
-
+        When a user drag/drops an item (parameter).  This will be triggered
+        to update the hierarchy of that parameter.
         """
         # get parent dropped on
         try:
@@ -127,26 +131,22 @@ class EditUserParametersWidget(TansuModelViewWidget):
         for item in indexes:
             param = item.columnData()['parameter']
 
-            paramParent = param.getParent()
+            current_parent_param = param.getParent()
 
-            if paramParent:
+            if current_parent_param:
                 # convert param to xml
-                #paramName = UniqueName.GetUniqueName(param.getName(), new_parent_param.getChild)
-
-                paramXml = param.buildXmlIO()
-                paramXml.setAttr('name', param.getName())
+                param_xml = param.buildXmlIO()
+                param_xml.setAttr('name', param.getName())
 
                 # delete old param
-                paramParent.deleteChild(param)
+                current_parent_param.deleteChild(param)
 
                 # create new param
-                newParam = new_parent_param.createChildXmlIO(paramXml)
-                new_parent_param.reorderChild(newParam, row)
-
-
+                new_param = new_parent_param.createChildXmlIO(param_xml)
+                new_parent_param.reorderChild(new_param, row)
 
                 # update item meta data
-                item.columnData()['parameter'] = newParam
+                item.columnData()['parameter'] = new_param
 
         """
         destIndex = 0
@@ -166,6 +166,14 @@ class EditUserParametersWidget(TansuModelViewWidget):
         finally:
             Utils.UndoStack.CloseGroup()
         """
+
+    def paramNameChangedEvent(self, item, old_value, new_value):
+        param = item.columnData()['parameter']
+        param.setName(new_value)
+
+    def paramDeleteEvent(self, item):
+        param = item.columnData()['parameter']
+        param.getParent().deleteChild(param)
 
 node = NodegraphAPI.GetAllSelectedNodes()[0]
 tansu_widget = EditUserParametersWidget(node=node)
