@@ -17,7 +17,8 @@ from qtpy.QtCore import QModelIndex
 from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderTreeView, ListInputWidget
 from cgwidgets.utils import attrs
 
-from Katana import UniqueName
+from Katana import UniqueName, PyXmlIO
+from UI4.FormMaster.Editors.UserParameters import UserParametersEditor
 
 
 class EditUserParametersMainWidget(QWidget):
@@ -36,6 +37,11 @@ class EditUserParametersMainWidget(QWidget):
         "Toolbar",
         "TeleParameter",
         "Node Drop Proxy"
+    ]
+    STRING_TYPES = [
+        "Default",
+        "Scene Graph Location",
+        "Attribute Name"
     ]
 
     def __init__(self, parent=None, node=None):
@@ -64,25 +70,81 @@ class EditUserParametersMainWidget(QWidget):
 
         # preflight
         if param_type not in EditUserParametersMainWidget.TYPES: return
-        if len(self.__getSelectedIndexes()) == 0: return
 
-        # create param
-        # get parent
-        parent_index = self.__getParentIndex()
-        parent_param = parent_index.internalPointer().columnData()['parameter']
-        # todo
+        # get parent param
+        if len(self.__getSelectedIndexes()) == 0:
+            parent_index = QModelIndex()
+            parent_param = self.node.getParameters()
+        else:
+            parent_index = self.__getParentIndex()
+            parent_param = parent_index.internalPointer().columnData()['parameter']
+
+        # create child parameter
         param = self.__createChildParameter(param_type, parent_param)
 
         # insert tansu widget
-        insertion_row = parent_index.internalPointer().childCount()
+        insertion_row = len(parent_param.getChildren()) - 1
         self.main_widget.createNewParameterIndex(insertion_row, param, parent_index)
+
         # reset text
         self.new_parameter.setText('')
 
     def __createChildParameter(self, param_type, parent):
+        """
+        Run when the user has finished editing the self.new_parameter widget.
+        This will create a new parameter if the specified type is valid.        
+        "Float Vector",
+        "Color (RGB)",
+        "Color (RGBA)",
+        "Color Ramp",
+        "Float Ramp",
+        "Button",
+        "Toolbar",
+        "TeleParameter",
+        "Node Drop Proxy"""
+
         # TODO Setup for all parameter types...
         if param_type == "Number":
             param = parent.createChildNumber(param_type, 0)
+        elif param_type == "Number Array":
+            param = parent.createChildNumberArray(param_type, 2)
+        elif param_type == "String":
+            param = parent.createChildString(param_type, '')
+        elif param_type == "String Array":
+            param = parent.createChildStringArray(param_type, 2)
+        elif param_type == "Group":
+            param = parent.createChildGroup(param_type)
+        elif param_type == "Float Vector":
+            param_name = UniqueName.GetUniqueName('Float Vector', parent.getChild)
+            element = PyXmlIO.Element('floatvector_parameter')
+            element.setAttr('name', param_name)
+            param = parent.createChildXmlIO(element)
+        elif param_type == "Color (RGB)":
+            param = self.__createArrayParam(param_type, 'number', 3, hints={'widget': 'color'}, parent=parent)
+        elif param_type == "Color (RGBA)":
+            param = self.__createArrayParam(param_type, 'number', 4, hints={'widget': 'color'}, parent=parent)
+        elif param_type == "Color Ramp":
+            # todo add support
+            param =
+        elif param_type == "Float Ramp":
+            # todo add support
+            param =
+        elif param_type == "Button":
+            param = parent.createChildString(param_type, '')
+            hints = {'widget': 'scriptButton'}
+            param.setHintString(repr(hints))
+        elif param_type == "Toolbar":
+            param = parent.createChildString(param_type, '')
+            hints = {'widget': 'scriptToolbar', 'buttonData': [{'text': 'button1'}, {'text': 'button2'}]}
+            param.setHintString(repr(hints))
+        elif param_type == "TeleParameter":
+            param = parent.createChildString(param_type, '')
+            hints = {'widget': 'teleparam'}
+            param.setHintString(repr(hints))
+        elif param_type == "Node Drop Proxy":
+            param = parent.createChildString(param_type, '')
+            hints = {'widget': 'nodeDropProxy'}
+            param.setHintString(repr(hints))
         return param
 
     def __getParentIndex(self):
@@ -122,6 +184,41 @@ class EditUserParametersMainWidget(QWidget):
         selection = self.main_widget.headerWidget().selectionModel().selectedIndexes()
         selected_indexes = [index for index in selection if index.column() is 0]
         return selected_indexes
+
+    def __createArrayParam(self, param_type, input_type, array_length, value=0, hints=None, parent=None):
+        """
+        Creates a parameter an XML parameter.
+
+        Args:
+            input_type (str): value of the type of input that is expected.  These values
+                can be:
+                    number | string
+            array_length (int): length of the array
+
+        Note:
+            This code is based on the UserParameters.__buildArrayStructure located at
+            UI4.FormMaster.Editors.UserParameters import UserParametersEditor
+
+            But for obvious reasons, I'm not going to copy/paste that into here *derp*
+        """
+
+        param_name = UniqueName.GetUniqueName(param_type, parent.getChild)
+        element = PyXmlIO.Element('%sarray_parameter' % input_type)
+        element.setAttr('name', param_name)
+        element.setAttr('size', array_length)   # no idea why this is here
+        element.setAttr('tupleSize', array_length)
+        if hints:
+            element.setAttr('hints', repr(hints))
+
+        # not sure why this is here... but it seems to only be valid for RGB?
+        for i in range(0, 3):
+            child = element.addChild(PyXmlIO.Element('%s_parameter' % input_type))
+            child.setAttr('name', 'i%i' % i)
+            child.setAttr('value', value)
+
+        # create and return new param
+        new_param = parent.createChildXmlIO(element)
+        return new_param
 
 
 class EditUserParametersDisplayWidget(QLabel):
