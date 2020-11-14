@@ -56,10 +56,15 @@ class EditUserParametersMainWidget(QWidget):
 
     """ CREATE NEW PARAMETER"""
     def __createNewParameter(self, widget, value):
+        """
+        Creates a new parameter.  This is run every time the self.new_parameter widget
+        has accepted a user input.
+        """
         param_type = value
 
         # preflight
         if param_type not in EditUserParametersMainWidget.TYPES: return
+        if len(self.__getSelectedIndexes()) == 0: return
 
         # create param
         # get parent
@@ -120,6 +125,10 @@ class EditUserParametersMainWidget(QWidget):
 
 
 class EditUserParametersDisplayWidget(QLabel):
+    """
+    Dynamic widget that is updated/displayed every time a user clicks
+    on an item.
+    """
     def __init__(self, parent=None):
         super(EditUserParametersDisplayWidget, self).__init__(parent)
 
@@ -138,10 +147,10 @@ class EditUserParametersDisplayWidget(QLabel):
 
 
 class EditUserParametersWidget(TansuModelViewWidget):
-    group = 'group'
-    number = 'number'
-    string = 'string'
-
+    """
+    The main widget for the user edit parameters widget.  This will handle
+    all of the parameter interface for drag/dropping, deleting, etc.
+    """
     def __init__(self, parent=None, node=None):
         super(EditUserParametersWidget, self).__init__(parent)
         self.node = node
@@ -175,7 +184,6 @@ class EditUserParametersWidget(TansuModelViewWidget):
 
     def __populate(self, node):
         # get node
-        #node = NodegraphAPI.GetNode('AttributeSet')
         parameters = node.getParameters().getChildren()
         for index, parameter in enumerate(parameters):
             self.__populateParameters(index, parameter)
@@ -190,14 +198,6 @@ class EditUserParametersWidget(TansuModelViewWidget):
             parameter (Parameter): Katana parameter information
             parent (QModelIndex): Parent index to create new items under
         """
-        # create indexes for parameters
-        # name = parameter.getName()
-        # widget = QLabel(name)
-        # # create index
-        # column_data = {'name': name, 'type': parameter.getType(), 'parameter': parameter}
-        # new_model_index = self.insertTansuWidget(row, column_data=column_data, widget=widget, parent=parent)
-        # new_model_index.internalPointer().setIsDropEnabled(False)
-
         new_index = self.createNewParameterIndex(row, parameter, parent)
 
         # if group
@@ -208,11 +208,19 @@ class EditUserParametersWidget(TansuModelViewWidget):
                 self.__populateParameters(row, child, parent=new_index)
 
     def createNewParameterIndex(self, row, parameter, parent):
+        """
+        Creates a new parameter index in the tansu widget
+
+        Returns (QModelIndex)
+        """
+        # get attrs
         name = parameter.getName()
-        widget = QLabel(name)
-        # create index
         column_data = {'name': name, 'type': parameter.getType(), 'parameter': parameter}
-        new_model_index = self.insertTansuWidget(row, column_data=column_data, widget=widget, parent=parent)
+
+        # create index
+        new_model_index = self.insertTansuWidget(row, column_data=column_data, parent=parent)
+
+        # disable drops
         new_model_index.internalPointer().setIsDropEnabled(False)
 
         return new_model_index
@@ -232,13 +240,13 @@ class EditUserParametersWidget(TansuModelViewWidget):
         # move all selected parameters
         for item in item_list:
             param = item.columnData()['parameter']
-
             current_parent_param = param.getParent()
 
             if current_parent_param:
+                param_name = UniqueName.GetUniqueName(param.getName(), new_parent_param.getChild)
                 # convert param to xml
                 param_xml = param.buildXmlIO()
-                param_xml.setAttr('name', param.getName())
+                param_xml.setAttr('name', param_name)
 
                 # delete old param
                 current_parent_param.deleteChild(param)
@@ -248,30 +256,14 @@ class EditUserParametersWidget(TansuModelViewWidget):
                 new_parent_param.reorderChild(new_param, row)
 
                 # update item meta data
+                item.columnData()['name'] = param_name
                 item.columnData()['parameter'] = new_param
-
-        """
-        destIndex = 0
-        param = param_to_move
-        paramParent = param.getParent()
-        if not paramParent:
-            return
-        myParam = self.__getParam()
-        paramName = UniqueName.GetUniqueName(param.getName(), myParam.getChild)
-        paramXml = param.buildXmlIO()
-        paramXml.setAttr('name', paramName)
-        Utils.UndoStack.OpenGroup('Reparent User Parameter')
-        try:
-            newParam = myParam.createChildXmlIO(paramXml)
-            myParam.reorderChild(newParam, destIndex)
-            paramParent.deleteChild(param)
-        finally:
-            Utils.UndoStack.CloseGroup()
-        """
 
     def paramNameChangedEvent(self, item, old_value, new_value):
         param = item.columnData()['parameter']
-        param.setName(new_value)
+        param_name = UniqueName.GetUniqueName(new_value, param.getParent().getChild)
+        param.setName(param_name)
+        item.columnData()['name'] = param_name
 
     def paramDeleteEvent(self, item):
         param = item.columnData()['parameter']
