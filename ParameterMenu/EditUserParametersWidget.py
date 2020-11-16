@@ -7,14 +7,21 @@ TODO:
                 - conditional visibility
                 - help text
     Create New:
-        *
+        * Ramp ( Color | Float )
 """
 
 from qtpy.QtWidgets import QLabel, QWidget, QVBoxLayout
 from qtpy.QtGui import QCursor
 from qtpy.QtCore import QModelIndex
 
-from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderTreeView, ListInputWidget
+from cgwidgets.widgets import (
+    TansuModelViewWidget,
+    TansuHeaderTreeView,
+    ListInputWidget,
+    FrameInputWidget,
+    StringInputWidget
+)
+
 from cgwidgets.utils import attrs
 
 from Katana import UniqueName, PyXmlIO
@@ -22,7 +29,7 @@ from UI4.FormMaster.Editors.UserParameters import UserParametersEditor
 
 
 class EditUserParametersMainWidget(QWidget):
-    TYPES = [
+    BASE_TYPES = [
         "Number",
         "String",
         "Group",
@@ -41,8 +48,57 @@ class EditUserParametersMainWidget(QWidget):
     STRING_TYPES = [
         "Default",
         "Scene Graph Location",
-        "Attribute Name"
+        "Attribute Name",
+        "Attribute Type",
+        "CEL Statement",
+        "Resolution",
+        "Asset",
+        "File Path",
+        "Boolean",
+        "Popup Menu",
+        "Mapping Popup Menu",
+        "Script Button",
+        "Check Box",
+        "TeleParameter",
+        "Script Editor"
     ]
+    NUMBER_TYPES = [
+        "Boolean",
+        "Popup Menu",
+        "Mapping Popup Menu",
+        "Check Box"
+    ]
+    GROUP_TYPES = [
+        "Multi",
+        "Gradient"
+    ]
+    STRING_ARRAY_TYPES = [
+        "Scene Graph Locations"
+    ]
+    NUMBER_ARRAY_TYPES = [
+        "Color"
+    ]
+    DISPLAY_NAMES = {
+        'Scene Graph Location': 'scenegraphLocation',
+        'Attribute Name': 'attributeName',
+        'Attribute Type': 'attributeType',
+        'Asset': 'assetIdInput',
+        'File Path': 'fileInput',
+        'Resolution': 'resolution',
+        'Color': 'color',
+        'CEL Statement': 'cel',
+        'Scene Graph Locations': 'scenegraphLocationArray',
+        'Boolean': 'boolean',
+        'Popup Menu': 'popup',
+        'Mapping Popup Menu': 'mapper',
+        'Script Button': 'scriptButton',
+        'Check Box': 'checkBox',
+        'Multi': 'multi',
+        'Gradient': 'linearGradient',
+        'TeleParameter': 'teleparam',
+        'Script Editor': 'scriptEditor',
+        'Null': 'null'
+    }
 
     def __init__(self, parent=None, node=None):
         super(EditUserParametersMainWidget, self).__init__(parent)
@@ -52,7 +108,7 @@ class EditUserParametersMainWidget(QWidget):
         QVBoxLayout(self)
         self.main_widget = EditUserParametersWidget(node=node)
 
-        param_types_list = [[param_type] for param_type in EditUserParametersMainWidget.TYPES]
+        param_types_list = [[param_type] for param_type in sorted(EditUserParametersMainWidget.BASE_TYPES)]
         self.new_parameter = ListInputWidget(self, item_list=param_types_list)
         self.new_parameter.setUserFinishedEditingEvent(self.__createNewParameter)
 
@@ -69,7 +125,7 @@ class EditUserParametersMainWidget(QWidget):
         param_type = value
 
         # preflight
-        if param_type not in EditUserParametersMainWidget.TYPES: return
+        if param_type not in EditUserParametersMainWidget.BASE_TYPES: return
 
         # get parent param
         if len(self.__getSelectedIndexes()) == 0:
@@ -123,12 +179,12 @@ class EditUserParametersMainWidget(QWidget):
             param = self.__createArrayParam(param_type, 'number', 3, hints={'widget': 'color'}, parent=parent)
         elif param_type == "Color (RGBA)":
             param = self.__createArrayParam(param_type, 'number', 4, hints={'widget': 'color'}, parent=parent)
-        elif param_type == "Color Ramp":
-            # todo add support
-            param =
-        elif param_type == "Float Ramp":
-            # todo add support
-            param =
+        # elif param_type == "Color Ramp":
+        #     # todo add support
+        #     param = pass
+        # elif param_type == "Float Ramp":
+        #     # todo add support
+        #     param = pass
         elif param_type == "Button":
             param = parent.createChildString(param_type, '')
             hints = {'widget': 'scriptButton'}
@@ -221,13 +277,137 @@ class EditUserParametersMainWidget(QWidget):
         return new_param
 
 
-class EditUserParametersDisplayWidget(QLabel):
+class DynamicArgsInputWidget(FrameInputWidget):
+    """
+    One individual arg
+    """
+    def __init__(self, parent=None, name='', note='', widget_type=StringInputWidget):
+        super(DynamicArgsInputWidget, self).__init__(parent, name=name, widget_type=widget_type)
+        # setup args
+        self.arg = name
+        self.setToolTip(note)
+        self.setUserFinishedEditingEvent(self.userInputEvent)
+
+    def setText(self, text):
+        self.getInputWidget().setText(text)
+
+    def text(self):
+        return self.getInputWidget().text()
+
+    def userInputEvent(self, widget, value):
+        """
+        When the user inputs something into the arg, this event is triggered
+        updating the model item
+        """
+        main_widget = getWidgetAncestor(self, UserInputMainWidget)
+        main_widget.item().setArg(self.arg, value)
+
+
+class EditUserParametersDisplayWidget(QWidget):
     """
     Dynamic widget that is updated/displayed every time a user clicks
     on an item.
+
+
+    - widget type
+    - widget options
+    - conditional visibility
+    - help text
+    Args:
+        baseType (EditUserParametersMainWidget.BASE_TYPE): type of the
+            basic parameter before any stylesheet are applied
+        widgetType (EditUserParametersMainWidget.WIDGET_TYPE): type of
+            widget applied to the basic parameter
     """
     def __init__(self, parent=None):
         super(EditUserParametersDisplayWidget, self).__init__(parent)
+        QVBoxLayout(self)
+
+        # setup widget type
+        widget_type_frame = DynamicArgsInputWidget(self, name='Widget Type', note='', widget_type=ListInputWidget)
+        self.widget_type = widget_type_frame.getInputWidget()
+        self.widget_type.dynamic_update = True
+        self.widget_type.setCleanItemsFunction(self.getWidgetTypeList)
+        self.widget_type.setUserFinishedEditingEvent(self.setWidgetTypeEvent)
+
+        # add widgets to layout
+        self.layout().addWidget(widget_type_frame)
+
+    def setWidgetTypeEvent(self, widget, value):
+        """
+        sets the widget type
+        """
+        self.item().columnData()['widget'] = EditUserParametersMainWidget.DISPLAY_NAMES[value]
+        self.updateWidgetHint()
+
+    def getWidgetTypeList(self):
+        """
+        Returns a list of widget types depending on the current input type
+        """
+        input_type = self.baseType()
+        # todo append "Default"
+        if input_type == "string":
+            widget_list = EditUserParametersMainWidget.STRING_TYPES
+        if input_type == "number":
+            widget_list = EditUserParametersMainWidget.NUMBER_TYPES
+        if input_type == "stringArray":
+            widget_list = EditUserParametersMainWidget.STRING_ARRAY_TYPES
+        if input_type == "numberArray":
+            widget_list = EditUserParametersMainWidget.NUMBER_ARRAY_TYPES
+        if input_type == "group":
+            widget_list = EditUserParametersMainWidget.GROUP_TYPES
+        # todo null appending multiple times
+        widget_list.append('Null')
+
+        # returns a widget list in the format for the list widget
+        _widget_list = [[widget] for widget in sorted(widget_list)]
+        return _widget_list
+
+    """ PROPERTIES """
+    def baseType(self):
+        try:
+            return self.item().columnData()['base type']
+        except KeyError:
+            return None
+
+    def widgetType(self):
+        try:
+            return self.item().columnData()['widget']
+        except KeyError:
+            return None
+
+    def item(self):
+        return self._item
+
+    def setItem(self, _item):
+        self._item = _item
+
+    # TODO get hint
+    def getWidgetHint(self):
+        """
+        Get the widget hint here that was created by all of the items'
+
+        Returns (dict)
+        """
+        # get attrs
+        data = self.item().columnData()
+        bad_args = ['name', 'base type', 'parameter']
+
+        # update dictionary
+        widget_hint = {}
+        for arg in list(data.keys()):
+            if arg not in bad_args:
+                widget_hint[arg] = data[arg]
+
+        # return
+        return widget_hint
+
+    # todo needs to be set every time something is updated
+    def updateWidgetHint(self):
+        """ Updates the parameters widget hint with the new user settings """
+        hint = self.getWidgetHint()
+        param = self.item().columnData()['parameter']
+        param.setHintString(repr(hint))
 
     @staticmethod
     def updateGUI(parent, widget, item):
@@ -239,8 +419,16 @@ class EditUserParametersDisplayWidget(QLabel):
         """
         #print('custom event')
         #print(parent, widget, item)
-        this = widget.getMainWidget()
-        this.setText(item.columnData()['name'])
+        #this = widget.getMainWidget()
+        #this.setText(item.columnData()['name'])
+        self = widget.getMainWidget()
+        self.setItem(item)
+        data_keys = list(item.columnData().keys())
+        if 'widget' in data_keys:
+            #self.setWidgetType(item.columnData()['widget'])
+            self.widget_type.setText(item.columnData()['widget'])
+        # if 'base type' in data_keys:
+        #     self.setBaseType(item.columnData()['base type'])
 
 
 class EditUserParametersWidget(TansuModelViewWidget):
@@ -257,7 +445,7 @@ class EditUserParametersWidget(TansuModelViewWidget):
 
         # setup header
         self.setHeaderWidget(header_widget)
-        self.setHeaderData(['name', 'type'])
+        self.setHeaderData(['name', 'base type'])
         self.setHeaderPosition(attrs.WEST)
 
         # setup flags
@@ -312,7 +500,7 @@ class EditUserParametersWidget(TansuModelViewWidget):
         """
         # get attrs
         name = parameter.getName()
-        column_data = {'name': name, 'type': parameter.getType(), 'parameter': parameter}
+        column_data = {'name': name, 'base type': parameter.getType(), 'parameter': parameter}
 
         # create index
         new_model_index = self.insertTansuWidget(row, column_data=column_data, parent=parent)
