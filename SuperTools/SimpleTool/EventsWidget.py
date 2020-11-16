@@ -106,7 +106,7 @@ class EventWidget(QWidget):
         main_widget = TansuModelViewWidget(self)
 
         # setup header
-        events_view = EventsUserInputWidget()
+        events_view = EventsUserInputWidget(self)
         main_widget.setHeaderWidget(events_view)
         main_widget.setHeaderData(['event_type'])
 
@@ -628,15 +628,22 @@ class EventTypeDelegate(AbstractDragDropModelDelegate):
         self.setDelegateWidget(ListInputWidget)
         self._parent = parent
 
+    # TODO Need to call the dynamic_args_widget.update()
+    # from the UserInputMainWidget.dynamic_args_widget.update()
     def createEditor(self, parent, option, index):
         delegate_widget = self.delegateWidget(parent)
-
+        print('parent == %s'%parent)
         # populate events
         event_list = list(getWidgetAncestor(parent, EventWidget).getDefaultEventsDict())
         delegate_widget.populate([[item] for item in sorted(event_list)])
 
-        return delegate_widget
+        # set update trigger
+        def updateDisplay(widget, value):
+            main_widget = getWidgetAncestor(self._parent, EventWidget)
+            main_widget.main_widget.updateDelegateDisplay()
 
+        delegate_widget.setUserFinishedEditingEvent(updateDisplay)
+        return delegate_widget
 
 class ScriptInputWidget(DynamicArgsInputWidget):
     """

@@ -9,20 +9,23 @@ TODO:
     Create New:
         * Ramp ( Color | Float )
 """
+import json
+import ast
 
 from qtpy.QtWidgets import QLabel, QWidget, QVBoxLayout
 from qtpy.QtGui import QCursor
-from qtpy.QtCore import QModelIndex
+from qtpy.QtCore import QModelIndex, Qt
 
 from cgwidgets.widgets import (
     TansuModelViewWidget,
     TansuHeaderTreeView,
     ListInputWidget,
     FrameInputWidget,
-    StringInputWidget
+    StringInputWidget,
+    BooleanInputWidget
 )
 
-from cgwidgets.utils import attrs
+from cgwidgets.utils import attrs, getWidgetAncestor
 
 from Katana import UniqueName, PyXmlIO
 from UI4.FormMaster.Editors.UserParameters import UserParametersEditor
@@ -99,7 +102,24 @@ class EditUserParametersMainWidget(QWidget):
         'Script Editor': 'scriptEditor',
         'Null': 'null'
     }
-
+    WIDGET_SPECIFIC_OPTIONS = {
+        'popup': (
+            'options',),
+        'assetIdInput': (
+            'assetScope', 'context', 'assetTypeTags', 'fileTypes', 'forcefile'),
+        'mapper': (
+            'options', 'options__order'),
+        'color': (
+            'color_enableFilmlookVis', 'color_restrictComponents'),
+        'scriptButton': (
+            'scriptText', 'text'),
+        'scriptToolbar': (
+            'scriptToolbar', 'buttonData')}
+    HINT_OPTIONS_MAP = {
+        "Widget Type": "widget",
+        "Display Name": "label",
+        "Locked": "readOnly",
+    }
     def __init__(self, parent=None, node=None):
         super(EditUserParametersMainWidget, self).__init__(parent)
 
@@ -288,6 +308,9 @@ class DynamicArgsInputWidget(FrameInputWidget):
         self.setToolTip(note)
         self.setUserFinishedEditingEvent(self.userInputEvent)
 
+        # setup alignment
+        self.layout().setAlignment(Qt.AlignTop)
+
     def setText(self, text):
         self.getInputWidget().setText(text)
 
@@ -299,16 +322,16 @@ class DynamicArgsInputWidget(FrameInputWidget):
         When the user inputs something into the arg, this event is triggered
         updating the model item
         """
-        main_widget = getWidgetAncestor(self, UserInputMainWidget)
-        main_widget.item().setArg(self.arg, value)
+        main_widget = getWidgetAncestor(self, EditUserParametersDisplayWidget)
+        hint_name = EditUserParametersMainWidget.HINT_OPTIONS_MAP[self.arg]
+        main_widget.item().columnData()[hint_name] = str(value)
+        main_widget.updateWidgetHint()
 
 
 class EditUserParametersDisplayWidget(QWidget):
     """
     Dynamic widget that is updated/displayed every time a user clicks
     on an item.
-
-
     - widget type
     - widget options
     - conditional visibility
@@ -319,6 +342,9 @@ class EditUserParametersDisplayWidget(QWidget):
         widgetType (EditUserParametersMainWidget.WIDGET_TYPE): type of
             widget applied to the basic parameter
     """
+    NON_HINTSTRING_ARGS = ['name', 'base type', 'parameter']
+    DEFAULT_HINTSTRING_ARGS = ['readOnly', 'label', 'widget']
+
     def __init__(self, parent=None):
         super(EditUserParametersDisplayWidget, self).__init__(parent)
         QVBoxLayout(self)
@@ -330,14 +356,51 @@ class EditUserParametersDisplayWidget(QWidget):
         self.widget_type.setCleanItemsFunction(self.getWidgetTypeList)
         self.widget_type.setUserFinishedEditingEvent(self.setWidgetTypeEvent)
 
+        # setup default args
+        # TODO wtf does constant do... ['constant', 'label', 'readOnly']
+        display_name_frame = DynamicArgsInputWidget(
+            self,
+            name='Display Name',
+            note='The parameter name to be displayed to the user.',
+            widget_type=StringInputWidget
+        )
+        self.display_name_widget = display_name_frame.getInputWidget()
+        read_only_frame = DynamicArgsInputWidget(
+            self,
+            name='Locked',
+            note='If True, this widget will be lock and in a read only state.  If False, the user will be able to manipulate this parameter',
+            widget_type=BooleanInputWidget
+        )
+        self.read_only_widget = read_only_frame.getInputWidget()
+
         # add widgets to layout
         self.layout().addWidget(widget_type_frame)
+        self.layout().addWidget(display_name_frame)
+        self.layout().addWidget(read_only_frame)
 
+        # setup style
+        self.layout().setAlignment(Qt.AlignTop)
+
+    """ HINT OPTIONS"""
+    # widget type
     def setWidgetTypeEvent(self, widget, value):
         """
         sets the widget type
         """
+        # reset item hint string
+        self.resetItemToDefaultState(reset_default_hints=False)
+
+        # set widget type
         self.item().columnData()['widget'] = EditUserParametersMainWidget.DISPLAY_NAMES[value]
+
+        # create default hint string values?
+        widget_hint_options = self.getWidgetSpecificHintOptions()
+        for option in widget_hint_options:
+            self.item().columnData()[option] = ''
+
+        self.getHintOptionsList()
+
+        # update hints
         self.updateWidgetHint()
 
     def getWidgetTypeList(self):
@@ -363,6 +426,67 @@ class EditUserParametersDisplayWidget(QWidget):
         _widget_list = [[widget] for widget in sorted(widget_list)]
         return _widget_list
 
+    def mapWidgetTypeToUserReadable(self, widget_type):
+        """
+        Takes the hint string readable widget value, and maps it to the human
+        readable value.  This essentially flips the dictionary located in
+        EditUserParametersMainWidget.DISPLAY_NAMES
+
+        Args:
+            widget_type (str): hint string readable name of the type of widget
+        """
+        widget_types = self.getWidgetTypeList()
+        for user_arg in widget_types:
+            user_arg = user_arg[0]
+            try:
+                hint_arg = EditUserParametersMainWidget.DISPLAY_NAMES[user_arg]
+                if hint_arg == widget_type:
+                    return user_arg
+            except KeyError: pass
+        return ''
+
+    # widget specific options
+    def getWidgetSpecificHintOptions(self):
+        """
+        Returns a list of all of the available hint options that are specific to the
+        current items widget type.
+        """
+        try:
+            hint_options = EditUserParametersMainWidget.WIDGET_SPECIFIC_OPTIONS[self.getWidgetType()]
+        except KeyError:
+            hint_options = []
+        return hint_options
+
+    # to do don't think I ened this...
+    def createDefaultHintOptions(self):
+        # todo create default hint options
+        #'constant': 'True', 'label': 'asdf', 'readOnly': 'True',}
+        return
+
+    # TODO NOT SURE ON THIS...
+    def getHintOptionsList(self):
+        """
+        Populates a list of all the available options for the hint string
+
+        Returns (list): of strings that are the available hint options
+
+        # todo not sure if I'll need this...
+        """
+        # create empty list
+        hint_options_list = []
+
+        # add default options
+        default_hint_options = ['constant', 'label', 'readOnly']
+        hint_options_list += default_hint_options
+
+        try:
+            widget_specific_options = EditUserParametersMainWidget.WIDGET_SPECIFIC_OPTIONS[self.getWidgetType()]
+            hint_options_list += widget_specific_options
+        except KeyError:
+            pass
+
+        return hint_options_list
+
     """ PROPERTIES """
     def baseType(self):
         try:
@@ -370,7 +494,7 @@ class EditUserParametersDisplayWidget(QWidget):
         except KeyError:
             return None
 
-    def widgetType(self):
+    def getWidgetType(self):
         try:
             return self.item().columnData()['widget']
         except KeyError:
@@ -382,7 +506,23 @@ class EditUserParametersDisplayWidget(QWidget):
     def setItem(self, _item):
         self._item = _item
 
-    # TODO get hint
+    def resetItemToDefaultState(self, reset_default_hints=True):
+        """
+        Clears the hint string on the current item.
+        """
+        data = self.item().columnData()
+
+        # update dictionary
+        for arg in list(data.keys()):
+            print(arg)
+            if arg not in EditUserParametersDisplayWidget.NON_HINTSTRING_ARGS:
+                if reset_default_hints is True:
+                    data.pop(arg)
+                else:
+                    if arg not in EditUserParametersDisplayWidget.DEFAULT_HINTSTRING_ARGS:
+                        data.pop(arg)
+
+    """ Widget Hint"""
     def getWidgetHint(self):
         """
         Get the widget hint here that was created by all of the items'
@@ -391,12 +531,12 @@ class EditUserParametersDisplayWidget(QWidget):
         """
         # get attrs
         data = self.item().columnData()
-        bad_args = ['name', 'base type', 'parameter']
+
 
         # update dictionary
         widget_hint = {}
         for arg in list(data.keys()):
-            if arg not in bad_args:
+            if arg not in EditUserParametersDisplayWidget.NON_HINTSTRING_ARGS:
                 widget_hint[arg] = data[arg]
 
         # return
@@ -404,7 +544,17 @@ class EditUserParametersDisplayWidget(QWidget):
 
     # todo needs to be set every time something is updated
     def updateWidgetHint(self):
-        """ Updates the parameters widget hint with the new user settings """
+        """
+        Updates the parameters widget hint with the new user settings
+
+        Note:
+            This needs to be called every time the user updates a parameter.
+
+        ToDo
+            Does base item need
+                * args?
+                * update signal?
+        """
         hint = self.getWidgetHint()
         param = self.item().columnData()['parameter']
         param.setHintString(repr(hint))
@@ -425,10 +575,15 @@ class EditUserParametersDisplayWidget(QWidget):
         self.setItem(item)
         data_keys = list(item.columnData().keys())
         if 'widget' in data_keys:
-            #self.setWidgetType(item.columnData()['widget'])
-            self.widget_type.setText(item.columnData()['widget'])
-        # if 'base type' in data_keys:
-        #     self.setBaseType(item.columnData()['base type'])
+            widget_type = self.mapWidgetTypeToUserReadable(item.columnData()['widget'])
+            self.widget_type.setText(widget_type)
+
+        # todo
+        # update default default args
+
+        # delete widget specific args
+
+        # create widget specific args
 
 
 class EditUserParametersWidget(TansuModelViewWidget):
@@ -502,6 +657,13 @@ class EditUserParametersWidget(TansuModelViewWidget):
         name = parameter.getName()
         column_data = {'name': name, 'base type': parameter.getType(), 'parameter': parameter}
 
+        # update hints
+        hint_string = parameter.getHintString()
+        if hint_string:
+            hint_string = ast.literal_eval(hint_string)
+            for arg in list(hint_string.keys()):
+                column_data[arg] = hint_string[arg]
+
         # create index
         new_model_index = self.insertTansuWidget(row, column_data=column_data, parent=parent)
 
@@ -554,28 +716,6 @@ class EditUserParametersWidget(TansuModelViewWidget):
         param = item.columnData()['parameter']
         param.getParent().deleteChild(param)
 
-
-"""    def buildAddMenu(self, menu):
-        menu.addAction('Number', UndoableAction('Add Number Parameter', self.__addNumberParameter))
-        menu.addAction('String', UndoableAction('Add String Parameter', self.__addStringParameter))
-        menu.addSeparator()
-        menu.addAction('Group', UndoableAction('Add Group Parameter', self.__addGroupParameter))
-        menu.addSeparator()
-        menu.addAction('Number Array', UndoableAction('Add Number Array Parameter', self.__addNumberArrayParameter))
-        menu.addAction('String Array', UndoableAction('Add String Array Parameter', self.__addStringArrayParameter))
-        menu.addAction('Float Vector', UndoableAction('Add Float Vector Parameter', self.__addFloatVectorParameter))
-        menu.addSeparator()
-        menu.addAction('Color, RGB', UndoableAction('Add Color Parameter', self.__addColorParameterRGB))
-        menu.addAction('Color, RGBA', UndoableAction('Add Color Parameter', self.__addColorParameterRGBA))
-        menu.addSeparator()
-        menu.addAction('Color Ramp', UndoableAction('Add Color Ramp Parameter', self.__addColorRampParameter))
-        menu.addAction('Float Ramp', UndoableAction('Add Float Ramp Parameter', self.__addFloatRampParameter))
-        menu.addSeparator()
-        menu.addAction('Button', UndoableAction('Add Button Parameter', self.__addButtonParameter))
-        menu.addAction('Toolbar', UndoableAction('Add Toolbar Parameter', self.__addToolbarParameter))
-        menu.addSeparator()
-        menu.addAction('TeleParameter', UndoableAction('Add TeleParameter', self.__addTeleParameter))
-        menu.addAction('Node Drop Proxy', UndoableAction('Node Drop Proxy', self.__addNodeDropProxyParameter))"""
 
 #if __name__ == "__main__":
 node = NodegraphAPI.GetAllSelectedNodes()[0]
