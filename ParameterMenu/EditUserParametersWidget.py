@@ -18,10 +18,12 @@ from qtpy.QtGui import QCursor
 from qtpy.QtCore import QModelIndex, Qt
 
 from cgwidgets.widgets import (
+    TansuBaseWidget,
     TansuModelViewWidget,
     TansuHeaderTreeView,
     ListInputWidget,
     FrameInputWidget,
+    FrameGroupInputWidget,
     StringInputWidget,
     BooleanInputWidget
 )
@@ -488,7 +490,7 @@ class DynamicArgsInputWidget(FrameInputWidget):
         main_widget.updateWidgetHint()
 
 
-class UserParametersDynamicWidget(QWidget):
+class UserParametersDynamicWidget(TansuBaseWidget):
     """
     Dynamic widget that is updated/displayed every time a user clicks
     on an item.
@@ -507,7 +509,20 @@ class UserParametersDynamicWidget(QWidget):
 
     def __init__(self, parent=None):
         super(UserParametersDynamicWidget, self).__init__(parent)
-        QVBoxLayout(self)
+
+        self.unique_widgets_dict = {}
+
+        #QVBoxLayout(self)
+        self.default_args_widget = self.createDefaultArgsWidget()
+        self.widget_specific_args_widget = FrameGroupInputWidget(self, name='Unique Args', direction=Qt.Vertical)
+        self.widget_specific_args_widget.layout().setAlignment(Qt.AlignTop)
+
+        self.addWidget(self.default_args_widget)
+        self.addWidget(self.widget_specific_args_widget)
+
+    def createDefaultArgsWidget(self):
+        default_args_widget = FrameGroupInputWidget(self, name='Default Args', direction=Qt.Vertical)
+        default_args_widget.layout().setAlignment(Qt.AlignTop)
 
         # setup widget type
         widget_type_frame = DynamicArgsInputWidget(self, name='Widget Type', note='', widget_type=ListInputWidget)
@@ -534,19 +549,17 @@ class UserParametersDynamicWidget(QWidget):
         self.read_only_widget = read_only_frame.getInputWidget()
 
         # add widgets to layout
-        self.layout().addWidget(widget_type_frame)
-        self.layout().addWidget(display_name_frame)
-        self.layout().addWidget(read_only_frame)
+        default_args_widget.addInputWidget(widget_type_frame)
+        default_args_widget.addInputWidget(display_name_frame)
+        default_args_widget.addInputWidget(read_only_frame)
 
         # create widget dict
-        self.unique_widgets_dict = {}
         self.widgets_dict = {}
         self.widgets_dict['widget'] = self.widget_type
         self.widgets_dict['readOnly'] = self.read_only_widget
         self.widgets_dict['label'] = self.display_name_widget
 
-        # setup style
-        self.layout().setAlignment(Qt.AlignTop)
+        return default_args_widget
 
     """ HINT OPTIONS"""
     # widget type
@@ -764,6 +777,9 @@ class UserParametersDynamicWidget(QWidget):
 
         This should be run every time a user selects a new index.
         """
+        # show widget
+        self.widget_specific_args_widget.show()
+
         # get hints available
         unique_hints = self.getWidgetSpecificHintOptions()
 
@@ -775,23 +791,27 @@ class UserParametersDynamicWidget(QWidget):
 
         # create widget specific args
         self.unique_widgets_dict = {}
-        for unique_hint in unique_hints:
-            # create widget
-            display_name = UserParametersMainWidget.REVERSE_HINT_OPTIONS_MAP[unique_hint]
-            new_widget = DynamicArgsInputWidget(
-                self,
-                name=display_name,
-                note='',
-                widget_type=StringInputWidget
-            )
+        if len(unique_hints) == 0:
+            self.widget_specific_args_widget.hide()
+        else:
+            for unique_hint in unique_hints:
+                # create widget
+                display_name = UserParametersMainWidget.REVERSE_HINT_OPTIONS_MAP[unique_hint]
+                new_widget = DynamicArgsInputWidget(
+                    self,
+                    name=display_name,
+                    note='',
+                    widget_type=StringInputWidget
+                )
 
-            # add widget to layout
-            input_widget = new_widget.getInputWidget()
-            value = self.item().columnData()[unique_hint]
-            input_widget.setText(value)
-            self.unique_widgets_dict[unique_hint] = input_widget
+                # add widget to layout
+                input_widget = new_widget.getInputWidget()
+                value = self.item().columnData()[unique_hint]
+                input_widget.setText(value)
+                self.unique_widgets_dict[unique_hint] = input_widget
 
-            self.layout().addWidget(new_widget)
+                self.widget_specific_args_widget.addInputWidget(new_widget)
+
 
 
 #if __name__ == "__main__":
