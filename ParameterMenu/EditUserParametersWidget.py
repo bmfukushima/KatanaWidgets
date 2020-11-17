@@ -8,6 +8,7 @@ TODO:
                 - help text
     Create New:
         * Ramp ( Color | Float )
+    Break out into abstract parameter display
 """
 import json
 import ast
@@ -31,7 +32,21 @@ from Katana import UniqueName, PyXmlIO
 from UI4.FormMaster.Editors.UserParameters import UserParametersEditor
 
 
-class EditUserParametersMainWidget(QWidget):
+class UserParametersMainWidget(QWidget):
+    """
+    The main widget (top level) widget that is displayed to the user.
+
+    Widgets:
+        | -- QVBoxLayout
+            | -- new_parameter (ListInputWidget)
+                    When the user selects an input in this list, a new parameter
+                    will be created and added to the TansuModelViewWidget
+                    displaying all of the parameters in an hierichical fashion
+            | -- main_widget (UserParametersWidget --> TansuModelViewWidget )
+                    Main view displaying the parameters on this node.
+                | -- ( UserParametersDynamicWidget --> QWidget )
+                        | -* ( DynamicArgsInputWidget --> FrameInputWidget )
+    """
     BASE_TYPES = [
         "Number",
         "String",
@@ -121,14 +136,14 @@ class EditUserParametersMainWidget(QWidget):
         "Locked": "readOnly",
     }
     def __init__(self, parent=None, node=None):
-        super(EditUserParametersMainWidget, self).__init__(parent)
+        super(UserParametersMainWidget, self).__init__(parent)
 
         self.node = node
         # create widgets
         QVBoxLayout(self)
-        self.main_widget = EditUserParametersWidget(node=node)
+        self.main_widget = UserParametersWidget(node=node)
 
-        param_types_list = [[param_type] for param_type in sorted(EditUserParametersMainWidget.BASE_TYPES)]
+        param_types_list = [[param_type] for param_type in sorted(UserParametersMainWidget.BASE_TYPES)]
         self.new_parameter = ListInputWidget(self, item_list=param_types_list)
         self.new_parameter.setUserFinishedEditingEvent(self.__createNewParameter)
 
@@ -145,7 +160,7 @@ class EditUserParametersMainWidget(QWidget):
         param_type = value
 
         # preflight
-        if param_type not in EditUserParametersMainWidget.BASE_TYPES: return
+        if param_type not in UserParametersMainWidget.BASE_TYPES: return
 
         # get parent param
         if len(self.__getSelectedIndexes()) == 0:
@@ -168,7 +183,7 @@ class EditUserParametersMainWidget(QWidget):
     def __createChildParameter(self, param_type, parent):
         """
         Run when the user has finished editing the self.new_parameter widget.
-        This will create a new parameter if the specified type is valid.        
+        This will create a new parameter if the specified type is valid.
         "Float Vector",
         "Color (RGB)",
         "Color (RGBA)",
@@ -297,302 +312,13 @@ class EditUserParametersMainWidget(QWidget):
         return new_param
 
 
-class DynamicArgsInputWidget(FrameInputWidget):
-    """
-    One individual arg
-    """
-    def __init__(self, parent=None, name='', note='', widget_type=StringInputWidget):
-        super(DynamicArgsInputWidget, self).__init__(parent, name=name, widget_type=widget_type)
-        # setup args
-        self.arg = name
-        self.setToolTip(note)
-        self.setUserFinishedEditingEvent(self.userInputEvent)
-
-        # setup alignment
-        self.layout().setAlignment(Qt.AlignTop)
-
-    def setText(self, text):
-        self.getInputWidget().setText(text)
-
-    def text(self):
-        return self.getInputWidget().text()
-
-    def userInputEvent(self, widget, value):
-        """
-        When the user inputs something into the arg, this event is triggered
-        updating the model item
-        """
-        main_widget = getWidgetAncestor(self, EditUserParametersDisplayWidget)
-        hint_name = EditUserParametersMainWidget.HINT_OPTIONS_MAP[self.arg]
-        main_widget.item().columnData()[hint_name] = str(value)
-        main_widget.updateWidgetHint()
-
-
-class EditUserParametersDisplayWidget(QWidget):
-    """
-    Dynamic widget that is updated/displayed every time a user clicks
-    on an item.
-    - widget type
-    - widget options
-    - conditional visibility
-    - help text
-    Args:
-        baseType (EditUserParametersMainWidget.BASE_TYPE): type of the
-            basic parameter before any stylesheet are applied
-        widgetType (EditUserParametersMainWidget.WIDGET_TYPE): type of
-            widget applied to the basic parameter
-    """
-    NON_HINTSTRING_ARGS = ['name', 'base type', 'parameter']
-    DEFAULT_HINTSTRING_ARGS = ['readOnly', 'label', 'widget']
-
-    def __init__(self, parent=None):
-        super(EditUserParametersDisplayWidget, self).__init__(parent)
-        QVBoxLayout(self)
-
-        # setup widget type
-        widget_type_frame = DynamicArgsInputWidget(self, name='Widget Type', note='', widget_type=ListInputWidget)
-        self.widget_type = widget_type_frame.getInputWidget()
-        self.widget_type.dynamic_update = True
-        self.widget_type.setCleanItemsFunction(self.getWidgetTypeList)
-        self.widget_type.setUserFinishedEditingEvent(self.setWidgetTypeEvent)
-
-        # setup default args
-        # TODO wtf does constant do... ['constant', 'label', 'readOnly']
-        display_name_frame = DynamicArgsInputWidget(
-            self,
-            name='Display Name',
-            note='The parameter name to be displayed to the user.',
-            widget_type=StringInputWidget
-        )
-        self.display_name_widget = display_name_frame.getInputWidget()
-        read_only_frame = DynamicArgsInputWidget(
-            self,
-            name='Locked',
-            note='If True, this widget will be lock and in a read only state.  If False, the user will be able to manipulate this parameter',
-            widget_type=BooleanInputWidget
-        )
-        self.read_only_widget = read_only_frame.getInputWidget()
-
-        # add widgets to layout
-        self.layout().addWidget(widget_type_frame)
-        self.layout().addWidget(display_name_frame)
-        self.layout().addWidget(read_only_frame)
-
-        # setup style
-        self.layout().setAlignment(Qt.AlignTop)
-
-    """ HINT OPTIONS"""
-    # widget type
-    def setWidgetTypeEvent(self, widget, value):
-        """
-        sets the widget type
-        """
-        # reset item hint string
-        self.resetItemToDefaultState(reset_default_hints=False)
-
-        # set widget type
-        self.item().columnData()['widget'] = EditUserParametersMainWidget.DISPLAY_NAMES[value]
-
-        # create default hint string values?
-        widget_hint_options = self.getWidgetSpecificHintOptions()
-        for option in widget_hint_options:
-            self.item().columnData()[option] = ''
-
-        self.getHintOptionsList()
-
-        # update hints
-        self.updateWidgetHint()
-
-    def getWidgetTypeList(self):
-        """
-        Returns a list of widget types depending on the current input type
-        """
-        input_type = self.baseType()
-        # todo append "Default"
-        if input_type == "string":
-            widget_list = EditUserParametersMainWidget.STRING_TYPES
-        if input_type == "number":
-            widget_list = EditUserParametersMainWidget.NUMBER_TYPES
-        if input_type == "stringArray":
-            widget_list = EditUserParametersMainWidget.STRING_ARRAY_TYPES
-        if input_type == "numberArray":
-            widget_list = EditUserParametersMainWidget.NUMBER_ARRAY_TYPES
-        if input_type == "group":
-            widget_list = EditUserParametersMainWidget.GROUP_TYPES
-        # todo null appending multiple times
-        widget_list.append('Null')
-
-        # returns a widget list in the format for the list widget
-        _widget_list = [[widget] for widget in sorted(widget_list)]
-        return _widget_list
-
-    def mapWidgetTypeToUserReadable(self, widget_type):
-        """
-        Takes the hint string readable widget value, and maps it to the human
-        readable value.  This essentially flips the dictionary located in
-        EditUserParametersMainWidget.DISPLAY_NAMES
-
-        Args:
-            widget_type (str): hint string readable name of the type of widget
-        """
-        widget_types = self.getWidgetTypeList()
-        for user_arg in widget_types:
-            user_arg = user_arg[0]
-            try:
-                hint_arg = EditUserParametersMainWidget.DISPLAY_NAMES[user_arg]
-                if hint_arg == widget_type:
-                    return user_arg
-            except KeyError: pass
-        return ''
-
-    # widget specific options
-    def getWidgetSpecificHintOptions(self):
-        """
-        Returns a list of all of the available hint options that are specific to the
-        current items widget type.
-        """
-        try:
-            hint_options = EditUserParametersMainWidget.WIDGET_SPECIFIC_OPTIONS[self.getWidgetType()]
-        except KeyError:
-            hint_options = []
-        return hint_options
-
-    # to do don't think I ened this...
-    def createDefaultHintOptions(self):
-        # todo create default hint options
-        #'constant': 'True', 'label': 'asdf', 'readOnly': 'True',}
-        return
-
-    # TODO NOT SURE ON THIS...
-    def getHintOptionsList(self):
-        """
-        Populates a list of all the available options for the hint string
-
-        Returns (list): of strings that are the available hint options
-
-        # todo not sure if I'll need this...
-        """
-        # create empty list
-        hint_options_list = []
-
-        # add default options
-        default_hint_options = ['constant', 'label', 'readOnly']
-        hint_options_list += default_hint_options
-
-        try:
-            widget_specific_options = EditUserParametersMainWidget.WIDGET_SPECIFIC_OPTIONS[self.getWidgetType()]
-            hint_options_list += widget_specific_options
-        except KeyError:
-            pass
-
-        return hint_options_list
-
-    """ PROPERTIES """
-    def baseType(self):
-        try:
-            return self.item().columnData()['base type']
-        except KeyError:
-            return None
-
-    def getWidgetType(self):
-        try:
-            return self.item().columnData()['widget']
-        except KeyError:
-            return None
-
-    def item(self):
-        return self._item
-
-    def setItem(self, _item):
-        self._item = _item
-
-    def resetItemToDefaultState(self, reset_default_hints=True):
-        """
-        Clears the hint string on the current item.
-        """
-        data = self.item().columnData()
-
-        # update dictionary
-        for arg in list(data.keys()):
-            print(arg)
-            if arg not in EditUserParametersDisplayWidget.NON_HINTSTRING_ARGS:
-                if reset_default_hints is True:
-                    data.pop(arg)
-                else:
-                    if arg not in EditUserParametersDisplayWidget.DEFAULT_HINTSTRING_ARGS:
-                        data.pop(arg)
-
-    """ Widget Hint"""
-    def getWidgetHint(self):
-        """
-        Get the widget hint here that was created by all of the items'
-
-        Returns (dict)
-        """
-        # get attrs
-        data = self.item().columnData()
-
-
-        # update dictionary
-        widget_hint = {}
-        for arg in list(data.keys()):
-            if arg not in EditUserParametersDisplayWidget.NON_HINTSTRING_ARGS:
-                widget_hint[arg] = data[arg]
-
-        # return
-        return widget_hint
-
-    # todo needs to be set every time something is updated
-    def updateWidgetHint(self):
-        """
-        Updates the parameters widget hint with the new user settings
-
-        Note:
-            This needs to be called every time the user updates a parameter.
-
-        ToDo
-            Does base item need
-                * args?
-                * update signal?
-        """
-        hint = self.getWidgetHint()
-        param = self.item().columnData()['parameter']
-        param.setHintString(repr(hint))
-
-    @staticmethod
-    def updateGUI(parent, widget, item):
-        """
-        parent (TansuModelViewWidget)
-        widget (TansuModelDelegateWidget)
-        item (TansuModelItem)
-        self --> widget.getMainWidget()
-        """
-        #print('custom event')
-        #print(parent, widget, item)
-        #this = widget.getMainWidget()
-        #this.setText(item.columnData()['name'])
-        self = widget.getMainWidget()
-        self.setItem(item)
-        data_keys = list(item.columnData().keys())
-        if 'widget' in data_keys:
-            widget_type = self.mapWidgetTypeToUserReadable(item.columnData()['widget'])
-            self.widget_type.setText(widget_type)
-
-        # todo
-        # update default default args
-
-        # delete widget specific args
-
-        # create widget specific args
-
-
-class EditUserParametersWidget(TansuModelViewWidget):
+class UserParametersWidget(TansuModelViewWidget):
     """
     The main widget for the user edit parameters widget.  This will handle
     all of the parameter interface for drag/dropping, deleting, etc.
     """
     def __init__(self, parent=None, node=None):
-        super(EditUserParametersWidget, self).__init__(parent)
+        super(UserParametersWidget, self).__init__(parent)
         self.node = node
 
         # create view
@@ -610,8 +336,8 @@ class EditUserParametersWidget(TansuModelViewWidget):
         # set custom delegate
         self.setDelegateType(
             TansuModelViewWidget.DYNAMIC,
-            dynamic_widget=EditUserParametersDisplayWidget,
-            dynamic_function=EditUserParametersDisplayWidget.updateGUI
+            dynamic_widget=UserParametersDynamicWidget,
+            dynamic_function=UserParametersDynamicWidget.updateGUI
         )
 
         # populate parameters
@@ -717,9 +443,328 @@ class EditUserParametersWidget(TansuModelViewWidget):
         param.getParent().deleteChild(param)
 
 
+class DynamicArgsInputWidget(FrameInputWidget):
+    """
+    One individual arg
+    """
+    def __init__(self, parent=None, name='', note='', widget_type=StringInputWidget):
+        super(DynamicArgsInputWidget, self).__init__(parent, name=name, widget_type=widget_type)
+        # setup args
+        self.arg = name
+        self.setToolTip(note)
+        self.setUserFinishedEditingEvent(self.userInputEvent)
+
+        # setup alignment
+        self.layout().setAlignment(Qt.AlignTop)
+
+    def setText(self, text):
+        self.getInputWidget().setText(text)
+
+    def text(self):
+        return self.getInputWidget().text()
+
+    def userInputEvent(self, widget, value):
+        """
+        When the user inputs something into the arg, this event is triggered
+        updating the model item
+        """
+        main_widget = getWidgetAncestor(self, UserParametersDynamicWidget)
+        hint_name = UserParametersMainWidget.HINT_OPTIONS_MAP[self.arg]
+        main_widget.item().columnData()[hint_name] = str(value)
+        main_widget.updateWidgetHint()
+
+
+class UserParametersDynamicWidget(QWidget):
+    """
+    Dynamic widget that is updated/displayed every time a user clicks
+    on an item.
+    - widget type
+    - widget options
+    - conditional visibility
+    - help text
+    Args:
+        baseType (UserParametersMainWidget.BASE_TYPE): type of the
+            basic parameter before any stylesheet are applied
+        widgetType (UserParametersMainWidget.WIDGET_TYPE): type of
+            widget applied to the basic parameter
+    """
+    NON_HINTSTRING_ARGS = ['name', 'base type', 'parameter']
+    DEFAULT_HINTSTRING_ARGS = ['readOnly', 'label', 'widget']
+
+    def __init__(self, parent=None):
+        super(UserParametersDynamicWidget, self).__init__(parent)
+        QVBoxLayout(self)
+
+        # setup widget type
+        widget_type_frame = DynamicArgsInputWidget(self, name='Widget Type', note='', widget_type=ListInputWidget)
+        self.widget_type = widget_type_frame.getInputWidget()
+        self.widget_type.dynamic_update = True
+        self.widget_type.setCleanItemsFunction(self.getWidgetTypeList)
+        self.widget_type.setUserFinishedEditingEvent(self.setWidgetTypeEvent)
+
+        # setup default args
+        # TODO wtf does constant do... ['constant', 'label', 'readOnly']
+        display_name_frame = DynamicArgsInputWidget(
+            self,
+            name='Display Name',
+            note='The parameter name to be displayed to the user.',
+            widget_type=StringInputWidget
+        )
+        self.display_name_widget = display_name_frame.getInputWidget()
+        read_only_frame = DynamicArgsInputWidget(
+            self,
+            name='Locked',
+            note='If True, this widget will be lock and in a read only state.  If False, the user will be able to manipulate this parameter',
+            widget_type=BooleanInputWidget
+        )
+        self.read_only_widget = read_only_frame.getInputWidget()
+
+        # add widgets to layout
+        self.layout().addWidget(widget_type_frame)
+        self.layout().addWidget(display_name_frame)
+        self.layout().addWidget(read_only_frame)
+
+        # create widget dict
+        self.unique_widgets_dict = {}
+        self.widgets_dict = {}
+        self.widgets_dict['widget'] = self.widget_type
+        self.widgets_dict['readOnly'] = self.read_only_widget
+        self.widgets_dict['label'] = self.display_name_widget
+
+        # setup style
+        self.layout().setAlignment(Qt.AlignTop)
+
+    """ HINT OPTIONS"""
+    # widget type
+    def setWidgetTypeEvent(self, widget, value):
+        """
+        sets the widget type
+        """
+        # reset item hint string
+        self.resetItemToDefaultState(reset_default_hints=False)
+
+        # set widget type
+        # todo error here?
+        self.item().columnData()['widget'] = UserParametersMainWidget.DISPLAY_NAMES[value]
+
+        # create default hint string values?
+        widget_hint_options = self.getWidgetSpecificHintOptions()
+        for option in widget_hint_options:
+            self.item().columnData()[option] = ''
+
+        # update hints
+        self.updateWidgetHint()
+
+    def getWidgetTypeList(self):
+        """
+        Returns a list of widget types depending on the current input type
+        """
+        input_type = self.baseType()
+        # todo append "Default"
+        if input_type == "string":
+            widget_list = UserParametersMainWidget.STRING_TYPES
+        if input_type == "number":
+            widget_list = UserParametersMainWidget.NUMBER_TYPES
+        if input_type == "stringArray":
+            widget_list = UserParametersMainWidget.STRING_ARRAY_TYPES
+        if input_type == "numberArray":
+            widget_list = UserParametersMainWidget.NUMBER_ARRAY_TYPES
+        if input_type == "group":
+            widget_list = UserParametersMainWidget.GROUP_TYPES
+        # todo null appending multiple times
+        widget_list.append('Null')
+
+        # returns a widget list in the format for the list widget
+        _widget_list = [[widget] for widget in sorted(widget_list)]
+        return _widget_list
+
+    def mapWidgetTypeToUserReadable(self, widget_type):
+        """
+        Takes the hint string readable widget value, and maps it to the human
+        readable value.  This essentially flips the dictionary located in
+        UserParametersMainWidget.DISPLAY_NAMES
+
+        Args:
+            widget_type (str): hint string readable name of the type of widget
+        """
+        widget_types = self.getWidgetTypeList()
+        for user_arg in widget_types:
+            user_arg = user_arg[0]
+            try:
+                hint_arg = UserParametersMainWidget.DISPLAY_NAMES[user_arg]
+                if hint_arg == widget_type:
+                    return user_arg
+            except KeyError: pass
+        return ''
+
+    # widget specific options
+    def getWidgetSpecificHintOptions(self):
+        """
+        Returns a list of all of the available hint options that are specific to the
+        current items widget type.
+        """
+        try:
+            hint_options = UserParametersMainWidget.WIDGET_SPECIFIC_OPTIONS[self.getWidgetType()]
+        except KeyError:
+            hint_options = []
+        return hint_options
+
+    # # to do don't think I ened this...
+    # def createDefaultHintOptions(self):
+    #     # todo create default hint options
+    #     #'constant': 'True', 'label': 'asdf', 'readOnly': 'True',}
+    #     return
+    #
+    # # TODO NOT SURE ON THIS...
+    # def getHintOptionsList(self):
+    #     """
+    #     Populates a list of all the available options for the hint string
+    #
+    #     Returns (list): of strings that are the available hint options
+    #
+    #     # todo not sure if I'll need this...
+    #     """
+    #     # create empty list
+    #     hint_options_list = []
+    #
+    #     # add default options
+    #     default_hint_options = ['constant', 'label', 'readOnly']
+    #     hint_options_list += default_hint_options
+    #
+    #     try:
+    #         widget_specific_options = UserParametersMainWidget.WIDGET_SPECIFIC_OPTIONS[self.getWidgetType()]
+    #         hint_options_list += widget_specific_options
+    #     except KeyError:
+    #         pass
+    #
+    #     return hint_options_list
+
+    """ PROPERTIES """
+    def baseType(self):
+        try:
+            return self.item().columnData()['base type']
+        except KeyError:
+            return None
+
+    def getWidgetType(self):
+        try:
+            return self.item().columnData()['widget']
+        except KeyError:
+            return None
+
+    def item(self):
+        return self._item
+
+    def setItem(self, _item):
+        self._item = _item
+
+    def resetItemToDefaultState(self, reset_default_hints=True):
+        """
+        Clears the hint string on the current item.
+        """
+        data = self.item().columnData()
+
+        # update dictionary
+        for arg in list(data.keys()):
+            if arg not in UserParametersDynamicWidget.NON_HINTSTRING_ARGS:
+                if reset_default_hints is True:
+                    data.pop(arg)
+                else:
+                    if arg not in UserParametersDynamicWidget.DEFAULT_HINTSTRING_ARGS:
+                        data.pop(arg)
+
+    """ Widget Hint"""
+    def getWidgetHint(self):
+        """
+        Get the widget hint here that was created by all of the items'
+
+        Returns (dict)
+        """
+        # get attrs
+        data = self.item().columnData()
+
+        # update dictionary
+        widget_hint = {}
+        for arg in list(data.keys()):
+            if arg not in UserParametersDynamicWidget.NON_HINTSTRING_ARGS:
+                widget_hint[arg] = data[arg]
+
+        # return
+        return widget_hint
+
+    def updateWidgetHint(self):
+        """
+        Updates the parameters widget hint with the new user settings
+
+        Note:
+            This needs to be called every time the user updates a parameter.
+
+        ToDo
+            Does base item need
+                * args?
+                * update signal?
+        """
+        hint = self.getWidgetHint()
+        param = self.item().columnData()['parameter']
+        param.setHintString(repr(hint))
+
+    @staticmethod
+    def updateGUI(parent, widget, item):
+        """
+        parent (TansuModelViewWidget)
+        widget (TansuModelDelegateWidget)
+        item (TansuModelItem)
+        self --> widget.getMainWidget()
+        """
+        # get attrs
+        self = widget.getMainWidget()
+        self.setItem(item)
+        hint_string = item.columnData()['parameter'].getHintString()
+
+        # preflight
+        if not hint_string: return
+
+        # update
+        # get hints
+        hints = ast.literal_eval(hint_string)
+
+        # update default default args
+        for hint in list(hints.keys()):
+            if hint in UserParametersDynamicWidget.DEFAULT_HINTSTRING_ARGS:
+                hint_widget = self.widgets_dict[hint]
+                value = hints[hint]
+                if isinstance(hint_widget, BooleanInputWidget):
+                    if value in ['True', 1]:
+                        hint_widget.is_clicked = True
+                    else:
+                        hint_widget.is_clicked = False
+                else:
+                    hint_widget.setText(value)
+
+        # todo
+        unique_hints = self.getWidgetSpecificHintOptions()
+        # delete widget specific args
+        for widget_name in self.unique_widgets_dict:
+            hint_widget = self.widgets_dict[widget_name]
+            hint_widget.parent().setParent(None)
+            self.widgets_dict.pop(widget_name)
+
+        # create widget specific args
+        self.unique_widgets_dict = {}
+        for unique_hint in unique_hints:
+            new_widget = DynamicArgsInputWidget(
+                self,
+                name=unique_hint,
+                note='',
+                widget_type=StringInputWidget
+            )
+            input_widget = new_widget.getInputWidget()
+            self.unique_widgets_dict[unique_hint] = input_widget
+
+
 #if __name__ == "__main__":
 node = NodegraphAPI.GetAllSelectedNodes()[0]
-widget = EditUserParametersMainWidget(node=node)
+widget = UserParametersMainWidget(node=node)
 widget.resize(500, 500)
 widget.show()
 widget.move(QCursor.pos())
