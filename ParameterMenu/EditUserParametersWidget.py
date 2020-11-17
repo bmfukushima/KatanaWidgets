@@ -29,7 +29,6 @@ from cgwidgets.widgets import (
 from cgwidgets.utils import attrs, getWidgetAncestor
 
 from Katana import UniqueName, PyXmlIO
-from UI4.FormMaster.Editors.UserParameters import UserParametersEditor
 
 
 class UserParametersMainWidget(QWidget):
@@ -134,7 +133,22 @@ class UserParametersMainWidget(QWidget):
         "Widget Type": "widget",
         "Display Name": "label",
         "Locked": "readOnly",
+        "Options": "options",
+        "Options Order": "options__order",
+        "Script Text": "scriptText",
+        "Text": "text",
+        "Script Toolbar": "scriptToolbar",
+        "Button Data": "buttonData"
     }
+    REVERSE_HINT_OPTIONS_MAP = {}
+    for key in HINT_OPTIONS_MAP:
+        value = HINT_OPTIONS_MAP[key]
+        REVERSE_HINT_OPTIONS_MAP[value] = key
+    # 'assetIdInput': (
+    #     'assetScope', 'context', 'assetTypeTags', 'fileTypes', 'forcefile'),
+    #
+    # 'color': (
+    #     'color_enableFilmlookVis', 'color_restrictComponents'),
     def __init__(self, parent=None, node=None):
         super(UserParametersMainWidget, self).__init__(parent)
 
@@ -544,10 +558,9 @@ class UserParametersDynamicWidget(QWidget):
         self.resetItemToDefaultState(reset_default_hints=False)
 
         # set widget type
-        # todo error here?
-        self.item().columnData()['widget'] = UserParametersMainWidget.DISPLAY_NAMES[value]
+        self.item().columnData()['widget'] = UserParametersMainWidget.DISPLAY_NAMES[str(value)]
 
-        # create default hint string values?
+        # create default hint string values
         widget_hint_options = self.getWidgetSpecificHintOptions()
         for option in widget_hint_options:
             self.item().columnData()[option] = ''
@@ -741,25 +754,44 @@ class UserParametersDynamicWidget(QWidget):
                 else:
                     hint_widget.setText(value)
 
-        # todo
+        self.__updateAllDynamicArgsWidgets()
+
+    def __updateAllDynamicArgsWidgets(self):
+        """
+        Deletes all of the input widgets that are from hints that are
+        specific to the current widget type.  Then it creates all
+        of the new input widgets based off of the new widget type.
+
+        This should be run every time a user selects a new index.
+        """
+        # get hints available
         unique_hints = self.getWidgetSpecificHintOptions()
+
         # delete widget specific args
-        for widget_name in self.unique_widgets_dict:
-            hint_widget = self.widgets_dict[widget_name]
+        for widget_name in list(self.unique_widgets_dict.keys()):
+            hint_widget = self.unique_widgets_dict[widget_name]
             hint_widget.parent().setParent(None)
-            self.widgets_dict.pop(widget_name)
+            self.unique_widgets_dict.pop(widget_name)
 
         # create widget specific args
         self.unique_widgets_dict = {}
         for unique_hint in unique_hints:
+            # create widget
+            display_name = UserParametersMainWidget.REVERSE_HINT_OPTIONS_MAP[unique_hint]
             new_widget = DynamicArgsInputWidget(
                 self,
-                name=unique_hint,
+                name=display_name,
                 note='',
                 widget_type=StringInputWidget
             )
+
+            # add widget to layout
             input_widget = new_widget.getInputWidget()
+            value = self.item().columnData()[unique_hint]
+            input_widget.setText(value)
             self.unique_widgets_dict[unique_hint] = input_widget
+
+            self.layout().addWidget(new_widget)
 
 
 #if __name__ == "__main__":
