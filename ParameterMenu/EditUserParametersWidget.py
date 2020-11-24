@@ -9,11 +9,40 @@ TODO:
     Create New:
         * Ramp ( Color | Float )
     Break out into abstract parameter display
+
+Widgets:
+    UserParametersMainWidget (QWidget)
+        | --  QVBoxLayout
+            | --  new_parameter (ListInputWidget)
+                    When the user selects an input in this list, a new parameter
+                    will be created and added to the TansuModelViewWidget
+                    displaying all of the parameters in an hierichical fashion
+            | --  main_widget (UserParametersWidget --> TansuModelViewWidget)
+                    Main view displaying the parameters on this node.
+                | --  (UserParametersDynamicWidget --> TansuBaseWidget)
+                        Main display area.  When a user clicks on an item in the TreeView
+                        this widget will dynamically update to display the available widgets
+                        to manipulate the parameter to the user.
+                    | --  default_args_widget (FrameGroupInputWidget)
+                            Display the default args that are available on all parameters
+                            to the user.  These args are:
+                                widget (Widget Type)
+                                label (Display Name)
+                                readOnly (Locked)
+                        | -*  ( DynamicArgsInputWidget --> FrameInputWidget )
+                    | --  widget_specific_args_widget (FrameGroupInputWidget)
+                            Displays the args that are unique to a specific widget type.
+                            If there are no args available for this parameter type, this
+                            widget will be hidden.
+                        | -*  ( DynamicArgsInputWidget --> FrameInputWidget )
+                    | --  help_text_widget (FrameInputWidget)
+                            Displays the help text to the user.
+
 """
 import json
 import ast
 
-from qtpy.QtWidgets import QLabel, QWidget, QVBoxLayout
+from qtpy.QtWidgets import QLabel, QWidget, QVBoxLayout, QPlainTextEdit
 from qtpy.QtGui import QCursor
 from qtpy.QtCore import QModelIndex, Qt
 
@@ -25,28 +54,20 @@ from cgwidgets.widgets import (
     FrameInputWidget,
     FrameGroupInputWidget,
     StringInputWidget,
-    BooleanInputWidget
+    BooleanInputWidget,
+    PlainTextInputWidget
 )
 
 from cgwidgets.utils import attrs, getWidgetAncestor
 
 from Katana import UniqueName, PyXmlIO
 
+_DEFAULT_SEPARATOR_LENGTH = 4
+_DEFAULT_SEPARATOR_WIDTH = 1
 
 class UserParametersMainWidget(QWidget):
     """
     The main widget (top level) widget that is displayed to the user.
-
-    Widgets:
-        | -- QVBoxLayout
-            | -- new_parameter (ListInputWidget)
-                    When the user selects an input in this list, a new parameter
-                    will be created and added to the TansuModelViewWidget
-                    displaying all of the parameters in an hierichical fashion
-            | -- main_widget (UserParametersWidget --> TansuModelViewWidget )
-                    Main view displaying the parameters on this node.
-                | -- ( UserParametersDynamicWidget --> QWidget )
-                        | -* ( DynamicArgsInputWidget --> FrameInputWidget )
     """
     BASE_TYPES = [
         "Number",
@@ -140,7 +161,8 @@ class UserParametersMainWidget(QWidget):
         "Script Text": "scriptText",
         "Text": "text",
         "Script Toolbar": "scriptToolbar",
-        "Button Data": "buttonData"
+        "Button Data": "buttonData",
+        "Help": "help"
     }
     REVERSE_HINT_OPTIONS_MAP = {}
     for key in HINT_OPTIONS_MAP:
@@ -505,18 +527,25 @@ class UserParametersDynamicWidget(TansuBaseWidget):
             widget applied to the basic parameter
     """
     NON_HINTSTRING_ARGS = ['name', 'base type', 'parameter']
-    DEFAULT_HINTSTRING_ARGS = ['readOnly', 'label', 'widget']
+    DEFAULT_HINTSTRING_ARGS = ['readOnly', 'label', 'widget', 'help']
 
     def __init__(self, parent=None):
         super(UserParametersDynamicWidget, self).__init__(parent)
 
         self.unique_widgets_dict = {}
 
-        #QVBoxLayout(self)
+        # create default args
         self.default_args_widget = self.createDefaultArgsWidget()
+        self.default_args_widget.setSeparatorLength(_DEFAULT_SEPARATOR_LENGTH)
+        self.default_args_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
+
+        # create widget specific args
         self.widget_specific_args_widget = FrameGroupInputWidget(self, name='Unique Args', direction=Qt.Vertical)
         self.widget_specific_args_widget.layout().setAlignment(Qt.AlignTop)
+        self.widget_specific_args_widget.setSeparatorLength(_DEFAULT_SEPARATOR_LENGTH)
+        self.widget_specific_args_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
 
+        # add widgets to layout
         self.addWidget(self.default_args_widget)
         self.addWidget(self.widget_specific_args_widget)
 
@@ -525,7 +554,7 @@ class UserParametersDynamicWidget(TansuBaseWidget):
         default_args_widget.layout().setAlignment(Qt.AlignTop)
 
         # setup widget type
-        widget_type_frame = DynamicArgsInputWidget(self, name='Widget Type', note='', widget_type=ListInputWidget)
+        widget_type_frame = DynamicArgsInputWidget(default_args_widget, name='Widget Type', note='', widget_type=ListInputWidget)
         self.widget_type = widget_type_frame.getInputWidget()
         self.widget_type.dynamic_update = True
         self.widget_type.setCleanItemsFunction(self.getWidgetTypeList)
@@ -533,31 +562,56 @@ class UserParametersDynamicWidget(TansuBaseWidget):
 
         # setup default args
         # TODO wtf does constant do... ['constant', 'label', 'readOnly']
+
+        # Display Name
         display_name_frame = DynamicArgsInputWidget(
-            self,
+            default_args_widget,
             name='Display Name',
             note='The parameter name to be displayed to the user.',
             widget_type=StringInputWidget
         )
+
         self.display_name_widget = display_name_frame.getInputWidget()
+
+        # Read Only
         read_only_frame = DynamicArgsInputWidget(
-            self,
+            default_args_widget,
             name='Locked',
             note='If True, this widget will be lock and in a read only state.  If False, the user will be able to manipulate this parameter',
             widget_type=BooleanInputWidget
         )
         self.read_only_widget = read_only_frame.getInputWidget()
 
+        # Help Text
+        help_text_frame = DynamicArgsInputWidget(
+            default_args_widget,
+            name='Help',
+            note='Help text to be displayed to the user',
+            widget_type=PlainTextInputWidget
+        )
+        self.help_text_widget = help_text_frame.getInputWidget()
+
         # add widgets to layout
         default_args_widget.addInputWidget(widget_type_frame)
         default_args_widget.addInputWidget(display_name_frame)
         default_args_widget.addInputWidget(read_only_frame)
+        default_args_widget.addInputWidget(help_text_frame)
 
         # create widget dict
         self.widgets_dict = {}
         self.widgets_dict['widget'] = self.widget_type
         self.widgets_dict['readOnly'] = self.read_only_widget
         self.widgets_dict['label'] = self.display_name_widget
+        self.widgets_dict['help'] = self.help_text_widget
+
+        # setup default sizes
+        for key in self.widgets_dict:
+            widget = self.widgets_dict[key]
+            frame_widget = widget.parent()
+
+            frame_widget.setDefaultLabelLength(125)
+            frame_widget.setSeparatorLength(_DEFAULT_SEPARATOR_LENGTH)
+            frame_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
 
         return default_args_widget
 
@@ -578,8 +632,9 @@ class UserParametersDynamicWidget(TansuBaseWidget):
         for option in widget_hint_options:
             self.item().columnData()[option] = ''
 
-        # update hints
+        # update
         self.updateWidgetHint()
+        self.__updateAllDynamicArgsWidgets()
 
     def getWidgetTypeList(self):
         """
@@ -634,36 +689,6 @@ class UserParametersDynamicWidget(TansuBaseWidget):
         except KeyError:
             hint_options = []
         return hint_options
-
-    # # to do don't think I ened this...
-    # def createDefaultHintOptions(self):
-    #     # todo create default hint options
-    #     #'constant': 'True', 'label': 'asdf', 'readOnly': 'True',}
-    #     return
-    #
-    # # TODO NOT SURE ON THIS...
-    # def getHintOptionsList(self):
-    #     """
-    #     Populates a list of all the available options for the hint string
-    #
-    #     Returns (list): of strings that are the available hint options
-    #
-    #     # todo not sure if I'll need this...
-    #     """
-    #     # create empty list
-    #     hint_options_list = []
-    #
-    #     # add default options
-    #     default_hint_options = ['constant', 'label', 'readOnly']
-    #     hint_options_list += default_hint_options
-    #
-    #     try:
-    #         widget_specific_options = UserParametersMainWidget.WIDGET_SPECIFIC_OPTIONS[self.getWidgetType()]
-    #         hint_options_list += widget_specific_options
-    #     except KeyError:
-    #         pass
-    #
-    #     return hint_options_list
 
     """ PROPERTIES """
     def baseType(self):
@@ -748,7 +773,9 @@ class UserParametersDynamicWidget(TansuBaseWidget):
         hint_string = item.columnData()['parameter'].getHintString()
 
         # preflight
-        if not hint_string: return
+        if not hint_string:
+            self.widget_specific_args_widget.hide()
+            return
 
         # update
         # get hints
@@ -803,15 +830,24 @@ class UserParametersDynamicWidget(TansuBaseWidget):
                     note='',
                     widget_type=StringInputWidget
                 )
-
+                new_widget.setSeparatorLength(_DEFAULT_SEPARATOR_LENGTH)
+                new_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
                 # add widget to layout
                 input_widget = new_widget.getInputWidget()
-                value = self.item().columnData()[unique_hint]
-                input_widget.setText(value)
+
+                # todo this needs to be more robust...
+                # needs to also work with the updateGUI value setter...
+                # how to support multiple widget types though?
+                # use setValue?
+                # set value
+                try:
+                    value = self.item().columnData()[unique_hint]
+                    input_widget.setText(value)
+                except:
+                    pass
                 self.unique_widgets_dict[unique_hint] = input_widget
 
                 self.widget_specific_args_widget.addInputWidget(new_widget)
-
 
 
 #if __name__ == "__main__":
