@@ -24,8 +24,7 @@ from cgwidgets.settings.colors import (
 
 from cgwidgets.widgets import (
     TansuBaseWidget, LabelledInputWidget, ListInputWidget, FileBrowserInputWidget)
-from cgwidgets.utils import updateStyleSheet, getFontSize
-
+from cgwidgets.utils import updateStyleSheet, getFontSize, getWidgetAncestorByName
 
 from .ItemTypes import (
     MASTER_ITEM,
@@ -65,6 +64,7 @@ from Utils2.colors import(
 from Widgets2 import(
     AbstractNodegraphWidget,
     AbstractParametersDisplayWidget,
+    NodeTypeListWidget
 )
 
 from Widgets2.AbstractSuperToolEditor import iParameter
@@ -549,25 +549,10 @@ If you choose to accept you will change the GSV:
         )
 
 
-class VariableManagerNodeMenu(ListInputWidget):
-    """
-    Drop down menu with autocomplete for the user to select
-    what Node Type that they wish for the Variable Manager to control
-    """
+class VariableManagerNodeMenu(NodeTypeListWidget):
     def __init__(self, parent=None):
         super(VariableManagerNodeMenu, self).__init__(parent)
-        self.main_widget = getMainWidget(self)
-        self.previous_text = self.main_widget.node.getNodeType()
-
-        self.setUserFinishedEditingEvent(self.indexChanged)
-        self.populate(self.__getAllNodes())
-
-        self.setCleanItemsFunction(self.__getAllNodes)
-        self.dynamic_update = True
-
-    @staticmethod
-    def __getAllNodes():
-        return [[node] for node in NodegraphAPI.GetNodeTypes()]
+        self.main_widget = getWidgetAncestorByName(self, "VariableManagerMainWidget")
 
     def checkUserInput(self):
         """
@@ -620,22 +605,12 @@ class VariableManagerNodeMenu(ListInputWidget):
             # update
             variable_browser.reset()
 
-    """ EVENTS """
-    def mousePressEvent(self, *args, **kwargs):
-        self.update()
-        return ListInputWidget.mousePressEvent(self, *args, **kwargs)
+    def nodeTypeChanged(self, widget, value):
+        """
+        Displays a popup when the user changes the node type.
 
-    def indexChanged(self, widget, value):
-        """
-        When the user changes the value in the GSV dropdown menu,
-        this event is run.  It will first ask the user if they wish to proceed,
-        as doing so will essentially reinstated this node back to an initial setting.
-        """
-        # preflight
-        if self.previous_text == self.text(): return
-        """
-        # without this it randomly allows the user to change to a
-        # new node type =\
+        This popup asks the user to confirm their choice of changing
+        the current node type
         """
         # preflight checks
         # return if this node type does not exist

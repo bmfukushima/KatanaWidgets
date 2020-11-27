@@ -21,10 +21,12 @@ import Katana
 
 # import super tools
 import SimpleTool
+import TansuStack
+
 from MultiTools import VariableManager
 
 # compile list of super tools
-superdooper_tools_list = [SimpleTool, VariableManager]
+superdooper_tools_list = [SimpleTool, TansuStack, VariableManager]
 
 # register all super tools
 PluginRegistry = []

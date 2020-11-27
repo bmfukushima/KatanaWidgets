@@ -9,11 +9,13 @@ really think this through very well lmao)
 
 from .AbstractNodegraphWidget import AbstractNodegraphWidget
 from .AbstractParametersDisplayWidget import AbstractParametersDisplayWidget
-from .AbstractSuperToolEditor import AbstractSuperToolEditor
 try:
     from .AbstractSuperToolNode import AbstractSuperToolNode
+    from .AbstractSuperToolEditor import AbstractSuperToolEditor
 except NameError:
     pass
 from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
 from .TwoFaceSuperToolWidget import TwoFacedSuperToolWidget
 from .TwoFaceSuperToolNode import TwoFaceSuperToolNode
+
+from .NodeTypeListWidget import NodeTypeListWidget

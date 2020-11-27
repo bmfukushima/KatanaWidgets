@@ -55,15 +55,15 @@ from qtpy.QtWidgets import (
 
 from qtpy.QtCore import Qt, QEvent
 
-from Widgets2 import (
-    TwoFacedSuperToolWidget
-)
 
 from cgwidgets.widgets import TansuBaseWidget, TansuHeaderListView
 
 try:
     from Katana import UI4
-except ModuleNotFoundError:
+    from Widgets2 import (
+        TwoFacedSuperToolWidget
+    )
+except (ImportError, ModuleNotFoundError) as e:
     pass
 
 from .GroupNodeEditor import GroupNodeEditorMainWidget

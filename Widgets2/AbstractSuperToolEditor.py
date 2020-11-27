@@ -6,6 +6,7 @@ from qtpy.QtCore import QEvent
 from cgwidgets.utils import getWidgetAncestor
 
 try:
+    from Katana import UI4
     from UI4.Widgets import PanelScrollArea
 except ModuleNotFoundError:
     pass
@@ -78,6 +79,20 @@ class AbstractSuperToolEditor(QWidget):
         height = self.getKatanaParamsScrollAreaWidget().height()
         if self.height() < height:
             self.setFixedHeight(height)
+
+    def insertResizeBar(self, layout=None, index=None):
+        """
+        Inserts a resize bar widget to the specified index in the specified layout
+        """
+        # get defaults
+        if not layout:
+            layout = self.layout()
+        if not index:
+            index = self.layout().count()
+
+        # insert resize bar
+        resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
+        layout.insertWidget(index, resize_widget)
 
     """ REGISTER CUSTOM PARM"""
     def registerCustomParameter(self, widget, param_loc, data_type, get_new_value_function, editing_finished_function):

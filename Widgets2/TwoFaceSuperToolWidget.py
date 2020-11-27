@@ -54,9 +54,10 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
         self.main_widget.addWidget(self._view_widget)
 
         # setup main layout
-        resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
         self.layout().addWidget(self.main_widget)
-        self.layout().addWidget(resize_widget)
+        self.insertResizeBar()
+        # resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
+        # self.layout().addWidget(resize_widget)installResizeBar
 
     """ PROPERTIES ( WIDGET )"""
     def getDesignWidget(self):
