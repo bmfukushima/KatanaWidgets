@@ -1,9 +1,10 @@
 """
 TODO:
     Display:
-        * Create param value display
-            Widget Options... special cases
-                updateAllDynamicArgsWidgets
+        * Custom Widgets
+                l.828 --> __updateAllDynamicArgsWidgets
+        * Conditional Vis/Locking...
+            Need to add this...
     Create New:
         * Ramp ( Color | Float )
 
@@ -104,23 +105,29 @@ class UserParametersMainWidget(QWidget):
         "TeleParameter",
         "Script Editor"
     ]
+
     NUMBER_TYPES = [
         "Boolean",
         "Popup Menu",
         "Mapping Popup Menu",
         "Check Box"
     ]
+
     GROUP_TYPES = [
         "Multi",
         "Gradient"
     ]
+
     STRING_ARRAY_TYPES = [
         "Scene Graph Locations"
     ]
+
     NUMBER_ARRAY_TYPES = [
         "Color"
     ]
+
     DISPLAY_NAMES = {
+        'User Params Editor': 'userParamsEditor',
         'Scene Graph Location': 'scenegraphLocation',
         'Attribute Name': 'attributeName',
         'Attribute Type': 'attributeType',
@@ -142,6 +149,11 @@ class UserParametersMainWidget(QWidget):
         'Null': 'null',
         'Default': 'default'
     }
+    REVERSE_DISPLAY_NAMES = {}
+    for key in DISPLAY_NAMES:
+        value = DISPLAY_NAMES[key]
+        REVERSE_DISPLAY_NAMES[value] = key
+
     WIDGET_SPECIFIC_OPTIONS = {
         'popup': (
             'options',),
@@ -155,6 +167,7 @@ class UserParametersMainWidget(QWidget):
             'scriptText', 'text'),
         'scriptToolbar': (
             'scriptToolbar', 'buttonData')}
+
     HINT_OPTIONS_MAP = {
         "Widget Type": "widget",
         "Display Name": "label",
@@ -171,6 +184,7 @@ class UserParametersMainWidget(QWidget):
     for key in HINT_OPTIONS_MAP:
         value = HINT_OPTIONS_MAP[key]
         REVERSE_HINT_OPTIONS_MAP[value] = key
+
     # 'assetIdInput': (
     #     'assetScope', 'context', 'assetTypeTags', 'fileTypes', 'forcefile'),
     #
@@ -204,12 +218,18 @@ class UserParametersMainWidget(QWidget):
         if param_type not in UserParametersMainWidget.BASE_TYPES: return
 
         # get parent param
+        # nothing selected
         if len(self.__getSelectedIndexes()) == 0:
             parent_index = QModelIndex()
             parent_param = self.node.getParameters()
+        # something selected...
         else:
+            # if not top level param selected
             parent_index = self.__getParentIndex()
-            parent_param = parent_index.internalPointer().columnData()['parameter']
+            if parent_index.internalPointer():
+                parent_param = parent_index.internalPointer().columnData()['parameter']
+            else:
+                parent_param = self.node.getParameters()
 
         # create child parameter
         param = self.__createChildParameter(param_type, parent_param)
@@ -223,6 +243,8 @@ class UserParametersMainWidget(QWidget):
 
     def __createChildParameter(self, param_type, parent):
         """
+        Creates a new parameter based of the type/parent provided
+
         Run when the user has finished editing the self.new_parameter widget.
         This will create a new parameter if the specified type is valid.
         "Float Vector",
@@ -281,8 +303,9 @@ class UserParametersMainWidget(QWidget):
 
     def __getParentIndex(self):
         """
-        Returns the parent parameter for creating new parameters.  This
-        will be based off of the currently selected item.  If it is a group, it will
+        Returns the parent parameter for creating new parameters.
+
+        This will be based off of the currently selected item.  If it is a group, it will
         return that.  If not, it will return the parameters parent.
 
         # TODO needs to register for top level params, and return the
@@ -369,10 +392,11 @@ class UserParametersWidget(TansuModelViewWidget):
         self.setHeaderWidget(header_widget)
         self.setHeaderData(['name', 'base type'])
         self.setHeaderPosition(attrs.WEST)
+        self.setDelegateHeaderShown(False)
 
         # setup flags
         self.setHeaderItemIsEnableable(False)
-        self.setHeaderItemIsRootDropEnabled(False)
+        #self.setHeaderItemIsRootDropEnabled(False)
         self.setHeaderItemIsEditable(True)
 
         # set custom delegate
@@ -435,8 +459,11 @@ class UserParametersWidget(TansuModelViewWidget):
         # create index
         new_model_index = self.insertTansuWidget(row, column_data=column_data, parent=parent)
 
-        # disable drops
-        new_model_index.internalPointer().setIsDropEnabled(False)
+        # setup drops
+        if parameter.getType() == "group":
+            new_model_index.internalPointer().setIsDropEnabled(True)
+        else:
+            new_model_index.internalPointer().setIsDropEnabled(False)
 
         return new_model_index
 
@@ -540,13 +567,13 @@ class UserParametersDynamicWidget(TansuBaseWidget):
 
         # create default args
         self.default_args_widget = self.createDefaultArgsWidget()
-        self.default_args_widget.setSeparatorLength(_DEFAULT_SEPARATOR_LENGTH)
+        self.default_args_widget.setSeparatorLength(200)
         self.default_args_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
 
         # create widget specific args
         self.widget_specific_args_widget = FrameGroupInputWidget(self, name='Unique Args', direction=Qt.Vertical)
         self.widget_specific_args_widget.layout().setAlignment(Qt.AlignTop)
-        self.widget_specific_args_widget.setSeparatorLength(_DEFAULT_SEPARATOR_LENGTH)
+        self.widget_specific_args_widget.setSeparatorLength(200)
         self.widget_specific_args_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
 
         # add widgets to layout
@@ -642,16 +669,21 @@ class UserParametersDynamicWidget(TansuBaseWidget):
         self.resetItemToDefaultState(reset_default_hints=False)
 
         # set widget type
-        self.item().columnData()['widget'] = UserParametersMainWidget.DISPLAY_NAMES[str(value)]
+        try:
+            self.item().columnData()['widget'] = UserParametersMainWidget.DISPLAY_NAMES[str(value)]
 
-        # create default hint string values
-        widget_hint_options = self.getWidgetSpecificHintOptions()
-        for option in widget_hint_options:
-            self.item().columnData()[option] = ''
+            # create default hint string values
+            widget_hint_options = self.getWidgetSpecificHintOptions()
+            for option in widget_hint_options:
+                self.item().columnData()[option] = ''
 
-        # update
-        self.updateWidgetHint()
-        self.__updateAllDynamicArgsWidgets()
+            # update
+            self.updateWidgetHint()
+            self.__updateAllDynamicArgsWidgets()
+
+        except KeyError:
+            # cannot find the key in the params
+            pass
 
     def getWidgetTypeList(self):
         """ Returns a list of widget types depending on the current input type """
@@ -804,6 +836,13 @@ class UserParametersDynamicWidget(TansuBaseWidget):
             if hint in UserParametersDynamicWidget.DEFAULT_HINTSTRING_ARGS:
                 hint_widget = self.widgets_dict[hint]
                 value = hints[hint]
+
+                # special cases
+                # if there is a display name / actual value...
+                if hint == "widget":
+                    value = UserParametersMainWidget.REVERSE_DISPLAY_NAMES[str(value)]
+
+                # boolean
                 if isinstance(hint_widget, BooleanInputWidget):
                     if value in ['True', 1]:
                         hint_widget.is_clicked = True
@@ -840,6 +879,7 @@ class UserParametersDynamicWidget(TansuBaseWidget):
             self.widget_specific_args_widget.hide()
         else:
             for unique_hint in unique_hints:
+                # TODO Set up custom widgets here...
                 # create widget
                 display_name = UserParametersMainWidget.REVERSE_HINT_OPTIONS_MAP[unique_hint]
                 new_widget = DynamicArgsInputWidget(

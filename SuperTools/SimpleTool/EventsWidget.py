@@ -130,6 +130,7 @@ class EventWidget(QWidget):
             dynamic_widget=UserInputMainWidget,
             dynamic_function=UserInputMainWidget.updateGUI
         )
+        main_widget.setHeaderDefaultLength(250)
 
         return main_widget
 
