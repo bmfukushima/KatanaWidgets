@@ -23,7 +23,7 @@ from cgwidgets.settings.colors import (
 )
 
 from cgwidgets.widgets import (
-    TansuBaseWidget, FrameInputWidget, ListInputWidget, FileBrowserInputWidget)
+    TansuBaseWidget, LabelledInputWidget, ListInputWidget, FileBrowserInputWidget)
 from cgwidgets.utils import updateStyleSheet, getFontSize
 
 
@@ -150,7 +150,7 @@ class VariableManagerWidget(QWidget):
         self.r1_hbox = QHBoxLayout(self.r1_widget)
 
         # variable menu
-        self.variable_menu_frame = FrameInputWidget(
+        self.variable_menu_frame = LabelledInputWidget(
             parent=self,
             name='GSV',
             widget_type=VariableManagerGSVMenu
@@ -159,7 +159,7 @@ class VariableManagerWidget(QWidget):
         self.variable_menu = self.variable_menu_frame.getInputWidget()
 
         # node type menu
-        self.node_type_menu_frame = FrameInputWidget(
+        self.node_type_menu_frame = LabelledInputWidget(
             parent=self,
             name='Node Type',
             widget_type=VariableManagerNodeMenu

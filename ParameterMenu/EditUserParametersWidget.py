@@ -2,14 +2,15 @@
 TODO:
     Display:
         * Create param value display
-                - widget type
-                - widget options
-                - conditional visibility
-                - help text
+            Widget Options... special cases
+                updateAllDynamicArgsWidgets
     Create New:
         * Ramp ( Color | Float )
-    Break out into abstract parameter display
 
+Args
+    _DEFAULT_SEPARATOR_LENGTH = 4
+    _DEFAULT_SEPARATOR_WIDTH = 1
+    _DEFAULT_LABEL_LENGTH = 125
 Widgets:
     UserParametersMainWidget (QWidget)
         | --  QVBoxLayout
@@ -29,13 +30,13 @@ Widgets:
                                 widget (Widget Type)
                                 label (Display Name)
                                 readOnly (Locked)
-                        | -*  ( DynamicArgsInputWidget --> FrameInputWidget )
+                        | -*  ( DynamicArgsInputWidget --> LabelledInputWidget )
                     | --  widget_specific_args_widget (FrameGroupInputWidget)
                             Displays the args that are unique to a specific widget type.
                             If there are no args available for this parameter type, this
                             widget will be hidden.
-                        | -*  ( DynamicArgsInputWidget --> FrameInputWidget )
-                    | --  help_text_widget (FrameInputWidget)
+                        | -*  ( DynamicArgsInputWidget --> LabelledInputWidget )
+                    | --  help_text_widget (LabelledInputWidget)
                             Displays the help text to the user.
 
 """
@@ -51,7 +52,7 @@ from cgwidgets.widgets import (
     TansuModelViewWidget,
     TansuHeaderTreeView,
     ListInputWidget,
-    FrameInputWidget,
+    LabelledInputWidget,
     FrameGroupInputWidget,
     StringInputWidget,
     BooleanInputWidget,
@@ -64,6 +65,7 @@ from Katana import UniqueName, PyXmlIO
 
 _DEFAULT_SEPARATOR_LENGTH = 4
 _DEFAULT_SEPARATOR_WIDTH = 1
+_DEFAULT_LABEL_LENGTH = 125
 
 class UserParametersMainWidget(QWidget):
     """
@@ -137,7 +139,8 @@ class UserParametersMainWidget(QWidget):
         'Gradient': 'linearGradient',
         'TeleParameter': 'teleparam',
         'Script Editor': 'scriptEditor',
-        'Null': 'null'
+        'Null': 'null',
+        'Default': 'default'
     }
     WIDGET_SPECIFIC_OPTIONS = {
         'popup': (
@@ -370,6 +373,7 @@ class UserParametersWidget(TansuModelViewWidget):
         # setup flags
         self.setHeaderItemIsEnableable(False)
         self.setHeaderItemIsRootDropEnabled(False)
+        self.setHeaderItemIsEditable(True)
 
         # set custom delegate
         self.setDelegateType(
@@ -481,7 +485,7 @@ class UserParametersWidget(TansuModelViewWidget):
         param.getParent().deleteChild(param)
 
 
-class DynamicArgsInputWidget(FrameInputWidget):
+class DynamicArgsInputWidget(LabelledInputWidget):
     """
     One individual arg
     """
@@ -550,11 +554,20 @@ class UserParametersDynamicWidget(TansuBaseWidget):
         self.addWidget(self.widget_specific_args_widget)
 
     def createDefaultArgsWidget(self):
+        """
+        Creates all of the widgets for the default args
+
+        Creates all of the default args widgets, the default args are ones that
+        happen on every single parameter.  These options are:
+            Display Name --> label
+            Widget Type --> widget
+            Locked --> readOnly
+        """
         default_args_widget = FrameGroupInputWidget(self, name='Default Args', direction=Qt.Vertical)
         default_args_widget.layout().setAlignment(Qt.AlignTop)
 
         # setup widget type
-        widget_type_frame = DynamicArgsInputWidget(default_args_widget, name='Widget Type', note='', widget_type=ListInputWidget)
+        widget_type_frame = DynamicArgsInputWidget(None, name='Widget Type', note='', widget_type=ListInputWidget)
         self.widget_type = widget_type_frame.getInputWidget()
         self.widget_type.dynamic_update = True
         self.widget_type.setCleanItemsFunction(self.getWidgetTypeList)
@@ -565,7 +578,7 @@ class UserParametersDynamicWidget(TansuBaseWidget):
 
         # Display Name
         display_name_frame = DynamicArgsInputWidget(
-            default_args_widget,
+            None,
             name='Display Name',
             note='The parameter name to be displayed to the user.',
             widget_type=StringInputWidget
@@ -575,7 +588,7 @@ class UserParametersDynamicWidget(TansuBaseWidget):
 
         # Read Only
         read_only_frame = DynamicArgsInputWidget(
-            default_args_widget,
+            None,
             name='Locked',
             note='If True, this widget will be lock and in a read only state.  If False, the user will be able to manipulate this parameter',
             widget_type=BooleanInputWidget
@@ -584,7 +597,7 @@ class UserParametersDynamicWidget(TansuBaseWidget):
 
         # Help Text
         help_text_frame = DynamicArgsInputWidget(
-            default_args_widget,
+            None,
             name='Help',
             note='Help text to be displayed to the user',
             widget_type=PlainTextInputWidget
@@ -608,8 +621,7 @@ class UserParametersDynamicWidget(TansuBaseWidget):
         for key in self.widgets_dict:
             widget = self.widgets_dict[key]
             frame_widget = widget.parent()
-
-            frame_widget.setDefaultLabelLength(125)
+            frame_widget.setDefaultLabelLength(_DEFAULT_LABEL_LENGTH)
             frame_widget.setSeparatorLength(_DEFAULT_SEPARATOR_LENGTH)
             frame_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
 
@@ -620,6 +632,11 @@ class UserParametersDynamicWidget(TansuBaseWidget):
     def setWidgetTypeEvent(self, widget, value):
         """
         sets the widget type
+
+        Args:
+            widget (widget): Widget that is currently setting the value
+            value (value): value that is currently being set
+
         """
         # reset item hint string
         self.resetItemToDefaultState(reset_default_hints=False)
@@ -637,21 +654,20 @@ class UserParametersDynamicWidget(TansuBaseWidget):
         self.__updateAllDynamicArgsWidgets()
 
     def getWidgetTypeList(self):
-        """
-        Returns a list of widget types depending on the current input type
-        """
+        """ Returns a list of widget types depending on the current input type """
+        widget_list = []
         input_type = self.baseType()
         # todo append "Default"
         if input_type == "string":
-            widget_list = UserParametersMainWidget.STRING_TYPES
+            widget_list += UserParametersMainWidget.STRING_TYPES
         if input_type == "number":
-            widget_list = UserParametersMainWidget.NUMBER_TYPES
+            widget_list += UserParametersMainWidget.NUMBER_TYPES
         if input_type == "stringArray":
-            widget_list = UserParametersMainWidget.STRING_ARRAY_TYPES
+            widget_list += UserParametersMainWidget.STRING_ARRAY_TYPES
         if input_type == "numberArray":
-            widget_list = UserParametersMainWidget.NUMBER_ARRAY_TYPES
+            widget_list += UserParametersMainWidget.NUMBER_ARRAY_TYPES
         if input_type == "group":
-            widget_list = UserParametersMainWidget.GROUP_TYPES
+            widget_list += UserParametersMainWidget.GROUP_TYPES
         # todo null appending multiple times
         widget_list.append('Null')
 
@@ -661,6 +677,8 @@ class UserParametersDynamicWidget(TansuBaseWidget):
 
     def mapWidgetTypeToUserReadable(self, widget_type):
         """
+        Converts the widget type display name, from katana readable to human readable
+
         Takes the hint string readable widget value, and maps it to the human
         readable value.  This essentially flips the dictionary located in
         UserParametersMainWidget.DISPLAY_NAMES
@@ -830,8 +848,12 @@ class UserParametersDynamicWidget(TansuBaseWidget):
                     note='',
                     widget_type=StringInputWidget
                 )
+
+                # set up default lengths
+                new_widget.setDefaultLabelLength(_DEFAULT_LABEL_LENGTH)
                 new_widget.setSeparatorLength(_DEFAULT_SEPARATOR_LENGTH)
                 new_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
+
                 # add widget to layout
                 input_widget = new_widget.getInputWidget()
 

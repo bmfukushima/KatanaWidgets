@@ -31,7 +31,7 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor
 from cgwidgets.widgets import (
-    ListInputWidget, FrameInputWidget, StringInputWidget, IntInputWidget, FloatInputWidget,
+    ListInputWidget, LabelledInputWidget, StringInputWidget, IntInputWidget, FloatInputWidget,
     TansuModelViewWidget, TansuHeaderListView, TansuModelItem
 )
 from cgwidgets.views import AbstractDragDropModelDelegate
@@ -547,7 +547,8 @@ class UserInputMainWidget(QWidget):
         if not item: return
 
         # set title
-        widget.group_box.setTitle(item.columnData()['event_type'])
+        # for some reason this isnt necessary...
+        #widget.group_box.setTitle(item.columnData()['event_type'])
 
         # set item
         main_widget = widget.getMainWidget()
@@ -583,7 +584,7 @@ class UserInputMainWidget(QWidget):
         return self._item
 
 
-class DynamicArgsInputWidget(FrameInputWidget):
+class DynamicArgsInputWidget(LabelledInputWidget):
     """
     One individual arg
 
@@ -632,7 +633,6 @@ class EventTypeDelegate(AbstractDragDropModelDelegate):
     # from the UserInputMainWidget.dynamic_args_widget.update()
     def createEditor(self, parent, option, index):
         delegate_widget = self.delegateWidget(parent)
-        print('parent == %s'%parent)
         # populate events
         event_list = list(getWidgetAncestor(parent, EventWidget).getDefaultEventsDict())
         delegate_widget.populate([[item] for item in sorted(event_list)])
@@ -644,6 +644,7 @@ class EventTypeDelegate(AbstractDragDropModelDelegate):
 
         delegate_widget.setUserFinishedEditingEvent(updateDisplay)
         return delegate_widget
+
 
 class ScriptInputWidget(DynamicArgsInputWidget):
     """
