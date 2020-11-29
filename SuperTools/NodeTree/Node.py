@@ -15,9 +15,9 @@ except (ImportError, ModuleNotFoundError) as e:
     pass
 
 
-class TansuStackNode(AbstractSuperToolNode):
+class NodeTreeNode(AbstractSuperToolNode):
     def __init__(self):
-        super(TansuStackNode, self).__init__()
+        super(NodeTreeNode, self).__init__()
 
         # initialize base node
         self.setGroupDisplay(False)

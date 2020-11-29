@@ -16,17 +16,21 @@ exec(code)
 #############################################################
 ########                REGISTER SUPER TOOLS                #############
 #############################################################
-
+"""
+Register a new sooperdooper tool...
+1.) Add to import super tools
+2.) Add superdooper_tools_list
+"""
 import Katana
 
 # import super tools
 import SimpleTool
-import TansuStack
+import NodeTree
 
 from MultiTools import VariableManager
 
 # compile list of super tools
-superdooper_tools_list = [SimpleTool, TansuStack, VariableManager]
+superdooper_tools_list = [SimpleTool, NodeTree, VariableManager]
 
 # register all super tools
 PluginRegistry = []

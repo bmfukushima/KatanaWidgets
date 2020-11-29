@@ -146,7 +146,7 @@ if __name__ == "__main__":
     w.setMultiSelectDirection(Qt.Vertical)
 
     new_view = SimpleToolViewWidget()
-    w.setHeaderWidget(new_view)
+    w.setHeaderViewWidget(new_view)
 
     # dw = TabTansuDynamicWidgetExample
     # w.setDelegateType(

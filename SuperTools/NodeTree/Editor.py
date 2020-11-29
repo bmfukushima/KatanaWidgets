@@ -6,7 +6,7 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt, QEvent
 
 from cgwidgets.utils import attrs
-from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderListView
+from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderTreeView
 
 
 try:
@@ -16,10 +16,10 @@ except (ImportError, ModuleNotFoundError) as e:
     pass
 
 
-#class TansuStackEditor(AbstractSuperToolEditor):
+#class NodeTreeEditor(AbstractSuperToolEditor):
     # def __init__(self, parent, node):
-    #     super(TansuStackEditor, self).__init__(parent, node)
-class TansuStackEditor(QWidget):
+    #     super(NodeTreeEditor, self).__init__(parent, node)
+class NodeTreeEditor(QWidget):
     """
     The top level widget for the editor.  This is here to encapsulate
     the main widget with a stretch box...
@@ -30,7 +30,7 @@ class TansuStackEditor(QWidget):
 
     """
     def __init__(self, parent, node):
-        super(TansuStackEditor, self).__init__(parent)
+        super(NodeTreeEditor, self).__init__(parent)
         # set up attrs
         self.__node = node
         self._node_type = "<multi>"
@@ -38,7 +38,7 @@ class TansuStackEditor(QWidget):
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
 
-        main_widget = TansuStackMainWidget(self)
+        main_widget = NodeTreeMainWidget(self)
 
         for x in range(3):
             name = '<title {}>'.format(str(x))
@@ -54,35 +54,36 @@ class TansuStackEditor(QWidget):
     def setNodeType(self, _node_type):
         self._node_type = _node_type
 
-class TansuStackMainWidget(TansuModelViewWidget):
+
+class NodeTreeMainWidget(TansuModelViewWidget):
     def __init__(self, parent=None):
-        super(TansuStackMainWidget, self).__init__(parent)
-        view = TansuStackViewWidget(self)
+        super(NodeTreeMainWidget, self).__init__(parent)
+        view = NodeTreeViewWidget(self)
         # setup header
-        self.setHeaderWidget(view)
+        self.setHeaderViewWidget(view)
         self.setHeaderPosition(attrs.WEST)
         self.setHeaderData(['name', 'test', 'three'])
 
         # set dynamic
         self.setDelegateType(
             TansuModelViewWidget.DYNAMIC,
-            dynamic_widget=TansuStackDynamicWidget,
-            dynamic_function=TansuStackDynamicWidget.updateGUI
+            dynamic_widget=NodeTreeDynamicWidget,
+            dynamic_function=NodeTreeDynamicWidget.updateGUI
         )
 
 
-class TansuStackViewWidget(TansuHeaderListView):
+class NodeTreeViewWidget(TansuHeaderTreeView):
     def __init__(self, parent=None):
-        super(TansuStackViewWidget, self).__init__(parent)
+        super(NodeTreeViewWidget, self).__init__(parent)
 
 
-class TansuStackDynamicWidget(QWidget):
+class NodeTreeDynamicWidget(QWidget):
     """
     Simple example of overloaded class to be used as a dynamic widget for
     the TansuModelViewWidget.
     """
     def __init__(self, parent=None):
-        super(TansuStackDynamicWidget, self).__init__(parent)
+        super(NodeTreeDynamicWidget, self).__init__(parent)
         QVBoxLayout(self)
         self.label = QLabel('init')
         self.layout().addWidget(self.label)
@@ -108,7 +109,7 @@ if __name__ == "__main__":
     from cgwidgets.widgets import TansuModelViewWidget
     app = QApplication(sys.argv)
 
-    w = TansuStackEditor(None, None)
+    w = NodeTreeEditor(None, None)
     w.resize(500, 500)
 
     w.show()

@@ -69,7 +69,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
     def getViewWidget(self):
         return self._view_widget
 
-    def setHeaderWidget(self, view_widget):
+    def setHeaderViewWidget(self, view_widget):
         self._view_widget = view_widget
 
 

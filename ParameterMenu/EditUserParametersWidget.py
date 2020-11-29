@@ -389,7 +389,7 @@ class UserParametersWidget(TansuModelViewWidget):
         header_widget = TansuHeaderTreeView()
 
         # setup header
-        self.setHeaderWidget(header_widget)
+        self.setHeaderViewWidget(header_widget)
         self.setHeaderData(['name', 'base type'])
         self.setHeaderPosition(attrs.WEST)
         self.setDelegateHeaderShown(False)

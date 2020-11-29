@@ -107,7 +107,7 @@ class EventWidget(QWidget):
 
         # setup header
         events_view = EventsUserInputWidget(self)
-        main_widget.setHeaderWidget(events_view)
+        main_widget.setHeaderViewWidget(events_view)
         main_widget.setHeaderData(['event_type'])
 
         # setup custom item type

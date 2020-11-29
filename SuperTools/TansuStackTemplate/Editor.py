@@ -59,7 +59,7 @@ class TansuStackMainWidget(TansuModelViewWidget):
         super(TansuStackMainWidget, self).__init__(parent)
         view = TansuStackViewWidget(self)
         # setup header
-        self.setHeaderWidget(view)
+        self.setHeaderViewWidget(view)
         self.setHeaderPosition(attrs.WEST)
         self.setHeaderData(['name', 'test', 'three'])
 
