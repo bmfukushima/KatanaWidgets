@@ -1,13 +1,11 @@
 """
 ToDo:
-    Scripts
-        Move to network paths
-    Event Registry
-        Set up global/local handlers
-            - toggle on event widget
-            - init script to enable
-    Params
-        - Input types?
+    NodeTree Base:
+        - How to modify delegate?
+            SuperToolEditor --> editor --> main_widget
+            The TansuWidget needs to be set as an attr on the class above
+
+
 """
 from Node import NodeTreeNode as NODE
 def EDITOR():

@@ -31,14 +31,17 @@ class AbstractSuperToolEditor(QWidget):
 
         # set up resizing events
         self.__resizeEventFilter = ResizeFilter(self)
-        self.getKatanaParamsScrollAreaWidget().parent().parent().installEventFilter(self.__resizeEventFilter)
-        self.setFixedHeight(self.getKatanaParamsScrollAreaWidget().height())
+
+        # todo issue getting params scroll area?
+        # self.getKatanaParamsScrollAreaWidget().parent().parent().installEventFilter(self.__resizeEventFilter)
+        # self.setFixedHeight(self.getKatanaParamsScrollAreaWidget().height())
 
     def getKatanaParamsScrollAreaWidget(self):
         """
         Returns the params widget that is central widget of the scroll area
         so that we can properly set width/height.
         """
+        print(self.parent().parent().parent().parent())
         return self.parent().parent().parent().parent()
 
     def setupEventHandlers(self, bool):
