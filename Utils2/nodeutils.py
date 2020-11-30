@@ -102,7 +102,7 @@ def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=
             node.addOutputPort('out')
         else:
             if len(node.getOutputPorts()) == 0:
-                node.addOutputPort
+                node.addOutputPort('out')
     if connect is True:
         if in_port is True and out_port is True:
             node.getSendPort('in').connect(node.getReturnPort('out'))

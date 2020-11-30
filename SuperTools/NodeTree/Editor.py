@@ -15,28 +15,14 @@ try:
 except (ImportError, ModuleNotFoundError) as e:
     pass
 
-# class NodeTreeEditor(AbstractSuperToolEditor):
-#     def __init__(self, parent, node):
-#         super(NodeTreeEditor, self).__init__(parent, node)
-#         """
-#         Class:
-#         NodeTreeEditor --|> AbstractSuperToolEditor
-#             | --
-#         """
-class NodeTreeEditor(QWidget):
-    """
-    The top level widget for the editor.  This is here to encapsulate
-    the main widget with a stretch box...
-
-    Attributes:
-        should_update (bool): determines if this tool should have
-            its GUI updated or not during the next event idle process.
-
-    """
+class NodeTreeEditor(AbstractSuperToolEditor):
     def __init__(self, parent, node):
-        super(NodeTreeEditor, self).__init__(parent)
-        # set up attrs
-        self.node = node
+        super(NodeTreeEditor, self).__init__(parent, node)
+        """
+        Class:
+        NodeTreeEditor --|> AbstractSuperToolEditor
+            | --
+        """
 
         self._node_type = "<multi>"
         # setup layout
@@ -48,6 +34,7 @@ class NodeTreeEditor(QWidget):
 
         # add tree to layout
         self.layout().addWidget(self.nodeTree())
+        self.insertResizeBar()
 
     """ PROPERTIES """
     def nodeTree(self):
@@ -89,21 +76,18 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         header_delegate_widget.setUserFinishedEditingEvent(self.delegateFinishedEditing)
 
         # set hotkey to activate
-        # TODO Key List
-        # 'd' toggle?
-        self.TOGGLE_DELEGATE_KEYS = [Qt.Key_T, Qt.Key_1]
+        #self.TOGGLE_DELEGATE_KEYS = [Qt.Key_T, Qt.Key_1]
 
-        print(self, self.node)
+        # print(self, self.node)
 
     def getSelectedIndex(self):
-        """
-        Returns the currently selected item
-        """
+        """Returns the currently selected item"""
         indexes = self.getAllSelectedIndexes()
         if len(indexes) == 0: return None
         else: return indexes[0]
 
     def getParentIndex(self):
+        """Gets the current parent index for node creation"""
         index = self.getSelectedIndex()
         if index:
             node_name = index.internalPointer().columnData()["name"]
@@ -113,51 +97,66 @@ class NodeTreeMainWidget(TansuModelViewWidget):
             else:
                 return index
 
-    def getNodeFromIndex(self, index):
-        """
-        Returns the currently selected node in this widget
-        """
+    def getParentNodeFromIndex(self, index):
+        """Returns the currently selected node in this widget"""
         if index:
-            node_name = index.internalPointer().columnData()["name"]
-            node = NodegraphAPI.GetNode(node_name)
+            item = index.internalPointer()
+
+            # top level group
+            if item:
+                node_name = index.internalPointer().columnData()["name"]
+                node = NodegraphAPI.GetNode(node_name)
+            # top level, NOT group
+            else:
+                node = self.node
         else:
-            return self.node
+            node = self.node
 
         return node
 
-    def getParentNode(self):
-        """
-        Returns the node that the newly created node should be parented to.
-        """
-
     def delegateFinishedEditing(self, widget, value):
-        # TODO delegateFinishedEditing
-        # get current node
-        # todo need to set this up
+        """ User creating new node """
         # get node
         parent_index = self.getParentIndex()
-        parent_node = self.getNodeFromIndex(parent_index)
+        parent_node = self.getParentNodeFromIndex(parent_index)
 
         # get node type to create
         node_type = value
 
         # create node
         # # check if node type in nodes list...
-        node_list = NodegraphAPI.GetNodeTypes()
+        all_nodes = NodegraphAPI.GetNodeTypes()
 
-        if node_type in node_list:
+        if node_type in all_nodes:
             # # create node
             new_node = NodegraphAPI.CreateNode(str(node_type), parent_node)
 
             name = str(new_node.getName())
             node_type = new_node.getType()
 
-            # TODO Wire Node after creation.
-            nodeutils.createIOPorts(new_node, force_create=True, connect=False)
-            #insertNode(new_node, parent_node)
-
             # create new item
             self.insertTansuWidget(0, column_data={'name': name, 'type': node_type}, parent=parent_index)
+
+            # wire node
+            nodeutils.createIOPorts(new_node, force_create=False, connect=False)
+
+            # get children / parent_node
+            if parent_index:
+                item = parent_index.internalPointer()
+                # if index exists
+                if item:
+                    children = parent_index.internalPointer().children()
+                # special case for root
+                else:
+                    children = self.model().getRootItem().children()
+            else:
+                children = self.model().getRootItem().children()
+                parent_node = self.node
+
+            # get node list
+            node_name_list = [child.columnData()['name'] for child in children]
+            node_list = [NodegraphAPI.GetNode(node) for node in node_name_list]
+            nodeutils.connectInsideGroup(node_list, parent_node)
 
             # reset widget
             widget.setText('')
@@ -233,12 +232,12 @@ if __name__ == "__main__":
     sys.exit(app.exec_())
 
 
-import sys
-from qtpy.QtWidgets import QApplication, QLabel, QVBoxLayout
-from qtpy.QtGui import QCursor
-from cgwidgets.widgets import TansuModelViewWidget
-w = NodeTreeEditor(None, None)
-w.resize(500, 500)
-
-w.show()
-w.move(QCursor.pos())
+# import sys
+# from qtpy.QtWidgets import QApplication, QLabel, QVBoxLayout
+# from qtpy.QtGui import QCursor
+# from cgwidgets.widgets import TansuModelViewWidget
+# w = NodeTreeEditor(None, None)
+# w.resize(500, 500)
+#
+# w.show()
+# w.move(QCursor.pos())
