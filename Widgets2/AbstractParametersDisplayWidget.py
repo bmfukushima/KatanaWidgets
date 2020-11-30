@@ -88,7 +88,6 @@ class AbstractParametersDisplayWidget(QScrollArea):
                     if there is only 1 then it will be hidden.
         """
         teleparam_widget = self.__createTeleparamWidget(node_name, hide_title=hide_title)
-        print('hide title === ' , hide_title)
         self.getLayout().addWidget(teleparam_widget)
         teleparam_widget.show()
         self.update()

@@ -208,7 +208,9 @@ class NodeTreeMainWidget(TansuModelViewWidget):
             widget.hide()
 
             # TODO Set focus back on header?
-            self.headerViewWidget().setFocus()
+            header_view_widget = self.headerViewWidget()
+            print(header_view_widget)
+            header_view_widget.setFocus()
         else:
             return
 
