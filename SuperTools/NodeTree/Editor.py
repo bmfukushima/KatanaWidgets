@@ -9,7 +9,7 @@ from cgwidgets.utils import attrs
 from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderTreeView, StringInputWidget
 
 try:
-    from Katana import UI4, NodegraphAPI
+    from Katana import UI4, NodegraphAPI, Utils
     from Widgets2 import AbstractSuperToolEditor, NodeTypeListWidget
     from Utils2 import nodeutils
 except (ImportError, ModuleNotFoundError) as e:
@@ -56,6 +56,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
 
         # setup view
         view = NodeTreeViewWidget(self)
+
         # setup header
         self.setHeaderViewWidget(view)
         self.setHeaderPosition(attrs.WEST, attrs.NORTH)
@@ -68,12 +69,16 @@ class NodeTreeMainWidget(TansuModelViewWidget):
             dynamic_function=NodeTreeDynamicWidget.updateGUI
         )
 
+        # node create widget
         header_delegate_widget = NodeTreeHeaderDelegate(self)
         self.setHeaderDelegateWidget(header_delegate_widget)
 
+        # events
         self.setHeaderItemDropEvent(self.nodeMovedEvent)
-        header_delegate_widget.setUserFinishedEditingEvent(self.delegateFinishedEditing)
-
+        header_delegate_widget.setUserFinishedEditingEvent(self.createNewNode)
+        self.setHeaderItemTextChangedEvent(self.nodeNameChangedEvent)
+        # setup attrs
+        self.setMultiSelect(True)
         # set hotkey to activate
         #self.TOGGLE_DELEGATE_KEYS = [Qt.Key_T, Qt.Key_1]
 
@@ -113,7 +118,21 @@ class NodeTreeMainWidget(TansuModelViewWidget):
 
         return node
 
-    def delegateFinishedEditing(self, widget, value):
+    def getNodeListFromItem(self, item):
+        """
+        Gets all of the node children from the specified item
+
+        Returns (list) of nodes
+        """
+        # get node list
+        children = item.children()
+        node_name_list = [child.columnData()['name'] for child in children]
+        node_list = [NodegraphAPI.GetNode(node) for node in node_name_list]
+
+        return node_list
+
+    """ EVENTS """
+    def createNewNode(self, widget, value):
         """ User creating new node """
         # get node
         parent_index = self.getParentIndex()
@@ -134,8 +153,10 @@ class NodeTreeMainWidget(TansuModelViewWidget):
             node_type = new_node.getType()
 
             # create new item
-            self.insertTansuWidget(0, column_data={'name': name, 'type': node_type}, parent=parent_index)
-
+            new_index = self.insertTansuWidget(0, column_data={'name': name, 'type': node_type}, parent=parent_index)
+            new_item = new_index.internalPointer()
+            if not hasattr(new_node, 'getChildren'):
+                new_item.setIsDropEnabled(False)
             # wire node
             nodeutils.createIOPorts(new_node, force_create=False, connect=False)
 
@@ -144,26 +165,30 @@ class NodeTreeMainWidget(TansuModelViewWidget):
                 item = parent_index.internalPointer()
                 # if index exists
                 if item:
-                    children = parent_index.internalPointer().children()
+                    group_item = parent_index.internalPointer()
                 # special case for root
                 else:
-                    children = self.model().getRootItem().children()
+                    group_item = parent_index.internalPointer()
+
             else:
-                children = self.model().getRootItem().children()
+                group_item = self.model().getRootItem()
                 parent_node = self.node
 
             # get node list
-            node_name_list = [child.columnData()['name'] for child in children]
-            node_list = [NodegraphAPI.GetNode(node) for node in node_name_list]
+            node_list = self.getNodeListFromItem(group_item)
+
             nodeutils.connectInsideGroup(node_list, parent_node)
 
             # reset widget
             widget.setText('')
             widget.hide()
+
+            # TODO Set focus back on header?
+            self.headerViewWidget().setFocus()
         else:
             return
 
-    def nodeMovedEvent(self, row, indexes, parent):
+    def nodeMovedEvent(self, row, items_dropped, parent):
         """
         Run when the user does a drop.  This is triggered on the dropMimeData funciton
         in the model.
@@ -173,9 +198,38 @@ class NodeTreeMainWidget(TansuModelViewWidget):
             parent (TansuModelItem): parent item that was dropped on
 
         """
-        # TODO DROP EVENT
-        print("---- DROP EVENT ----")
-        print(row, indexes, parent)
+        # disconnect... not working... input ports not reconnect to group send?
+
+        # get parent node
+        parent_node = NodegraphAPI.GetNode(parent.columnData()['name'])
+        # if root
+        if parent.columnData()["name"] == 'root':
+            parent_node = self.node
+
+        # drop items
+        for item in items_dropped:
+            # get node
+            node = NodegraphAPI.GetNode(item.columnData()['name'])
+
+            # disconnect node
+            nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
+
+            # reparent
+            node.setParent(parent_node)
+
+        # reconnect node to new parent
+        node_list = self.getNodeListFromItem(parent)
+        nodeutils.connectInsideGroup(node_list, parent_node)
+
+        # reconnect old parent
+        # node dropped?
+
+    def nodeNameChangedEvent(self, item, old_value, new_value):
+        node = NodegraphAPI.GetNode(old_value)
+        node.setName(new_value)
+        Utils.EventModule.ProcessAllEvents()
+        new_name = node.getName()
+        item.columnData()['name'] = new_name
 
 
 class NodeTreeHeaderDelegate(NodeTypeListWidget):

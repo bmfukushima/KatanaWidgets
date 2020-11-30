@@ -50,7 +50,6 @@ from .Utils import (
 
 from Utils2 import (
     convertStringBoolToBool,
-    disconnectNode,
     gsvutils,
     makeUndoozable,
     nodeutils,
@@ -1058,7 +1057,7 @@ class VariableManagerBrowser(QTreeWidget):
         next_port.connect(previous_port)
 
         # disconnect input ports from node
-        disconnectNode(node, input=True)
+        nodeutils.disconnectNode(node, input=True)
         """
         for input_port in node.getInputPorts():
             output_ports = input_port.getConnectedPorts()

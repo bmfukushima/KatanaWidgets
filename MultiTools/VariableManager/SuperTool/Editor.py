@@ -142,7 +142,6 @@ from cgwidgets.widgets import ListInputWidget
 
 
 from Utils2 import(
-    disconnectNode,
     mkdirRecursive,
     makeUndoozable,
     nodeutils
@@ -912,7 +911,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         # disconnect / move all nodes
         node_list = []
         for child_node in temp_live_group.getChildren():
-            disconnectNode(child_node, input=True, output=True)
+            nodeutils.disconnectNode(child_node, input=True, output=True)
             child_node.setParent(publish_node)
             node_list.append(child_node)
 

@@ -163,8 +163,6 @@ class AbstractSuperToolEditor(QWidget):
 
         # disable scroll bar
 
-
-
     def insertResizeBar(self, layout=None, index=None):
         """
         Inserts a resize bar widget to the specified index in the specified layout

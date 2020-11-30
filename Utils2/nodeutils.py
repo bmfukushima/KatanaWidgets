@@ -6,6 +6,44 @@ except ModuleNotFoundError:
     pass
 
 
+def disconnectNode(node, input=False, output=False, reconnect=False):
+    """
+    Disconnects the node provide from all other nodes.  The same
+    as hitting 'x' on the keyboard... or "Extract Nodes" except this
+    is in the NodegraphWidget, not the NodegraphAPI. so kinda hard
+    to call... so I made my own...
+
+    Args:
+        node (node): Node to be extracted
+        input (bool): If true disconnect all input ports
+        output (bool): If true disconnect all output ports
+        reconnect (bool): If true, will rewire the node graphs input/output ports
+            will only work if input and output are true
+    """
+    if reconnect is True:
+        if input is True and output is True:
+            input_port = node.getInputPortByIndex(0)
+            upstream_port = input_port.getConnectedPorts()[0]
+            output_port = node.getOutputPortByIndex(0)
+            downstream_port = output_port.getConnectedPorts()[0]
+
+            if upstream_port and downstream_port:
+                # reconnect wire
+                upstream_port.connect(downstream_port)
+
+    if input is True:
+        for input_port in node.getInputPorts():
+            output_ports = input_port.getConnectedPorts()
+            for port in output_ports:
+                port.disconnect(input_port)
+
+    if output is True:
+        for output in node.getOutputPorts():
+            input_ports = output.getConnectedPorts()
+            for port in input_ports:
+                port.disconnect(output)
+
+
 def connectInsideGroup(node_list, parent_node):
     """
     Connects all of the nodes inside of a specific node in a linear fashion

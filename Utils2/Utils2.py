@@ -50,32 +50,6 @@ def convertStringBoolToBool(string_bool):
         return False
 
 
-def disconnectNode(node, input=False, output=False):
-    """
-    Disconnects the node provide from all other nodes.  The same
-    as hitting 'x' on the keyboard... or "Extract Nodes" except this
-    is in the NodegraphWidget, not the NodegraphAPI. so kinda hard
-    to call... so I made my own...
-
-    Args:
-        node (node): Node to be extracted
-        input (bool): If true disconnect all input ports
-        output (bool): If true disconnect all output ports
-
-    """
-    if input is True:
-        for input_port in node.getInputPorts():
-            output_ports = input_port.getConnectedPorts()
-            for port in output_ports:
-                port.disconnect(input_port)
-
-    if output is True:
-        for output in node.getOutputPorts():
-            input_ports = output.getConnectedPorts()
-            for port in input_ports:
-                port.disconnect(output)
-
-
 def mkdirRecursive(path):
     """
     Creates a directory and all parent directories leading
