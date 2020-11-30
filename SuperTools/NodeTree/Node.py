@@ -11,6 +11,7 @@ a python 2-3 thing right now... so meh
 """
 try:
     from Widgets2 import AbstractSuperToolNode
+    from Utils2 import nodeutils
 except (ImportError, ModuleNotFoundError) as e:
     pass
 
@@ -21,4 +22,4 @@ class NodeTreeNode(AbstractSuperToolNode):
 
         # initialize base node
         self.setGroupDisplay(False)
-        self.createIOPorts()
+        nodeutils.createIOPorts(self)

@@ -11,10 +11,9 @@ from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderTreeView, StringI
 try:
     from Katana import UI4, NodegraphAPI
     from Widgets2 import AbstractSuperToolEditor, NodeTypeListWidget
-    from Utils2.nodeutils import insertNode
+    from Utils2 import nodeutils
 except (ImportError, ModuleNotFoundError) as e:
     pass
-
 
 # class NodeTreeEditor(AbstractSuperToolEditor):
 #     def __init__(self, parent, node):
@@ -153,7 +152,8 @@ class NodeTreeMainWidget(TansuModelViewWidget):
             name = str(new_node.getName())
             node_type = new_node.getType()
 
-            # TODO Wire Node after creation
+            # TODO Wire Node after creation.
+            nodeutils.createIOPorts(new_node, force_create=True, connect=False)
             #insertNode(new_node, parent_node)
 
             # create new item

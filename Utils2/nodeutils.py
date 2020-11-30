@@ -86,3 +86,23 @@ def insertNode(node, parent_node):
 
     # position node
     NodegraphAPI.SetNodePosition(node, pos)
+
+
+def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=True):
+
+    if in_port is True:
+        if force_create:
+            node.addInputPort('in')
+        else:
+            if len(node.getInputPorts()) == 0:
+                node.addInputPort('in')
+
+    if out_port is True:
+        if force_create:
+            node.addOutputPort('out')
+        else:
+            if len(node.getOutputPorts()) == 0:
+                node.addOutputPort
+    if connect is True:
+        if in_port is True and out_port is True:
+            node.getSendPort('in').connect(node.getReturnPort('out'))

@@ -14,7 +14,7 @@ class SimpleToolNode(TwoFaceSuperToolNode):
         self.setGroupDisplay(False)
 
         # add input ports...
-        # self.createIOPorts()
+        # nodeutils.createIOPorts()
 
         # create main node
         self.main_node = self.createGroupNode(self, 'Basic')

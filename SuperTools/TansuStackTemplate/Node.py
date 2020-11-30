@@ -14,6 +14,8 @@ try:
 except (ImportError, ModuleNotFoundError) as e:
     pass
 
+from Utils2 import nodeutils
+
 
 class TansuStackNode(AbstractSuperToolNode):
     def __init__(self):
@@ -21,4 +23,4 @@ class TansuStackNode(AbstractSuperToolNode):
 
         # initialize base node
         self.setGroupDisplay(False)
-        self.createIOPorts()
+        nodeutils.createIOPorts(self)

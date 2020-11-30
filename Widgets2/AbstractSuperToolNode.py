@@ -1,5 +1,6 @@
 try:
     from Katana import NodegraphAPI
+    from Utils2.nodeutils import createIOPorts
 except ModuleNotFoundError:
     pass
 
@@ -8,17 +9,17 @@ class AbstractSuperToolNode(NodegraphAPI.SuperTool):
     def __init__(self):
         pass
 
-    def createIOPorts(self, in_port=True, out_port=True, connect=True):
-
-        if in_port is True:
-            self.addInputPort('in')
-
-        if out_port is True:
-            self.addOutputPort('out')
-
-        if connect is True:
-            if in_port is True and out_port is True:
-                self.getSendPort('in').connect(self.getReturnPort('out'))
+    # def createIOPorts(self, in_port=True, out_port=True, connect=True):
+    #
+    #     if in_port is True:
+    #         self.addInputPort('in')
+    #
+    #     if out_port is True:
+    #         self.addOutputPort('out')
+    #
+    #     if connect is True:
+    #         if in_port is True and out_port is True:
+    #             self.getSendPort('in').connect(self.getReturnPort('out'))
 
     def setGroupDisplay(self, bool):
         """

@@ -3,6 +3,7 @@ from Katana import NodegraphAPI
 from Widgets2 import (
     AbstractSuperToolNode
 )
+from Utils2 import nodeutils
 
 
 class TwoFaceSuperToolNode(AbstractSuperToolNode):
@@ -10,7 +11,7 @@ class TwoFaceSuperToolNode(AbstractSuperToolNode):
         self.setGroupDisplay(False)
 
         # add input ports...
-        self.createIOPorts()
+        nodeutils.createIOPorts(self)
         self.getInputPortByIndex(0).connect(self.getSendPort('in'))
         self.getOutputPortByIndex(0).connect(self.getReturnPort('out'))
 
