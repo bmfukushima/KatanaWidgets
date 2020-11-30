@@ -76,6 +76,9 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         # events
         self.setHeaderItemDropEvent(self.nodeMovedEvent)
         self.setHeaderItemTextChangedEvent(self.nodeNameChangedEvent)
+        self.setHeaderItemEnabledEvent(self.nodeDisableEvent)
+        self.setHeaderItemDeleteEvent(self.nodeDeleteEvent)
+
         header_delegate_widget.setUserFinishedEditingEvent(self.createNewNode)
         # setup attrs
         self.setMultiSelect(True)
@@ -138,15 +141,15 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         return node
 
     """ EVENTS """
-    def disableNodeEvent(self, item, enabled):
+    def nodeDisableEvent(self, item, enabled):
         """ enable/disable event """
         node = self.getNodeFromItem(item)
         node.setBypassed(not enabled)
 
-    def deleteNodeEvent(self, item):
+    def nodeDeleteEvent(self, item):
         """ delete event """
-        node = self.getChildNodeListFromItem(item)
-        nodeutils.disconnectNode(input=True, output=True, reconnect=True)
+        node = self.getNodeFromItem(item)
+        nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
         node.delete()
 
     def createNewNode(self, widget, value):
