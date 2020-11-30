@@ -26,11 +26,17 @@ import Katana
 # import super tools
 import SimpleTool
 import NodeTree
+import SuperToolTemplate
 
 from MultiTools import VariableManager
 
 # compile list of super tools
-superdooper_tools_list = [SimpleTool, NodeTree, VariableManager]
+superdooper_tools_list = [
+    SimpleTool,
+    NodeTree,
+    VariableManager,
+    SuperToolTemplate
+]
 
 # register all super tools
 PluginRegistry = []

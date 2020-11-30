@@ -9,8 +9,8 @@ ToDo:
     Params
         - Input types?
 """
-from Node import TansuStackNode as NODE
+from Node import SuperToolNode as NODE
 def EDITOR():
-    from Editor import TansuStackEditor
-    return TansuStackEditor
-NAME = 'TansuStack'
+    from Editor import SuperToolEditor
+    return SuperToolEditor
+NAME = 'SuperToolExample'

@@ -1,7 +1,23 @@
+"""
+KatanaWindow --> mainWindow
+    | -- LayoutWidget
+        | -- LayoutFrame
+            | -- QStackedWidget --> qt_tabwidget_stackedwidget
+                | -- TabWithTimeLine
+                    | -- ParameterPanel --> ParametersTab
+                        | -- PanelScrollArea
+                            | -- QWidget --> qt_scrollarea_viewport
+                                | -- QWidget
+                                    | -- NodeGroupFormWidget
+                                        | -- QWidget --> popdown
+                                            | -- ParameterFormWidget
+
+"""
+
 from qtpy.QtWidgets import (
     QWidget, QStackedLayout, QTabWidget, QVBoxLayout
 )
-from qtpy.QtCore import QEvent
+from qtpy.QtCore import QEvent, Qt
 
 from cgwidgets.utils import getWidgetAncestor
 
@@ -33,16 +49,41 @@ class AbstractSuperToolEditor(QWidget):
         self.__resizeEventFilter = ResizeFilter(self)
 
         # todo issue getting params scroll area?
-        # self.getKatanaParamsScrollAreaWidget().parent().parent().installEventFilter(self.__resizeEventFilter)
-        # self.setFixedHeight(self.getKatanaParamsScrollAreaWidget().height())
+        # I bet this is the issue with the resize
+        # is that it can't get the ParamsScrollAreaWidget
+        scroll_area_widget = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
+        scroll_area_widget.parent().parent().installEventFilter(self.__resizeEventFilter)
+        self.setFixedHeight(scroll_area_widget.height())
+        self.setScrollBarPolicy(Qt.Horizontal, Qt.ScrollBarAlwaysOff)
 
-    def getKatanaParamsScrollAreaWidget(self):
+    """ GET KATANA WIDGETS """
+    @staticmethod
+    def getKatanaQtScrollAreaViewport(widget):
         """
         Returns the params widget that is central widget of the scroll area
         so that we can properly set width/height.
         """
-        print(self.parent().parent().parent().parent())
-        return self.parent().parent().parent().parent()
+        if widget.objectName() == "qt_scrollarea_viewport":
+            return widget
+        else:
+            return AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(widget.parent())
+
+    @staticmethod
+    def getKatanaWidgetByobjectName(widget, object_name):
+        """
+        Searchs up the Katana widget hierarchy to find the one with the given name
+
+        If no widget is found, returns None
+
+        Args:
+            widget (QWidget): to start searching from
+            object_name (str): string of widget.objectName() to search for
+        """
+        if not widget: return
+        if widget.objectName() == object_name:
+            return widget
+        else:
+            return AbstractSuperToolEditor.getKatanaWidgetByobjectName(widget.parent(), object_name)
 
     def setupEventHandlers(self, bool):
         """
@@ -72,16 +113,57 @@ class AbstractSuperToolEditor(QWidget):
         """
         Updates the size of the GUI to match that of the parameters pane...
         no more of these random af scroll bars everywhere.
+
+        # todo automatic size updates
+        # horizontal scrollbar disabled in __init__
+        # need to track all of these down... hard coded right now
+            height =
+                hscrollbar.height()
+                + margins.top()
+                + margins.bottom()
+                + frame.height()
+            width =
+                vscrollbar.width()
+                + margins.left()
+                + margins.right()
         """
-        # set width
-        width = self.getKatanaParamsScrollAreaWidget().width()
-        width -= 25
+        # get attrs
+        viewport = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
+        scrollarea = viewport.parent()
+        vertical_scrollbar = scrollarea.verticalScrollBar()
+        horizontal_scrollbar = scrollarea.horizontalScrollBar()
+
+        # get dimensions
+        margins = 5
+        width = viewport.width() - margins
+        height = viewport.height() - margins - 50
+        if vertical_scrollbar.isVisible():
+            width -= vertical_scrollbar.width()
+        #
+        # if horizontal_scrollbar.isVisible():
+        #     height -= horizontal_scrollbar.height()
+
+        # set size
         self.setFixedWidth(width)
 
-        # set height
-        height = self.getKatanaParamsScrollAreaWidget().height()
         if self.height() < height:
             self.setFixedHeight(height)
+
+    def setScrollBarPolicy(self, direction, scrollbar_policy):
+        if direction not in [Qt.Vertical, Qt.Horizontal]: return
+
+        viewport = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
+        scrollarea = viewport.parent()
+
+        # enable scroll bar
+        if direction == Qt.Vertical:
+            scrollarea.setVerticalScrollBarPolicy(scrollbar_policy)
+        elif direction == Qt.Horizontal:
+            scrollarea.setHorizontalScrollBarPolicy(scrollbar_policy)
+
+        # disable scroll bar
+
+
 
     def insertResizeBar(self, layout=None, index=None):
         """

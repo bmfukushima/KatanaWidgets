@@ -17,9 +17,9 @@ except (ImportError, ModuleNotFoundError) as e:
 from Utils2 import nodeutils
 
 
-class TansuStackNode(AbstractSuperToolNode):
+class SuperToolNode(AbstractSuperToolNode):
     def __init__(self):
-        super(TansuStackNode, self).__init__()
+        super(SuperToolNode, self).__init__()
 
         # initialize base node
         self.setGroupDisplay(False)

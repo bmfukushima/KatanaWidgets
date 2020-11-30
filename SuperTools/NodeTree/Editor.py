@@ -27,7 +27,6 @@ class NodeTreeEditor(AbstractSuperToolEditor):
         self._node_type = "<multi>"
         # setup layout
         QVBoxLayout(self)
-        self.layout().setAlignment(Qt.AlignTop)
 
         # create node tree
         self._node_tree = NodeTreeMainWidget(parent=self, node=self.node)
@@ -59,7 +58,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         view = NodeTreeViewWidget(self)
         # setup header
         self.setHeaderViewWidget(view)
-        self.setHeaderPosition(attrs.WEST, attrs.SOUTH)
+        self.setHeaderPosition(attrs.WEST, attrs.NORTH)
         self.setHeaderData(['name', 'type'])
 
         # set dynamic
