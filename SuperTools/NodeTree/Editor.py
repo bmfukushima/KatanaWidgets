@@ -1,4 +1,10 @@
+"""
+- Needs to move to custom widget and supertool can inherit that
+- Need a node interface to connect nodes into it
 
+
+
+"""
 from qtpy.QtWidgets import (
     QLabel, QVBoxLayout, QWidget
 )
@@ -10,7 +16,7 @@ from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderTreeView, StringI
 
 try:
     from Katana import UI4, NodegraphAPI, Utils
-    from Widgets2 import AbstractSuperToolEditor, NodeTypeListWidget
+    from Widgets2 import AbstractSuperToolEditor, NodeTypeListWidget, AbstractParametersDisplayWidget
     from Utils2 import nodeutils
 except (ImportError, ModuleNotFoundError) as e:
     pass
@@ -66,7 +72,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         self.setDelegateType(
             TansuModelViewWidget.DYNAMIC,
             dynamic_widget=NodeTreeDynamicWidget,
-            dynamic_function=NodeTreeDynamicWidget.updateGUI
+            dynamic_function=NodeTreeDynamicWidget.displayNodeParameters
         )
 
         # node create widget
@@ -82,10 +88,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         header_delegate_widget.setUserFinishedEditingEvent(self.createNewNode)
         # setup attrs
         self.setMultiSelect(True)
-        # set hotkey to activate
-        #self.TOGGLE_DELEGATE_KEYS = [Qt.Key_T, Qt.Key_1]
-
-        # print(self, self.node)
+        self.setIsDelegateHeaderShown(False)
 
     """ GET ITEM DATA """
     def getSelectedIndex(self):
@@ -189,6 +192,8 @@ class NodeTreeMainWidget(TansuModelViewWidget):
                 # special case for root
                 else:
                     group_item = parent_index.internalPointer()
+                    if not group_item:
+                        group_item = self.model().getRootItem()
 
             else:
                 group_item = self.model().getRootItem()
@@ -196,7 +201,6 @@ class NodeTreeMainWidget(TansuModelViewWidget):
 
             # get node list
             node_list = self.getChildNodeListFromItem(group_item)
-
             nodeutils.connectInsideGroup(node_list, parent_node)
 
             # reset widget
@@ -262,7 +266,7 @@ class NodeTreeViewWidget(TansuHeaderTreeView):
         super(NodeTreeViewWidget, self).__init__(parent)
 
 
-class NodeTreeDynamicWidget(QWidget):
+class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
     """
     Simple example of overloaded class to be used as a dynamic widget for
     the TansuModelViewWidget.
@@ -270,24 +274,21 @@ class NodeTreeDynamicWidget(QWidget):
     def __init__(self, parent=None):
         super(NodeTreeDynamicWidget, self).__init__(parent)
         QVBoxLayout(self)
-        self.label = QLabel('init')
-        self.layout().addWidget(self.label)
+
 
     @staticmethod
-    def updateGUI(parent, widget, item):
+    def displayNodeParameters(parent, widget, item):
         """
+        parent (TansuHeaderTreeView)
         widget (TansuModelDelegateWidget)
         item (TansuModelItem)
         """
         # ToDo Update node selected display
         #
         if item:
-            print ('----------------------------')
-            #print(parent, widget, item)
-            print(item.columnData())
-            name = parent.model().getItemName(item)
-            widget.setName(name)
-            widget.getMainWidget().label.setText(name)
+            this = widget.getMainWidget()
+            node_list = [NodegraphAPI.GetNode(item.columnData()['name'])]
+            this.populateParameters(node_list, hide_title=False)
 
 
 if __name__ == "__main__":

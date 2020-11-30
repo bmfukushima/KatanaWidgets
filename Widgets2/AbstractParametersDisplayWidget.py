@@ -50,13 +50,16 @@ class AbstractParametersDisplayWidget(QScrollArea):
         for i in reversed(range(self.getLayout().count())):
             self.getLayout().itemAt(i).widget().setParent(None)
 
-    def populateParameters(self, node_list):
+    def populateParameters(self, node_list, hide_title=None):
         """
         Displays the parameters in the bottom of the GUI,
         this is currently linked to the Alt+W hotkey.
 
         Args:
             node_list (list): list of nodes that will have their parameters displayed.
+            hide_title (bool): determines if the title should be hidden or not.  The
+                default value of None will force it to choose.  If there is more than 1
+                node it will be shown, less than 1 node, hidden.
         """
         # clear layout
         self.clearLayout()
@@ -64,10 +67,11 @@ class AbstractParametersDisplayWidget(QScrollArea):
         node_list = self.filterNodeList(node_list)
 
         # get hide
-        if len(node_list) < 2:
-            hide_title = True
-        else:
-            hide_title = False
+        if hide_title is None:
+            if len(node_list) < 2:
+                hide_title = True
+            else:
+                hide_title = False
 
         # display nodes
         for node in node_list:
@@ -84,6 +88,7 @@ class AbstractParametersDisplayWidget(QScrollArea):
                     if there is only 1 then it will be hidden.
         """
         teleparam_widget = self.__createTeleparamWidget(node_name, hide_title=hide_title)
+        print('hide title === ' , hide_title)
         self.getLayout().addWidget(teleparam_widget)
         teleparam_widget.show()
         self.update()
