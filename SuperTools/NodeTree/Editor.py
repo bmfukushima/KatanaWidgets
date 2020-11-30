@@ -75,8 +75,8 @@ class NodeTreeMainWidget(TansuModelViewWidget):
 
         # events
         self.setHeaderItemDropEvent(self.nodeMovedEvent)
-        header_delegate_widget.setUserFinishedEditingEvent(self.createNewNode)
         self.setHeaderItemTextChangedEvent(self.nodeNameChangedEvent)
+        header_delegate_widget.setUserFinishedEditingEvent(self.createNewNode)
         # setup attrs
         self.setMultiSelect(True)
         # set hotkey to activate
@@ -84,6 +84,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
 
         # print(self, self.node)
 
+    """ GET ITEM DATA """
     def getSelectedIndex(self):
         """Returns the currently selected item"""
         indexes = self.getAllSelectedIndexes()
@@ -118,7 +119,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
 
         return node
 
-    def getNodeListFromItem(self, item):
+    def getChildNodeListFromItem(self, item):
         """
         Gets all of the node children from the specified item
 
@@ -131,7 +132,23 @@ class NodeTreeMainWidget(TansuModelViewWidget):
 
         return node_list
 
+    def getNodeFromItem(self, item):
+        node_name = item.columnData()['name']
+        node = NodegraphAPI.GetNode(node_name)
+        return node
+
     """ EVENTS """
+    def disableNodeEvent(self, item, enabled):
+        """ enable/disable event """
+        node = self.getNodeFromItem(item)
+        node.setBypassed(not enabled)
+
+    def deleteNodeEvent(self, item):
+        """ delete event """
+        node = self.getChildNodeListFromItem(item)
+        nodeutils.disconnectNode(input=True, output=True, reconnect=True)
+        node.delete()
+
     def createNewNode(self, widget, value):
         """ User creating new node """
         # get node
@@ -175,7 +192,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
                 parent_node = self.node
 
             # get node list
-            node_list = self.getNodeListFromItem(group_item)
+            node_list = self.getChildNodeListFromItem(group_item)
 
             nodeutils.connectInsideGroup(node_list, parent_node)
 
@@ -218,7 +235,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
             node.setParent(parent_node)
 
         # reconnect node to new parent
-        node_list = self.getNodeListFromItem(parent)
+        node_list = self.getChildNodeListFromItem(parent)
         nodeutils.connectInsideGroup(node_list, parent_node)
 
         # reconnect old parent
