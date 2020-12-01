@@ -84,6 +84,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         self.setHeaderItemTextChangedEvent(self.nodeNameChangedEvent)
         self.setHeaderItemEnabledEvent(self.nodeDisableEvent)
         self.setHeaderItemDeleteEvent(self.nodeDeleteEvent)
+        self.setHeaderDelegateToggleEvent(self.nodeCreationShowEvent)
 
         header_delegate_widget.setUserFinishedEditingEvent(self.createNewNode)
         # setup attrs
@@ -144,6 +145,14 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         return node
 
     """ EVENTS """
+    def nodeCreationShowEvent(self, event, enabled):
+        """
+        Run when the node creation menu is shown
+        """
+        key = event.text()
+        if enabled:
+            self.headerDelegateWidget().setText(key)
+
     def nodeDisableEvent(self, item, enabled):
         """ enable/disable event """
         node = self.getNodeFromItem(item)
@@ -209,7 +218,6 @@ class NodeTreeMainWidget(TansuModelViewWidget):
 
             # TODO Set focus back on header?
             header_view_widget = self.headerViewWidget()
-            print(header_view_widget)
             header_view_widget.setFocus()
         else:
             return
