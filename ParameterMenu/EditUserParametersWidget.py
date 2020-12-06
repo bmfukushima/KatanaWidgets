@@ -477,7 +477,8 @@ class UserParametersWidget(TansuModelViewWidget):
         try:
             new_parent_param = parent.columnData()['parameter']
         except KeyError:
-            new_parent_param = NodegraphAPI.GetNode('Group').getParameters()
+            #todo keep an eye on this...
+            new_parent_param = self.node.getParameters()
 
         # move all selected parameters
         for item in item_list:
