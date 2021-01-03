@@ -1,2 +1,1 @@
 from .VariableManager import SuperTool as VariableManager
-from .BackdropGroupNode import createBackdropGroupNodeInputPort as createBackdropGroupNodeInputPort

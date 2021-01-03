@@ -5,8 +5,8 @@ from ParameterMenu import installCustomParametersMenu
 installCustomParametersMenu()
 
 # setup backdrop group
-from MultiTools.BackdropGroupNode import installBackdropGroupNode
-installBackdropGroupNode()
+# from MultiTools.BackdropGroupNode import installBackdropGroupNode
+# installBackdropGroupNode()
 
 
 # def test(*args):

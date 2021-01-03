@@ -1,4 +1,0 @@
-# from .Startup.BackdropGroupNode import installBackdropGroupNode as installBackdropGroupNode
-# from .Startup.BackdropGroupNode import createBackdropGroupNodeInputPort as createBackdropGroupNodeInputPort
-from .Startup import installBackdropGroupNode as installBackdropGroupNode
-from .Startup import createBackdropGroupNodeInputPort as createBackdropGroupNodeInputPort
