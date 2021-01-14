@@ -175,6 +175,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         # init GUI
         QVBoxLayout(self)
         self.main_widget = VariableManagerMainWidget(self, node)
+
         resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
         self.layout().addWidget(self.main_widget)
         self.layout().addWidget(resize_widget)
@@ -246,14 +247,16 @@ class VariableManagerEditor(AbstractSuperToolEditor):
 
     def hideEvent(self, event):
         # if the user is in the middle of an event, cancel that event
-        current_index = self.main_widget.layout().currentIndex()
-        if current_index == 1:
-            self.main_widget.versions_display_widget.cancelPressed()
-        elif current_index == 2:
-            self.main_widget.publish_display_widget.cancelPressed()
-        elif current_index == 3:
-            self.main_widget.warning_display_widget.cancelPressed()
-        return AbstractSuperToolEditor.hideEvent(self, event)
+        # todo current index 0 not being set... not showing widget by default =\
+        if hasattr(self, "main_widget"):
+            current_index = self.main_widget.layout().currentIndex()
+            if current_index == 1:
+                self.main_widget.versions_display_widget.cancelPressed()
+            elif current_index == 2:
+                self.main_widget.publish_display_widget.cancelPressed()
+            elif current_index == 3:
+                self.main_widget.warning_display_widget.cancelPressed()
+            return AbstractSuperToolEditor.hideEvent(self, event)
 
     def showEvent(self, event):
         self.__updateGUI(event, check_besterest=False)

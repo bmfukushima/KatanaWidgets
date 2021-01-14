@@ -170,6 +170,8 @@ class VariableManagerWidget(QWidget):
         self.r1_hbox.addWidget(self.variable_menu_frame)
         self.r1_hbox.addWidget(self.node_type_menu_frame)
 
+        #self.r1_widget.setFixedHeight(75)
+
     def createVariableStack(self):
         """
         Creates the GSV manipulation area.  This includes the embedded
@@ -279,18 +281,18 @@ class VariableManagerCreateNewItemWidget(QWidget):
 
         self.item_type_button.setStyleSheet("""
             outline: None;
-            border-right: {spacing}px solid rgba{tansu_handle};
+            border-right: {spacing}px solid rgba{rgba_outline};
         """.format(
             spacing=str(self.spacing),
-            tansu_handle=iColor['rgba_tansu_handle']
+            rgba_outline=iColor['rgba_outline']
         ))
 
         self.enter_button.setStyleSheet("""
             outline: None;
-            border-left: {spacing}px solid rgba{tansu_handle};
+            border-left: {spacing}px solid rgba{rgba_outline};
         """.format(
             spacing=str(self.spacing),
-            tansu_handle=iColor['rgba_tansu_handle']
+            rgba_outline=iColor['rgba_outline']
         ))
 
     """ EVENTS """
