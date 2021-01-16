@@ -4,7 +4,7 @@ from qtpy.QtWidgets import (
     QWidget,  QVBoxLayout, QHBoxLayout,
     QPushButton, QLineEdit, QTreeWidget,
     QHeaderView, QAbstractItemView,
-    QMenu, QTreeWidgetItem, QApplication)
+    QMenu, QTreeWidgetItem, QApplication, QSizePolicy)
 from qtpy.QtCore import Qt
 from qtpy.QtGui import (
     QColor, QPixmap, QIcon, QCursor, QBrush)
@@ -156,7 +156,6 @@ class VariableManagerWidget(QWidget):
         )
         self.variable_menu_frame.setDirection(Qt.Vertical)
         self.variable_menu = self.variable_menu_frame.getInputWidget()
-
         # node type menu
         self.node_type_menu_frame = LabelledInputWidget(
             parent=self,
@@ -167,10 +166,19 @@ class VariableManagerWidget(QWidget):
         self.node_type_menu_frame.setDirection(Qt.Vertical)
 
         # add widgets to layout
-        self.r1_hbox.addWidget(self.variable_menu_frame)
-        self.r1_hbox.addWidget(self.node_type_menu_frame)
+        frames = [self.variable_menu_frame, self.node_type_menu_frame]
+        for f in frames:
+            self.r1_hbox.addWidget(f)
 
-        #self.r1_widget.setFixedHeight(75)
+            f.setHandleWidth(0)
+            #f.setSeparatorWidth(2)
+            #f.setSeparatorLength(100)
+
+            f.setSizePolicy(
+                QSizePolicy.MinimumExpanding, QSizePolicy.Fixed)
+
+            f.setDefaultLabelLength(30)
+            self.node_type_menu_frame.resetSliderPositionToDefault()
 
     def createVariableStack(self):
         """
