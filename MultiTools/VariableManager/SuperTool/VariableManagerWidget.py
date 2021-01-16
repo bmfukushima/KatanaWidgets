@@ -333,6 +333,8 @@ class VariableManagerCreateNewItemWidget(QWidget):
                         'Create New {item_type}'.format(item_type=item_type)
                     )
 
+                    self.main_widget.updateOptionsList()
+
     def createNewItem(self):
         """
         Creates a new item based off of what type of item is

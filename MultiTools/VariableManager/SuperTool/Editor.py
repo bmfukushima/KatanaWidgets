@@ -181,9 +181,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         self.layout().addWidget(resize_widget)
 
         # set up node graph destruction handler
-        #param_widget = self.parent().parent().parent().parent().parent().parent()
-        #print('param widget == ', param_widget)
-        #self.main_widget.variable_manager_widget.nodegraph_widget.setupDestroyNodegraphEvent(widget_list=[param_widget])
         self.main_widget.variable_manager_widget.nodegraph_widget.setupDestroyNodegraphEvent()
 
         # update on init
@@ -299,6 +296,9 @@ class VariableManagerEditor(AbstractSuperToolEditor):
                     "Create GSV",
                     pattern_name
                 )
+
+                #options_list.append(pattern_name)
+
 
     def __addGSVPattern(self, pattern_name):
         """
