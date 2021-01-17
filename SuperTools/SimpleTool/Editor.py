@@ -105,7 +105,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.getDesignWidget().setHeaderItemIsDragEnabled(False)
         self.getDesignWidget().setHeaderItemIsDropEnabled(False)
         self.getDesignWidget().setHeaderItemIsEditable(False)
-
+        self.getDesignWidget().setDelegateHeaderIsShown(True)
     # def getEventTypes(self):
     #     """
     #     Right now this is just printing out all the different args and what not...
