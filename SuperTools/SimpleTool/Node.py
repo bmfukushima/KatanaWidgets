@@ -1,11 +1,7 @@
 from Katana import NodegraphAPI
 
-try:
-    from Widgets2 import (
-        TwoFaceSuperToolNode
-    )
-except (ImportError, ModuleNotFoundError) as e:
-    pass
+
+from Widgets2 import TwoFaceSuperToolNode
 
 
 class SimpleToolNode(TwoFaceSuperToolNode):

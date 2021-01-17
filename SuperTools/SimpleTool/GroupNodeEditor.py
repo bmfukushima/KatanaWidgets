@@ -3,15 +3,11 @@ from qtpy.QtCore import Qt
 
 from Widgets2 import (
     AbstractNodegraphWidget,
-    AbstractParametersDisplayWidget
-)
+    AbstractParametersDisplayWidget)
 
 from cgwidgets.widgets import TansuBaseWidget
 
-try:
-    from Katana import UI4
-except ModuleNotFoundError:
-    pass
+from Katana import UI4
 
 
 class GroupNodeEditorMainWidget(QWidget):

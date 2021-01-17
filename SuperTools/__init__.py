@@ -41,6 +41,7 @@ superdooper_tools_list = [
 # register all super tools
 PluginRegistry = []
 for superdooper_tool in superdooper_tools_list:
+    print(superdooper_tool)
     PluginRegistry.append((
             "SuperTool", 2, superdooper_tool.NAME,
             (

@@ -37,13 +37,8 @@ from cgwidgets.widgets import (
 from cgwidgets.views import AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestor, attrs
 
-# TODO Temp
-try:
-    # katana
-    from Katana import Utils, NodegraphAPI
-except:
-    # local
-    pass
+
+from Katana import Utils, NodegraphAPI
 
 
 class EventWidget(QWidget):

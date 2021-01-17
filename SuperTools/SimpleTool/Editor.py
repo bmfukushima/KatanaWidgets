@@ -58,13 +58,11 @@ from qtpy.QtCore import Qt, QEvent
 
 from cgwidgets.widgets import TansuBaseWidget, TansuHeaderListView
 
-try:
-    from Katana import UI4
-    from Widgets2 import (
-        TwoFacedSuperToolWidget
-    )
-except (ImportError, ModuleNotFoundError) as e:
-    pass
+
+from Katana import UI4
+from Widgets2 import (
+    TwoFacedSuperToolWidget
+)
 
 from .GroupNodeEditor import GroupNodeEditorMainWidget
 from .EventsWidget import EventWidget
@@ -86,6 +84,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.node = node
         self.main_node = node.getChildByIndex(0)
         self.events_param = self.main_node.getParameters().createChildString("events_data", "")
+        self.getDesignWidget().setDelegateHeaderIsShown(True)
 
         # create widgets
         self.group_node_editor = GroupNodeEditorMainWidget(self, self.node, self.main_node)
@@ -105,7 +104,8 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.getDesignWidget().setHeaderItemIsDragEnabled(False)
         self.getDesignWidget().setHeaderItemIsDropEnabled(False)
         self.getDesignWidget().setHeaderItemIsEditable(False)
-        self.getDesignWidget().setDelegateHeaderIsShown(True)
+        print('design widget ===> ', self.getDesignWidget())
+
     # def getEventTypes(self):
     #     """
     #     Right now this is just printing out all the different args and what not...
@@ -130,7 +130,6 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 class SimpleToolViewWidget(TansuHeaderListView):
     def __init__(self, parent=None):
         super(SimpleToolViewWidget, self).__init__(parent)
-
 
 
 if __name__ == "__main__":

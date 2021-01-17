@@ -14,12 +14,11 @@ from qtpy.QtCore import Qt, QEvent
 from cgwidgets.utils import attrs
 from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderTreeView, StringInputWidget
 
-try:
-    from Katana import UI4, NodegraphAPI, Utils
-    from Widgets2 import AbstractSuperToolEditor, NodeTypeListWidget, AbstractParametersDisplayWidget
-    from Utils2 import nodeutils
-except (ImportError, ModuleNotFoundError) as e:
-    pass
+
+from Katana import UI4, NodegraphAPI, Utils
+from Widgets2 import AbstractSuperToolEditor, NodeTypeListWidget, AbstractParametersDisplayWidget
+from Utils2 import nodeutils
+
 
 class NodeTreeEditor(AbstractSuperToolEditor):
     def __init__(self, parent, node):
@@ -89,7 +88,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         header_delegate_widget.setUserFinishedEditingEvent(self.createNewNode)
         # setup attrs
         self.setMultiSelect(True)
-        self.setIsDelegateHeaderShown(False)
+        self.setDelegateHeaderIsShown(False)
 
     """ GET ITEM DATA """
     def getSelectedIndex(self):

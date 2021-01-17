@@ -9,11 +9,8 @@ from cgwidgets.utils import attrs
 from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderListView
 
 
-try:
-    from Katana import UI4
-    from Widgets2 import AbstractSuperToolEditor
-except (ImportError, ModuleNotFoundError) as e:
-    pass
+from Katana import UI4
+from Widgets2 import AbstractSuperToolEditor
 
 
 class SuperToolEditor(AbstractSuperToolEditor):

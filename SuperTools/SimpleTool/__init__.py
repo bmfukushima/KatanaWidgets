@@ -9,6 +9,7 @@ ToDo:
     Params
         - Input types?
 """
+
 from Node import SimpleToolNode as NODE
 def EDITOR():
     from Editor import SimpleToolEditor

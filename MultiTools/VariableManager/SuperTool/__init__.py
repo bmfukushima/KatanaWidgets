@@ -3,9 +3,11 @@
 # def GetEditor():
 #     from Editor import VariableManagerEditor
 #     return VariableManagerEditor
-
-from Node import VariableManagerNode as NODE
-def EDITOR():
-    from Editor import VariableManagerEditor
-    return VariableManagerEditor
-NAME = 'VariableManager'
+try:
+    from Node import VariableManagerNode as NODE
+    def EDITOR():
+        from Editor import VariableManagerEditor
+        return VariableManagerEditor
+    NAME = 'VariableManager'
+except:
+    pass
