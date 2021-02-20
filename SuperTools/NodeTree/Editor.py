@@ -12,11 +12,14 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt, QEvent
 
 from cgwidgets.utils import attrs
-from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderTreeView, StringInputWidget
+from cgwidgets.widgets import TansuModelViewWidget, StringInputWidget, NodeTypeListWidget
+from cgwidgets.views import AbstractDragDropTreeView
+from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI
+
 
 
 from Katana import UI4, NodegraphAPI, Utils
-from Widgets2 import AbstractSuperToolEditor, NodeTypeListWidget, AbstractParametersDisplayWidget
+from Widgets2 import AbstractSuperToolEditor, AbstractParametersDisplayWidget
 from Utils2 import nodeutils
 
 
@@ -75,20 +78,20 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         )
 
         # node create widget
-        header_delegate_widget = NodeTreeHeaderDelegate(self)
-        self.setHeaderDelegateWidget(header_delegate_widget)
+        self.node_create_widget = NodeTreeHeaderDelegate(self)
+        self.addHeaderDelegateWidget([Qt.Key_Q, Qt.Key_Tab], self.node_create_widget, modifier=Qt.NoModifier, focus=True)
+        self.node_create_widget.setUserFinishedEditingEvent(self.createNewNode)
 
         # events
         self.setHeaderItemDropEvent(self.nodeMovedEvent)
         self.setHeaderItemTextChangedEvent(self.nodeNameChangedEvent)
         self.setHeaderItemEnabledEvent(self.nodeDisableEvent)
         self.setHeaderItemDeleteEvent(self.nodeDeleteEvent)
-        self.setHeaderDelegateToggleEvent(self.nodeCreationShowEvent)
+        #self.setHeaderDelegateToggleEvent(self.nodeCreationShowEvent)
 
-        header_delegate_widget.setUserFinishedEditingEvent(self.createNewNode)
         # setup attrs
         self.setMultiSelect(True)
-        self.setDelegateHeaderIsShown(False)
+        self.setDelegateTitleIsShown(False)
 
     """ GET ITEM DATA """
     def getSelectedIndex(self):
@@ -144,13 +147,25 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         return node
 
     """ EVENTS """
-    def nodeCreationShowEvent(self, event, enabled):
-        """
-        Run when the node creation menu is shown
-        """
-        key = event.text()
-        if enabled:
-            self.headerDelegateWidget().setText(key)
+    # def event(self, event, *args, **kwargs):
+    #     """
+    #     Registering key presses in here as for some reason
+    #     they don't work in the keyPressEvent method...
+    #     """
+    #     if event.type() == QEvent.KeyPress:
+    #         # tab
+    #         if event.key() == Qt.Key_Tab:
+    #             print('tab')
+    #             return True
+    #
+    #     return TansuModelViewWidget.event(self, event)
+    # def nodeCreationShowEvent(self, enabled, event, widget):
+    #     """
+    #     Run when the node creation menu is shown
+    #     """
+    #     key = event.text()
+    #     if enabled:
+    #         self.node_create_widget.setText(key)
 
     def nodeDisableEvent(self, item, enabled):
         """ enable/disable event """
@@ -270,7 +285,7 @@ class NodeTreeHeaderDelegate(NodeTypeListWidget):
         super(NodeTreeHeaderDelegate, self).__init__(parent)
 
 
-class NodeTreeViewWidget(TansuHeaderTreeView):
+class NodeTreeViewWidget(AbstractDragDropTreeView):
     def __init__(self, parent=None):
         super(NodeTreeViewWidget, self).__init__(parent)
 
@@ -283,7 +298,6 @@ class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
     def __init__(self, parent=None):
         super(NodeTreeDynamicWidget, self).__init__(parent)
         QVBoxLayout(self)
-
 
     @staticmethod
     def displayNodeParameters(parent, widget, item):

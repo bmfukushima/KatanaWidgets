@@ -21,9 +21,8 @@ except ImportError:
 from cgwidgets.settings.colors import (
     iColor
 )
-
-from cgwidgets.widgets import (
-    TansuBaseWidget, LabelledInputWidget, ListInputWidget, FileBrowserInputWidget)
+from cgwidgets.widgets import (LabelledInputWidget, ListInputWidget, FileBrowserInputWidget)
+from cgwidgets.views import TansuView
 from cgwidgets.utils import updateStyleSheet, getFontSize, getWidgetAncestorByName
 
 from .ItemTypes import (
@@ -120,7 +119,7 @@ class VariableManagerWidget(QWidget):
         self.r2_hbox = QHBoxLayout(self.r2_widget)
         self.r2_hbox.addWidget(self.publish_dir)
 
-        self.splitter = TansuBaseWidget(self, orientation=Qt.Vertical)
+        self.splitter = TansuView(self, orientation=Qt.Vertical)
         self.splitter.setObjectName('main_splitter')
 
         # row 2.1
@@ -209,7 +208,7 @@ class VariableManagerWidget(QWidget):
         widget.setLayout(vbox)
 
         # Create Widgets
-        self.variable_splitter = TansuBaseWidget(self, orientation=Qt.Horizontal)
+        self.variable_splitter = TansuView(self, orientation=Qt.Horizontal)
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
         self.variable_browser_widget.setObjectName("Variable Browser Widget")

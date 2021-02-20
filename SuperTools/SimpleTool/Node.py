@@ -1,6 +1,5 @@
 from Katana import NodegraphAPI
 
-
 from Widgets2 import TwoFaceSuperToolNode
 
 

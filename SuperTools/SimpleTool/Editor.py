@@ -56,16 +56,15 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt, QEvent
 
 
-from cgwidgets.widgets import TansuBaseWidget, TansuHeaderListView
-
+from cgwidgets.views import TansuView, AbstractDragDropListView
 
 from Katana import UI4
 from Widgets2 import (
-    TwoFacedSuperToolWidget
+    TwoFacedSuperToolWidget, EventWidget
 )
 
 from .GroupNodeEditor import GroupNodeEditorMainWidget
-from .EventsWidget import EventWidget
+#from .EventsWidget import EventWidget
 
 
 class SimpleToolEditor(TwoFacedSuperToolWidget):
@@ -84,8 +83,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.node = node
         self.main_node = node.getChildByIndex(0)
         self.events_param = self.main_node.getParameters().createChildString("events_data", "")
-        self.getDesignWidget().setDelegateHeaderIsShown(True)
-
+        self.getDesignWidget().setDelegateTitleIsShown(False)
         # create widgets
         self.group_node_editor = GroupNodeEditorMainWidget(self, self.node, self.main_node)
         self.events_widget = EventWidget(self, self.main_node)
@@ -127,7 +125,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         return TwoFacedSuperToolWidget.showEvent(self, event)
 
 
-class SimpleToolViewWidget(TansuHeaderListView):
+class SimpleToolViewWidget(AbstractDragDropListView):
     def __init__(self, parent=None):
         super(SimpleToolViewWidget, self).__init__(parent)
 

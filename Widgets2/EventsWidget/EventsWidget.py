@@ -1,4 +1,16 @@
 """
+Hierarchy:
+EventWidget --> (QWidget)
+    | -- VBox
+        | -- new_event_button --> (QPushButton)
+        | -- main_widget --> (TansuModelViewWidget)
+            | -- label type (EventsLabelWidget --> TansuLabelWidget)
+            | -- Dynamic Widget (UserInputMainWidget --> QWidget)
+                | -- VBox
+                    | -- events_type_menu ( EventTypeInputWidget)
+                    | -- script_widget (DynamicArgsInputWidget)
+                    | -- dynamic_args_widget (DynamicArgsWidget)
+                            | -* DynamicArgsInputWidget
 TODO:
     *   Tansu dynamic...
             Show null widget to start?
@@ -19,21 +31,21 @@ TODO:
                             accept / cancel
         --> editing finished
                 | -- update model
+
 """
 
-import sys, os, json, imp
+import sys, os, json
 
 from qtpy.QtWidgets import (
-    QApplication, QLineEdit, QWidget, QVBoxLayout,
-    QHBoxLayout, QLabel, QPushButton, QMenu
-)
-
+    QApplication, QWidget, QVBoxLayout, QPushButton, QMenu)
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QCursor
+from qtpy.QtGui import QCursor, QKeySequence
+
 from cgwidgets.widgets import (
-    ListInputWidget, LabelledInputWidget, StringInputWidget, IntInputWidget, FloatInputWidget,
-    TansuModelViewWidget, TansuHeaderListView, TansuModelItem
+    ListInputWidget, LabelledInputWidget, StringInputWidget,
+    TansuModelViewWidget, TansuModelItem
 )
+from cgwidgets.views import AbstractDragDropListView
 from cgwidgets.views import AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestor, attrs
 
@@ -54,31 +66,39 @@ class EventWidget(QWidget):
 
     Widgets:
         | -- VBox
-                | -- new_event_button (PushButton)
-                | -- main_widget (TansuModelViewWidget)
-                        | -- label type (EventsLabelWidget --> TansuLabelWidget)
-                        | -- Dynamic Widget (UserInputMainWidget --> QWidget)
-                            | -- VBox
-                                    | -- events_type_menu ( EventTypeInputWidget)
-                                    | -- script_widget (DynamicArgsInputWidget)
-                                    | -- dynamic_args_widget (DynamicArgsWidget)
-                                            | -* DynamicArgsInputWidget
+            | -- new_event_button (PushButton)
+            | -- main_widget (TansuModelViewWidget)
+                | -- label type (EventsLabelWidget --> TansuLabelWidget)
+                | -- Dynamic Widget (UserInputMainWidget --> QWidget)
+                    | -- VBox
+                        | -- events_type_menu ( EventTypeInputWidget)
+                        | -- script_widget (DynamicArgsInputWidget)
+                        | -- dynamic_args_widget (DynamicArgsWidget)
+                                | -* DynamicArgsInputWidget
     """
     def __init__(self, parent=None, node=None):
         super(EventWidget, self).__init__(parent)
         self.loadEventTypesDict()
+        if not node:
+            node = NodegraphAPI.GetRootNode()
         self.main_node = node
+
         # setup attrs
         self._events_model = []
-
+        self._new_event_key = Qt.Key_Q
         # setup layout
         QVBoxLayout(self)
-        self.new_event_button = QPushButton('new_event')
-        self.new_event_button.clicked.connect(self.createNewEvent)
-        self.main_widget = self.setupEventsWidgetGUI()
 
-        self.layout().addWidget(self.new_event_button)
+        # create main widget
+        self.main_widget = self.setupEventsWidgetGUI()
         self.layout().addWidget(self.main_widget)
+
+        # create new event button
+        self.new_event_button = QPushButton('New Event ({key})'.format(key=QKeySequence(self._new_event_key).toString()))
+        self.new_event_button.clicked.connect(self.createNewEvent)
+        self.main_widget.addHeaderDelegateWidget(
+            [self._new_event_key], self.new_event_button)
+        self.new_event_button.show()
 
         # TODO Temp
         temp_button = QPushButton("test get event dict")
@@ -119,7 +139,7 @@ class EventWidget(QWidget):
         main_widget.setHeaderItemTextChangedEvent(self.eventTypeChanged)
 
         # set type / position
-        main_widget.setHeaderPosition(attrs.WEST)
+        main_widget.setHeaderPosition(attrs.WEST, attrs.SOUTH)
         main_widget.setDelegateType(
             TansuModelViewWidget.DYNAMIC,
             dynamic_widget=UserInputMainWidget,
@@ -223,6 +243,7 @@ class EventWidget(QWidget):
         Creates a dictionary which has all of the default event data.
         """
         args_file = os.path.dirname(__file__) + '/args.json'
+        #args_file = '/media/ssd01/dev/katana/KatanaWidgets/SuperTools/SimpleTool/args.json'
         with open(args_file, 'r') as args:
             self.event_dict = json.load(args)
             for event_type in self.event_dict.keys():
@@ -245,6 +266,9 @@ class EventWidget(QWidget):
     def loadEventsDataFromJSON(self):
         try:
             json_data = json.loads(self.main_node.getParameter("events_data").getValue(0))
+        except AttributeError:
+            self.main_node.getParameters().createChildString("events_data", "")
+            return
         except ValueError:
             return
 
@@ -427,7 +451,7 @@ class EventTypeModelItem(TansuModelItem):
             self.columnData().pop(key, None)
 
 
-class EventsUserInputWidget(TansuHeaderListView):
+class EventsUserInputWidget(AbstractDragDropListView):
     def __init__(self, parent=None):
         super(EventsUserInputWidget, self).__init__(parent)
         delegate = EventTypeDelegate(self)
@@ -462,6 +486,13 @@ class EventsUserInputWidget(TansuHeaderListView):
         # if action == delete:
         #     self.deleteItem()
 
+    # todo: Hotkey for new event creation...
+    # currently overrides the delete handlers and what not... not sure why.. =\
+    # def keyPressEvent(self, event):
+    #     main_widget = getWidgetAncestor(self, EventWidget)
+    #     if event.key() == main_widget._new_event_key:
+    #         main_widget.createNewEvent()
+    #     return AbstractDragDropListView.keyPressEvent(self, event)
 
 """ INPUT WIDGETS"""
 class UserInputMainWidget(QWidget):
@@ -472,10 +503,10 @@ class UserInputMainWidget(QWidget):
     Widgets
     UserInputMainWidget
         | -- QVBoxLayout
-                | -- events_type_menu (EventTypeInputWidget)
-                | -- script_widget (ScriptInputWidget)
-                | -- dynamic_args_widget (DynamicArgsWidget)
-                        | -- DynamicArgsInputWidget
+            | -- events_type_menu (EventTypeInputWidget)
+            | -- script_widget (ScriptInputWidget)
+            | -- dynamic_args_widget (DynamicArgsWidget)
+                    | -- DynamicArgsInputWidget
 
     Attributes:
         events_dict (JSON): json dict containing all of the relevant information for
@@ -720,57 +751,5 @@ class DynamicArgsWidget(QWidget):
         self._event_type = event_type
 
 
-if __name__ == "__main__":
-    # import sys
-    # from qtpy.QtWidgets import QApplication
-    # from qtpy.QtGui import QCursor
-    # app = QApplication(sys.argv)
-    #
-    # w = TabTansuWidget()
-    #
-    # # stacked widget example
-    # w.setType(TabTansuWidget.STACKED)
-    # w.setTabBarPosition(TabTansuWidget.WEST)
-    # w.setMultiSelect(True)
-    # w.setMultiSelectDirection(Qt.Horizontal)
-    #
-    # # for x in range(3):
-    # #     nw = TansuBaseWidget(w)
-    # #     for b in ['a','b','c']:
-    # #         nw.addWidget(QLabel(b))
-    # #     w.insertTab(0, nw, str(x))
-    #
-    # #
-    #
-    #
-    # # # dynamic widget example
-    # dw = TabTansuDynamicWidgetExample
-    # w.setType(
-    #     TabTansuWidget.DYNAMIC,
-    #     dynamic_widget=TabTansuDynamicWidgetExample,
-    #     dynamic_function=TabTansuDynamicWidgetExample.updateGUI
-    # )
-    # for x in range(3):
-    #     nw = QLabel(str(x))
-    #     w.insertTab(0, nw, str(x))
-    # # for x in range(3):
-    # #     nw = TansuBaseWidget(w)
-    # #     for b in ['a','b','c']:
-    # #         nw.addWidget(QLabel(b))
-    # #     w.insertTab(0, nw, str(x))
-    #
-    #
-    #
-    # w.resize(500,500)
-    # w.show()
-    # #w.setCurrentIndex(0)
-    # w.setTabLabelBarToDefaultSize()
-    # #w.main_widget.setSizes([200,800])
-    # w.move(QCursor.pos())
-    # sys.exit(app.exec_())
-
-    app = QApplication(sys.argv)
-    mw = EventWidget()
-    mw.show()
-    mw.move(QCursor().pos())
-    sys.exit(app.exec_())
+# a = EventWidget(node= NodegraphAPI.GetRootNode())
+# a.show()

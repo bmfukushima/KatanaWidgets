@@ -21,7 +21,7 @@ Widgets:
                     displaying all of the parameters in an hierichical fashion
             | --  main_widget (UserParametersWidget --> TansuModelViewWidget)
                     Main view displaying the parameters on this node.
-                | --  (UserParametersDynamicWidget --> TansuBaseWidget)
+                | --  (UserParametersDynamicWidget --> TansuView)
                         Main display area.  When a user clicks on an item in the TreeView
                         this widget will dynamically update to display the available widgets
                         to manipulate the parameter to the user.
@@ -49,9 +49,7 @@ from qtpy.QtGui import QCursor
 from qtpy.QtCore import QModelIndex, Qt
 
 from cgwidgets.widgets import (
-    TansuBaseWidget,
     TansuModelViewWidget,
-    TansuHeaderTreeView,
     ListInputWidget,
     LabelledInputWidget,
     FrameGroupInputWidget,
@@ -59,6 +57,7 @@ from cgwidgets.widgets import (
     BooleanInputWidget,
     PlainTextInputWidget
 )
+from cgwidgets.views import TansuView, AbstractDragDropTreeView
 
 from cgwidgets.utils import attrs, getWidgetAncestor
 
@@ -386,13 +385,14 @@ class UserParametersWidget(TansuModelViewWidget):
         self.node = node
 
         # create view
-        header_widget = TansuHeaderTreeView()
+        header_widget = AbstractDragDropTreeView()
 
         # setup header
         self.setHeaderViewWidget(header_widget)
         self.setHeaderData(['name', 'base type'])
         self.setHeaderPosition(attrs.WEST)
-        self.setIsDelegateHeaderShown(False)
+        #self.setIsDelegateHeaderShown(False)
+        self.setDelegateTitleIsShown(False)
 
         # setup flags
         self.setHeaderItemIsEnableable(False)
@@ -544,7 +544,7 @@ class DynamicArgsInputWidget(LabelledInputWidget):
         main_widget.updateWidgetHint()
 
 
-class UserParametersDynamicWidget(TansuBaseWidget):
+class UserParametersDynamicWidget(TansuView):
     """
     Dynamic widget that is updated/displayed every time a user clicks
     on an item.

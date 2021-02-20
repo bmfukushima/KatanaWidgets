@@ -6,8 +6,8 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt, QEvent
 
 from cgwidgets.utils import attrs
-from cgwidgets.widgets import TansuModelViewWidget, TansuHeaderListView
-
+from cgwidgets.widgets import TansuModelViewWidget
+from cgwidgets.views import AbstractDragDropListView
 
 from Katana import UI4
 from Widgets2 import AbstractSuperToolEditor
@@ -72,7 +72,7 @@ class SuperToolMainWidget(TansuModelViewWidget):
         )
 
 
-class SuperToolViewWidget(TansuHeaderListView):
+class SuperToolViewWidget(AbstractDragDropListView):
     def __init__(self, parent=None):
         super(SuperToolViewWidget, self).__init__(parent)
 

@@ -5,7 +5,7 @@ from Widgets2 import (
     AbstractNodegraphWidget,
     AbstractParametersDisplayWidget)
 
-from cgwidgets.widgets import TansuBaseWidget
+from cgwidgets.views import TansuView
 
 from Katana import UI4
 
@@ -31,7 +31,7 @@ class GroupNodeEditorMainWidget(QWidget):
         QWidget
             | -- QVBoxLayout
                     | -- live_group_widget (QLabel)
-                    | -- node_editor_widget (GroupNodeEditor --> TansuBaseWidget)
+                    | -- node_editor_widget (GroupNodeEditor --> TansuView)
                             | -- nodegraph_widget (NodegraphWidget)
                             | -- parameters_widget (ParametersDisplayWidget)
     """
@@ -57,11 +57,11 @@ class GroupNodeEditorMainWidget(QWidget):
         self.node_editor_widget.addWidget(self.parameters_widget)
 
 
-class GroupNodeEditor(TansuBaseWidget):
+class GroupNodeEditor(TansuView):
     def __init__(self, parent):
         super(GroupNodeEditor, self).__init__(parent)
-        self.setOrientation(Qt.Vertical)
 
+        self.setOrientation(Qt.Vertical)
         self.setFocusPolicy(Qt.WheelFocus)
 
 
