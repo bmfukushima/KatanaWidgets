@@ -26,10 +26,41 @@ def loadUserEvents(*args):
     print(args)
     node = NodegraphAPI.GetRootNode()
     tab = UI4.App.Tabs.FindTopTab('Events')
-    print (node)
-    print (tab)
+    if not tab:
+        tab = UI4.App.Tabs.CreateTab("Events", None)._TabWithTimeline__widget
+
+    print ("tab ====", tab)
+    print ("node ==== ", node)
+    tab.main_widget.loadEventsDataFromJSON()
+
+    # todo LOAD EVENTS HERE
+    # events need to be loaded from a tab...
+    """
+    if not tab:
+        create tab
+    
+    tab.loadEventsDataFromJSON()
+        
+    """
     #UI4.App.Tabs.CreateTab("Events", None)
 
+def cleanupEvents(*args):
+    from Katana import NodegraphAPI, UI4
+    print('==========  loading!!  ==========')
+    print(args)
+    node = NodegraphAPI.GetRootNode()
+    tab = UI4.App.Tabs.FindTopTab('Events')
+    print (node)
+    print (tab)
+    # todo CLEAR EVENTS HERE
+    # events need to be loaded from a tab...
+    """
+    if not tab:
+        create tab
+
+    tab.clear events data
+    """
 
 
-Utils.EventModule.RegisterCollapsedHandler(loadUserEvents, 'nodegraph_loadBegin')
+Utils.EventModule.RegisterCollapsedHandler(loadUserEvents, 'nodegraph_loadEnd')
+#Utils.EventModule.RegisterCollapsedHandler(cleanupEvents, 'nodegraph_loadBegin')
