@@ -296,6 +296,7 @@ class EventWidget(QWidget):
                 if event_name == new_value:
                     item.setArg('event_type', '<New Event>')
                     return
+
         # invalid event type
         events_list = self.getDefaultEventsDict()
         if new_value not in events_list:
@@ -656,8 +657,6 @@ class EventTypeDelegate(AbstractDragDropModelDelegate):
         self.setDelegateWidget(ListInputWidget)
         self._parent = parent
 
-    # TODO Need to call the dynamic_args_widget.update()
-    # from the UserInputMainWidget.dynamic_args_widget.update()
     def createEditor(self, parent, option, index):
         delegate_widget = self.delegateWidget(parent)
         # populate events
@@ -749,7 +748,3 @@ class DynamicArgsWidget(QWidget):
     @event_type.setter
     def event_type(self, event_type):
         self._event_type = event_type
-
-
-# a = EventWidget(node= NodegraphAPI.GetRootNode())
-# a.show()
