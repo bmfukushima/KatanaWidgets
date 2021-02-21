@@ -24,10 +24,7 @@ class EventsTab(UI4.Tabs.BaseTab):
         self.layout().addWidget(self.main_widget)
 
         # create default parameter on root node
-        if not self.node.getParameter("events_data"):
-            self.node.getParameters().createChildString("events_data", "")
-        else:
-            self.main_widget.loadEventsDataFromJSON()
+        # self.main_widget.loadEventsDataFromJSON()
 
 
 PluginRegistry = [("KatanaPanel", 2, "Events", EventsTab)]

@@ -81,6 +81,8 @@ class EventWidget(QWidget):
         self.loadEventTypesDict()
         if not node:
             node = NodegraphAPI.GetRootNode()
+        if not node.getParameter("events_data"):
+            node.getParameters().createChildString("events_data", "")
         self.main_node = node
 
         # setup attrs
@@ -266,9 +268,9 @@ class EventWidget(QWidget):
     def loadEventsDataFromJSON(self):
         try:
             json_data = json.loads(self.main_node.getParameter("events_data").getValue(0))
-        except AttributeError:
-            self.main_node.getParameters().createChildString("events_data", "")
-            return
+        # except AttributeError:
+        #     self.main_node.getParameters().createChildString("events_data", "")
+        #     return
         except ValueError:
             return
 

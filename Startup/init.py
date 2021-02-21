@@ -19,3 +19,17 @@ installCustomParametersMenu()
 #
 #
 # Utils.EventModule.RegisterCollapsedHandler(test, 'node_create')
+
+def loadUserEvents(*args):
+    from Katana import NodegraphAPI, UI4
+    print('==========  loading!!  ==========')
+    print(args)
+    node = NodegraphAPI.GetRootNode()
+    tab = UI4.App.Tabs.FindTopTab('Events')
+    print (node)
+    print (tab)
+    #UI4.App.Tabs.CreateTab("Events", None)
+
+
+
+Utils.EventModule.RegisterCollapsedHandler(loadUserEvents, 'nodegraph_loadBegin')

@@ -82,7 +82,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         # set up attrs
         self.node = node
         self.main_node = node.getChildByIndex(0)
-        self.events_param = self.main_node.getParameters().createChildString("events_data", "")
+        # self.events_param = self.main_node.getParameters().createChildString("events_data", "")
         self.getDesignWidget().setDelegateTitleIsShown(False)
         # create widgets
         self.group_node_editor = GroupNodeEditorMainWidget(self, self.node, self.main_node)
@@ -93,16 +93,11 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
             0, column_data={'name':"Params"}, widget=self.group_node_editor)
         self.getDesignWidget().insertTansuWidget(
             1, column_data={'name':'Events'}, widget=self.events_widget)
-        # self.getDesignWidget().insertTansuWidget(
-        #     2, column_data={'name':'GUI Designer'}, widget=QLabel('GUI Designer'))
-        # self.getDesignWidget().insertTansuWidget(
-        #     3, column_data={'name':'User Params'}, widget=QLabel('User Params'))
 
         # setup flags
         self.getDesignWidget().setHeaderItemIsDragEnabled(False)
         self.getDesignWidget().setHeaderItemIsDropEnabled(False)
         self.getDesignWidget().setHeaderItemIsEditable(False)
-        print('design widget ===> ', self.getDesignWidget())
 
     # def getEventTypes(self):
     #     """
