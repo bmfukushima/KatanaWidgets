@@ -1,4 +1,4 @@
-from Katana import Utils
+from Katana import Utils, Callbacks
 
 # initialize bebop menu
 from ParameterMenu import installCustomParametersMenu
@@ -20,47 +20,36 @@ installCustomParametersMenu()
 #
 # Utils.EventModule.RegisterCollapsedHandler(test, 'node_create')
 
+
+# Simple Tools
+"""
+Current issue in
+    EventWidget --> disableAllEvents
+        The handle is not static, so this is changing which causes it to
+        not be able to find the correct handler =(
+        
+        Wrap this in something so that it can always find a static method?
+"""
 def loadUserEvents(*args):
     from Katana import NodegraphAPI, UI4
-    print('==========  loading!!  ==========')
-    print(args)
+    from Widgets2 import EventWidget
+    print('==========  end loading!!  ==========')
+    # get attrs
+
     node = NodegraphAPI.GetRootNode()
-    tab = UI4.App.Tabs.FindTopTab('Events')
-    if not tab:
-        tab = UI4.App.Tabs.CreateTab("Events", None)._TabWithTimeline__widget
+    _temp_events_widget = EventWidget(node=node)
+    _temp_events_widget.loadEventsDataFromJSON()
 
-    print ("tab ====", tab)
-    print ("node ==== ", node)
-    tab.main_widget.loadEventsDataFromJSON()
-
-    # todo LOAD EVENTS HERE
-    # events need to be loaded from a tab...
-    """
-    if not tab:
-        create tab
-    
-    tab.loadEventsDataFromJSON()
-        
-    """
-    #UI4.App.Tabs.CreateTab("Events", None)
-
-def cleanupEvents(*args):
-    from Katana import NodegraphAPI, UI4
-    print('==========  loading!!  ==========')
-    print(args)
+def cleanupEvents(**kwargs):
+    from Katana import NodegraphAPI
+    from Widgets2 import EventWidget
+    print("====== onSceneAboutToLoad =========")
     node = NodegraphAPI.GetRootNode()
-    tab = UI4.App.Tabs.FindTopTab('Events')
-    print (node)
-    print (tab)
-    # todo CLEAR EVENTS HERE
-    # events need to be loaded from a tab...
-    """
-    if not tab:
-        create tab
+    _temp_events_widget = EventWidget(node=node)
 
-    tab.clear events data
-    """
-
+    events_data = node.getParameter("events_data")
+    if events_data:
+        _temp_events_widget.disableAllEvents(events_data.getValue(0))
 
 Utils.EventModule.RegisterCollapsedHandler(loadUserEvents, 'nodegraph_loadEnd')
-#Utils.EventModule.RegisterCollapsedHandler(cleanupEvents, 'nodegraph_loadBegin')
+Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, cleanupEvents)

@@ -1,21 +1,25 @@
 """
 Hierarchy:
-EventWidget --> (QWidget)
-    | -- VBox
-        | -- new_event_button --> (QPushButton)
-        | -- main_widget --> (TansuModelViewWidget)
-            | -- label type (EventsLabelWidget --> TansuLabelWidget)
-            | -- Dynamic Widget (UserInputMainWidget --> QWidget)
-                | -- VBox
-                    | -- events_type_menu ( EventTypeInputWidget)
-                    | -- script_widget (DynamicArgsInputWidget)
-                    | -- dynamic_args_widget (DynamicArgsWidget)
-                            | -* DynamicArgsInputWidget
+    EventWidget --> (QWidget)
+        | -- VBox
+            | -- new_event_button --> (QPushButton)
+            | -- main_widget --> (TansuModelViewWidget)
+                | -- label type (EventsLabelWidget --> TansuLabelWidget)
+                | -- Dynamic Widget (UserInputMainWidget --> QWidget)
+                    | -- VBox
+                        | -- events_type_menu ( EventTypeInputWidget)
+                        | -- script_widget (DynamicArgsInputWidget)
+                        | -- dynamic_args_widget (DynamicArgsWidget)
+                                | -* DynamicArgsInputWidget
 TODO:
-    *   Tansu dynamic...
-            Show null widget to start?
-    *   Test multi select
-    *   Build out uber function?
+    # *   Node Delete Handler...
+    #         When nodes are deleted, destroy all handlers
+    #             node delete event
+    *   Globals
+            store global events tab on katana main...
+    *   Load nodes init
+            on scene load, initialize all handlers
+                scene load event
     *   Model
             {
                 nodeid
@@ -103,7 +107,7 @@ class EventWidget(QWidget):
         self.new_event_button.show()
 
         # TODO Temp
-        temp_button = QPushButton("test get event dict")
+        temp_button = QPushButton("Update Events")
         try:
             # katana
             temp_button.clicked.connect(self.updateEvents)
@@ -114,6 +118,8 @@ class EventWidget(QWidget):
 
         # load events
         self.loadEventsDataFromJSON()
+
+        self.__setupNodeDeleteDisableHandler()
 
     def setupEventsWidgetGUI(self):
         """
@@ -150,6 +156,53 @@ class EventWidget(QWidget):
         main_widget.setHeaderDefaultLength(250)
 
         return main_widget
+
+    """ Node Disabled / Deleted """
+    def __nodeDeleteDisable(self, *args, **kwargs):
+        """
+        When this node is deleted or disabled, this function will check
+        update all of the event handlers that have been registered by the
+        node associated with this event widget.
+        """
+        for arg in args:
+            # preflight
+            arg = arg[0]
+            node = arg[2]['node']
+            if (node == self.main_node.getParent()
+                or node == NodegraphAPI.GetRootNode()
+            ):
+                # disable event handlers
+                event_type = arg[0]
+                if event_type == "node_setBypassed":
+                    enabled = arg[2]['bypassed']
+                    if not enabled:
+                        self.updateEvents()
+                    else:
+                        self.disableAllEvents()
+
+                # delete events
+                elif event_type == "node_delete":
+                    self.disableAllEvents()
+                    Utils.EventModule.RegisterCollapsedHandler(
+                        self.__nodeDeleteDisable, "node_delete", enabled=False
+                    )
+                    Utils.EventModule.RegisterCollapsedHandler(
+                        self.__nodeDeleteDisable, "node_setBypassed", enabled=False
+                    )
+
+    def __setupNodeDeleteDisableHandler(self):
+        """
+        Sets up the handlers for when a node is disabled/deleted.
+
+        On these two handles, the event handlers will need to be disabled/enabled.
+        """
+        Utils.EventModule.RegisterCollapsedHandler(
+            self.__nodeDeleteDisable, "node_delete", enabled=True
+        )
+
+        Utils.EventModule.RegisterCollapsedHandler(
+            self.__nodeDeleteDisable, "node_setBypassed", enabled=True
+        )
 
     """ UTILS """
     def __checkUserData(self, event_data, user_data):
@@ -268,9 +321,6 @@ class EventWidget(QWidget):
     def loadEventsDataFromJSON(self):
         try:
             json_data = json.loads(self.main_node.getParameter("events_data").getValue(0))
-        # except AttributeError:
-        #     self.main_node.getParameters().createChildString("events_data", "")
-        #     return
         except ValueError:
             return
 
@@ -332,6 +382,10 @@ class EventWidget(QWidget):
         except KeyError:
             pass
 
+    @classmethod
+    def test(cls, instance, *args, **kwargs):
+        instance.eventHandler()
+
     def eventHandler(self, *args, **kwargs):
         """
         This is run every time Katana does an event that is registered with this
@@ -370,6 +424,30 @@ class EventWidget(QWidget):
         # get item dict
         # disable item
         pass
+
+    def disableAllEvents(self, events_dict=None):
+        """
+        Disables all of the events associated with this EventsWidget.
+
+        If an events_dict is provided, it will disable all of the events in that
+        dict, if none is provided it will use the default call to getUserEventsDict()
+
+        Args:
+            events_dict (dict): associated with getUserEventsDict call.
+        """
+        if events_dict:
+            events_dict = json.loads(events_dict)
+        else:
+            events_dict = self.getUserEventsDict()
+
+        for key in events_dict:
+            event_data = events_dict[key]
+            event_type = event_data['event_type']
+
+            if event_type in self.getDefaultEventsDict():
+                Utils.EventModule.RegisterCollapsedHandler(
+                    self.eventHandler, event_type, enabled=False
+                )
 
     def updateEvents(self):
         """
