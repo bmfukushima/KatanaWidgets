@@ -12,11 +12,9 @@ Hierarchy:
                         | -- dynamic_args_widget (DynamicArgsWidget)
                                 | -* DynamicArgsInputWidget
 TODO:
-    # *   Node Delete Handler...
-    #         When nodes are deleted, destroy all handlers
-    #             node delete event
     *   Globals
-            store global events tab on katana main...
+            - disable does not work
+                on simple tools auto toggles / updates
     *   Load nodes init
             on scene load, initialize all handlers
                 scene load event
@@ -319,6 +317,7 @@ class EventWidget(QWidget):
         self.main_node.getParameter("events_data").setValue(events_string, 0)
 
     def loadEventsDataFromJSON(self):
+        # TODO clear all items
         try:
             json_data = json.loads(self.main_node.getParameter("events_data").getValue(0))
         except ValueError:
