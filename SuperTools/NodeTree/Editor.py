@@ -11,7 +11,7 @@ from qtpy.QtWidgets import (
 
 from qtpy.QtCore import Qt, QEvent
 
-from cgwidgets.utils import attrs
+from cgwidgets.utils import attrs, getWidgetAncestor
 from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, NodeTypeListWidget
 from cgwidgets.views import AbstractDragDropTreeView
 from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI
@@ -269,9 +269,6 @@ class NodeTreeMainWidget(ShojiModelViewWidget):
         node_list = self.getChildNodeListFromItem(parent)
         nodeutils.connectInsideGroup(node_list, parent_node)
 
-        # reconnect old parent
-        # node dropped?
-
     def nodeNameChangedEvent(self, item, old_value, new_value):
         node = NodegraphAPI.GetNode(old_value)
         node.setName(new_value)
@@ -294,9 +291,35 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
         return AbstractDragDropTreeView.dragEnterEvent(self, event)
 
     def dropEvent(self, event):
+        """
+        This will handle all drops into the view from the Nodegraph
+        """
         mimedata = event.mimeData()
-        for format in mimedata.formats():
-            print (format , mimedata.data(format))
+        if mimedata.hasFormat('nodegraph/nodes'):
+            nodes_list = mimedata.data('nodegraph/nodes').data().split(',')
+            parent_widget = getWidgetAncestor(self, NodeTreeMainWidget)
+            parent_node = parent_widget.node
+            for node_name in nodes_list:
+                # get node
+                node = NodegraphAPI.GetNode(node_name)
+
+                # disconnect node and reparent
+                nodeutils.disconnectNode(node, input=True, output=True, reconnect=False)
+                node.setParent(parent_node)
+
+                # create new model item
+                root_index = parent_widget.model().getIndexFromItem(parent_widget.rootItem())
+                new_index = parent_widget.insertShojiWidget(0, column_data={'name': node.getName(), 'type': node.getType()}, parent=root_index)
+
+                # setup drop handlers
+                if not hasattr(node, 'getChildren'):
+                    new_item = new_index.internalPointer()
+                    new_item.setIsDropEnabled(False)
+
+            # reconnect all nodes inside of the group
+            node_list = parent_widget.getChildNodeListFromItem(parent_widget.rootItem())
+            nodeutils.connectInsideGroup(node_list, parent_node)
+
         return AbstractDragDropTreeView.dropEvent(self, event)
 
 class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
