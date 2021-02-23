@@ -6,7 +6,7 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt, QEvent
 
 from cgwidgets.utils import attrs
-from cgwidgets.widgets import TansuModelViewWidget
+from cgwidgets.widgets import ShojiModelViewWidget
 from cgwidgets.views import AbstractDragDropListView
 
 from Katana import UI4
@@ -42,7 +42,7 @@ class SuperToolEditor(AbstractSuperToolEditor):
 
         for x in range(3):
             name = '<title {}>'.format(str(x))
-            main_widget.insertTansuWidget(x, column_data={'name': name})
+            main_widget.insertShojiWidget(x, column_data={'name': name})
 
         self.layout().addWidget(main_widget)
         self.insertResizeBar()
@@ -55,7 +55,7 @@ class SuperToolEditor(AbstractSuperToolEditor):
         self._node_type = _node_type
 
 
-class SuperToolMainWidget(TansuModelViewWidget):
+class SuperToolMainWidget(ShojiModelViewWidget):
     def __init__(self, parent=None):
         super(SuperToolMainWidget, self).__init__(parent)
         view = SuperToolViewWidget(self)
@@ -66,7 +66,7 @@ class SuperToolMainWidget(TansuModelViewWidget):
 
         # set dynamic
         self.setDelegateType(
-            TansuModelViewWidget.DYNAMIC,
+            ShojiModelViewWidget.DYNAMIC,
             dynamic_widget=SuperToolDynamicWidget,
             dynamic_function=SuperToolDynamicWidget.updateGUI
         )
@@ -80,7 +80,7 @@ class SuperToolViewWidget(AbstractDragDropListView):
 class SuperToolDynamicWidget(QWidget):
     """
     Simple example of overloaded class to be used as a dynamic widget for
-    the TansuModelViewWidget.
+    the ShojiModelViewWidget.
     """
     def __init__(self, parent=None):
         super(SuperToolDynamicWidget, self).__init__(parent)
@@ -91,8 +91,8 @@ class SuperToolDynamicWidget(QWidget):
     @staticmethod
     def updateGUI(parent, widget, item):
         """
-        widget (TansuModelDelegateWidget)
-        item (TansuModelItem)
+        widget (ShojiModelDelegateWidget)
+        item (ShojiModelItem)
         """
         if item:
             print ('----------------------------')
@@ -106,7 +106,7 @@ if __name__ == "__builtin__":
     import sys
     from qtpy.QtWidgets import QApplication, QLabel, QVBoxLayout
     from qtpy.QtGui import QCursor
-    from cgwidgets.widgets import TansuModelViewWidget
+    from cgwidgets.widgets import ShojiModelViewWidget
     app = QApplication(sys.argv)
     node = NodegraphAPI.GetAllSelectedNodes()[0]
     w = SuperToolEditor(None, node)

@@ -3,7 +3,7 @@ ToDo:
     NodeTree Base:
         - How to modify delegate?
             SuperToolEditor --> editor --> main_widget
-            The TansuWidget needs to be set as an attr on the class above
+            The ShojiWidget needs to be set as an attr on the class above
 
 
 """

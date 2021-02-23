@@ -3,8 +3,8 @@ Hierarchy:
     EventWidget --> (QWidget)
         | -- VBox
             | -- new_event_button --> (QPushButton)
-            | -- main_widget --> (TansuModelViewWidget)
-                | -- label type (EventsLabelWidget --> TansuLabelWidget)
+            | -- main_widget --> (ShojiModelViewWidget)
+                | -- label type (EventsLabelWidget --> ShojiLabelWidget)
                 | -- Dynamic Widget (UserInputMainWidget --> QWidget)
                     | -- VBox
                         | -- events_type_menu ( EventTypeInputWidget)
@@ -47,7 +47,7 @@ from qtpy.QtGui import QCursor, QKeySequence
 
 from cgwidgets.widgets import (
     ListInputWidget, LabelledInputWidget, StringInputWidget,
-    TansuModelViewWidget, TansuModelItem
+    ShojiModelViewWidget, ShojiModelItem
 )
 from cgwidgets.views import AbstractDragDropListView
 from cgwidgets.views import AbstractDragDropModelDelegate
@@ -71,8 +71,8 @@ class EventWidget(QWidget):
     Widgets:
         | -- VBox
             | -- new_event_button (PushButton)
-            | -- main_widget (TansuModelViewWidget)
-                | -- label type (EventsLabelWidget --> TansuLabelWidget)
+            | -- main_widget (ShojiModelViewWidget)
+                | -- label type (EventsLabelWidget --> ShojiLabelWidget)
                 | -- Dynamic Widget (UserInputMainWidget --> QWidget)
                     | -- VBox
                         | -- events_type_menu ( EventTypeInputWidget)
@@ -123,10 +123,10 @@ class EventWidget(QWidget):
 
     def setupEventsWidgetGUI(self):
         """
-        Sets up the main Tansu widget that is showing the events to the user
+        Sets up the main Shoji widget that is showing the events to the user
         """
         # create widget
-        main_widget = TansuModelViewWidget(self)
+        main_widget = ShojiModelViewWidget(self)
 
         # setup header
         events_view = EventsUserInputWidget(self)
@@ -149,7 +149,7 @@ class EventWidget(QWidget):
         # set type / position
         main_widget.setHeaderPosition(attrs.WEST, attrs.SOUTH)
         main_widget.setDelegateType(
-            TansuModelViewWidget.DYNAMIC,
+            ShojiModelViewWidget.DYNAMIC,
             dynamic_widget=UserInputMainWidget,
             dynamic_function=UserInputMainWidget.updateGUI
         )
@@ -372,7 +372,7 @@ class EventWidget(QWidget):
         if not column_data:
             column_data = {'event_type': "<New Event>"}
         # create model item
-        new_index = self.main_widget.insertTansuWidget(0, column_data=column_data)
+        new_index = self.main_widget.insertShojiWidget(0, column_data=column_data)
         item = new_index.internalPointer()
 
         # update script / enabled args
@@ -490,7 +490,7 @@ class EventWidget(QWidget):
         self.updateEvents()
 
 
-class EventTypeModelItem(TansuModelItem):
+class EventTypeModelItem(ShojiModelItem):
     """
     name (str): name given to this event by the user
     event_type (str): katana event type

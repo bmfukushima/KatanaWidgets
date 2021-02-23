@@ -9,7 +9,7 @@ except ModuleNotFoundError:
 # local import... because PYTHONPATH is not registered yet
 from .AbstractSuperToolEditor import AbstractSuperToolEditor
 
-from cgwidgets.widgets import TansuModelViewWidget
+from cgwidgets.widgets import ShojiModelViewWidget
 
 
 class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
@@ -26,7 +26,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
         |-- QStackedWidget
         |       |-- ViewWidget ( QWidget )
                         User view widget
-        |       |-- DesignWidget ( TansuModelViewWidget )
+        |       |-- DesignWidget ( ShojiModelViewWidget )
         |               |-- tab_content_layout ( StackedLayout )
         |                   |-- User Params ( Create GUI)
         |                   |-- Triggers ( Setup Signals )
@@ -47,7 +47,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
         # create stacked widget
         self.main_widget = QStackedWidget(self)
-        self._design_widget = TansuModelViewWidget()
+        self._design_widget = ShojiModelViewWidget()
         self._design_widget.setObjectName('design widget')
         self._view_widget = TwoFacedViewWidget(self)
         self.main_widget.addWidget(self._design_widget)

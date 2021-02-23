@@ -1,8 +1,8 @@
 """
 TODO:
     Group Editor:
-        Appears to have two levels of Tansus... for some reason...
-                Model Tansu View
+        Appears to have two levels of Shojis... for some reason...
+                Model Shoji View
                     --> Base tansu
                 for some reason the base tansu is not working...
     Extract:
@@ -56,7 +56,7 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt, QEvent
 
 
-from cgwidgets.views import TansuView, AbstractDragDropListView
+from cgwidgets.views import ShojiView, AbstractDragDropListView
 
 from Katana import UI4
 from Widgets2 import (
@@ -89,9 +89,9 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.events_widget = EventWidget(self, self.main_node)
 
         # setup tabs
-        self.getDesignWidget().insertTansuWidget(
+        self.getDesignWidget().insertShojiWidget(
             0, column_data={'name':"Params"}, widget=self.group_node_editor)
-        self.getDesignWidget().insertTansuWidget(
+        self.getDesignWidget().insertShojiWidget(
             1, column_data={'name':'Events'}, widget=self.events_widget)
 
         # setup flags
@@ -129,27 +129,27 @@ if __name__ == "__main__":
     import sys
     from qtpy.QtWidgets import QApplication, QLabel, QVBoxLayout
     from qtpy.QtGui import QCursor
-    from cgwidgets.widgets import TansuModelViewWidget
+    from cgwidgets.widgets import ShojiModelViewWidget
     app = QApplication(sys.argv)
 
-    w = TansuModelViewWidget()
-    w.setHeaderPosition(TansuModelViewWidget.NORTH)
+    w = ShojiModelViewWidget()
+    w.setHeaderPosition(ShojiModelViewWidget.NORTH)
     w.setMultiSelect(True)
     w.setMultiSelectDirection(Qt.Vertical)
 
     new_view = SimpleToolViewWidget()
     w.setHeaderViewWidget(new_view)
 
-    # dw = TabTansuDynamicWidgetExample
+    # dw = TabShojiDynamicWidgetExample
     # w.setDelegateType(
-    #     TansuModelViewWidget.DYNAMIC,
-    #     dynamic_widget=TabTansuDynamicWidgetExample,
-    #     dynamic_function=TabTansuDynamicWidgetExample.updateGUI
+    #     ShojiModelViewWidget.DYNAMIC,
+    #     dynamic_widget=TabShojiDynamicWidgetExample,
+    #     dynamic_function=TabShojiDynamicWidgetExample.updateGUI
     # )
 
     for x in range(3):
         widget = QLabel(str(x))
-        w.insertTansuWidget(x, str(x), widget=widget)
+        w.insertShojiWidget(x, str(x), widget=widget)
 
     w.resize(500, 500)
 

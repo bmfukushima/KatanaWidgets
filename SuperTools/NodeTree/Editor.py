@@ -12,7 +12,7 @@ from qtpy.QtWidgets import (
 from qtpy.QtCore import Qt, QEvent
 
 from cgwidgets.utils import attrs
-from cgwidgets.widgets import TansuModelViewWidget, StringInputWidget, NodeTypeListWidget
+from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, NodeTypeListWidget
 from cgwidgets.views import AbstractDragDropTreeView
 from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI
 
@@ -57,7 +57,7 @@ class NodeTreeEditor(AbstractSuperToolEditor):
         self._node_type = _node_type
 
 
-class NodeTreeMainWidget(TansuModelViewWidget):
+class NodeTreeMainWidget(ShojiModelViewWidget):
     def __init__(self, parent=None, node=None):
         super(NodeTreeMainWidget, self).__init__(parent)
         self.node = node
@@ -72,7 +72,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
 
         # set dynamic
         self.setDelegateType(
-            TansuModelViewWidget.DYNAMIC,
+            ShojiModelViewWidget.DYNAMIC,
             dynamic_widget=NodeTreeDynamicWidget,
             dynamic_function=NodeTreeDynamicWidget.displayNodeParameters
         )
@@ -158,7 +158,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
     #             print('tab')
     #             return True
     #
-    #     return TansuModelViewWidget.event(self, event)
+    #     return ShojiModelViewWidget.event(self, event)
     # def nodeCreationShowEvent(self, enabled, event, widget):
     #     """
     #     Run when the node creation menu is shown
@@ -199,7 +199,7 @@ class NodeTreeMainWidget(TansuModelViewWidget):
             node_type = new_node.getType()
 
             # create new item
-            new_index = self.insertTansuWidget(0, column_data={'name': name, 'type': node_type}, parent=parent_index)
+            new_index = self.insertShojiWidget(0, column_data={'name': name, 'type': node_type}, parent=parent_index)
             new_item = new_index.internalPointer()
             if not hasattr(new_node, 'getChildren'):
                 new_item.setIsDropEnabled(False)
@@ -242,8 +242,8 @@ class NodeTreeMainWidget(TansuModelViewWidget):
         in the model.
 
         Args:
-            indexes (list): of TansuModelItems
-            parent (TansuModelItem): parent item that was dropped on
+            indexes (list): of ShojiModelItems
+            parent (ShojiModelItem): parent item that was dropped on
 
         """
         # disconnect... not working... input ports not reconnect to group send?
@@ -293,7 +293,7 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
 class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
     """
     Simple example of overloaded class to be used as a dynamic widget for
-    the TansuModelViewWidget.
+    the ShojiModelViewWidget.
     """
     def __init__(self, parent=None):
         super(NodeTreeDynamicWidget, self).__init__(parent)
@@ -302,9 +302,9 @@ class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
     @staticmethod
     def displayNodeParameters(parent, widget, item):
         """
-        parent (TansuHeaderTreeView)
-        widget (TansuModelDelegateWidget)
-        item (TansuModelItem)
+        parent (ShojiHeaderTreeView)
+        widget (ShojiModelDelegateWidget)
+        item (ShojiModelItem)
         """
         # ToDo Update node selected display
         #
@@ -318,7 +318,7 @@ if __name__ == "__main__":
     import sys
     from qtpy.QtWidgets import QApplication, QLabel, QVBoxLayout
     from qtpy.QtGui import QCursor
-    from cgwidgets.widgets import TansuModelViewWidget
+    from cgwidgets.widgets import ShojiModelViewWidget
     app = QApplication(sys.argv)
 
     w = NodeTreeEditor(None, None)
@@ -332,7 +332,7 @@ if __name__ == "__main__":
 # import sys
 # from qtpy.QtWidgets import QApplication, QLabel, QVBoxLayout
 # from qtpy.QtGui import QCursor
-# from cgwidgets.widgets import TansuModelViewWidget
+# from cgwidgets.widgets import ShojiModelViewWidget
 # w = NodeTreeEditor(None, None)
 # w.resize(500, 500)
 #

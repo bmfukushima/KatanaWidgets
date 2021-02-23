@@ -11,7 +11,7 @@ TODO:
 """
 #from cgwidgets.utils.attrs
 from cgwidgets.widgets import (
-    TansuModelViewWidget, ColorInputWidget, StringInputWidget, BooleanInputWidget
+    ShojiModelViewWidget, ColorInputWidget, StringInputWidget, BooleanInputWidget
 )
 
 from qtpy.QtWidgets import  (
@@ -38,7 +38,7 @@ class NodeShapeAttrsTabMainWidget(QWidget):
         self.setFixedHeight(200)
 
 
-class NodeShapeAttrsTab(TansuModelViewWidget):
+class NodeShapeAttrsTab(ShojiModelViewWidget):
     """
     Widget that holds all of the shape attributes available for the user to
     adjust on the node
@@ -50,7 +50,7 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
 
     def __init__(self, parent, node):
         super(NodeShapeAttrsTab, self).__init__(parent)
-        self.setDelegateType(TansuModelViewWidget.STACKED)
+        self.setDelegateType(ShojiModelViewWidget.STACKED)
         # todo fix scope out
         # why does this scope out?
         from cgwidgets.utils import attrs
@@ -61,15 +61,15 @@ class NodeShapeAttrsTab(TansuModelViewWidget):
 
         # node color
         node_color_widget = NodeColorWidget(self, node=node)
-        self.insertTansuWidget(0, column_data={'name':'Color'}, widget=node_color_widget)
+        self.insertShojiWidget(0, column_data={'name':'Color'}, widget=node_color_widget)
 
         # glow color
         glow_input_widget = NodeShapeGlowColorWidget(self, node=node)
-        self.insertTansuWidget(0, column_data={'name':'Glow Color'}, widget=glow_input_widget)
+        self.insertShojiWidget(0, column_data={'name':'Glow Color'}, widget=glow_input_widget)
 
         # sub text
         badge_input_widget = NodeShapeTextInput(self, node=node)
-        self.insertTansuWidget(0, column_data={'name':'Sub Text'}, widget=badge_input_widget)
+        self.insertShojiWidget(0, column_data={'name':'Sub Text'}, widget=badge_input_widget)
 
     def getNode(self):
         return self._node

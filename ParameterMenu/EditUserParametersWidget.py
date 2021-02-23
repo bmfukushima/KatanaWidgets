@@ -17,11 +17,11 @@ Widgets:
         | --  QVBoxLayout
             | --  new_parameter (ListInputWidget)
                     When the user selects an input in this list, a new parameter
-                    will be created and added to the TansuModelViewWidget
+                    will be created and added to the ShojiModelViewWidget
                     displaying all of the parameters in an hierichical fashion
-            | --  main_widget (UserParametersWidget --> TansuModelViewWidget)
+            | --  main_widget (UserParametersWidget --> ShojiModelViewWidget)
                     Main view displaying the parameters on this node.
-                | --  (UserParametersDynamicWidget --> TansuView)
+                | --  (UserParametersDynamicWidget --> ShojiView)
                         Main display area.  When a user clicks on an item in the TreeView
                         this widget will dynamically update to display the available widgets
                         to manipulate the parameter to the user.
@@ -49,7 +49,7 @@ from qtpy.QtGui import QCursor
 from qtpy.QtCore import QModelIndex, Qt
 
 from cgwidgets.widgets import (
-    TansuModelViewWidget,
+    ShojiModelViewWidget,
     ListInputWidget,
     LabelledInputWidget,
     FrameGroupInputWidget,
@@ -57,7 +57,7 @@ from cgwidgets.widgets import (
     BooleanInputWidget,
     PlainTextInputWidget
 )
-from cgwidgets.views import TansuView, AbstractDragDropTreeView
+from cgwidgets.views import ShojiView, AbstractDragDropTreeView
 
 from cgwidgets.utils import attrs, getWidgetAncestor
 
@@ -375,7 +375,7 @@ class UserParametersMainWidget(QWidget):
         return new_param
 
 
-class UserParametersWidget(TansuModelViewWidget):
+class UserParametersWidget(ShojiModelViewWidget):
     """
     The main widget for the user edit parameters widget.  This will handle
     all of the parameter interface for drag/dropping, deleting, etc.
@@ -401,7 +401,7 @@ class UserParametersWidget(TansuModelViewWidget):
 
         # set custom delegate
         self.setDelegateType(
-            TansuModelViewWidget.DYNAMIC,
+            ShojiModelViewWidget.DYNAMIC,
             dynamic_widget=UserParametersDynamicWidget,
             dynamic_function=UserParametersDynamicWidget.updateGUI
         )
@@ -457,7 +457,7 @@ class UserParametersWidget(TansuModelViewWidget):
                 column_data[arg] = hint_string[arg]
 
         # create index
-        new_model_index = self.insertTansuWidget(row, column_data=column_data, parent=parent)
+        new_model_index = self.insertShojiWidget(row, column_data=column_data, parent=parent)
 
         # setup drops
         if parameter.getType() == "group":
@@ -544,7 +544,7 @@ class DynamicArgsInputWidget(LabelledInputWidget):
         main_widget.updateWidgetHint()
 
 
-class UserParametersDynamicWidget(TansuView):
+class UserParametersDynamicWidget(ShojiView):
     """
     Dynamic widget that is updated/displayed every time a user clicks
     on an item.
@@ -813,9 +813,9 @@ class UserParametersDynamicWidget(TansuView):
     @staticmethod
     def updateGUI(parent, widget, item):
         """
-        parent (TansuModelViewWidget)
-        widget (TansuModelDelegateWidget)
-        item (TansuModelItem)
+        parent (ShojiModelViewWidget)
+        widget (ShojiModelDelegateWidget)
+        item (ShojiModelItem)
         self --> widget.getMainWidget()
         """
         # get attrs
