@@ -106,7 +106,7 @@ class EventWidget(QWidget):
         self.new_event_button.show()
 
         # create update button
-        self.update_events_button = ButtonInputWidget(self, title="Update Events", user_clicked_event=self.updateEvents, is_toggleable=False)
+        self.update_events_button = ButtonInputWidget(self, title="Update Events", is_toggleable=False, user_clicked_event=self.updateEvents)
         self.layout().addWidget(self.update_events_button)
 
         # load events
@@ -327,7 +327,7 @@ class EventWidget(QWidget):
 
         for event_type in json_data:
             event = json_data[str(event_type)]
-            self.createNewEvent(column_data=event)
+            self.createNewEvent(None, column_data=event)
 
     """ EVENTS """
     def eventTypeChanged(self, item, old_value, new_value):

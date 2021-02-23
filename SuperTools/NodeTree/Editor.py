@@ -236,7 +236,7 @@ class NodeTreeMainWidget(ShojiModelViewWidget):
         else:
             return
 
-    def nodeMovedEvent(self, row, items_dropped, parent):
+    def nodeMovedEvent(self, data, items_dropped, model, row, parent):
         """
         Run when the user does a drop.  This is triggered on the dropMimeData funciton
         in the model.
@@ -289,6 +289,15 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
     def __init__(self, parent=None):
         super(NodeTreeViewWidget, self).__init__(parent)
 
+    def dragEnterEvent(self, event):
+        event.accept()
+        return AbstractDragDropTreeView.dragEnterEvent(self, event)
+
+    def dropEvent(self, event):
+        mimedata = event.mimeData()
+        for format in mimedata.formats():
+            print (format , mimedata.data(format))
+        return AbstractDragDropTreeView.dropEvent(self, event)
 
 class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
     """

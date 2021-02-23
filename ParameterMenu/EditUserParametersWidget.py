@@ -468,7 +468,7 @@ class UserParametersWidget(ShojiModelViewWidget):
         return new_model_index
 
     """ EVENTS """
-    def paramDropEvent(self, row, item_list, parent):
+    def paramDropEvent(self, data, items_dropped, model, row, parent):
         """
         When a user drag/drops an item (parameter).  This will be triggered
         to update the hierarchy of that parameter.
@@ -481,7 +481,7 @@ class UserParametersWidget(ShojiModelViewWidget):
             new_parent_param = self.node.getParameters()
 
         # move all selected parameters
-        for item in item_list:
+        for item in items_dropped:
             param = item.columnData()['parameter']
             current_parent_param = param.getParent()
 
