@@ -82,7 +82,7 @@ class EventWidget(QWidget):
     """
     def __init__(self, parent=None, node=None):
         super(EventWidget, self).__init__(parent)
-        self.loadEventTypesDict()
+        self.generateDefaultEventTypesDict()
         if not node:
             node = NodegraphAPI.GetRootNode()
         if not node.getParameter("events_data"):
@@ -296,7 +296,7 @@ class EventWidget(QWidget):
 
         return events_dict
 
-    def loadEventTypesDict(self):
+    def generateDefaultEventTypesDict(self):
         """
         Creates a dictionary which has all of the default event data.
         """
@@ -310,7 +310,7 @@ class EventWidget(QWidget):
                     arg_note = arg['note']
                     #print('-----|', arg_name, arg_note)
 
-    def getDefaultEventsDict(self):
+    def defaultEventTypes(self):
         """
         returns
         """
@@ -354,7 +354,7 @@ class EventWidget(QWidget):
                     return
 
         # invalid event type
-        events_list = self.getDefaultEventsDict()
+        events_list = self.defaultEventTypes()
         if new_value not in events_list:
             item.setArg('event_type', '<New Event>')
             return
@@ -448,7 +448,7 @@ class EventWidget(QWidget):
             event_data = events_dict[key]
             event_type = event_data['event_type']
 
-            if event_type in self.getDefaultEventsDict():
+            if event_type in self.defaultEventTypes():
                 Utils.EventModule.RegisterCollapsedHandler(
                     self.eventHandler, event_type, enabled=False
                 )
@@ -468,7 +468,7 @@ class EventWidget(QWidget):
             event_data = events_dict[key]
             enabled = event_data['enabled']
             event_type = event_data['event_type']
-            if event_type in self.getDefaultEventsDict():
+            if event_type in self.defaultEventTypes():
                 #print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
                 # TODO If already registered creates warning
                 try:
@@ -610,7 +610,7 @@ class UserInputMainWidget(QWidget):
         super(UserInputMainWidget, self).__init__(parent)
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
-        self.loadEventTypesDict()
+        self.generateDefaultEventTypesDict()
 
         # create scripts thingy
         self.script_widget = ScriptInputWidget(self)
@@ -621,7 +621,7 @@ class UserInputMainWidget(QWidget):
         self.layout().addWidget(self.script_widget)
         self.layout().addWidget(self.dynamic_args_widget)
 
-    def loadEventTypesDict(self):
+    def generateDefaultEventTypesDict(self):
         """
         Sets up the event_dict to be usd as global list of possible events
         that the user can create.
@@ -741,7 +741,7 @@ class EventTypeDelegate(AbstractDragDropModelDelegate):
     def createEditor(self, parent, option, index):
         delegate_widget = self.delegateWidget(parent)
         # populate events
-        event_list = list(getWidgetAncestor(parent, EventWidget).getDefaultEventsDict())
+        event_list = list(getWidgetAncestor(parent, EventWidget).defaultEventTypes())
         delegate_widget.populate([[item] for item in sorted(event_list)])
 
         # set update trigger
