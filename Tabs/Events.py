@@ -29,13 +29,7 @@ class EventsTab(UI4.Tabs.BaseTab):
         self.main_widget = katana_main.global_events_widget
         self.layout().addWidget(self.main_widget)
 
-        # create default parameter on root node
-        # self.main_widget.loadEventsDataFromJSON()
-
     def showEvent(self, event):
-        print(' ================ showing???')
-        #katana_main = UI4.App.MainWindow.GetMainWindow()
-        #self.main_widget.setParent(katana_main)
         self.layout().addWidget(self.main_widget)
         node = NodegraphAPI.GetRootNode()
         self.main_widget.main_node = node
@@ -47,6 +41,5 @@ class EventsTab(UI4.Tabs.BaseTab):
         katana_main = UI4.App.MainWindow.GetMainWindow()
         self.main_widget.setParent(katana_main)
         self.main_widget.hide()
-        print(' ================ closing???')
 
 PluginRegistry = [("KatanaPanel", 2, "Events", EventsTab)]

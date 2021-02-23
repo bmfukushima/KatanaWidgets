@@ -14,7 +14,9 @@ Hierarchy:
 TODO:
     *   Globals
             - disable does not work
-                on simple tools auto toggles / updates
+                on simple tools auto toggles/updates
+                    - only node set edited...
+                    - only on node set true? enabled?
     *   Load nodes init
             on scene load, initialize all handlers
                 scene load event
@@ -282,12 +284,15 @@ class EventWidget(QWidget):
             event_name = child.columnData()['event_type']
             if event_name != '<New Event>':
                 events_dict[event_name] = {}
-                events_dict[event_name]['script'] = child.getScript()
-                events_dict[event_name]['enabled'] = child.isEnabled()
+                # update all args
                 for arg in child.getArgsList():
                     value = child.getArg(arg)
                     if value:
                         events_dict[event_name][arg] = value
+
+                # add additional args (has to come after, or will be overwritten)
+                events_dict[event_name]['script'] = child.getScript()
+                events_dict[event_name]['enabled'] = child.isEnabled()
 
         return events_dict
 
@@ -463,7 +468,6 @@ class EventWidget(QWidget):
             event_data = events_dict[key]
             enabled = event_data['enabled']
             event_type = event_data['event_type']
-
             if event_type in self.getDefaultEventsDict():
                 #print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
                 # TODO If already registered creates warning
@@ -504,8 +508,6 @@ class EventTypeModelItem(TansuModelItem):
         if not args:
             args = {}
         self._args = args
-        #self['index'] = index
-        self._enabled = enabled
 
     def setScript(self, script):
         self._script = script
