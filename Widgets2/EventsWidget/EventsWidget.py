@@ -46,11 +46,9 @@ from qtpy.QtCore import Qt
 from qtpy.QtGui import QCursor, QKeySequence
 
 from cgwidgets.widgets import (
-    ListInputWidget, LabelledInputWidget, StringInputWidget,
-    ShojiModelViewWidget, ShojiModelItem
-)
-from cgwidgets.views import AbstractDragDropListView
-from cgwidgets.views import AbstractDragDropModelDelegate
+    ListInputWidget, LabelledInputWidget, StringInputWidget, ButtonInputWidget,
+    ShojiModelViewWidget, ShojiModelItem)
+from cgwidgets.views import AbstractDragDropListView, AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestor, attrs
 
 
@@ -100,26 +98,25 @@ class EventWidget(QWidget):
         self.layout().addWidget(self.main_widget)
 
         # create new event button
-        self.new_event_button = QPushButton('New Event ({key})'.format(key=QKeySequence(self._new_event_key).toString()))
-        self.new_event_button.clicked.connect(self.createNewEvent)
+        new_event_button_title = 'New Event ({key})'.format(key=QKeySequence(self._new_event_key).toString())
+        self.new_event_button = ButtonInputWidget(self, title=new_event_button_title, is_toggleable=False, user_clicked_event=self.createNewEvent)
+
         self.main_widget.addHeaderDelegateWidget(
             [self._new_event_key], self.new_event_button)
         self.new_event_button.show()
 
-        # TODO Temp
-        temp_button = QPushButton("Update Events")
-        try:
-            # katana
-            temp_button.clicked.connect(self.updateEvents)
-        except:
-            # local
-            temp_button.clicked.connect(self.getUserEventsDict)
-        self.layout().addWidget(temp_button)
+        # create update button
+        self.update_events_button = ButtonInputWidget(self, title="Update Events", user_clicked_event=self.updateEvents, is_toggleable=False)
+        self.layout().addWidget(self.update_events_button)
 
         # load events
         self.loadEventsDataFromJSON()
-
         self.__setupNodeDeleteDisableHandler()
+
+        # set up stretch
+        from qtpy.QtWidgets import QSizePolicy
+        self.main_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
+        self.update_events_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
 
     def setupEventsWidgetGUI(self):
         """
@@ -365,7 +362,7 @@ class EventWidget(QWidget):
             item.setArg('event_type', new_value)
             self.main_widget.updateDelegateDisplay()
 
-    def createNewEvent(self, column_data=None):
+    def createNewEvent(self, widget, column_data=None):
         """
         Creates a new event item
         """
@@ -453,7 +450,7 @@ class EventWidget(QWidget):
                     self.eventHandler, event_type, enabled=False
                 )
 
-    def updateEvents(self):
+    def updateEvents(self, *args):
         """
         In charge of installing / uninstalling events.
 

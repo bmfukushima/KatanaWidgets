@@ -49,22 +49,14 @@ TODO:
                     iParameter interface...
 """
 
-from qtpy.QtWidgets import (
-    QLabel, QVBoxLayout, QWidget
-)
-
 from qtpy.QtCore import Qt, QEvent
-
 
 from cgwidgets.views import ShojiView, AbstractDragDropListView
 
 from Katana import UI4
-from Widgets2 import (
-    TwoFacedSuperToolWidget, EventWidget
-)
+from Widgets2 import (TwoFacedSuperToolWidget, EventWidget)
 
 from .GroupNodeEditor import GroupNodeEditorMainWidget
-#from .EventsWidget import EventWidget
 
 
 class SimpleToolEditor(TwoFacedSuperToolWidget):
