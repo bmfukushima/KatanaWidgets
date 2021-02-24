@@ -32,6 +32,7 @@ This repo contains a small collection of my personal tools which have been creat
 ## Prerequisites
   * [qtpy](https://pypi.org/project/QtPy/) is a small abstraction layer that lets you write applications using a single API call to either PyQt or PySide.
   * [cgwidgets](https://github.com/bmfukushima/cgwidgets) small PyQt5/PySide agnostic widgets to be used between multiple DCCs
+<<<<<<< HEAD
 
 ## Written in
   * Python 3.7.7
@@ -57,3 +58,14 @@ This library is written for [VFX Reference Platform 2020](https://vfxplatform.co
       * UIPlugins
       * Startup
       * Tabs
+=======
+ 
+## Written In:
+  * Python 3.7.7
+  * PyQt 5.15.0
+
+## Tested In:
+This library is written for [VFX Reference Platform 2021](https://vfxplatform.com/), however I have intentionally left some things in the ancient Python 2.7.x so that you can still enjoy it... but seriously, fstrings... hurry up.
+  * Python 2.7.blah
+  * PyQt 5.12.1
+>>>>>>> 2321ca5270951747b4808a3e5cef4c112415c7ae
