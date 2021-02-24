@@ -577,7 +577,7 @@ class EventsUserInputWidget(AbstractDragDropListView):
 class UserInputMainWidget(QWidget):
     """
     Main widgets for inputting args to the Events widget.  This is the dynamic
-    widget that will be used for the tansu widget.
+    widget that will be used for the shoji widget.
 
     Widgets
     UserInputMainWidget

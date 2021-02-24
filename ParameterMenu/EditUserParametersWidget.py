@@ -233,7 +233,7 @@ class UserParametersMainWidget(QWidget):
         # create child parameter
         param = self.__createChildParameter(param_type, parent_param)
 
-        # insert tansu widget
+        # insert shoji widget
         insertion_row = len(parent_param.getChildren()) - 1
         self.main_widget.createNewParameterIndex(insertion_row, param, parent_index)
 
@@ -441,7 +441,7 @@ class UserParametersWidget(ShojiModelViewWidget):
 
     def createNewParameterIndex(self, row, parameter, parent):
         """
-        Creates a new parameter index in the tansu widget
+        Creates a new parameter index in the shoji widget
 
         Returns (QModelIndex)
         """

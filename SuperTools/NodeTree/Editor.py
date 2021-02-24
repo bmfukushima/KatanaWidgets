@@ -225,6 +225,7 @@ class NodeTreeMainWidget(NodeViewWidget):
         nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
         node.delete()
 
+
 class NodeTreeHeaderDelegate(NodeTypeListWidget):
     def __init__(self, parent=None):
         super(NodeTreeHeaderDelegate, self).__init__(parent)

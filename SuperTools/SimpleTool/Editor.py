@@ -3,8 +3,8 @@ TODO:
     Group Editor:
         Appears to have two levels of Shojis... for some reason...
                 Model Shoji View
-                    --> Base tansu
-                for some reason the base tansu is not working...
+                    --> Base shoji
+                for some reason the base shoji is not working...
     Extract:
         Variable Manager:
             *   Nodegraph Widget
