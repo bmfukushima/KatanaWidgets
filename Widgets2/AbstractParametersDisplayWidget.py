@@ -33,7 +33,7 @@ class AbstractParametersDisplayWidget(QScrollArea):
             self.__displaySelectedParameters, 'node_setSelected', enabled=enabled
         )
 
-    def __displaySelectedParameters(self, args):
+    def __displaySelectedParameters(self, *args):
         self.populateParameters(node_list=NodegraphAPI.GetAllSelectedNodes())
 
     """ populate parameters"""

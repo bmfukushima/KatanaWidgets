@@ -70,7 +70,7 @@ class NodeTreeMainWidget(NodeViewWidget):
         self.setHeaderViewWidget(view)
 
         # setup shoji style
-        self.main_widget.setMultiSelect(True)
+        self.setMultiSelect(True)
 
         # events
         self.setHeaderItemDropEvent(self.nodeMovedEvent)

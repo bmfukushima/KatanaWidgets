@@ -27,6 +27,7 @@ ToDo
     - Add group functionality?
         gross.. then I have to store data or something
             could potentially just save it on the actual param data?
+    - Delete desirable groups
 '''
 from qtpy.QtWidgets import QVBoxLayout, QSizePolicy
 from qtpy.QtCore import Qt
@@ -88,9 +89,27 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         self.addHeaderDelegateWidget([Qt.Key_Q], self.create_desirable_group_widget, modifier=Qt.NoModifier, focus=True)
         self.create_desirable_group_widget.setUserFinishedEditingEvent(self.createNewDesirableGroup)
 
+        # setup events
+        self.setHeaderItemDeleteEvent(self.purgeDesirableGroup)
+
+
+        # setup style
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
 
+    def purgeDesirableGroup(self, item):
+        """
+        Removes the currently selected desirable group item
+        """
+        name = item.columnData()['name']
+        current_groups = filter(None, self.getParam().getValue(0).split(','))
+        current_groups.remove(name)
+        new_groups = ','.join(current_groups)
+        self.getParam().setValue(new_groups, 0)
+
     def showEvent(self, event):
+        """
+        On show, update the view
+        """
         self.populate()
         return ShojiModelViewWidget.showEvent(self, event)
 
