@@ -9,7 +9,7 @@ from qtpy.QtWidgets import (
     QLabel, QVBoxLayout, QWidget
 )
 
-from qtpy.QtCore import Qt, QEvent
+from qtpy.QtCore import Qt, QEvent, QModelIndex
 
 from cgwidgets.utils import attrs, getWidgetAncestor
 from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, NodeTypeListWidget
@@ -80,6 +80,33 @@ class NodeTreeMainWidget(NodeViewWidget):
         self.node_create_widget = NodeTreeHeaderDelegate(self)
         self.addHeaderDelegateWidget([Qt.Key_Q, Qt.Key_Tab], self.node_create_widget, modifier=Qt.NoModifier, focus=True)
         self.node_create_widget.setUserFinishedEditingEvent(self.createNewNode)
+
+    def showEvent(self, event):
+        """ refresh UI on show event """
+        self.clearModel()
+        self.populate(self.node)
+        return NodeViewWidget.showEvent(self, event)
+
+    def populate(self, node, parent_index=QModelIndex()):
+        for child in node.getChildren():
+            # create child item
+            # create new item
+            new_index = self.createNewIndexFromNode(child, parent_index=parent_index)
+            new_item = new_index.internalPointer()
+
+            # setup drop for new item
+            if not hasattr(child, 'getChildren'):
+                new_item.setIsDropEnabled(False)
+
+            # recurse through children
+            else:
+                children = child.getChildren()
+                if 0 < len(children):
+                    for grand_child in children:
+                        self.populate(grand_child, parent_index=new_index)
+
+
+
 
     """ GET ITEM DATA """
     def getSelectedIndex(self):

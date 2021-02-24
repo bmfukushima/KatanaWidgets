@@ -27,7 +27,6 @@ ToDo
     - Add group functionality?
         gross.. then I have to store data or something
             could potentially just save it on the actual param data?
-    - Delete desirable groups
 '''
 from qtpy.QtWidgets import QVBoxLayout, QSizePolicy
 from qtpy.QtCore import Qt
