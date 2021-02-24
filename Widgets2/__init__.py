@@ -18,5 +18,5 @@ from .TwoFaceSuperToolWidget import TwoFacedSuperToolWidget
 from .TwoFaceSuperToolNode import TwoFaceSuperToolNode
 
 from .NodeTypeListWidget import NodeTypeListWidget
-
+from .NodeViewWidget import NodeViewWidget
 from .EventsWidget import EventWidget

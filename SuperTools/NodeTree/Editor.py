@@ -19,7 +19,7 @@ from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI
 
 
 from Katana import UI4, NodegraphAPI, Utils
-from Widgets2 import AbstractSuperToolEditor, AbstractParametersDisplayWidget
+from Widgets2 import AbstractSuperToolEditor, NodeViewWidget
 from Utils2 import nodeutils
 
 
@@ -57,41 +57,29 @@ class NodeTreeEditor(AbstractSuperToolEditor):
         self._node_type = _node_type
 
 
-class NodeTreeMainWidget(ShojiModelViewWidget):
+class NodeTreeMainWidget(NodeViewWidget):
     def __init__(self, parent=None, node=None):
         super(NodeTreeMainWidget, self).__init__(parent)
-        self.node = node
+        # setup node
 
+        self.node = node
         # setup view
         view = NodeTreeViewWidget(self)
 
         # setup header
         self.setHeaderViewWidget(view)
-        self.setHeaderPosition(attrs.WEST, attrs.NORTH)
-        self.setHeaderData(['name', 'type'])
 
-        # set dynamic
-        self.setDelegateType(
-            ShojiModelViewWidget.DYNAMIC,
-            dynamic_widget=NodeTreeDynamicWidget,
-            dynamic_function=NodeTreeDynamicWidget.displayNodeParameters
-        )
+        # setup shoji style
+        self.main_widget.setMultiSelect(True)
+
+        # events
+        self.setHeaderItemDropEvent(self.nodeMovedEvent)
+        self.setHeaderItemDeleteEvent(self.nodeDeleteEvent)
 
         # node create widget
         self.node_create_widget = NodeTreeHeaderDelegate(self)
         self.addHeaderDelegateWidget([Qt.Key_Q, Qt.Key_Tab], self.node_create_widget, modifier=Qt.NoModifier, focus=True)
         self.node_create_widget.setUserFinishedEditingEvent(self.createNewNode)
-
-        # events
-        self.setHeaderItemDropEvent(self.nodeMovedEvent)
-        self.setHeaderItemTextChangedEvent(self.nodeNameChangedEvent)
-        self.setHeaderItemEnabledEvent(self.nodeDisableEvent)
-        self.setHeaderItemDeleteEvent(self.nodeDeleteEvent)
-        #self.setHeaderDelegateToggleEvent(self.nodeCreationShowEvent)
-
-        # setup attrs
-        self.setMultiSelect(True)
-        self.setDelegateTitleIsShown(False)
 
     """ GET ITEM DATA """
     def getSelectedIndex(self):
@@ -141,43 +129,7 @@ class NodeTreeMainWidget(ShojiModelViewWidget):
 
         return node_list
 
-    def getNodeFromItem(self, item):
-        node_name = item.columnData()['name']
-        node = NodegraphAPI.GetNode(node_name)
-        return node
-
     """ EVENTS """
-    # def event(self, event, *args, **kwargs):
-    #     """
-    #     Registering key presses in here as for some reason
-    #     they don't work in the keyPressEvent method...
-    #     """
-    #     if event.type() == QEvent.KeyPress:
-    #         # tab
-    #         if event.key() == Qt.Key_Tab:
-    #             print('tab')
-    #             return True
-    #
-    #     return ShojiModelViewWidget.event(self, event)
-    # def nodeCreationShowEvent(self, enabled, event, widget):
-    #     """
-    #     Run when the node creation menu is shown
-    #     """
-    #     key = event.text()
-    #     if enabled:
-    #         self.node_create_widget.setText(key)
-
-    def nodeDisableEvent(self, item, enabled):
-        """ enable/disable event """
-        node = self.getNodeFromItem(item)
-        node.setBypassed(not enabled)
-
-    def nodeDeleteEvent(self, item):
-        """ delete event """
-        node = self.getNodeFromItem(item)
-        nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
-        node.delete()
-
     def createNewNode(self, widget, value):
         """ User creating new node """
         # get node
@@ -195,11 +147,9 @@ class NodeTreeMainWidget(ShojiModelViewWidget):
             # # create node
             new_node = NodegraphAPI.CreateNode(str(node_type), parent_node)
 
-            name = str(new_node.getName())
-            node_type = new_node.getType()
-
             # create new item
-            new_index = self.insertShojiWidget(0, column_data={'name': name, 'type': node_type}, parent=parent_index)
+            new_index = self.createNewIndexFromNode(new_node, parent_index=parent_index)
+            #new_index = self.insertShojiWidget(0, column_data={'name': name, 'type': node_type}, parent=parent_index)
             new_item = new_index.internalPointer()
             if not hasattr(new_node, 'getChildren'):
                 new_item.setIsDropEnabled(False)
@@ -269,13 +219,11 @@ class NodeTreeMainWidget(ShojiModelViewWidget):
         node_list = self.getChildNodeListFromItem(parent)
         nodeutils.connectInsideGroup(node_list, parent_node)
 
-    def nodeNameChangedEvent(self, item, old_value, new_value):
-        node = NodegraphAPI.GetNode(old_value)
-        node.setName(new_value)
-        Utils.EventModule.ProcessAllEvents()
-        new_name = node.getName()
-        item.columnData()['name'] = new_name
-
+    def nodeDeleteEvent(self, item):
+        """ delete event """
+        node = self.getNodeFromItem(item)
+        nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
+        node.delete()
 
 class NodeTreeHeaderDelegate(NodeTypeListWidget):
     def __init__(self, parent=None):
@@ -287,12 +235,16 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
         super(NodeTreeViewWidget, self).__init__(parent)
 
     def dragEnterEvent(self, event):
-        event.accept()
+        mimedata = event.mimeData()
+        if mimedata.hasFormat('nodegraph/nodes'):
+            event.accept()
         return AbstractDragDropTreeView.dragEnterEvent(self, event)
 
     def dropEvent(self, event):
         """
         This will handle all drops into the view from the Nodegraph
+
+        Alot of this is copy/paste from nodeMovedEvent
         """
         mimedata = event.mimeData()
         if mimedata.hasFormat('nodegraph/nodes'):
@@ -322,28 +274,6 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
 
         return AbstractDragDropTreeView.dropEvent(self, event)
 
-class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
-    """
-    Simple example of overloaded class to be used as a dynamic widget for
-    the ShojiModelViewWidget.
-    """
-    def __init__(self, parent=None):
-        super(NodeTreeDynamicWidget, self).__init__(parent)
-        QVBoxLayout(self)
-
-    @staticmethod
-    def displayNodeParameters(parent, widget, item):
-        """
-        parent (ShojiHeaderTreeView)
-        widget (ShojiModelDelegateWidget)
-        item (ShojiModelItem)
-        """
-        # ToDo Update node selected display
-        #
-        if item:
-            this = widget.getMainWidget()
-            node_list = [NodegraphAPI.GetNode(item.columnData()['name'])]
-            this.populateParameters(node_list, hide_title=False)
 
 
 if __name__ == "__main__":
