@@ -1,13 +1,12 @@
-from Widgets2 import EventWidget
 '''
-To Do 
-
-    - Drag/Drop move nodes via Node List
-    - option for syncing the state
-    - option for viewing super tool children
-    - sometimes super tool children not sorting correctly inside of supertools?
-    - rename nodes
-    - sort by node type
+ToDo
+    - Add group functionality?
+        gross.. then I have to store data or something
+            could potentially just save it on the actual param data?
+    - Add another layer
+        - so that it all sits in another ShojiModelViewWidget
+        and you can select the category of desired nodes
+        - will need to register the categories on the project settings
 '''
 from qtpy.QtWidgets import QVBoxLayout
 from cgwidgets.views import AbstractDragDropListView
@@ -41,7 +40,6 @@ class DesiredNodes(UI4.Tabs.BaseTab):
         # populate UI
         self.populate()
 
-
     def makeNodeDesirable(self, node, enabled):
         if enabled:
             if node not in self.desired_nodes:
@@ -57,7 +55,8 @@ class DesiredNodes(UI4.Tabs.BaseTab):
         Creates/Destroys the hidden reference to the "_is_desired" param
 
         Args:
-            node:
+            node (Node): to make desirable
+            enabled (bool): how $3xy this node is
 
         """
         desirable_param = node.getParameter("_is_desired")
@@ -123,5 +122,6 @@ class DesiredNodesView(AbstractDragDropListView):
                 parent_widget.makeNodeDesirable(node, True)
 
         return AbstractDragDropListView.dropEvent(self, event)
+
 
 PluginRegistry = [("KatanaPanel", 2, "Desired Nodes", DesiredNodes)]
