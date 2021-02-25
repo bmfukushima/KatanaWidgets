@@ -7,7 +7,7 @@ except ModuleNotFoundError:
     pass
 
 
-from cgwidgets.utils import getWidgetAncestor, getWidgetUnderCursor
+from cgwidgets.utils import getWidgetAncestor, getWidgetUnderCursor, getWidgetAncestorByObjectName
 
 
 class AbstractNodegraphWidget(QWidget):
@@ -43,9 +43,8 @@ class AbstractNodegraphWidget(QWidget):
 
         # setup nodegraph display
         panel = self.getPanel()
-
-        from UI4.Widgets import PanelScrollArea
-        self.panel_scroll_area = getWidgetAncestor(self, PanelScrollArea)
+        # self.panel_scroll_area = getWidgetAncestor(self, PanelScrollArea) # old
+        self.panel_scroll_area = getWidgetAncestorByObjectName(self, "qt_scrollarea_viewport").parent()
 
         # install event filters
         panel.installEventFilter(self)
@@ -54,6 +53,17 @@ class AbstractNodegraphWidget(QWidget):
 
         # display menus
         self.displayMenus(display_menus, panel)
+
+        # from UI4.Widgets import PanelScrollArea
+        # self.panel_scroll_area = getWidgetAncestor(self, PanelScrollArea)
+        #
+        # # install event filters
+        # panel.installEventFilter(self)
+        # self.panel_scroll_area.viewport().installEventFilter(self)
+        # self.getWidget().installEventFilter(self)
+        #
+        # # display menus
+        # self.displayMenus(display_menus, panel)
 
     @staticmethod
     def __createNodegraph():

@@ -40,6 +40,9 @@ from Widgets2 import NodeViewWidget
 
 
 class DesiredNodes(UI4.Tabs.BaseTab):
+    """
+    Main tab widget for the desirable widgets
+    """
     def __init__(self, parent=None):
         super(DesiredNodes, self).__init__(parent)
         # create default parameter
@@ -71,8 +74,8 @@ class DesiredNodesFrame(ShojiModelViewWidget):
     def __init__(self, parent=None):
         super(DesiredNodesFrame, self).__init__(parent)
 
+        self._item_selected_name = ""
         self.setHeaderPosition(attrs.NORTH, attrs.SOUTH)
-
         self.setDelegateTitleIsShown(False)
         self.setMultiSelect(False)
 
@@ -90,7 +93,10 @@ class DesiredNodesFrame(ShojiModelViewWidget):
 
         # setup events
         self.setHeaderItemDeleteEvent(self.purgeDesirableGroup)
+        self.setHeaderItemSelectedEvent(self.itemSelected)
 
+        self.setHeaderItemIsEnableable(False)
+        self.setHeaderItemIsDropEnabled(False)
 
         # setup style
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
@@ -105,12 +111,17 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         new_groups = ','.join(current_groups)
         self.getParam().setValue(new_groups, 0)
 
-    def showEvent(self, event):
+    def itemSelected(self, item, enabled, column=0):
+        if column == 0:
+            if enabled:
+                self._item_selected_name = item.columnData()['name']
+
+    def enterEvent(self, event):
         """
         On show, update the view
         """
         self.populate()
-        return ShojiModelViewWidget.showEvent(self, event)
+        #return ShojiModelViewWidget.enterEvent(self, event)
 
     def populate(self):
         """
@@ -122,7 +133,13 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         # repopulate
         desirable_groups = filter(None, self.getParam().getValue(0).split(','))
         for group in desirable_groups:
-            self.addNewGroup(group)
+            index = self.addNewGroup(group)
+
+        # reselect index
+        # no idea why this has to come after the fact =|
+        indexes = self.model().findItems(self._item_selected_name)
+        for i in indexes:
+            self.setIndexSelected(i, True)
 
     def getParam(self):
         """
@@ -130,6 +147,8 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         """
         root_node = NodegraphAPI.GetRootNode()
         desirable_groups_param = root_node.getParameter("_desirable_nodes")
+        if not desirable_groups_param:
+            desirable_groups_param = root_node.getParameters().createChildString("_desirable_nodes", "")
         return desirable_groups_param
 
     def desiredNodes(self):
@@ -145,7 +164,9 @@ class DesiredNodesFrame(ShojiModelViewWidget):
             name (str): the name...
         """
         # create new index
-        self.insertShojiWidget(0, column_data={'name': name})
+        new_index = self.insertShojiWidget(0, column_data={'name': name})
+        self.setIndexSelected(new_index, True)
+        return new_index
 
     def createNewDesirableGroup(self, widget, value):
         name = self.create_desirable_group_widget.text()
@@ -259,6 +280,7 @@ class DesiredNodesShojiPanel(NodeViewWidget):
 
         """
         this = widget.getMainWidget()
+
         # clear model
         this.clearModel()
 
