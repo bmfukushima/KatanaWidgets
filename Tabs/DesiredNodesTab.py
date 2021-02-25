@@ -18,7 +18,7 @@ Please note that at this point in time, sub groups of groups are not available. 
 that may or may not be added in the future depending on how many shits I give.
 
 Hierarchy:
-    DesiredNodes --> (UI4.Tabs.BaseTab)
+    DesiredNodesTab --> (UI4.Tabs.BaseTab)
         |- QVBoxLayout
             |- desired_nodes_tab_widget --> (ShojiModelViewWidget)
                 |-* DesiredNodesShojiPanel --> (NodeViewWidget --> ShojiModelViewWidget)
@@ -39,12 +39,13 @@ from Katana import UI4 , NodegraphAPI, Utils
 from Widgets2 import NodeViewWidget
 
 
-class DesiredNodes(UI4.Tabs.BaseTab):
+class DesiredNodesTab(UI4.Tabs.BaseTab):
     """
     Main tab widget for the desirable widgets
     """
+    NAME = 'Desired Nodes'
     def __init__(self, parent=None):
-        super(DesiredNodes, self).__init__(parent)
+        super(DesiredNodesTab, self).__init__(parent)
         # create default parameter
         self.createProjectSettingsEntry()
 
@@ -327,6 +328,3 @@ class DesiredNodesView(AbstractDragDropListView):
                 parent_widget.setNodeDesirability(node, True)
 
         return AbstractDragDropListView.dropEvent(self, event)
-
-
-PluginRegistry = [("KatanaPanel", 2, "Desired Nodes", DesiredNodes)]

@@ -9,9 +9,11 @@ for some reason katana actually tries to load this twice...
 amazingly it still fails and loads... but should fix... the error is really
 a python 2-3 thing right now... so meh
 """
-
-from Widgets2 import AbstractSuperToolNode
-from Utils2 import nodeutils
+try:
+    from Widgets2 import AbstractSuperToolNode
+    from Utils2 import nodeutils
+except:
+    pass
 
 
 class SuperToolNode(AbstractSuperToolNode):

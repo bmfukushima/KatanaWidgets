@@ -4,6 +4,7 @@ from Katana import Utils, Callbacks
 from ParameterMenu import installCustomParametersMenu
 installCustomParametersMenu()
 
+
 # setup backdrop group
 # from MultiTools.BackdropGroupNode import installBackdropGroupNode
 # installBackdropGroupNode()
@@ -22,7 +23,8 @@ installCustomParametersMenu()
 
 
 # Simple Tools
-
+# from MultiTools.SimpleTool import installBebopGlobalEvents
+# installBebopGlobalEvents()
 def loadLocalEvents(*args):
     """
     Loads all of the events for all SimpleTools in the scene.
@@ -43,7 +45,7 @@ def loadLocalEvents(*args):
 def loadGlobalEvents(*args):
     from Katana import NodegraphAPI, UI4
     from Widgets2 import EventWidget
-    print('==========  end loading!!  ==========')
+
     # get attrs
     katana_main = UI4.App.MainWindow.GetMainWindow()
     node = NodegraphAPI.GetRootNode()

@@ -16,9 +16,7 @@ def onGSVChange(args):
 
 
 def createNewPatternEvent():
-    #print('start')
     Utils.EventModule.RegisterCollapsedHandler(onGSVChange, 'parameter_setValue')
-    #print('end register')
 
 
 

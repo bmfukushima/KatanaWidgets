@@ -1,6 +1,9 @@
 from Katana import NodegraphAPI
 
-from Widgets2 import TwoFaceSuperToolNode
+try:
+    from Widgets2 import TwoFaceSuperToolNode
+except:
+    pass
 
 
 class SimpleToolNode(TwoFaceSuperToolNode):

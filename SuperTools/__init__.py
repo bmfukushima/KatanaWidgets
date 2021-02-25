@@ -24,24 +24,23 @@ Register a new sooperdooper tool...
 import Katana
 
 # import super tools
-import SimpleTool
 import NodeTree
 import SuperToolTemplate
 
-from MultiTools import VariableManager
+from MultiTools import VariableManager, SimpleTool
 
 # compile list of super tools
 superdooper_tools_list = [
     SimpleTool,
     NodeTree,
     VariableManager,
-    SuperToolTemplate
+    # SuperToolTemplate
 ]
 
 # register all super tools
 PluginRegistry = []
 for superdooper_tool in superdooper_tools_list:
-    print(superdooper_tool)
+    #print("Katana Bebop Loading... ==> {supertool_name}".format(supertool_name=superdooper_tool.NAME))
     PluginRegistry.append((
             "SuperTool", 2, superdooper_tool.NAME,
             (
@@ -49,3 +48,9 @@ for superdooper_tool in superdooper_tools_list:
                 superdooper_tool.EDITOR
             )
         ))
+
+# LOG
+print("""\t|____  SUPERTOOLS""")
+for superdooper_tool in superdooper_tools_list:
+    print("\t|\t|__  Loading...  {supertool_name}".format(supertool_name=superdooper_tool.NAME))
+print("""\t|""")

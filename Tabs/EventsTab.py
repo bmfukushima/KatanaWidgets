@@ -13,6 +13,7 @@ from qtpy.QtWidgets import QVBoxLayout
 from Katana import UI4 , NodegraphAPI, Utils
 
 class EventsTab(UI4.Tabs.BaseTab):
+    NAME = 'Global Events'
     def __init__(self, parent=None):
         super(EventsTab, self).__init__(parent)
 
@@ -42,4 +43,4 @@ class EventsTab(UI4.Tabs.BaseTab):
         self.main_widget.setParent(katana_main)
         self.main_widget.hide()
 
-PluginRegistry = [("KatanaPanel", 2, "Events", EventsTab)]
+#PluginRegistry = [("KatanaPanel", 2, "Events", EventsTab)]
