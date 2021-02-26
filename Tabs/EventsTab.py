@@ -33,6 +33,9 @@ class EventsTab(UI4.Tabs.BaseTab):
     def showEvent(self, event):
         self.layout().addWidget(self.main_widget)
         node = NodegraphAPI.GetRootNode()
+        if not node.getParameter("events_data"):
+            node.getParameters().createChildString("events_data", "")
+
         self.main_widget.main_node = node
         self.main_widget.main_widget.clearModel()
         self.main_widget.loadEventsDataFromJSON()

@@ -450,6 +450,9 @@ class EventWidget(QWidget):
                     self.eventHandler, event_type, enabled=False
                 )
 
+        # update events?
+        Utils.EventModule.ProcessAllEvents()
+
     def updateEvents(self, *args):
         """
         In charge of installing / uninstalling events.
