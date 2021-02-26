@@ -19,7 +19,7 @@ def showPopdownWithCustomMenu(self, value):
                 widget.addWidget(self.custom_menu)
         except AttributeError:
             pass
-
+    # Node2DGroupFormWidget
     QT4FormWidgets.GroupFormWidget.originalShowPopdown(self, value)
 
 

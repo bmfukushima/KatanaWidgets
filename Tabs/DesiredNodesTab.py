@@ -75,10 +75,11 @@ class DesiredNodesFrame(ShojiModelViewWidget):
     def __init__(self, parent=None):
         super(DesiredNodesFrame, self).__init__(parent)
 
-        self._item_selected_name = ""
+        self._selected_items = []
         self.setHeaderPosition(attrs.NORTH, attrs.SOUTH)
-        self.setDelegateTitleIsShown(False)
-        self.setMultiSelect(False)
+        self.setOrientation(Qt.Vertical)
+        self.setDelegateTitleIsShown(True)
+        self.setMultiSelect(True)
 
         # setup dynamic widget
         self.setDelegateType(
@@ -115,19 +116,26 @@ class DesiredNodesFrame(ShojiModelViewWidget):
     def itemSelected(self, item, enabled, column=0):
         if column == 0:
             if enabled:
-                self._item_selected_name = item.columnData()['name']
+                self._selected_items.append(item.columnData()['name'])
+            else:
+                self._selected_items.remove(item.columnData()['name'])
 
-    def enterEvent(self, event):
-        """
-        On show, update the view
-        """
+    def showEvent(self, event):
         self.populate()
-        #return ShojiModelViewWidget.enterEvent(self, event)
+        return ShojiModelViewWidget.showEvent(self, event)
+    # def enterEvent(self, event):
+    #     """
+    #     On show, update the view
+    #     """
+    #     self.populate()
+    #     #return ShojiModelViewWidget.enterEvent(self, event)
 
     def populate(self):
         """
         Loads all of the desirable groups from the root node
         """
+        # store temp as will be overwritten
+        _selected_items = [item for item in self._selected_items]
         # clear model
         self.clearModel()
 
@@ -137,10 +145,9 @@ class DesiredNodesFrame(ShojiModelViewWidget):
             index = self.addNewGroup(group)
 
         # reselect index
-        # no idea why this has to come after the fact =|
-        indexes = self.model().findItems(self._item_selected_name)
-        for i in indexes:
-            self.setIndexSelected(i, True)
+        for item in _selected_items:
+            for index in self.model().findItems(item):
+                self.setIndexSelected(index, True)
 
     def getParam(self):
         """
