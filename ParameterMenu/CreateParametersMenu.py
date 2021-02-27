@@ -13,10 +13,16 @@ def showPopdownWithCustomMenu(self, value):
     if not hasattr(self, 'custom_menu'):
         widget = self.getRightControlFWidgets()
         try:
-            node = self.getValuePolicy().getNode()
-            if node != NodegraphAPI.GetRootNode():
-                self.custom_menu = ParametersMenuButton(node=self.getValuePolicy().getNode())
-                widget.addWidget(self.custom_menu)
+            # get policy
+            policy = self.getValuePolicy()
+
+            # latch onto wrench display policy
+            if policy.shouldDisplayWrench():
+                node = self.getValuePolicy().getNode()
+                if node != NodegraphAPI.GetRootNode():
+                    self.custom_menu = ParametersMenuButton(node=self.getValuePolicy().getNode())
+                    widget.addWidget(self.custom_menu)
+
         except AttributeError:
             pass
     # Node2DGroupFormWidget
