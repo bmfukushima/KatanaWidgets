@@ -47,23 +47,13 @@ class AbstractNodegraphWidget(QWidget):
         self.panel_scroll_area = getWidgetAncestorByObjectName(self, "qt_scrollarea_viewport").parent()
 
         # install event filters
+        # print('install on ', panel)
         panel.installEventFilter(self)
         self.panel_scroll_area.viewport().installEventFilter(self)
         self.getWidget().installEventFilter(self)
 
         # display menus
         self.displayMenus(display_menus, panel)
-
-        # from UI4.Widgets import PanelScrollArea
-        # self.panel_scroll_area = getWidgetAncestor(self, PanelScrollArea)
-        #
-        # # install event filters
-        # panel.installEventFilter(self)
-        # self.panel_scroll_area.viewport().installEventFilter(self)
-        # self.getWidget().installEventFilter(self)
-        #
-        # # display menus
-        # self.displayMenus(display_menus, panel)
 
     @staticmethod
     def __createNodegraph():
@@ -217,11 +207,14 @@ class AbstractNodegraphWidget(QWidget):
         or else it will let you know that its been destroyed
         """
         # get node graph widget
+        # print('destroying node graph... ', self.getWidget())
         nodegraph_widget = self.getWidget()
 
         # clean up
         NodeGraphView.CleanupModule(self)
         nodegraph_widget.cleanup()
+
+        # print('destroying node graph... ', self.getWidget())
 
     """ EVENTS """
     def closeEvent(self, event):

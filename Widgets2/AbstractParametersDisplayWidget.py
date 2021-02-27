@@ -29,12 +29,14 @@ class AbstractParametersDisplayWidget(QScrollArea):
         """
         Determines if the auto selection should be active.
         """
+
         Utils.EventModule.RegisterCollapsedHandler(
             self.__displaySelectedParameters, 'node_setSelected', enabled=enabled
         )
 
     def __displaySelectedParameters(self, *args):
-        self.populateParameters(NodegraphAPI.GetAllSelectedNodes())
+        node_list = NodegraphAPI.GetAllSelectedNodes()
+        self.populateParameters(node_list)
 
     """ populate parameters"""
     def getLayout(self):
@@ -97,7 +99,8 @@ class AbstractParametersDisplayWidget(QScrollArea):
         for index, node in enumerate(reversed(node_list)):
             value = self.filterNode(node)
             if value is False:
-                node_list.pop(index)
+                #node_list.pop(index)
+                node_list.remove(node)
 
         return node_list
 
