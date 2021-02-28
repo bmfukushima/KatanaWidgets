@@ -16,8 +16,6 @@ from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, NodeTypeL
 from cgwidgets.views import AbstractDragDropTreeView
 from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI
 
-
-
 from Katana import UI4, NodegraphAPI, Utils
 from Widgets2 import AbstractSuperToolEditor, NodeViewWidget
 from Utils2 import nodeutils
@@ -282,6 +280,7 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
             for node_name in nodes_list:
                 # get node
                 node = NodegraphAPI.GetNode(node_name)
+                nodeutils.createIOPorts(node, in_port=True, out_port=True, connect=False, force_create=False)
 
                 # disconnect node and reparent
                 nodeutils.disconnectNode(node, input=True, output=True, reconnect=False)

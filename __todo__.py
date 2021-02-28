@@ -12,7 +12,8 @@ TODO: BUGS
               File "/media/ssd01/dev/katana/KatanaWidgets/Utils2/nodeutils.py", line 68, in connectInsideGroup
                 node_list[0].getOutputPortByIndex(0).connect(node_list[1].getInputPortByIndex(0))
             TypeError: connect() argument 1 must be Port, not None
-    Desired Nodes | Simple Tools: callback not deleting reference?
+    Desired Nodes: Nodegraph callback not deleting reference?
+        When this widget is hidden/shown, on the showEvent call, the nodegraph widget is being deleted, but not cleaned up
     SimpleTools: Certain image nodes (ImageIn) give this error
         [ERROR python.root]: An AttributeError occurred in "Node2DGroup.py": 'Node2DGroupFormWidget' object has no attribute '_Node2DGroupFormWidget__originalPopdownIndent'
             Traceback (most recent call last):
