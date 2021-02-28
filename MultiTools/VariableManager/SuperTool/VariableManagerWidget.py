@@ -43,7 +43,6 @@ from .Utils import (
     createNodeReference,
     getMainWidget,
     getNextVersion,
-    goToNode,
     updateNodeName,
 )
 
@@ -1702,7 +1701,7 @@ class VariableManagerBrowser(QTreeWidget):
                 nodegraph_panel = nodegraph_widget.getPanel()
 
                 # go to node
-                goToNode(node, frame=True, nodegraph_panel=nodegraph_panel)
+                nodeutils.goToNode(node, frame=True, nodegraph_panel=nodegraph_panel, entered=True)
 
                 # resize splitter to let user know that they can do this now...
                 # variable_manager_widget.variable_splitter.setHandleWidth(
@@ -1738,7 +1737,7 @@ class VariableManagerBrowser(QTreeWidget):
             if action.text() == 'Go To Node':
                 item = self.currentItem()
                 node = item.getVEGNode()
-                goToNode(node, frame=True)
+                nodeutils.goToNode(node, frame=True, entered=True)
 
             # Return publish directory of item to terminal
             elif action.text() == 'Get Publish Dir':

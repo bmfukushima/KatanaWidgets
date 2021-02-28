@@ -144,3 +144,48 @@ def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=
     if connect is True:
         if in_port is True and out_port is True:
             node.getSendPort('in').connect(node.getReturnPort('out'))
+
+
+def goToNode(node, frame=False, nodegraph_panel=None, entered=False):
+    """
+    Changes the nodegraph to the selected items node,
+    if it is not a group node, then it goes to its parent
+    as the parent must be a group... (hopefully)
+
+    Args:
+        node (node): node to go to
+
+    Kwargs:
+        frame (bool): if True will frame all of the nodes inside of the "node" arg.
+            Note that this is only valid when 'entered' is set to True
+        nodegraph_panel (nodegraph_panel): if exists, will frame in this node graph, if there is no
+            node graph tab.  Then it will search for the default node graph.
+        entered (bool): determines if this should view the children of the node
+    """
+    from Katana import UI4
+    if not nodegraph_panel:
+        nodegraph_panel = UI4.App.Tabs.FindTopTab('Node Graph')
+
+
+    nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
+    if entered:
+        # Enter node
+        nodegraph_panel._NodegraphPanel__navigationToolbarCallback(node.getName(), 'useless')
+        if frame is True:
+            # frame all children
+            nodegraph_widget.frameNodes(nodegraph_panel.getEnteredGroupNode().getChildren())
+
+    else:
+        # deselect all nodes
+        for selected_node in NodegraphAPI.GetAllSelectedNodes():
+            NodegraphAPI.SetNodeSelected(selected_node, False)
+
+        # select node provided
+        NodegraphAPI.SetNodeSelected(node, True)
+        root = node.getParent()
+
+        # enter parent node
+        nodegraph_panel._NodegraphPanel__navigationToolbarCallback(root.getName(), 'useless')
+
+        # frame node provided
+        nodegraph_panel.frameSelection(node)

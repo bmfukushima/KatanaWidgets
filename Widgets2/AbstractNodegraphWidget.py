@@ -43,11 +43,11 @@ class AbstractNodegraphWidget(QWidget):
 
         # setup nodegraph display
         panel = self.getPanel()
-        # self.panel_scroll_area = getWidgetAncestor(self, PanelScrollArea) # old
+        #self.panel_scroll_area = getWidgetAncestor(self, PanelScrollArea) # old
+
         self.panel_scroll_area = getWidgetAncestorByObjectName(self, "qt_scrollarea_viewport").parent()
 
         # install event filters
-        # print('install on ', panel)
         panel.installEventFilter(self)
         self.panel_scroll_area.viewport().installEventFilter(self)
         self.getWidget().installEventFilter(self)
@@ -214,9 +214,10 @@ class AbstractNodegraphWidget(QWidget):
         NodeGraphView.CleanupModule(self)
         nodegraph_widget.cleanup()
 
-        # print('destroying node graph... ', self.getWidget())
+        print('destroying node graph... ', self.getWidget())
 
     """ EVENTS """
+
     def closeEvent(self, event):
         self.destroyNodegraph()
         return QWidget.closeEvent(self, event)

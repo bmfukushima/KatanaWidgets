@@ -133,7 +133,6 @@ from .VariableManagerWidget import VariableManagerWidget
 from .Utils import (
     getMainWidget,
     getNextVersion,
-    goToNode,
     transferNodeReferences
 )
 
@@ -1614,7 +1613,7 @@ BESTEREST
             self.main_widget.setPattern(str(item.text(0)))
             #self.main_widget.setWorkingItem(item)
             node = item.getVEGNode()
-            goToNode(node, nodegraph_panel=nodegraph_panel, frame=True)
+            nodeutils.goToNode(node, nodegraph_panel=nodegraph_panel, frame=True, entered=True)
 
     def display(self):
         self.main_widget.layout().setCurrentIndex(2)

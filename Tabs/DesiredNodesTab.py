@@ -37,6 +37,7 @@ from cgwidgets.utils import getWidgetAncestor, attrs
 
 from Katana import UI4 , NodegraphAPI, Utils
 from Widgets2 import NodeViewWidget
+from Utils2 import nodeutils
 
 
 class DesiredNodesTab(UI4.Tabs.BaseTab):
@@ -121,6 +122,7 @@ class DesiredNodesFrame(ShojiModelViewWidget):
                 self._selected_items.remove(item.columnData()['name'])
 
     def showEvent(self, event):
+
         self.populate()
         return ShojiModelViewWidget.showEvent(self, event)
     # def enterEvent(self, event):
@@ -218,6 +220,18 @@ class DesiredNodesShojiPanel(NodeViewWidget):
         self._name = "Hello"
 
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
+
+        # setup context menu
+        # for some reason I have to add this here.. instead of in the base widget...
+        self.addContextMenuEvent("Go To Node", self.goToNode)
+
+    """ EVENTS """
+    def goToNode(self, index, selected_indexes):
+        item = index.internalPointer()
+
+        if item:
+            node = self.getNodeFromItem(item)
+            nodeutils.goToNode(node, frame=True)
 
     """ PROPERTIES """
     def name(self):

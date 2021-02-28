@@ -31,20 +31,25 @@ class NodeViewWidget(ShojiModelViewWidget):
 
         self.setHeaderItemTextChangedEvent(self.nodeNameChangedEvent)
         self.setHeaderItemEnabledEvent(self.nodeDisableEvent)
-        #self.setHeaderItemDeleteEvent(self.nodeDeleteEvent)
-        #self.setHeaderDelegateToggleEvent(self.nodeCreationShowEvent)
 
         # setup attrs
         self.setMultiSelect(True)
         self.setDelegateTitleIsShown(False)
 
+    #     # setup context menu
+    #     self.addContextMenuEvent("Go To Node", self.goToNode)
+    #
     """ GET ITEM DATA """
     def getNodeFromItem(self, item):
         node_name = item.columnData()['name']
         node = NodegraphAPI.GetNode(node_name)
         return node
-
-    """ EVENTS """
+    #
+    # """ EVENTS """
+    # def goToNode(self, item_under_cursor, indexes):
+    #     print(item_under_cursor, indexes)
+    #     #nodeutils.goToNode(node, nodegraph_panel=nodegraph_panel, frame=True)
+    #     #nodeutils.goToNode()
     # def event(self, event, *args, **kwargs):
     #     """
     #     Registering key presses in here as for some reason
