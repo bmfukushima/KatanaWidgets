@@ -1,6 +1,4 @@
-from qtpy.QtWidgets import (
-    QWidget, QStackedWidget, QVBoxLayout, QLabel,
-)
+from qtpy.QtWidgets import (QWidget, QStackedWidget, QVBoxLayout, QLabel)
 
 try:
     from Katana import UI4

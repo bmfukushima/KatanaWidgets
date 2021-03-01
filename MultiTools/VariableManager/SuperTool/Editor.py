@@ -146,10 +146,7 @@ from Utils2 import(
     nodeutils
 )
 
-from Widgets2 import (
-    AbstractSuperToolEditor,
-    AbstractUserBooleanWidget
-)
+from Widgets2 import (AbstractSuperToolEditor, AbstractUserBooleanWidget)
 
 
 class VariableManagerEditor(AbstractSuperToolEditor):

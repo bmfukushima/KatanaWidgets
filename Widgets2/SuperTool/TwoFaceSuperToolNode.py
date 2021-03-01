@@ -1,8 +1,7 @@
 from Katana import NodegraphAPI
 
-from Widgets2 import (
-    AbstractSuperToolNode
-)
+from .AbstractSuperToolNode import AbstractSuperToolNode
+#from Widgets2 import (AbstractSuperToolNode)
 from Utils2 import nodeutils
 
 

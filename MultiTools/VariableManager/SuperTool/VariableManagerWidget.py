@@ -64,7 +64,7 @@ from Widgets2 import(
     NodeTypeListWidget
 )
 
-from Widgets2.AbstractSuperToolEditor import iParameter
+from Widgets2 import iParameter
 
 
 class VariableManagerWidget(QWidget):

@@ -10,12 +10,9 @@ really think this through very well lmao)
 from .AbstractNodegraphWidget import AbstractNodegraphWidget
 from .AbstractParametersDisplayWidget import AbstractParametersDisplayWidget
 
-from .AbstractSuperToolNode import AbstractSuperToolNode
-from .AbstractSuperToolEditor import AbstractSuperToolEditor
+from .SuperTool import *
 
 from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
-from .TwoFaceSuperToolWidget import TwoFacedSuperToolWidget
-from .TwoFaceSuperToolNode import TwoFaceSuperToolNode
 
 from .NodeTypeListWidget import NodeTypeListWidget
 from .NodeViewWidget import NodeViewWidget

@@ -3,15 +3,6 @@ TODO: BUGS
     Wtf is this?
         - QBasicTimer::start: QBasicTimer can only be used with threads started with QThread
         - Systematically disable plugins...
-    NodeTree: Auto Create Ports
-        - Ask on drop...
-        [ERROR python.root]: A TypeError occurred in "nodeutils.py": connect() argument 1 must be Port, not None
-            Traceback (most recent call last):
-              File "/media/ssd01/dev/katana/KatanaWidgets/SuperTools/NodeTree/Editor.py", line 301, in dropEvent
-                nodeutils.connectInsideGroup(node_list, parent_node)
-              File "/media/ssd01/dev/katana/KatanaWidgets/Utils2/nodeutils.py", line 68, in connectInsideGroup
-                node_list[0].getOutputPortByIndex(0).connect(node_list[1].getInputPortByIndex(0))
-            TypeError: connect() argument 1 must be Port, not None
     Desired Nodes: Nodegraph callback not deleting reference?
         When this widget is hidden/shown, on the showEvent call, the nodegraph widget is being deleted, but not cleaned up
     SimpleTools: Certain image nodes (ImageIn) give this error

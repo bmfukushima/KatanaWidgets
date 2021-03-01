@@ -1,18 +1,8 @@
 import os
 
-from qtpy.QtWidgets import (
-    QComboBox, QLineEdit, QCompleter, QWidget,
-    QHBoxLayout, QPushButton, QSizePolicy,
-    QLabel, QVBoxLayout
-)
-
-from qtpy.QtGui import (
-    QMovie
-)
-
-from qtpy.QtCore import (
-    Qt, QByteArray, QSize
-)
+from qtpy.QtWidgets import (QWidget, QSizePolicy,QLabel, QVBoxLayout)
+from qtpy.QtGui import (QMovie)
+from qtpy.QtCore import (Qt, QByteArray, QSize)
 
 
 class GifPlayer(QWidget):

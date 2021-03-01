@@ -144,7 +144,7 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         # repopulate
         desirable_groups = filter(None, self.getParam().getValue(0).split(','))
         for group in desirable_groups:
-            index = self.addNewGroup(group)
+            self.addNewGroup(group)
 
         # reselect index
         for item in _selected_items:
