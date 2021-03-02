@@ -166,17 +166,23 @@ class AbstractNodegraphWidget(QWidget):
 
     def destroyNodegraphEventFilter(self, obj, event):
         """
-        When the katana tab is closed, this will destroy the nodegraph
+        When the katana tab is closed / hidden, this will destroy the nodegraph
         """
         event_type = event.type()
+        if event_type == QEvent.Hide:
+            self.destroyNodegraph()
+            obj.removeEventFilter(self)
+
         if event_type == QEvent.Close:
             self.destroyNodegraph()
             obj.removeEventFilter(self)
 
     def eventFilter(self, obj, event):
+        # wheel event
         should_return = self.wheelEventFilter(obj, event)
         if should_return: return True
 
+        # destroy
         self.destroyNodegraphEventFilter(obj, event)
 
         return_val = super(AbstractNodegraphWidget, self).eventFilter(obj, event)
@@ -207,16 +213,11 @@ class AbstractNodegraphWidget(QWidget):
         or else it will let you know that its been destroyed
         """
         # get node graph widget
-        # print('destroying node graph... ', self.getWidget())
         nodegraph_widget = self.getWidget()
 
         # clean up
         NodeGraphView.CleanupModule(self)
         nodegraph_widget.cleanup()
-
-        print('destroying node graph... ', self.getWidget())
-
-    """ EVENTS """
 
     def closeEvent(self, event):
         self.destroyNodegraph()

@@ -36,39 +36,11 @@ class NodeViewWidget(ShojiModelViewWidget):
         self.setMultiSelect(True)
         self.setDelegateTitleIsShown(False)
 
-    #     # setup context menu
-    #     self.addContextMenuEvent("Go To Node", self.goToNode)
-    #
     """ GET ITEM DATA """
     def getNodeFromItem(self, item):
         node_name = item.columnData()['name']
         node = NodegraphAPI.GetNode(node_name)
         return node
-    #
-    # """ EVENTS """
-    # def goToNode(self, item_under_cursor, indexes):
-    #     print(item_under_cursor, indexes)
-    #     #nodeutils.goToNode(node, nodegraph_panel=nodegraph_panel, frame=True)
-    #     #nodeutils.goToNode()
-    # def event(self, event, *args, **kwargs):
-    #     """
-    #     Registering key presses in here as for some reason
-    #     they don't work in the keyPressEvent method...
-    #     """
-    #     if event.type() == QEvent.KeyPress:
-    #         # tab
-    #         if event.key() == Qt.Key_Tab:
-    #             print('tab')
-    #             return True
-    #
-    #     return ShojiModelViewWidget.event(self, event)
-    # def nodeCreationShowEvent(self, enabled, event, widget):
-    #     """
-    #     Run when the node creation menu is shown
-    #     """
-    #     key = event.text()
-    #     if enabled:
-    #         self.node_create_widget.setText(key)
 
     def createNewIndexFromNode(self, node, parent_index=QModelIndex()):
         """

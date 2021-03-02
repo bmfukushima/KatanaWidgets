@@ -3,10 +3,12 @@ from EventsTab import EventsTab
 
 # compile list of tabs
 tabs_list = [
-    EventsTab,
-    DesiredNodesTab
-]
 
+]
+tabs_list = [
+    DesiredNodesTab,
+    EventsTab
+]
 # register all tabs
 PluginRegistry = []
 for tab in tabs_list:

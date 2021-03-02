@@ -52,7 +52,7 @@ class AbstractParametersDisplayWidget(QScrollArea):
         for i in reversed(range(self.getLayout().count())):
             self.getLayout().itemAt(i).widget().setParent(None)
 
-    def populateParameters(self, node_list, hide_title=None):
+    def populateParameters(self, node_list, hide_title=False):
         """
         Displays the parameters in the bottom of the GUI,
         this is currently linked to the Alt+W hotkey.
@@ -68,12 +68,17 @@ class AbstractParametersDisplayWidget(QScrollArea):
 
         node_list = self.filterNodeList(node_list)
 
+        # todo disabling this due to failure on Image Node types?
         # get hide
-        if hide_title is None:
-            if len(node_list) < 2:
-                hide_title = True
-            else:
-                hide_title = False
+        # if hide_title is None:
+        #     if len(node_list) < 2:
+        #         hide_title = True
+        #     else:
+        #         # # Show title for image nodes, because of display with params menu...
+        #         # if "Image" in node_list[0].getName():
+        #         #     hide_title = True
+        #         # else:
+        #         hide_title = False
 
         # display nodes
         for node in node_list:
