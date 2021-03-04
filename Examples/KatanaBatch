@@ -1,0 +1,16 @@
+#!/bin/bash
+
+echo Hello, World!
+
+
+export DL_DISPLAYS_PATH='/opt/renderEngines/delight/2.0.1/displays'
+export DL_SHADERS_PATH='/opt/renderEngines/delight/2.0.1/shaders'
+export DEFAULT_RENDERER='dl'
+export DLFK_INSTALL_PATH='/opt/renderEngines/delight/2.0.1/3DelightForKatana'
+export LD_LIBRARY_PATH='/opt/renderEngines/delight/2.0.1/lib'
+export DELIGHT='/opt/renderEngines/delight/2.0.1'
+export KATANA_RESOURCES='/opt/renderEngines/delight/2.0.1/3DelightForKatana'
+
+echo $DELIGHT
+
+katana --batch --katana-file=/media/ssd01/Katana/scenes/training/lookdev/dragon/scene/dragon_bmfukushima_v004_updatedTextures.katana --render-node=Render -t 1001-1201
