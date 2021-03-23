@@ -5,7 +5,7 @@ from Widgets2 import (
     AbstractNodegraphWidget,
     AbstractParametersDisplayWidget)
 
-from cgwidgets.views import ShojiView
+from cgwidgets.widgets import ShojiLayout
 
 from Katana import UI4
 
@@ -31,7 +31,7 @@ class GroupNodeEditorMainWidget(QWidget):
         QWidget
             | -- QVBoxLayout
                     | -- live_group_widget (QLabel)
-                    | -- node_editor_widget (GroupNodeEditor --> ShojiView)
+                    | -- node_editor_widget (GroupNodeEditor --> ShojiLayout)
                             | -- nodegraph_widget (NodegraphWidget)
                             | -- parameters_widget (ParametersDisplayWidget)
     """
@@ -58,7 +58,7 @@ class GroupNodeEditorMainWidget(QWidget):
         self.node_editor_widget.addWidget(self.parameters_widget)
 
 
-class GroupNodeEditor(ShojiView):
+class GroupNodeEditor(ShojiLayout):
     def __init__(self, parent):
         super(GroupNodeEditor, self).__init__(parent)
 

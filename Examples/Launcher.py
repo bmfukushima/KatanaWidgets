@@ -3,7 +3,7 @@
 Hierarchy
 KatanaLauncher --> (QWidget):
     |- layout (QVBoxLayout)
-        |- launcher_args_view --> (ShojiView)
+        |- launcher_args_view --> (ShojiLayout)
             |- katana_version --> LabelledInputWidget
             |- render_engine --> LabelledInputWidget
             |- render_version --> LabelledInputWidget
@@ -18,9 +18,11 @@ import sys
 from qtpy.QtWidgets import QWidget, QApplication, QVBoxLayout, QHBoxLayout
 from qtpy.QtCore import Qt
 
-from cgwidgets.widgets import MultiButtonInputWidget, ListInputWidget, LabelledInputWidget, ButtonInputWidget
+from cgwidgets.widgets import (
+    ButtonInputWidgetContainer, ListInputWidget, LabelledInputWidget, ButtonInputWidget,
+    ShojiLayout
+)
 from cgwidgets.settings.colors import iColor
-from cgwidgets.views import ShojiView
 from cgwidgets.utils import centerWidgetOnCursor
 
 
@@ -97,11 +99,11 @@ class KatanaLauncher(QWidget):
 
         Katana Version | Render Engine | Render Engine Version | Launcher Button
 
-        Returns (ShojiView):
+        Returns (ShojiLayout):
 
         """
         # create layout
-        launcher_args_view = ShojiView(self)
+        launcher_args_view = ShojiLayout(self)
         launcher_args_view.setOrientation(Qt.Horizontal)
 
         # create basic args widgets
@@ -154,7 +156,8 @@ class KatanaLauncher(QWidget):
 
         # Add Button
         for plugin in plugins:
-            self.plugins_view.addButton(plugin, plugin)
+            enabled = plugins[plugin]['__ENABLED__']
+            self.plugins_view.addButton(plugin, plugin, enabled=enabled)
 
     """ SETUP PLUGINS """
     def installPlugins(self, katana_resources, envars):
@@ -248,11 +251,12 @@ class KatanaLauncher(QWidget):
         for plugin in self.plugins_view.flags():
             for envar in self.plugins()[plugin].keys():
                 if envar != "KATANA_RESOURCES":
-                    value = self.plugins()[plugin][envar]
-                    if envar in envars.keys():
-                        envars[envar] += ':' + value
-                    else:
-                        envars[envar] = value
+                    if (not envar.startswith("__") and not envar.endswith("__")):
+                        value = self.plugins()[plugin][envar]
+                        if envar in envars.keys():
+                            envars[envar] += ':' + value
+                        else:
+                            envars[envar] = value
 
         return envars
 
@@ -370,6 +374,9 @@ class KatanaLauncher(QWidget):
         # display launcher text
         self.launcherText()
 
+        # image library directory
+        os.environ['LIBRARY_DIR'] = '/media/ssd01/library/library'
+
         # # launch katana instance
         subprocess.Popen([self.katana_bin])
         self.close()
@@ -410,11 +417,11 @@ class KatanaLauncher(QWidget):
             event.key() == Qt.Key_Enter
             or event.key() == Qt.Key_Return
         ):
-            self.launchKatana()
+            self.launchKatana(self)
         return QWidget.keyPressEvent(self, event, *args, **kwargs)
 
 
-class KatanaResourcesWidget(MultiButtonInputWidget):
+class KatanaResourcesWidget(ButtonInputWidgetContainer):
     """
     Widget that contains flags for enabling/disabling 3rd party plugins.
     """
@@ -437,7 +444,7 @@ class KatanaResourcesWidget(MultiButtonInputWidget):
         Normalize widget sizes
         """
 
-        MultiButtonInputWidget.showEvent(self, event)
+        ButtonInputWidgetContainer.showEvent(self, event)
         self.normalizeWidgetSizes()
 
 
@@ -446,16 +453,21 @@ if __name__ == "__main__":
 
     plugins = {
         'Foundry': {
-            'KATANA_RESOURCES':'/media/ssd01/Katana/dev/resources-foundry/katana_resources'},
+            'KATANA_RESOURCES':'/media/ssd01/Katana/dev/resources-foundry/katana_resources',
+            '__ENABLED__': False},
         'Katana Widgets': {
-            'KATANA_RESOURCES': '/media/ssd01/dev/katana/KatanaWidgets'},
+            'KATANA_RESOURCES': '/media/ssd01/dev/katana/KatanaWidgets',
+            '__ENABLED__': True},
         'USD': {
             'KATANA_RESOURCES': '{katana_root}/plugins/Resources/Usd/plugin',
-            'LD_LIBRARY_PATH': '{katana_root}/plugins/Resources/Usd/lib'},
+            'LD_LIBRARY_PATH': '{katana_root}/plugins/Resources/Usd/lib',
+            '__ENABLED__': True},
         'Katana Examples': {
-            'KATANA_RESOURCES': '{katana_root}/plugins/Src/Resources/Examples'},
+            'KATANA_RESOURCES': '{katana_root}/plugins/Src/Resources/Examples',
+            '__ENABLED__': False},
         'Old Crap': {
-            'KATANA_RESOURCES': '/media/ssd01/Katana/dev/resources'}
+            'KATANA_RESOURCES': '/media/ssd01/Katana/dev/resources',
+            '__ENABLED__': False}
     }
 
     # create main application

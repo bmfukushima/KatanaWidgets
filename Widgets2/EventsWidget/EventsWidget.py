@@ -655,10 +655,14 @@ class UserInputMainWidget(QWidget):
         # preflight
         if not item: return
 
-        # set title
-        # for some reason this isnt necessary...
-        #widget.group_box.setTitle(item.columnData()['event_type'])
-
+        # todo: update running to many times?
+        """
+        Run once for every item/dynamic arg that is being populate, thus if the
+        event has 3 args, this will run 3 times, and create multiple duplicates of
+        itself.
+        
+        Appears to be an issue in cleanup
+        """
         # set item
         main_widget = widget.getMainWidget()
         main_widget.setItem(item)
@@ -672,6 +676,9 @@ class UserInputMainWidget(QWidget):
         script_location = item.getScript()
         main_widget.script_widget.setText(script_location)
 
+        """
+        dynamic_args_widget --> DynamicArgsWidget
+        """
         # update dynamic args widget
         main_widget.dynamic_args_widget.event_type = event_type
         main_widget.dynamic_args_widget.update()
@@ -792,7 +799,8 @@ class DynamicArgsWidget(QWidget):
         for index in reversed(range(self.layout().count())):
             widget = self.layout().itemAt(index).widget()
             if widget:
-                widget.setParent(None)
+                widget.deleteLater()
+                #widget.setParent(None)
 
     def populate(self):
         """

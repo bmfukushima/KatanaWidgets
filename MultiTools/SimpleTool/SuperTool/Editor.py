@@ -51,7 +51,8 @@ TODO:
 
 from qtpy.QtCore import Qt, QEvent
 
-from cgwidgets.views import ShojiView, AbstractDragDropListView
+from cgwidgets.views import AbstractDragDropListView
+from cgwidgets.widgets import ShojiLayout
 
 from Katana import UI4
 from Widgets2 import (TwoFacedSuperToolWidget, EventWidget)

@@ -69,6 +69,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
         # setup shoji style
         self.setMultiSelect(True)
+        self.setHeaderItemIsDropEnabled(True)
 
         # events
         self.setHeaderItemDropEvent(self.nodeMovedEvent)
@@ -102,9 +103,6 @@ class NodeTreeMainWidget(NodeViewWidget):
                 if 0 < len(children):
                     for grand_child in children:
                         self.populate(grand_child, parent_index=new_index)
-
-
-
 
     """ GET ITEM DATA """
     def getSelectedIndex(self):
@@ -176,10 +174,16 @@ class NodeTreeMainWidget(NodeViewWidget):
             new_index = self.createNewIndexFromNode(new_node, parent_index=parent_index)
             #new_index = self.insertShojiWidget(0, column_data={'name': name, 'type': node_type}, parent=parent_index)
             new_item = new_index.internalPointer()
-            if not hasattr(new_node, 'getChildren'):
+
+            # set up node
+            # container
+            if hasattr(new_node, 'getChildren'):
+                new_item.setIsDropEnabled(True)
+                nodeutils.createIOPorts(new_node, force_create=False, connect=True)
+            # standard
+            else:
                 new_item.setIsDropEnabled(False)
-            # wire node
-            nodeutils.createIOPorts(new_node, force_create=False, connect=False)
+                nodeutils.createIOPorts(new_node, force_create=False, connect=False)
 
             # get children / parent_node
             if parent_index:
@@ -236,6 +240,9 @@ class NodeTreeMainWidget(NodeViewWidget):
 
             # disconnect node
             nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
+
+            # create ports
+            nodeutils.createIOPorts(node, force_create=False, connect=True)
 
             # reparent
             node.setParent(parent_node)

@@ -21,18 +21,18 @@ Widgets:
                     displaying all of the parameters in an hierichical fashion
             | --  main_widget (UserParametersWidget --> ShojiModelViewWidget)
                     Main view displaying the parameters on this node.
-                | --  (UserParametersDynamicWidget --> ShojiView)
+                | --  (UserParametersDynamicWidget --> ShojiLayout)
                         Main display area.  When a user clicks on an item in the TreeView
                         this widget will dynamically update to display the available widgets
                         to manipulate the parameter to the user.
-                    | --  default_args_widget (FrameGroupInputWidget)
+                    | --  default_args_widget (FrameInputWidgetContainer)
                             Display the default args that are available on all parameters
                             to the user.  These args are:
                                 widget (Widget Type)
                                 label (Display Name)
                                 readOnly (Locked)
                         | -*  ( DynamicArgsInputWidget --> LabelledInputWidget )
-                    | --  widget_specific_args_widget (FrameGroupInputWidget)
+                    | --  widget_specific_args_widget (FrameInputWidgetContainer)
                             Displays the args that are unique to a specific widget type.
                             If there are no args available for this parameter type, this
                             widget will be hidden.
@@ -49,16 +49,16 @@ from qtpy.QtGui import QCursor
 from qtpy.QtCore import QModelIndex, Qt
 
 from cgwidgets.widgets import (
+    ShojiLayout,
     ShojiModelViewWidget,
     ListInputWidget,
     LabelledInputWidget,
-    FrameGroupInputWidget,
+    FrameInputWidgetContainer,
     StringInputWidget,
     BooleanInputWidget,
     PlainTextInputWidget
 )
-from cgwidgets.views import ShojiView, AbstractDragDropTreeView
-
+from cgwidgets.views import  AbstractDragDropTreeView
 from cgwidgets.utils import attrs, getWidgetAncestor
 
 from Katana import UniqueName, PyXmlIO
@@ -544,7 +544,7 @@ class DynamicArgsInputWidget(LabelledInputWidget):
         main_widget.updateWidgetHint()
 
 
-class UserParametersDynamicWidget(ShojiView):
+class UserParametersDynamicWidget(ShojiLayout):
     """
     Dynamic widget that is updated/displayed every time a user clicks
     on an item.
@@ -572,7 +572,7 @@ class UserParametersDynamicWidget(ShojiView):
         self.default_args_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
 
         # create widget specific args
-        self.widget_specific_args_widget = FrameGroupInputWidget(self, name='Unique Args', direction=Qt.Vertical)
+        self.widget_specific_args_widget = FrameInputWidgetContainer(self, name='Unique Args', direction=Qt.Vertical)
         self.widget_specific_args_widget.layout().setAlignment(Qt.AlignTop)
         self.widget_specific_args_widget.setSeparatorLength(200)
         self.widget_specific_args_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
@@ -591,7 +591,7 @@ class UserParametersDynamicWidget(ShojiView):
             Widget Type --> widget
             Locked --> readOnly
         """
-        default_args_widget = FrameGroupInputWidget(self, name='Default Args', direction=Qt.Vertical)
+        default_args_widget = FrameInputWidgetContainer(self, name='Default Args', direction=Qt.Vertical)
         default_args_widget.layout().setAlignment(Qt.AlignTop)
 
         # setup widget type

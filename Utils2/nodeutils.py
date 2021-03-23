@@ -127,7 +127,20 @@ def insertNode(node, parent_node):
 
 
 def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=True):
+    """
+    Creates / connects the input ports
+    Args:
+        node:
+        in_port:
+        out_port:
+        connect:
+        force_create:
 
+    Returns:
+
+    """
+    print(node)
+    # create input ports
     if in_port is True:
         if force_create:
             node.addInputPort('in')
@@ -135,15 +148,22 @@ def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=
             if len(node.getInputPorts()) == 0:
                 node.addInputPort('in')
 
+    # create output ports
     if out_port is True:
         if force_create:
             node.addOutputPort('out')
         else:
             if len(node.getOutputPorts()) == 0:
                 node.addOutputPort('out')
+
+    # connect nodes internal structure
     if connect is True:
-        if in_port is True and out_port is True:
-            node.getSendPort('in').connect(node.getReturnPort('out'))
+        print('node == ', node)
+        if hasattr(node, "getChildren"):
+            send_port_name = node.getInputPortByIndex(0).getName()
+            return_port_name = node.getOutputPortByIndex(0).getName()
+            print(node, send_port_name, return_port_name)
+            node.getSendPort(send_port_name).connect(node.getReturnPort(return_port_name))
 
 
 def goToNode(node, frame=False, nodegraph_panel=None, entered=False):
