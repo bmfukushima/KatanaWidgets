@@ -709,18 +709,20 @@ class DynamicArgsInputWidget(LabelledInputWidget):
         to store this JSON date type container thingy...
 
     """
-    def __init__(self, parent=None, name='', note='', widget_type=StringInputWidget):
-        super(DynamicArgsInputWidget, self).__init__(parent, name=name, widget_type=StringInputWidget)
+    def __init__(self, parent=None, name='', note='', delegate_widget=None):
+        super(DynamicArgsInputWidget, self).__init__(parent, name=name, delegate_widget=delegate_widget)
         # setup args
         self.arg = name
         self.setToolTip(note)
         self.setUserFinishedEditingEvent(self.userInputEvent)
 
+        self.setDefaultLabelLength(200)
+
     def setText(self, text):
-        self.getInputWidget().setText(text)
+        self.delegateWidget().setText(text)
 
     def text(self):
-        return self.getInputWidget().text()
+        return self.delegateWidget().text()
 
     def userInputEvent(self, widget, value):
         """

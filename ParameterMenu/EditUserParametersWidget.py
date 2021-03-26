@@ -53,6 +53,7 @@ from cgwidgets.widgets import (
     ShojiModelViewWidget,
     ListInputWidget,
     LabelledInputWidget,
+    OverlayInputWidget,
     FrameInputWidgetContainer,
     StringInputWidget,
     BooleanInputWidget,
@@ -517,21 +518,21 @@ class DynamicArgsInputWidget(LabelledInputWidget):
     """
     One individual arg
     """
-    def __init__(self, parent=None, name='', note='', widget_type=StringInputWidget):
-        super(DynamicArgsInputWidget, self).__init__(parent, name=name, widget_type=widget_type)
+    def __init__(self, parent=None, name='', note='', delegate_widget=None, delegate_constructor=None):
+        super(DynamicArgsInputWidget, self).__init__(parent, name=name, delegate_widget=delegate_widget, delegate_constructor=delegate_constructor)
         # setup args
         self.arg = name
         self.setToolTip(note)
         self.setUserFinishedEditingEvent(self.userInputEvent)
-
-        # setup alignment
-        self.layout().setAlignment(Qt.AlignTop)
+        self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
+        # # setup alignment
+        # self.layout().setAlignment(Qt.AlignTop)
 
     def setText(self, text):
-        self.getInputWidget().setText(text)
+        self.delegateWidget().setText(text)
 
     def text(self):
-        return self.getInputWidget().text()
+        return self.delegateWidget().text()
 
     def userInputEvent(self, widget, value):
         """
@@ -572,7 +573,7 @@ class UserParametersDynamicWidget(ShojiLayout):
         self.default_args_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
 
         # create widget specific args
-        self.widget_specific_args_widget = FrameInputWidgetContainer(self, name='Unique Args', direction=Qt.Vertical)
+        self.widget_specific_args_widget = FrameInputWidgetContainer(self, title='Unique Args', direction=Qt.Vertical)
         self.widget_specific_args_widget.layout().setAlignment(Qt.AlignTop)
         self.widget_specific_args_widget.setSeparatorLength(200)
         self.widget_specific_args_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
@@ -591,12 +592,12 @@ class UserParametersDynamicWidget(ShojiLayout):
             Widget Type --> widget
             Locked --> readOnly
         """
-        default_args_widget = FrameInputWidgetContainer(self, name='Default Args', direction=Qt.Vertical)
+        default_args_widget = FrameInputWidgetContainer(self, title='Default Args', direction=Qt.Vertical)
         default_args_widget.layout().setAlignment(Qt.AlignTop)
 
         # setup widget type
-        widget_type_frame = DynamicArgsInputWidget(None, name='Widget Type', note='', widget_type=ListInputWidget)
-        self.widget_type = widget_type_frame.getInputWidget()
+        widget_type_frame = DynamicArgsInputWidget(None, name='Widget Type', note='', delegate_widget=ListInputWidget(self))
+        self.widget_type = widget_type_frame.delegateWidget()
         self.widget_type.dynamic_update = True
         self.widget_type.setCleanItemsFunction(self.getWidgetTypeList)
         self.widget_type.setUserFinishedEditingEvent(self.setWidgetTypeEvent)
@@ -609,28 +610,28 @@ class UserParametersDynamicWidget(ShojiLayout):
             None,
             name='Display Name',
             note='The parameter name to be displayed to the user.',
-            widget_type=StringInputWidget
+            delegate_widget=StringInputWidget(self)
         )
 
-        self.display_name_widget = display_name_frame.getInputWidget()
+        self.display_name_widget = display_name_frame.delegateWidget()
 
         # Read Only
         read_only_frame = DynamicArgsInputWidget(
             None,
             name='Locked',
             note='If True, this widget will be lock and in a read only state.  If False, the user will be able to manipulate this parameter',
-            widget_type=BooleanInputWidget
+            delegate_widget=BooleanInputWidget(self)
         )
-        self.read_only_widget = read_only_frame.getInputWidget()
+        self.read_only_widget = read_only_frame.delegateWidget()
 
         # Help Text
         help_text_frame = DynamicArgsInputWidget(
             None,
             name='Help',
             note='Help text to be displayed to the user',
-            widget_type=PlainTextInputWidget
+            delegate_widget=PlainTextInputWidget(self)
         )
-        self.help_text_widget = help_text_frame.getInputWidget()
+        self.help_text_widget = help_text_frame.delegateWidget()
 
         # add widgets to layout
         default_args_widget.addInputWidget(widget_type_frame)
@@ -862,6 +863,7 @@ class UserParametersDynamicWidget(ShojiLayout):
 
         This should be run every time a user selects a new index.
         """
+
         # show widget
         self.widget_specific_args_widget.show()
 
@@ -872,10 +874,12 @@ class UserParametersDynamicWidget(ShojiLayout):
         for widget_name in list(self.unique_widgets_dict.keys()):
             hint_widget = self.unique_widgets_dict[widget_name]
             hint_widget.parent().setParent(None)
+            hint_widget.parent().deleteLater()
             self.unique_widgets_dict.pop(widget_name)
 
         # create widget specific args
         self.unique_widgets_dict = {}
+
         if len(unique_hints) == 0:
             self.widget_specific_args_widget.hide()
         else:
@@ -883,12 +887,15 @@ class UserParametersDynamicWidget(ShojiLayout):
                 # TODO Set up custom widgets here...
                 # create widget
                 display_name = UserParametersMainWidget.REVERSE_HINT_OPTIONS_MAP[unique_hint]
+
+                # TODO Fail here...
                 new_widget = DynamicArgsInputWidget(
-                    self,
+                    None,
                     name=display_name,
-                    note='',
-                    widget_type=StringInputWidget
+                    delegate_constructor=StringInputWidget
                 )
+
+                # TODO End Fail here...
 
                 # set up default lengths
                 new_widget.setDefaultLabelLength(_DEFAULT_LABEL_LENGTH)
@@ -896,7 +903,7 @@ class UserParametersDynamicWidget(ShojiLayout):
                 new_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
 
                 # add widget to layout
-                input_widget = new_widget.getInputWidget()
+                input_widget = new_widget.delegateWidget()
 
                 # todo this needs to be more robust...
                 # needs to also work with the updateGUI value setter...

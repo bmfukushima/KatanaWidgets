@@ -110,8 +110,8 @@ class KatanaLauncher(QWidget):
         self.launcher_args_widgets = {}
         for option in ['Katana', "Render Engine", "Render Version"]:
             # create widget
-            input_widget = LabelledInputWidget(name=option, widget_type=ListInputWidget)
-            self.launcher_args_widgets[option] = input_widget.getInputWidget()
+            input_widget = LabelledInputWidget(name=option, delegate_widget=ListInputWidget(self))
+            self.launcher_args_widgets[option] = input_widget.delegateWidget()
             self.launcher_args_widgets[option].setAlignment(Qt.AlignCenter)
             launcher_args_view.addWidget(input_widget)
 
@@ -133,8 +133,8 @@ class KatanaLauncher(QWidget):
 
         # list override
         if arg == "list":
-            input_widget.getInputWidget().populate(list_of_crap)
-            input_widget.getInputWidget().display_item_colors = True
+            input_widget.delegateWidget().populate(list_of_crap)
+            input_widget.delegateWidget().display_item_colors = True
 
         """
         # katana

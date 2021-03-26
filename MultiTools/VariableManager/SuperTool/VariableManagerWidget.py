@@ -149,17 +149,17 @@ class VariableManagerWidget(QWidget):
         self.variable_menu_frame = LabelledInputWidget(
             parent=self,
             name='GSV',
-            widget_type=VariableManagerGSVMenu
+            delegate_widget=VariableManagerGSVMenu(self)
         )
         self.variable_menu_frame.setDirection(Qt.Vertical)
-        self.variable_menu = self.variable_menu_frame.getInputWidget()
+        self.variable_menu = self.variable_menu_frame.delegateWidget()
         # node type menu
         self.node_type_menu_frame = LabelledInputWidget(
             parent=self,
             name='Node Type',
-            widget_type=VariableManagerNodeMenu
+            delegate_widget=VariableManagerNodeMenu(self)
         )
-        self.node_type_menu = self.node_type_menu_frame.getInputWidget()
+        self.node_type_menu = self.node_type_menu_frame.delegateWidget()
         self.node_type_menu_frame.setDirection(Qt.Vertical)
 
         # add widgets to layout
