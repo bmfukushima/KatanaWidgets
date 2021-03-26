@@ -15,11 +15,11 @@ Args
 Widgets:
     UserParametersMainWidget (QWidget)
         | --  QVBoxLayout
-            | --  new_parameter (ListInputWidget)
+            | --  create_new_parameter_widget (ListInputWidget)
                     When the user selects an input in this list, a new parameter
                     will be created and added to the ShojiModelViewWidget
                     displaying all of the parameters in an hierichical fashion
-            | --  main_widget (UserParametersWidget --> ShojiModelViewWidget)
+            | --  user_parameters_widget (UserParametersWidget --> ShojiModelViewWidget)
                     Main view displaying the parameters on this node.
                 | --  (UserParametersDynamicWidget --> ShojiLayout)
                         Main display area.  When a user clicks on an item in the TreeView
@@ -105,27 +105,22 @@ class UserParametersMainWidget(QWidget):
         "TeleParameter",
         "Script Editor"
     ]
-
     NUMBER_TYPES = [
         "Boolean",
         "Popup Menu",
         "Mapping Popup Menu",
         "Check Box"
     ]
-
     GROUP_TYPES = [
         "Multi",
         "Gradient"
     ]
-
     STRING_ARRAY_TYPES = [
         "Scene Graph Locations"
     ]
-
     NUMBER_ARRAY_TYPES = [
         "Color"
     ]
-
     DISPLAY_NAMES = {
         'User Params Editor': 'userParamsEditor',
         'Scene Graph Location': 'scenegraphLocation',
@@ -196,26 +191,27 @@ class UserParametersMainWidget(QWidget):
         self.node = node
         # create widgets
         QVBoxLayout(self)
-        self.main_widget = UserParametersWidget(node=node)
+        self.user_parameters_widget = UserParametersWidget(node=node)
+        self.create_new_parameter_widget = CreateNewParameterWidget(self)
+        self.create_new_parameter_widget.setUserFinishedEditingEvent(self.__createNewParameter)
 
-        param_types_list = [[param_type] for param_type in sorted(UserParametersMainWidget.BASE_TYPES)]
-        self.new_parameter = ListInputWidget(self, item_list=param_types_list)
-        self.new_parameter.setUserFinishedEditingEvent(self.__createNewParameter)
-
+        self.user_parameters_widget.addHeaderDelegateWidget([Qt.Key_Q], self.create_new_parameter_widget, focus=True)
         # add widgets to layout
-        self.layout().addWidget(self.new_parameter)
-        self.layout().addWidget(self.main_widget)
+
+        self.layout().addWidget(self.user_parameters_widget)
+
 
     """ CREATE NEW PARAMETER"""
     def __createNewParameter(self, widget, value):
         """
-        Creates a new parameter.  This is run every time the self.new_parameter widget
+        Creates a new parameter.  This is run every time the self.create_new_parameter_widget widget
         has accepted a user input.
         """
         param_type = value
-
+        print('param type == ', param_type)
         # preflight
         if param_type not in UserParametersMainWidget.BASE_TYPES: return
+        if param_type == '': return
 
         # get parent param
         # nothing selected
@@ -236,16 +232,18 @@ class UserParametersMainWidget(QWidget):
 
         # insert shoji widget
         insertion_row = len(parent_param.getChildren()) - 1
-        self.main_widget.createNewParameterIndex(insertion_row, param, parent_index)
+        self.user_parameters_widget.createNewParameterIndex(insertion_row, param, parent_index)
 
         # reset text
-        self.new_parameter.setText('')
+        self.previous_text = ''
+        self.create_new_parameter_widget.setText('')
+        print("finish")
 
     def __createChildParameter(self, param_type, parent):
         """
         Creates a new parameter based of the type/parent provided
 
-        Run when the user has finished editing the self.new_parameter widget.
+        Run when the user has finished editing the self.create_new_parameter_widget widget.
         This will create a new parameter if the specified type is valid.
         "Float Vector",
         "Color (RGB)",
@@ -336,7 +334,7 @@ class UserParametersMainWidget(QWidget):
         TODO:
             move this to the abstract class to be called...
         """
-        selection = self.main_widget.headerWidget().selectionModel().selectedIndexes()
+        selection = self.user_parameters_widget.headerWidget().selectionModel().selectedIndexes()
         selected_indexes = [index for index in selection if index.column() is 0]
         return selected_indexes
 
@@ -391,7 +389,7 @@ class UserParametersWidget(ShojiModelViewWidget):
         # setup header
         self.setHeaderViewWidget(header_widget)
         self.setHeaderData(['name', 'base type'])
-        self.setHeaderPosition(attrs.WEST)
+        self.setHeaderPosition(attrs.WEST, attrs.SOUTH)
         #self.setIsDelegateHeaderShown(False)
         self.setDelegateTitleIsShown(False)
 
@@ -539,10 +537,10 @@ class DynamicArgsInputWidget(LabelledInputWidget):
         When the user inputs something into the arg, this event is triggered
         updating the model item
         """
-        main_widget = getWidgetAncestor(self, UserParametersDynamicWidget)
+        user_parameters_widget = getWidgetAncestor(self, UserParametersDynamicWidget)
         hint_name = UserParametersMainWidget.HINT_OPTIONS_MAP[self.arg]
-        main_widget.item().columnData()[hint_name] = str(value)
-        main_widget.updateWidgetHint()
+        user_parameters_widget.item().columnData()[hint_name] = str(value)
+        user_parameters_widget.updateWidgetHint()
 
 
 class UserParametersDynamicWidget(ShojiLayout):
@@ -819,6 +817,9 @@ class UserParametersDynamicWidget(ShojiLayout):
         item (ShojiModelItem)
         self --> widget.getMainWidget()
         """
+
+        if not widget: return
+        if not item: return
         # get attrs
         self = widget.getMainWidget()
         self.setItem(item)
@@ -919,6 +920,15 @@ class UserParametersDynamicWidget(ShojiLayout):
 
                 self.widget_specific_args_widget.addInputWidget(new_widget)
 
+
+class CreateNewParameterWidget(ListInputWidget):
+    """
+    Delegate responsible for displaying the widget types that are a available for the user to create.
+    """
+    def __init__(self, parent=None):
+        super(CreateNewParameterWidget, self).__init__(parent)
+        param_types_list = [[param_type] for param_type in sorted(UserParametersMainWidget.BASE_TYPES)]
+        self.populate(param_types_list)
 
 #if __name__ == "__main__":
 node = NodegraphAPI.GetAllSelectedNodes()[0]
