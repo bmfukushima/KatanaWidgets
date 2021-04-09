@@ -472,6 +472,7 @@ class VariableManagerGSVMenu(ListInputWidget):
         self.populate(self.getAllVariables())
         self.setCleanItemsFunction(self.getAllVariables)
         self.dynamic_update = True
+        self.filter_results = False
 
     """ UTILS """
     def getAllVariables(self):
@@ -537,6 +538,7 @@ class VariableManagerGSVMenu(ListInputWidget):
         # preflight
         if self.previous_text == self.text(): return
         if not hasattr(self.main_widget.variable_manager_widget, 'variable_browser'): return
+
 
         # pop up warning box to ask user if they wish to change the variable
         warning_text = "Changing the GSV will delete all of your unsaved work..."
