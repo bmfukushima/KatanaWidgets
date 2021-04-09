@@ -8,76 +8,57 @@ installCustomParametersMenu()
 from MultiTools.SimpleTool import installBebopGlobalEvents
 installBebopGlobalEvents()
 
-# setup backdrop group
-# from MultiTools.BackdropGroupNode import installBackdropGroupNode
-# installBackdropGroupNode()
+
+# Variable Switch | Populate
+def contextMenu(**kwargs):
+    from Katana import NodegraphAPI
+    from UI4.FormMaster.NodeActionDelegate import (BaseNodeActionDelegate, RegisterActionDelegate)
+    from UI4.Manifest import QtWidgets
+
+    class UpdateGSVOptions(BaseNodeActionDelegate.BaseNodeActionDelegate):
+        class _addAllGSVOptions(QtWidgets.QAction):
+            def __init__(self, parent, node):
+                # set node to private attribute
+                self.__node = node
+
+                # set menu display text
+                var_name = self.__node.getParameter('variableName').getValue(0)
+                QtWidgets.QAction.__init__(self, 'Add all GSV options for %s'%var_name, parent)
+
+                # connect signal
+                if node:
+                    self.triggered.connect(self.__triggered)
+
+                self.setEnabled(self.__node is not None
+                                and not self.__node.isLocked(True))
+
+            def __triggered(self):
+                # get node data
+                variable_switch = self.__node
+                variable_name = variable_switch.getParameter('variableName').getValue(0)
+                variable_patterns_parm = variable_switch.getParameter('patterns')
+                gsv_parm = NodegraphAPI.GetNode('rootNode').getParameter('variables.%s'%variable_name)
+
+                if gsv_parm:
+                    # delete previous ports and patterns
+                    # remove all input ports
+                    for port in variable_switch.getInputPorts():
+                        variable_switch.removeInputPort(port.getName())
+                    # remove all child parameters
+                    for child in variable_patterns_parm.getChildren():
+                        variable_patterns_parm.deleteChild(child)
+
+                    for child in gsv_parm.getChild('options').getChildren():
+                        # create new port with pattern
+                        name = child.getValue(0)
+                        # mechanic on the variable switch will automagically create the
+                        # parameters when you create the port
+                        variable_switch.addInputPort(name)
+
+        def addToContextMenu(self, menu, node):
+            menu.addAction(self._addAllGSVOptions(menu, node))
+
+    RegisterActionDelegate("VariableSwitch", UpdateGSVOptions())
 
 
-# def test(*args):
-#     for arg in args:
-#         arg = arg[0]
-#         if arg[0] == 'node_create':
-#             node = arg[2]['node']
-#             if node.getType() == 'RenderLayerGenerator':
-#                 print ('do stuff here')
-#
-#
-# Utils.EventModule.RegisterCollapsedHandler(test, 'node_create')
-
-
-
-# def loadLocalEvents(*args):
-#     """
-#     Loads all of the events for all SimpleTools in the scene.
-#     """
-#     from Katana import NodegraphAPI, UI4
-#     # get attrs
-#     current_nodes = NodegraphAPI.GetAllEditedNodes()
-#
-#     # view all Simple Tools to register their event handlers (kinda hacky, but w/e)
-#     event_nodes = NodegraphAPI.GetAllNodesByType("SimpleTool")
-#     for node in event_nodes:
-#         NodegraphAPI.SetNodeEdited(node, True, exclusive=False)
-#
-#     # reset view state on nodes
-#     for node in current_nodes:
-#         NodegraphAPI.SetNodeEdited(node, True, exclusive=False)
-#
-# def loadGlobalEvents(*args):
-#     from Katana import NodegraphAPI, UI4
-#     from Widgets2 import EventWidget
-#
-#     # get attrs
-#     katana_main = UI4.App.MainWindow.GetMainWindow()
-#     node = NodegraphAPI.GetRootNode()
-#
-#     # create default parameter if needed
-#     if not node.getParameter("events_data"):
-#         node.getParameters().createChildString("events_data", "")
-#
-#     # load global events
-#     if katana_main:
-#         # create Event Widget if needed
-#         if not hasattr(katana_main, "global_events_widget"):
-#             katana_main.global_events_widget = EventWidget(katana_main, node=node)
-#
-#         # load global events
-#         katana_main.global_events_widget.main_widget.clearModel()
-#         katana_main.global_events_widget.loadEventsDataFromJSON()
-#
-# def cleanupGlobalEvents(**kwargs):
-#     from Katana import NodegraphAPI, UI4
-#
-#     # get attrs
-#     node = NodegraphAPI.GetRootNode()
-#     katana_main = UI4.App.MainWindow.GetMainWindow()
-#     events_data = node.getParameter("events_data")
-#
-#     # cleanup data
-#     if events_data:
-#         if hasattr(katana_main, "global_events_widget"):
-#             katana_main.global_events_widget.disableAllEvents(events_data.getValue(0))
-#
-# Utils.EventModule.RegisterCollapsedHandler(loadLocalEvents, 'nodegraph_loadEnd')
-# Utils.EventModule.RegisterCollapsedHandler(loadGlobalEvents, 'nodegraph_loadEnd')
-# Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, cleanupGlobalEvents)
+Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)

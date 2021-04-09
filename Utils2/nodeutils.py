@@ -158,11 +158,9 @@ def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=
 
     # connect nodes internal structure
     if connect is True:
-        print('node == ', node)
         if hasattr(node, "getChildren"):
             send_port_name = node.getInputPortByIndex(0).getName()
             return_port_name = node.getOutputPortByIndex(0).getName()
-            print(node, send_port_name, return_port_name)
             node.getSendPort(send_port_name).connect(node.getReturnPort(return_port_name))
 
 

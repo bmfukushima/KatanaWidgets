@@ -1,16 +1,5 @@
 """
-Hierarchy:
-    EventWidget --> (QWidget)
-        | -- VBox
-            | -- new_event_button --> (QPushButton)
-            | -- main_widget --> (ShojiModelViewWidget)
-                | -- label type (EventsLabelWidget --> ShojiLabelWidget)
-                | -- Dynamic Widget (UserInputMainWidget --> QWidget)
-                    | -- VBox
-                        | -- events_type_menu ( EventTypeInputWidget)
-                        | -- script_widget (DynamicArgsInputWidget)
-                        | -- dynamic_args_widget (DynamicArgsWidget)
-                                | -* DynamicArgsInputWidget
+
 TODO:
     *   Globals
             - disable does not work
@@ -66,10 +55,10 @@ class EventWidget(QWidget):
             All of the tab labels/widgets will automatically call back to this list for
             updating.
 
-    Widgets:
+    Hierarchy:
         | -- VBox
-            | -- new_event_button (PushButton)
-            | -- main_widget (ShojiModelViewWidget)
+            | -- new_event_button --> (QPushButton)
+            | -- main_widget --> (ShojiModelViewWidget)
                 | -- label type (EventsLabelWidget --> ShojiLabelWidget)
                 | -- Dynamic Widget (UserInputMainWidget --> QWidget)
                     | -- VBox

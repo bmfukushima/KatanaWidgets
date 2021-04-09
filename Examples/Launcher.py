@@ -169,12 +169,12 @@ class KatanaLauncher(QWidget):
             envars (dict): of envars/values
                 {'envar':'value', 'envar2', 'value2'}
         """
-        os.environ['PYTHONPATH'] += ':'.join(
-            [os.environ['PYTHONPATH'],
-             '/usr/local/lib/python2.7/dist-packages',
-             '/media/ssd01/Scripts/WidgetFactory'
-             ]
-        )
+        # os.environ['PYTHONPATH'] += ':'.join(
+        #     [os.environ['PYTHONPATH'],
+        #      '/usr/local/lib/python2.7/dist-packages',
+        #      '/media/ssd01/Scripts/WidgetFactory'
+        #      ]
+        # )
 
         # setup katana resources
         os.environ['KATANA_RESOURCES'] = self.katanaResources(katana_resources)
