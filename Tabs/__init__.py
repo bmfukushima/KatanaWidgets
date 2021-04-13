@@ -1,13 +1,14 @@
 from DesiredNodesTab import DesiredNodesTab
 from EventsTab import EventsTab
-
+from PiPWidget import PiPTab
 # compile list of tabs
 tabs_list = [
 
 ]
 tabs_list = [
     DesiredNodesTab,
-    EventsTab
+    EventsTab,
+    PiPTab
 ]
 # register all tabs
 PluginRegistry = []
