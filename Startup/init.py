@@ -1,5 +1,5 @@
 from Katana import Utils, Callbacks
-
+from qtpy.QtCore import Qt
 # initialize bebop menu
 from ParameterMenu import installCustomParametersMenu
 installCustomParametersMenu()
@@ -62,3 +62,7 @@ def contextMenu(**kwargs):
 
 
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)
+
+# change full screen hotkey
+from MonkeyPatches import changeFullscreenHotkey
+changeFullscreenHotkey(Qt.Key_B)

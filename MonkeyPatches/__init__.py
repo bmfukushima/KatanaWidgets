@@ -1,0 +1,1 @@
+from .changeFullscreenHotkey import changeFullscreenHotkey

@@ -45,11 +45,14 @@ class AbstractNodegraphWidget(QWidget):
         panel = self.getPanel()
         #self.panel_scroll_area = getWidgetAncestor(self, PanelScrollArea) # old
 
-        self.panel_scroll_area = getWidgetAncestorByObjectName(self, "qt_scrollarea_viewport").parent()
+        self.panel_scroll_area = getWidgetAncestorByObjectName(self, "qt_scrollarea_viewport")
 
-        # install event filters
-        panel.installEventFilter(self)
-        self.panel_scroll_area.viewport().installEventFilter(self)
+        if self.panel_scroll_area:
+            self.panel_scroll_area = self.panel_scroll_area.parent()
+            # install event filters
+            panel.installEventFilter(self)
+            self.panel_scroll_area.viewport().installEventFilter(self)
+
         self.getWidget().installEventFilter(self)
 
         # display menus
