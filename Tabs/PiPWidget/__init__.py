@@ -1,1 +1,1 @@
-from .PiPWidget import PiPTab
+from .PiPOrganizerTab import PiPOrganizerTab

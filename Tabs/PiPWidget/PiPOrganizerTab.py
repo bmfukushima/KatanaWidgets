@@ -7,10 +7,10 @@ from cgwidgets.widgets import PiPWidget
 from cgwidgets.utils import getJSONData
 
 
-class PiPTab(UI4.Tabs.BaseTab):
-    NAME = "PiPTab"
+class PiPOrganizerTab(UI4.Tabs.BaseTab):
+    NAME = "PiP Organizer"
     def __init__(self, parent=None):
-        super(PiPTab, self).__init__(parent)
+        super(PiPOrganizerTab, self).__init__(parent)
         # get Katana PiP constructors
         constructors_file_path = os.path.dirname(__file__) + '/KatanaConstructors.json'
         katana_constructors = getJSONData(constructors_file_path)
@@ -26,7 +26,7 @@ class PiPTab(UI4.Tabs.BaseTab):
             "KatanaBebop": {
                 "file_path": built_ins_file_path,
                 "locked": False},
-            "Hodor": {
+            "User": {
                 "file_path": user_save_path,
                 "locked": False}
         }

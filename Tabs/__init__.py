@@ -1,19 +1,26 @@
 from DesiredNodesTab import DesiredNodesTab
 from EventsTab import EventsTab
-from PiPWidget import PiPTab
+from PiPWidget import PiPOrganizerTab
 # compile list of tabs
-tabs_list = [
 
-]
 tabs_list = [
     DesiredNodesTab,
     EventsTab,
-    PiPTab
+    PiPOrganizerTab
 ]
 # register all tabs
 PluginRegistry = []
 for tab in tabs_list:
     PluginRegistry.append(("KatanaPanel", 2, tab.NAME, tab))
+
+# register PiP Tabs
+from .PiPWidget.PiPWidgetTabInitializer import pip_tabs
+
+
+for pip_tab in pip_tabs:
+    tab_name = "/". join(["PiPTabs", pip_tab["file_name"], pip_tab["widget_name"]])
+    PluginRegistry.append(("KatanaPanel", 2, tab_name, pip_tab["constructor"]))
+    print(pip_tab)
 
 # LOG
 print("""\t|____  TABS""")
