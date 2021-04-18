@@ -2,6 +2,8 @@ import os
 from cgwidgets.utils import getJSONData
 from cgwidgets.widgets import PiPWidget
 
+from .utils import getConstructors
+
 # built ins
 built_ins_file_path = os.path.dirname(__file__) + '/.PiPWidgets.json'
 
@@ -16,10 +18,11 @@ save_data = {
         "file_path": user_save_path,
         "locked": False}
 }
-# get Katana PiP constructors
-constructors_file_path = os.path.dirname(__file__) + '/KatanaConstructors.json'
-katana_constructors = getJSONData(constructors_file_path)
-
+# # get Katana PiP constructors
+# constructors_file_path = os.path.dirname(__file__) + '/KatanaConstructors.json'
+# katana_constructors = getJSONData(constructors_file_path)
+katana_constructors = getConstructors()
+#print(katana_constructors)
 pip_tabs = []
 
 for file_name in save_data.keys():

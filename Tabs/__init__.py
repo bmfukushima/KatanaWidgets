@@ -16,9 +16,8 @@ for tab in tabs_list:
 # register PiP Tabs
 from .PiPWidget.PiPWidgetTabInitializer import pip_tabs
 
-
 for pip_tab in pip_tabs:
-    tab_name = "/". join(["PiPTabs", pip_tab["file_name"], pip_tab["widget_name"]])
+    tab_name = "/". join(["PiP Displays", pip_tab["file_name"], pip_tab["widget_name"]])
     PluginRegistry.append(("KatanaPanel", 2, tab_name, pip_tab["constructor"]))
     print(pip_tab)
 

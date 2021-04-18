@@ -5,15 +5,17 @@ from qtpy.QtWidgets import QVBoxLayout
 
 from cgwidgets.widgets import PiPWidget
 from cgwidgets.utils import getJSONData
-
+from .utils import getConstructors
 
 class PiPOrganizerTab(UI4.Tabs.BaseTab):
     NAME = "PiP Organizer"
     def __init__(self, parent=None):
         super(PiPOrganizerTab, self).__init__(parent)
         # get Katana PiP constructors
-        constructors_file_path = os.path.dirname(__file__) + '/KatanaConstructors.json'
-        katana_constructors = getJSONData(constructors_file_path)
+        # constructors_file_path = os.path.dirname(__file__) + '/KatanaConstructors.json'
+        # katana_constructors = getJSONData(constructors_file_path)
+        test_file_path = "/media/ssd01/dev/katana/KatanaWidgets/Tabs/PiPWidget/ExampleConstructors.json"
+        katana_constructors = getConstructors(test_file_path)
 
         # setup katana save paths...
         # built ins

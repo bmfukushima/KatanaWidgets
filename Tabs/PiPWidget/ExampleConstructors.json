@@ -1,0 +1,1 @@
+{"QLabel": "\nfrom qtpy.QtWidgets import QLabel\nwidget = QLabel(\"TEST\") ", "QPushButton": "\nfrom qtpy.QtWidgets import QPushButton\nwidget = QPushButton(\"TESTBUTTON\") "}
