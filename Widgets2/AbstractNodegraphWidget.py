@@ -94,6 +94,11 @@ class AbstractNodegraphWidget(QWidget):
     def wheelEventFilter(self, obj, event):
         #scroll wheel  and AbstractNodegraphWidget.is_scrolling is True
         current_widget = getWidgetUnderCursor()
+        # from qtpy.QtWidgets import QApplication
+        # print('focus == ', QApplication.focusWidget())
+        # print('current == ', current_widget)
+        # print('widget == ', self.getWidget())
+        # print('object == ', obj)
         if current_widget == self.getWidget():
             if event.type() == QEvent.Wheel:
                 modifiers = event.modifiers()
@@ -157,16 +162,6 @@ class AbstractNodegraphWidget(QWidget):
             for widget in widget_list:
                 widget.installEventFilter(self)
 
-    # def getKatanaTab(self, widget):
-    #     """
-    #     Gets the katana panel (hopefully)
-    #     """
-    #     from UI4.Widgets import PanelScrollArea
-    #     if isinstance(widget, PanelScrollArea):
-    #         return widget
-    #     else:
-    #         return self.getKatanaTab(widget.parent())
-
     def destroyNodegraphEventFilter(self, obj, event):
         """
         When the katana tab is closed / hidden, this will destroy the nodegraph
@@ -186,11 +181,13 @@ class AbstractNodegraphWidget(QWidget):
         if should_return: return True
 
         # destroy
+        # if event_type not in [QEvent.Hide, QEvent.Close]: return
         self.destroyNodegraphEventFilter(obj, event)
-
-        return_val = super(AbstractNodegraphWidget, self).eventFilter(obj, event)
-
-        return return_val
+        return False
+        # print('5')
+        # return_val = super(AbstractNodegraphWidget, self).eventFilter(obj, event)
+        # print('6')
+        # return return_val
 
     def nodeDelete(self, args):
         node = self.getNode()
@@ -219,7 +216,10 @@ class AbstractNodegraphWidget(QWidget):
         nodegraph_widget = self.getWidget()
 
         # clean up
-        NodeGraphView.CleanupModule(self)
+        # ToDo Somehow this line of code breaks the NMC Context...
+        """ For some reason calling this class method calls it NO MATTER WHAT...
+        and apparently I don't need it... so fuck it"""
+        # NodeGraphView.CleanupModule(self)
         nodegraph_widget.cleanup()
 
     def closeEvent(self, event):

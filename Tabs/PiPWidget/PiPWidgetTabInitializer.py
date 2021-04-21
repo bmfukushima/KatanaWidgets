@@ -1,4 +1,9 @@
 import os
+
+from qtpy.QtWidgets import QVBoxLayout
+
+from Katana import UI4
+
 from cgwidgets.utils import getJSONData
 from cgwidgets.widgets import PiPWidget
 
@@ -18,11 +23,9 @@ save_data = {
         "file_path": user_save_path,
         "locked": False}
 }
-# # get Katana PiP constructors
-# constructors_file_path = os.path.dirname(__file__) + '/KatanaConstructors.json'
-# katana_constructors = getJSONData(constructors_file_path)
-katana_constructors = getConstructors()
-#print(katana_constructors)
+# get Katana PiP constructors
+widget_constructors = getConstructors()
+
 pip_tabs = []
 
 for file_name in save_data.keys():
@@ -34,7 +37,7 @@ for file_name in save_data.keys():
         pip_tab_data["file_name"] = file_name
         pip_tab_data["widget_name"] = pip_widget_name
 
-        def createConstructor(save_data, katana_constructors, file_name, widget_name):
+        def createConstructor(save_data, widget_constructors, file_name, widget_name):
             """
             Creates the Tab constructor for Katana.
             Args:
@@ -46,20 +49,20 @@ for file_name in save_data.keys():
             Returns (QWidget): to be constructed when Katana initializes a tab
 
             """
-            class PiPDisplayTab(PiPWidget):
+            class PiPDisplayTab(UI4.Tabs.BaseTab):
                 FILE_NAME = file_name
                 WIDGET_NAME = widget_name
-                def __init__(self, parent=None, save_data=save_data, widget_types=katana_constructors):
-                    super(PiPDisplayTab, self).__init__(parent=parent, save_data=save_data, widget_types=widget_types)
+                def __init__(self, parent=None, save_data=save_data, widget_types=widget_constructors):
+                    super(PiPDisplayTab, self).__init__(parent)
+                    QVBoxLayout(self)
+                    self.main_widget = PiPWidget(widget_types=widget_types, save_data=save_data)
+                    self.layout().addWidget(self.main_widget)
 
-                    self.setDisplayWidget(PiPDisplayTab.FILE_NAME, PiPDisplayTab.WIDGET_NAME)
-                    self.setCreationMode(PiPWidget.DISPLAY)
+                    self.main_widget.setDisplayWidget(PiPDisplayTab.FILE_NAME, PiPDisplayTab.WIDGET_NAME)
+                    self.main_widget.setCreationMode(PiPWidget.DISPLAY)
 
             constructor = PiPDisplayTab
             return constructor
 
-        # how to dynamically create constructor?
-        pip_tab_data["constructor"] = createConstructor(save_data, katana_constructors, file_name, pip_widget_name)
-
+        pip_tab_data["constructor"] = createConstructor(save_data, widget_constructors, file_name, pip_widget_name)
         pip_tabs.append(pip_tab_data)
-        print('creating... ', pip_tab_data)
