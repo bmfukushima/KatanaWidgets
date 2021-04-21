@@ -7,24 +7,27 @@ from Katana import UI4
 from cgwidgets.utils import getJSONData
 from cgwidgets.widgets import PiPWidget
 
-from .utils import getConstructors
+from .utils import getConstructors, getSaveData
 
-# built ins
-built_ins_file_path = os.path.dirname(__file__) + '/.PiPWidgets.json'
-
-# user
-user_save_path = os.environ["HOME"] + '/.katana/.PiPWidgets.json'
-
-save_data = {
-    "KatanaBebop": {
-        "file_path": built_ins_file_path,
-        "locked": False},
-    "User": {
-        "file_path": user_save_path,
-        "locked": False}
-}
+# # built ins
+# built_ins_file_path = os.path.dirname(__file__) + '/.PiPWidgets.json'
+#
+# # user
+# user_save_path = os.environ["HOME"] + '/.katana/.PiPWidgets.json'
+#
+# save_data = {
+#     "KatanaBebop": {
+#         "file_path": built_ins_file_path,
+#         "locked": False},
+#     "User": {
+#         "file_path": user_save_path,
+#         "locked": False}
+# }
 # get Katana PiP constructors
 widget_constructors = getConstructors()
+
+# get save data
+save_data = getSaveData()
 
 pip_tabs = []
 
@@ -41,10 +44,11 @@ for file_name in save_data.keys():
             """
             Creates the Tab constructor for Katana.
             Args:
-                save_data (dict):
-                katana_constructors (dict):
-                file_name (str):
-                widget_name (str):
+                save_data (dict): JSON data of Save Directories
+                widget_constructors (dict): JSON data of constructors for different widgets
+                    available in the PiPWidget
+                file_name (str): name of file that this PiP Tab is stored in
+                widget_name (str): name of PiP Widget
 
             Returns (QWidget): to be constructed when Katana initializes a tab
 

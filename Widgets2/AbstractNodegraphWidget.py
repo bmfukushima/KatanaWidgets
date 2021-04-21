@@ -181,7 +181,6 @@ class AbstractNodegraphWidget(QWidget):
         if should_return: return True
 
         # destroy
-        # if event_type not in [QEvent.Hide, QEvent.Close]: return
         self.destroyNodegraphEventFilter(obj, event)
         return False
         # print('5')
