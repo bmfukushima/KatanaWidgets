@@ -135,3 +135,15 @@ def makeUndoozDisappear(index=0):
     """
     Utils.UndoStack._UndoStack.pop(index)
     Utils.UndoStack._TriggerUndoCallbacks()
+
+
+def getFontSize():
+    """
+    Gets the current font size in Katana.  This is useful for dynamically resizing the application.
+
+    """
+    from qtpy.QtWidgets import QApplication
+    from cgwidgets.utils import getFontSize
+
+    font_size = getFontSize(QApplication.instance())
+    return font_size

@@ -1,4 +1,4 @@
-'''
+"""
 Creates a tab that allows users to flags nodes as "desirable".
 
 This tab has multiple groups inside of it so that the user may
@@ -27,17 +27,17 @@ ToDo
     - Add group functionality?
         gross.. then I have to store data or something
             could potentially just save it on the actual param data?
-'''
-from qtpy.QtWidgets import QVBoxLayout, QSizePolicy
+"""
+from qtpy.QtWidgets import QVBoxLayout, QSizePolicy, QApplication
 from qtpy.QtCore import Qt
 
-from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget
+from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, LabelledInputWidget, OverlayInputWidget
 from cgwidgets.views import AbstractDragDropListView
 from cgwidgets.utils import getWidgetAncestor, attrs
 
 from Katana import UI4 , NodegraphAPI, Utils
 from Widgets2 import NodeViewWidget
-from Utils2 import nodeutils
+from Utils2 import nodeutils, getFontSize
 
 
 class DesiredNodesTab(UI4.Tabs.BaseTab):
@@ -76,6 +76,7 @@ class DesiredNodesFrame(ShojiModelViewWidget):
     def __init__(self, parent=None):
         super(DesiredNodesFrame, self).__init__(parent)
 
+        self.setHeaderDefaultLength(getFontSize() * 6)
         self._selected_items = []
         self.setHeaderPosition(attrs.NORTH, attrs.SOUTH)
         self.setOrientation(Qt.Vertical)
@@ -89,10 +90,19 @@ class DesiredNodesFrame(ShojiModelViewWidget):
             dynamic_function=DesiredNodesShojiPanel.populate
         )
 
-        # node create widget
-        self.create_desirable_group_widget = StringInputWidget(self)
-        self.addHeaderDelegateWidget([Qt.Key_Q], self.create_desirable_group_widget, modifier=Qt.NoModifier, focus=True)
+        # tab create widget
+        self.create_desirable_group_input_widget = StringInputWidget()
+        self.create_desirable_group_widget = LabelledInputWidget(
+            self,
+            default_label_length=getFontSize() * 12,
+            delegate_widget=self.create_desirable_group_input_widget,
+            direction=Qt.Horizontal,
+            name="Create New Tab",
+            )
+        self.addHeaderDelegateWidget([], self.create_desirable_group_widget, modifier=Qt.NoModifier, focus=True)
         self.create_desirable_group_widget.setUserFinishedEditingEvent(self.createNewDesirableGroup)
+        self.create_desirable_group_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
+        self.create_desirable_group_widget.show()
 
         # setup events
         self.setHeaderItemDeleteEvent(self.purgeDesirableGroup)
@@ -179,7 +189,7 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         return new_index
 
     def createNewDesirableGroup(self, widget, value):
-        name = self.create_desirable_group_widget.text()
+        name = self.create_desirable_group_input_widget.text()
         if name:
             self.addNewGroup(name)
 
@@ -190,7 +200,7 @@ class DesiredNodesFrame(ShojiModelViewWidget):
 
             # reset widget
             widget.setText('')
-            widget.hide()
+            # widget.hide()
 
             # TODO Set focus back on header?
             header_view_widget = self.headerViewWidget()
@@ -349,3 +359,14 @@ class DesiredNodesView(AbstractDragDropListView):
                 parent_widget.setNodeDesirability(node, True)
 
         return AbstractDragDropListView.dropEvent(self, event)
+
+
+class CreateDesirableGroupWidget(LabelledInputWidget):
+    def __init__(self, parent=None, delegate_widget=None):
+        super(CreateDesirableGroupWidget, self).__init__(
+            parent,
+            name="Create New Item",
+            default_label_length=100,
+            direction=Qt.Horizontal,
+            delegate_widget=delegate_widget
+        )
