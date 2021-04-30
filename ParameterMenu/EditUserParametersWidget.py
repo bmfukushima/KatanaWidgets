@@ -523,6 +523,7 @@ class DynamicArgsInputWidget(LabelledInputWidget):
         self.setToolTip(note)
         self.setUserFinishedEditingEvent(self.userInputEvent)
         self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
+        self.setResizeSlidersOnWidgetResize(True)
         # # setup alignment
         # self.layout().setAlignment(Qt.AlignTop)
 
@@ -589,6 +590,8 @@ class UserParametersDynamicWidget(ShojiLayout):
             Display Name --> label
             Widget Type --> widget
             Locked --> readOnly
+
+        Returns (FrameInputWidgetContainer)
         """
         default_args_widget = FrameInputWidgetContainer(self, title='Default Args', direction=Qt.Vertical)
         default_args_widget.layout().setAlignment(Qt.AlignTop)
@@ -647,10 +650,10 @@ class UserParametersDynamicWidget(ShojiLayout):
         # setup default sizes
         for key in self.widgets_dict:
             widget = self.widgets_dict[key]
-            frame_widget = widget.parent()
+            frame_widget = widget.parent().parent()
             frame_widget.setDefaultLabelLength(_DEFAULT_LABEL_LENGTH)
-            frame_widget.setSeparatorLength(_DEFAULT_SEPARATOR_LENGTH)
-            frame_widget.setSeparatorWidth(_DEFAULT_SEPARATOR_WIDTH)
+            frame_widget.setHandleLength(_DEFAULT_SEPARATOR_LENGTH)
+            frame_widget.setHandleWidth(_DEFAULT_SEPARATOR_WIDTH)
 
         return default_args_widget
 
