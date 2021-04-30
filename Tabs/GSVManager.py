@@ -1,43 +1,20 @@
-
 from qtpy.QtWidgets import (
     QWidget, QVBoxLayout, QLabel, QListWidget, QListWidgetItem, QFormLayout, QLineEdit,
-    QAbstractItemView, QCompleter, QComboBox, QSplitter)
+    QAbstractItemView, QCompleter, QComboBox, QSplitter, QTabWidget)
 from qtpy.QtCore import Qt, QEvent, QSortFilterProxyModel
 from qtpy.QtGui import QStandardItemModel, QStandardItem, QCursor
 
-from Katana import UI4 , NodegraphAPI, Utils
+from Katana import UI4, NodegraphAPI, Utils
 
-
-'''
-BUGS
-paramChildDeleted
-Error in collapsed event handler paramChildDeleted(): AttributeError: 'NoneType' object has no attribute 'parent'
-    2.) GUI Exists... 
-        store combo box size
-
-
-FEATURES     
-    1.) Rename (Project Settings) / GUI
-            GUI is easier... 
-                Change Label to to double click --> line edit?
-                Line edit signal/event to delete/create GSV
-                
-CLEANUP!!
-    Main Widget:
-        Name --> view_widget
-        store data as    {
-                                    'gsv' : {'label':<label>, 'combo_box':<combo_box>} ,
-                                    'gsv' : {'label':<label>, 'combo_box':<combo_box>} ,
-                                }
-BaseTab --> VBox Layout    --> Swappable Layout (create/edit)
-                                            --> Toggle Button
-'''
 
 class GSVManager(UI4.Tabs.BaseTab):
     """
 
     Attributes:
-        gsv_list (list): of all GSVs
+        gsv_list (list): of all GSVs that are currently in this widget.
+            This is separate from Katanas internal GSV's
+
+
     """
     NAME = "GSVManager"
 
@@ -55,71 +32,24 @@ class GSVManager(UI4.Tabs.BaseTab):
     """ CREATE GUI"""
     def createGUI(self):
         """ Creates the main layout"""
-        layout = QVBoxLayout()
-        self.setLayout(layout)
 
-        self.splitter = DisplaySplitter(parent=self)
-        self._create_widget = self.createCreateWidget()
-        self._edit_widget = self.createEditWidget()
-        self.splitter.addWidget(self.createWidget())
-        self.splitter.addWidget(self.editWidget())
-        layout.addWidget(self.splitter)
+        # create widgets
+        self._display_tab = DisplayTab(parent=self)
+        self._view_widget = ViewWidget(parent=self)
+        self._edit_widget = EditWidget(parent=self)
+        self._display_tab.addTab(self.viewWidget(), "View")
+        self._display_tab.addTab(self.editWidget(), "Edit")
 
-        self.populateMainWidget()
-
-        # setup default sizes
-        if self.splitter.underMouse() is True:
-            self.splitter.setSizes([500, 500])
-            self.splitter.setHandleWidth(50)
-
-        elif self.splitter.underMouse() is False:
-            self.splitter.setSizes([500, 0])
-            self.splitter.setHandleWidth(0)
-        self.splitter.update()
+        # setup layout
+        QVBoxLayout(self)
+        self.layout().addWidget(self._display_tab)
 
     """ WIDGETS """
-    def createWidget(self):
-        return self._create_widget
-
-    def createCreateWidget(self):
-        """Creates the main widget that will be displayed on the stackedLayout"""
-
-        widget = QWidget(parent=self)
-        layout = QFormLayout()
-        widget.setLayout(layout)
-        return widget
+    def viewWidget(self):
+        return self._view_widget
 
     def editWidget(self):
         return self._edit_widget
-
-    def createEditWidget(self):
-        """Creates the edit_widget to be held on 1st index of the stackedLayout"""
-
-        widget = EditWidget(parent=self)
-        widget.populate()
-        return widget
-
-    """ POPULATE """
-    def populateMainWidget(self):
-        """Creates the display for every GSV.  This is the left side of the display."""
-        #get attrs
-        widget = self.createWidget()
-        layout = widget.layout()
-        
-        # clear layout (if it exists)
-        if layout.count() > 0:
-            for index in reversed(range(layout.count())):
-                layout.itemAt(index).widget().setParent(None)
-        
-        # create a combobox for each GSV that is available
-        gsv_keys = GSVUtils().getAllGSVNames()
-        for gsv in sorted(gsv_keys):
-            options = GSVUtils().getGSVOptions(gsv)
-            
-            label = QLabel(gsv)
-            default_value = NodegraphAPI.GetRootNode().getParameter('variables.%s.value'%gsv).getValue(0)
-            combobox = GSVOptionsComboBox(item_list=options, default_value=default_value)
-            layout.addRow(label, combobox)
 
     """ PROPERTIES"""
     def getGSVList(self):
@@ -150,8 +80,8 @@ class GSVManager(UI4.Tabs.BaseTab):
             # get difference
             new_gsvs = list(set(available_gsvs) - set(current_gsvs))
 
-            layout = self.createWidget().layout()
-            for gsv in sorted(new_gsvs):
+            layout = self.viewWidget().layout()
+            for gsv in new_gsvs:
                 # add to main widget (form layout)
                 options = GSVUtils().getGSVOptions(gsv)
                 label = QLabel(gsv)
@@ -176,7 +106,7 @@ class GSVManager(UI4.Tabs.BaseTab):
             ## get the corret main combo_box to add to
             if value == '':
                 return
-            layout = self.createWidget().layout()
+            layout = self.viewWidget().layout()
             combo_box = None
             for index in range(layout.count()):
                 child = layout.itemAt(index).widget()
@@ -232,7 +162,7 @@ class GSVManager(UI4.Tabs.BaseTab):
         # meta data loading... essentially creating random GSV's
         # creates blank GSV on new scene --> file load
         # creates first GSV on loaded file --> new scene
-        self.populateMainWidget()
+        self.viewWidget().populate()
         self.editWidget().populate()
         self.setGSVList(GSVUtils().getAllGSVNames())
 
@@ -273,28 +203,24 @@ class GSVManager(UI4.Tabs.BaseTab):
             if args[0][2]['node'] == NodegraphAPI.GetRootNode(): 
                 if param.getParent().getName() == 'variables':
                     gsv = param.getName()
-                    combo_box_gsv = str(self.parent().editGSVNamesWidget().currentText())
+                    combo_box_gsv = str(self.editWidget().editGSVNamesWidget().currentText())
                     gsv_list = GSVUtils().getGSVOptions(gsv)
-                    #===============================================================
-                    # update list widget 
-                    #===============================================================
+                    # update Edit Widgets List View
                     if gsv == combo_box_gsv:
                         self.editWidget().viewEditableGSVWidget().clear()
                         self.editWidget().viewEditableGSVWidget().populate()
-                    
-                    #===============================================================
-                    # update main widget combo box
-                    #===============================================================
-                    #get combo box
-                    layout = self.createWidget().layout()
+
+                    # update View Widgets ComboBox
+                    # get combo box
+                    layout = self.viewWidget().layout()
                     for index in range(layout.count()):
                         child = layout.itemAt(index).widget()
-                        if hasattr(child,'text'):
+                        if hasattr(child, 'text'):
                             if str(child.text()) == gsv:
                                 combo_box = layout.itemAt(index+1).widget()
                                 model = combo_box.getModel()
                                 child_delete_index = index
-                    #remove items from main widget combo box
+                    # remove items from main widget combo box
                     for index in reversed(range(model.rowCount())):
                         item = model.item(index)
                         if str(item.text()) not in gsv_list:
@@ -309,63 +235,40 @@ class GSVManager(UI4.Tabs.BaseTab):
             # update list_widget
             new_gsv_list = GSVUtils().getAllGSVNames()
 
-            if self.parent().editGSVNamesWidget().currentText() == '<variables>':
+            if self.editWidget().editGSVNamesWidget().currentText() == '<variables>':
                 self.editWidget().viewEditableGSVWidget().clear()
                 self.editWidget().viewEditableGSVWidget().populate(item_list=new_gsv_list)
-            #===================================================================
-            # delete edit_widget combo box model entry...
-            #===================================================================
+
+            # delete Edit Widget combo box model entry...
             old_gsv_list = self.getGSVList()
             gsv_list_delta = list(set(old_gsv_list) - set(new_gsv_list))
             
             self.setGSVList(new_gsv_list)
 
-            model = self.parent().editGSVNamesWidget().getModel()
+            model = self.editWidget().editGSVNamesWidget().getModel()
             for index in reversed(range(model.rowCount())):
                 item = model.item(index)
                 if str(item.text()) in gsv_list_delta:
                     model.removeRow(index)
 
             # delete main_widget form widget?
-            layout = self.createWidget().layout()
+            layout = self.viewWidget().layout()
             for index in reversed(range(layout.count())):
                 child = layout.itemAt(index).widget()
-                if hasattr(child,'text'):
+                if hasattr(child, 'text'):
                     if child.text() in gsv_list_delta:
-                        #pos = (layout.getWidgetPosition(child)[0] * 2) + 1
-                        #combo_box = layout.itemAt(pos).widget()
                         layout.itemAt(index+1).widget().setParent(None)
                         layout.itemAt(index).widget().setParent(None)
-            pass
+
         clearMenuOptions()
         deleteGSV()
 
-    def enterEvent(self, *args, **kwargs):
-        stored_sizes = self.splitter.getStoredSizes()
-        self.splitter.setSizes(stored_sizes)
-        self.splitter.setHandleWidth(50)
-        self.splitter.update()
-
-    def leaveEvent(self, *args, **kwargs):
-
-        tl = self.mapToGlobal(self.geometry().topLeft())
-        br = self.mapToGlobal(self.geometry().bottomRight())
-
-        x = QCursor().pos().x()
-        y = QCursor().pos().y()
-        l = tl.x()
-        r = br.x()
-        t = tl.y()
-        b = br.y()
-
-        if x > r or x < l or y < t or y > b:
-            self.splitter.setSizes([500, 0])
-            self.splitter.setHandleWidth(0)
-
 
 class GSVUtils(object):
+    STRING = 0
+    PARAMETER = 1
     @staticmethod
-    def addGSVOption(gsv, new_option):
+    def addGSVOption(gsv, new_option, row=None):
         """Adds an option to an already existing GSV
 
         Args:
@@ -387,13 +290,11 @@ class GSVUtils(object):
 
         # create new GSV option
         if new_option not in options_list:
-            # resize array to fit new child
-            num_children = options.getNumChildren()
-            options.resizeArray(num_children+1)
+            if not row:
+                row = options.getNumChildren()
 
-            # create new GSV option
-            child = options.getChildByIndex(num_children)
-            child.setValue(new_option, 0)
+            new_option_param = options.insertArrayElement(row)
+            new_option_param.setValue(str(new_option), 0)
 
     @staticmethod
     def createNewGSV(gsv):
@@ -423,13 +324,13 @@ class GSVUtils(object):
         return gsv_keys_list
 
     @staticmethod
-    def getGSVOptions(gsv):
+    def getGSVOptions(gsv, return_as=0):
         """Returns a list of all of the options available for the specified GSV
 
         Args:
             gsv (str): name of GSV to get options for
-
-        Returns (list): of strings
+            return_as (GSVUtils.TYPE): what type of list this should return
+        Returns (list): of strings or parameters, depending on value given to "return_as" arg
         """
         gsv_param = GSVUtils.getGSVParameter(gsv)
         options_list = []
@@ -437,7 +338,16 @@ class GSVUtils(object):
             for child in gsv_param.getChildren():
                 if child.getName() == 'options':
                     options = gsv_param.getChild("options").getChildren()
-                    options_list = [child.getValue(0) for child in options]
+                    if return_as == GSVUtils.STRING:
+                        options_list = [child.getValue(0) for child in options]
+                    elif return_as == GSVUtils.PARAMETER:
+                        options_list = options
+                    """
+                    options_list = []
+                        for index in range(options_param.getNumChildren()):
+                            option = options_param.getChildByIndex(index).getValue(0)
+                            options_list.append(option)
+                    """
 
         return options_list
 
@@ -463,14 +373,64 @@ class GSVUtils(object):
         return GSVUtils().getVariablesParameter().getChild(gsv)
 
     @staticmethod
+    def getGSVOptionParameter(gsv, option):
+        """
+        Gets the parameter that the GSV Option is held on
+        Args:
+            gsv (str):
+            option (str):
+
+        Returns (Parameter):
+
+        """
+        gsv_options = GSVUtils.getGSVOptions(gsv, return_as=GSVUtils.PARAMETER)
+        for gsv_option in gsv_options:
+            if gsv_option.getValue(0) == option:
+                return gsv_option
+
+        return None
+
+    @staticmethod
+    def moveGSVtoNewIndex(gsv, index):
+        """
+        moves the GSV to the index provided
+
+        Args:
+            gsv (str):
+            index (int):
+
+        Returns:
+
+        """
+        variables_param = GSVUtils.getVariablesParameter()
+        gsv_param = GSVUtils.getGSVParameter(gsv)
+        variables_param.reorderChild(gsv_param, index)
+
+    @staticmethod
+    def moveGSVOptionToNewIndex(gsv, option, index):
+        """
+        Moves the GSV option parameter provided to a new index
+
+        Args:
+            gsv (str): GSV to manipulate
+            option (str): Option to move
+            index  (int): new index to place the option at
+
+        """
+
+        option_param = GSVUtils.getGSVOptionParameter(gsv, option)
+        gsv_options_param = GSVUtils.getGSVParameter(gsv).getChild("options")
+        gsv_options_param.reorderChild(option_param, index)
+
+    @staticmethod
     def deleteGSVOption(gsv, option):
         # update Katana GSV params
         """note that in the Project Settings tab, the variables has to be
         expanded/collapsed to refresh teh new list"""
 
         # get attrs
-        gsv_list = GSVUtils().getGSVOptions(gsv)
-        new_options = list(set(gsv_list) - list(option))
+        gsv_options = GSVUtils().getGSVOptions(gsv)
+        #gsv_options = list(set(gsv_list))
         gsv_param = GSVUtils().getGSVParameter(gsv)
         gsv_value_param = gsv_param.getChild("value")
         options_param = gsv_param.getChild("options")
@@ -478,8 +438,8 @@ class GSVUtils(object):
 
         # if option remove is current, set to first option available
         if current_gsv == option:
-            if len(new_options) > 0:
-                value = new_options[0]
+            if len(gsv_options) > 0:
+                value = gsv_options[0]
             else:
                 value = ''
         else:
@@ -488,35 +448,59 @@ class GSVUtils(object):
 
         # remove option
         """ No delete function, so need to remove from array and reset"""
-        options_param.resizeArray(len(new_options))
-        for options_param, optionValue in zip(options_param.getChildren(), new_options):
+        gsv_options.remove(option)
+        options_param.resizeArray(len(gsv_options))
+        for options_param, optionValue in zip(options_param.getChildren(), gsv_options):
             options_param.setValue(optionValue, 0)
 
     @staticmethod
     def deleteGSV(gsv):
         gsv_param = GSVUtils().getGSVParameter(gsv)
-        GSVUtils().getVariablesParameter.deleteChild(gsv_param)
+        GSVUtils().getVariablesParameter().deleteChild(gsv_param)
 
 
-class DisplaySplitter(QSplitter):
+class DisplayTab(QTabWidget):
     def __init__(self, parent=None):
-        super(DisplaySplitter, self).__init__(parent)
-        #will need to find a "cursor under"
-        self.stored_sizes = [500, 0]
-        self.setSizes(self.stored_sizes)
-        self.setHandleWidth(0)
-        self.update()
-
-        self.splitterMoved.connect(self.setStoredSizes)
-    
-    def setStoredSizes(self):
-        self.stored_sizes = self.sizes()
-
-    def getStoredSizes(self):
-        return self.stored_sizes
+        super(DisplayTab, self).__init__(parent)
 
 
-""" CREATE EDIT WIDGET """
+""" VIEW WIDGET """
+class ViewWidget(QWidget):
+    def __init__(self, parent=None):
+        super(ViewWidget, self).__init__(parent)
+        QFormLayout(self)
+
+        self.populate()
+
+    """ POPULATE """
+    def populate(self):
+        """Creates the display for every GSV.  This is the left side of the display."""
+        # clear layout (if it exists)
+        if self.layout().count() > 0:
+            for index in reversed(range(self.layout().count())):
+                self.layout().itemAt(index).widget().setParent(None)
+
+        # create a combobox for each GSV that is available
+        gsv_keys = GSVUtils().getAllGSVNames()
+        for gsv in gsv_keys:
+            self.createGSVDisplayWidget(gsv)
+
+    def createGSVDisplayWidget(self, gsv):
+        """ Creates a GSV Display widget
+
+        Args:
+            gsv (str): name of gsv to create
+        """
+        # Get Attrs
+        options = GSVUtils().getGSVOptions(gsv)
+
+        label = QLabel(gsv)
+        default_value = NodegraphAPI.GetRootNode().getParameter('variables.%s.value' % gsv).getValue(0)
+        combobox = GSVOptionsComboBox(item_list=options, default_value=default_value)
+        self.layout().addRow(label, combobox)
+
+
+""" EDIT WIDGET """
 class EditWidget(QWidget):
     """
     Widget to hold the view where the users can edit GSVs
@@ -542,6 +526,9 @@ class EditWidget(QWidget):
         self.layout().addWidget(self._edit_gsv_names_widget)
         self.layout().addWidget(self._create_new_gsv_option_widget)
         self.layout().addWidget(self._view_editable_gsv_widget)
+
+        # populate
+        self.populate()
 
     """ WIDGETS """
     def editGSVOptionWidget(self):
@@ -579,20 +566,28 @@ class EditGSVOptionsWidget(QLineEdit):
         if event.key() in [Qt.Key_Return, Qt.Key_Enter]:
             ## Enter Pressed
             gsv = str(self.parent().editGSVNamesWidget().currentText())
+            main_widget = self.parent().parent().parent().parent()
+
+            # Do nothing
             if gsv.rstrip() == '':
                 return QLineEdit.keyPressEvent(self, event, *args, **kwargs)
+
+            # Create new GSV Option
             elif gsv != '<variables>':
                 option = str(self.text())
-                GSVUtils().addGSVOption(gsv, option)
+                print(gsv)
+                print(GSVUtils().getAllGSVNames())
+                if gsv in GSVUtils().getAllGSVNames():
+                    GSVUtils().addGSVOption(gsv, option)
+                    main_widget.update(gsv=gsv, value=option)
+                    self.setText('')
 
-                self.parent().parent().parent().update(gsv=gsv, value=option)
-                self.setText('') 
+            # Create new GSV
             elif gsv == '<variables>':
                 new_gsv = str(self.text())
                 option = str(self.text())
                 GSVUtils().createNewGSV(new_gsv)
-    
-                self.parent().parent().parent().update(gsv=gsv, value=option)
+                main_widget.update(gsv=gsv, value=option)
                 self.setText('')
         return QLineEdit.keyPressEvent(self, event, *args, **kwargs)
 
@@ -628,7 +623,7 @@ class AbstractGSVComboBox(QComboBox):
     def populate(self, item_list=[]):
 
         self.model = QStandardItemModel()
-        for i, child in enumerate(sorted(item_list)):
+        for i, child in enumerate(item_list):
             if child.rstrip() != '':
                 item = QStandardItem(child)
                 self.model.setItem(i, 0, item)
@@ -716,7 +711,7 @@ class EditGSVNamesWidget(AbstractGSVComboBox):
                 GSVUtils.createNewGSV(gsv)
 
                 # Update Main Widget
-                layout = main_widget.createWidget().layout()
+                layout = main_widget.viewWidget().layout()
                 label = QLabel(gsv)
                 default_value = ''
                 combobox = GSVOptionsComboBox(item_list=[], default_value=default_value)
@@ -815,6 +810,8 @@ class ViewEditableGSVWidget(QListWidget):
     '''
     def __init__(self, parent=None, combo_box=None):
         super(ViewEditableGSVWidget, self).__init__(parent)
+        self.setDragDropMode(QAbstractItemView.InternalMove)
+        self.setDragEnabled(True)
 
     """ UTILS """
     def deleteOptions(self):
@@ -840,7 +837,7 @@ class ViewEditableGSVWidget(QListWidget):
         # update main_widget
 
         # get combo box
-        layout = main_widget.createWidget().layout()
+        layout = main_widget.viewWidget().layout()
         for index in range(layout.count()):
             child = layout.itemAt(index).widget()
             if hasattr(child, 'text'):
@@ -897,7 +894,7 @@ class ViewEditableGSVWidget(QListWidget):
                 model.removeRow(index)
 
         # delete main_widget form widget?
-        layout = self.main_widget.createWidget().layout()
+        layout = self.main_widget.viewWidget().layout()
         for index in reversed(range(layout.count())):
             child = layout.itemAt(index).widget()
             if hasattr(child, 'text'):
@@ -946,6 +943,42 @@ class ViewEditableGSVWidget(QListWidget):
                 self.deleteGSVs()
 
         return QListWidget.keyPressEvent(self, event, *args, **kwargs)
+
+    def dropEvent(self, event):
+
+        # get attrs
+        current_text = self.parent().editGSVNamesWidget().currentText()
+
+        # resolve drop event
+        return_val = super(ViewEditableGSVWidget, self).dropEvent(event)
+
+        # move GSV
+        if current_text == "<variables>":
+            for index in self.selectedIndexes():
+                gsv = str(index.data())
+                row = index.row()
+
+                # move GSV to new index
+                GSVUtils().moveGSVtoNewIndex(gsv, row)
+
+                main_widget = self.getMainWidget(self)
+                main_widget.viewWidget().populate()
+
+        # move GSV Option
+        else:
+            gsv = current_text
+            for index in self.selectedIndexes():
+                option = index.data()
+                row = index.row()
+                # todo fix this
+                GSVUtils.moveGSVOptionToNewIndex(gsv, option, row)
+                # remove old
+                # GSVUtils().deleteGSVOption(gsv, option)
+                #
+                # # insert new
+                # GSVUtils().addGSVOption(gsv, option, row=row)
+
+        return return_val
 
 
 PluginRegistry = [("KatanaPanel", 2, "GSVManager", GSVManager)]
