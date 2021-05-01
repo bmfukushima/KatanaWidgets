@@ -6,8 +6,6 @@ from qtpy.QtGui import QStandardItemModel, QStandardItem
 
 from Katana import UI4, NodegraphAPI, Utils
 
-from cgwidgets.widgets import ShojiModelViewWidget
-
 
 class GSVManager(UI4.Tabs.BaseTab):
     """
@@ -16,31 +14,14 @@ class GSVManager(UI4.Tabs.BaseTab):
         gsv_list (list): of all GSVs that are currently in this widget.
             This is separate from Katanas internal GSV's
 
-    Hierarchy:
-        QVBoxLayout
-            |- mainWidget --> ShojiModelViewWidget
-                |- viewWidget --> (ViewWidget --> QWidget)
-                |- editWidget --> (EditWidget --> QWidget)
 
     """
     NAME = "GSVManager"
 
     def __init__(self, parent=None):
         super(GSVManager, self).__init__(parent)
-        self.setGSVList(GSVUtils().getAllGSV(return_as=GSVUtils.STRING))
-
-        # create widgets
-        self._main_widget = ShojiModelViewWidget(parent=self)
-        self._view_widget = ViewWidget(parent=self)
-        self._edit_widget = EditWidget(parent=self)
-        self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self.viewWidget())
-        self._main_widget.insertShojiWidget(1, column_data={"name":"Edit"}, widget=self.editWidget())
-
-        # setup layout
-        QVBoxLayout(self)
-        self.layout().addWidget(self._main_widget)
-
-        # register events
+        self.setGSVList(GSVUtils().getAllGSVNames())
+        self.createGUI()
         Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_finalizeValue', None)
         Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
         Utils.EventModule.RegisterCollapsedHandler(self.paramChildDeleted, 'parameter_deleteChild', None)
@@ -48,10 +29,22 @@ class GSVManager(UI4.Tabs.BaseTab):
     def rename(self, args):
         pass
 
-    """ WIDGETS """
-    def mainWidget(self):
-        return self._main_widget
+    """ CREATE GUI"""
+    def createGUI(self):
+        """ Creates the main layout"""
 
+        # create widgets
+        self._display_tab = DisplayTab(parent=self)
+        self._view_widget = ViewWidget(parent=self)
+        self._edit_widget = EditWidget(parent=self)
+        self._display_tab.addTab(self.viewWidget(), "View")
+        self._display_tab.addTab(self.editWidget(), "Edit")
+
+        # setup layout
+        QVBoxLayout(self)
+        self.layout().addWidget(self._display_tab)
+
+    """ WIDGETS """
     def viewWidget(self):
         return self._view_widget
 
@@ -79,7 +72,7 @@ class GSVManager(UI4.Tabs.BaseTab):
             current_gsvs = self.getGSVList()
 
             # get current GSVs available
-            available_gsvs = GSVUtils().getAllGSV(return_as=GSVUtils.STRING)
+            available_gsvs = GSVUtils().getAllGSVNames()
             # append to gsv_list
             # set gsv list
             self.setGSVList(available_gsvs)
@@ -90,11 +83,9 @@ class GSVManager(UI4.Tabs.BaseTab):
             layout = self.viewWidget().layout()
             for gsv in new_gsvs:
                 # add to main widget (form layout)
-                options = GSVUtils().getGSVOptions(gsv, return_as=GSVUtils.PARAMETER)
+                options = GSVUtils().getGSVOptions(gsv)
                 label = QLabel(gsv)
-                gsv_param = GSVUtils.getGSVParameter(gsv)
-                default_value = gsv_param.getChild("value").getValue(0)
-                #default_value = NodegraphAPI.GetRootNode().getParameter('variables.%s.value' % gsv).getValue(0)
+                default_value = NodegraphAPI.GetRootNode().getParameter('variables.%s.value' % gsv).getValue(0)
                 combobox = GSVOptionsComboBox(item_list=options, default_value=default_value)
                 layout.addRow(label, combobox)
 
@@ -104,59 +95,64 @@ class GSVManager(UI4.Tabs.BaseTab):
                 model.setItem(model.rowCount(), 0, item)
 
                 if str(self.editWidget().editGSVNamesWidget().currentText()) == '<variables>':
-                    self.editWidget().displayEditableOptionsWidget().createNewItem(gsv, gsv_param)
+                    item = QListWidgetItem(gsv)
+
+                    self.editWidget().displayEditableOptionsWidget().addItem(item)
 
         def updateOptions():
-            """
-            updates if there is a change to the GSV Options
-            add the new GSV to the combo_box on the main_widget and the list on the
-            """
-            ## preflight
-            if value == '': return
-
-            # Get View Widget ComboBox to update
+            #=======================================================================
+            # updates if there is a change to the GSV Options
+            #=======================================================================
+            ## get the corret main combo_box to add to
+            if value == '':
+                return
             layout = self.viewWidget().layout()
-            view_widget_input_widget = None
+            combo_box = None
             for index in range(layout.count()):
                 child = layout.itemAt(index).widget()
-                if hasattr(child, 'text'):
+                if hasattr(child,'text'):
                     if child.text() == gsv:
-                        view_widget_input_widget = layout.itemAt(index+1).widget()
-
-            #
+                        combo_box = layout.itemAt(index+1).widget()
+            #=======================================================================
+            # add the new GSV to the combo_box on the main_widget and the list on the
+            # edit widget, if the edit widget is curently set to that gsv
+            #=======================================================================
+            # get combo box
             item_list = []
-            if view_widget_input_widget != None:
-                model = view_widget_input_widget.getModel()
+
+            if combo_box != None:
+                model =  combo_box.getModel()
                 row_count = model.rowCount()
                 
                 # get list of currently available options in the combo box
-                for index in range(row_count):
+                for index in range( row_count ):
                     item = model.item(index)
                     item_list.append(str(item.text()))
+                
+                
+                #add new items to the combo box + list widget
+                #set the graph state variable parameter
+                #for some reason setting this below is making it so it doesnt set the combo box for the FIRST 
+                # gsv creation...
 
                 if value not in item_list:
-                    # get param
+    
                     param = NodegraphAPI.GetRootNode().getParameter('variables.%s.value'%gsv)
                     if not param:
                         param = NodegraphAPI.GetRootNode().getParameter('variables.%s').createChildString('value')
-
                     if param:
-                        # setup parameter
                         param.setValue(value, 0)
-
-                        # create View Widget combo box entry
+                        #if value.rstrip() != '':
                         new_item = QStandardItem(value)
                         model.setItem(row_count, 0, new_item)
-
-                        # create list widget entry
+                        #check to make sure its the right gsv
                         edit_gsv = str(self.editWidget().editGSVNamesWidget().currentText())
                         if edit_gsv == gsv:
-                            # add to list widget
+                            #add to list widget
                             list_widget = self.editWidget().displayEditableOptionsWidget()
-                            list_widget.createNewItem(value, param)
-
-                    # set view_widget_input_widget text
-                    view_widget_input_widget.setEditText(value)
+                            item = QListWidgetItem(value)
+                            list_widget.addItem(item)
+                    combo_box.setEditText(value)
 
         updateGSVs()
         updateOptions()
@@ -168,7 +164,7 @@ class GSVManager(UI4.Tabs.BaseTab):
         # creates first GSV on loaded file --> new scene
         self.viewWidget().populate()
         self.editWidget().populate()
-        self.setGSVList(GSVUtils().getAllGSV(return_as=GSVUtils.STRING))
+        self.setGSVList(GSVUtils().getAllGSVNames())
 
     def gsvChanged(self, args):
         """ When  GSV is changed, this will updated the main display for the user"""
@@ -211,7 +207,7 @@ class GSVManager(UI4.Tabs.BaseTab):
                     gsv_list = GSVUtils().getGSVOptions(gsv)
                     # update Edit Widgets List View
                     if gsv == combo_box_gsv:
-                        self.editWidget().displayEditableOptionsWidget().clearModel()
+                        self.editWidget().displayEditableOptionsWidget().clear()
                         self.editWidget().displayEditableOptionsWidget().populate()
 
                     # update View Widgets ComboBox
@@ -237,14 +233,13 @@ class GSVManager(UI4.Tabs.BaseTab):
             current_options_list = [child_name]
 
             # update list_widget
-            new_gsv_list = GSVUtils().getAllGSV(return_as=GSVUtils.PARAMETER)
+            new_gsv_list = GSVUtils().getAllGSVNames()
 
             if self.editWidget().editGSVNamesWidget().currentText() == '<variables>':
-                self.editWidget().displayEditableOptionsWidget().clearModel()
-                self.editWidget().displayEditableOptionsWidget().populate(item_list=new_gsv_list)
+                self.editWidget().displayEditableOptionsWidget().clear()
+                self.editWidget().displayEditableOptionsWidget().populate(gsv_list=new_gsv_list)
 
             # delete Edit Widget combo box model entry...
-            new_gsv_list = GSVUtils().getAllGSV(return_as=GSVUtils.STRING)
             old_gsv_list = self.getGSVList()
             gsv_list_delta = list(set(old_gsv_list) - set(new_gsv_list))
             
@@ -319,19 +314,13 @@ class GSVUtils(object):
         return gsv_param.getName()
 
     @staticmethod
-    def getAllGSV(return_as=0):
+    def getAllGSVNames():
         """Returns a list of all the possible GSVs in the scene
 
-        Args:
-            return_as (GSVUtils.TYPE): what type to return the values in the list as
-
-        Returns (list): of strings or parameters depending on the input type provided.  Default is String
+        Returns (list): of strings
         """
         gsv_list = GSVUtils().getVariablesParameter().getChildren()
-        if return_as == GSVUtils.STRING:
-            gsv_keys_list = [gsv.getName() for gsv in gsv_list]
-        elif return_as == GSVUtils.PARAMETER:
-            gsv_keys_list = gsv_list
+        gsv_keys_list = [gsv.getName() for gsv in gsv_list]
         return gsv_keys_list
 
     @staticmethod
@@ -492,7 +481,7 @@ class ViewWidget(QWidget):
                 self.layout().itemAt(index).widget().setParent(None)
 
         # create a combobox for each GSV that is available
-        gsv_keys = GSVUtils().getAllGSV(return_as=GSVUtils.STRING)
+        gsv_keys = GSVUtils().getAllGSVNames()
         for gsv in gsv_keys:
             self.createGSVDisplayWidget(gsv)
 
@@ -503,7 +492,7 @@ class ViewWidget(QWidget):
             gsv (str): name of gsv to create
         """
         # Get Attrs
-        options = GSVUtils().getGSVOptions(gsv, return_as=GSVUtils.PARAMETER)
+        options = GSVUtils().getGSVOptions(gsv)
 
         label = QLabel(gsv)
         default_value = NodegraphAPI.GetRootNode().getParameter('variables.%s.value' % gsv).getValue(0)
@@ -520,7 +509,7 @@ class EditWidget(QWidget):
         VBoxLayout:
             |- line_edit --> (EditGSVOptionsWidget --> QLineEdit)
             |- combo_box --> (EditGSVNamesWidget --> QComboBox)
-            |- list_widget --> (displayEditableOptionsWidget --> QListWidget)"""
+            |- list_widget --> (ViewEditableGSVWidget --> QListWidget)"""
     def __init__(self, parent=None):
         super(EditWidget, self).__init__(parent)
         self.main_widget = self.parent()
@@ -528,17 +517,15 @@ class EditWidget(QWidget):
         # Create Widgets
         self._create_new_gsv_option_widget = EditGSVOptionsWidget(parent=self)
         self._edit_gsv_names_widget = EditGSVNamesWidget(parent=self)
-        # self._view_editable_gsv_widget = displayEditableOptionsWidget(parent=self)
-        self._display_editable_options_widget = DisplayEditableOptionsWidget(parent=self)
-        self._display_editable_options_widget.show()
-        #self._display_editable_options_widget.setAlternatingRowColors(True)
-        #self._display_editable_options_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self._view_editable_gsv_widget = ViewEditableGSVWidget(parent=self)
+        self._view_editable_gsv_widget.setAlternatingRowColors(True)
+        self._view_editable_gsv_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
         # Setup Layout
         QVBoxLayout(self)
         self.layout().addWidget(self._edit_gsv_names_widget)
         self.layout().addWidget(self._create_new_gsv_option_widget)
-        self.layout().addWidget(self._display_editable_options_widget)
+        self.layout().addWidget(self._view_editable_gsv_widget)
 
         # populate
         self.populate()
@@ -551,22 +538,22 @@ class EditWidget(QWidget):
         return self._edit_gsv_names_widget
 
     def displayEditableOptionsWidget(self):
-        return self._display_editable_options_widget
+        return self._view_editable_gsv_widget
 
     def populate(self):
-        gsv_keys = ['<variables>'] + GSVUtils().getAllGSV(return_as=GSVUtils.PARAMETER)
+        gsv_keys = ['<variables>'] + GSVUtils().getAllGSVNames()
         # update combo box
         model = self.editGSVNamesWidget().getModel()
         
         if hasattr(model, 'rowCount'):
             for index in range(model.rowCount()):
                 model.removeRow(index)
-        #
+        
         gsv_keys = filter(None, gsv_keys)
         self.editGSVNamesWidget().populate(item_list=gsv_keys)
-
-        # update list widget
-        self.displayEditableOptionsWidget().clearModel()
+        
+        #update list widget
+        self.displayEditableOptionsWidget().clear()
         self.displayEditableOptionsWidget().populate(gsv_list=gsv_keys[1:])
 
 
@@ -579,7 +566,7 @@ class EditGSVOptionsWidget(QLineEdit):
         if event.key() in [Qt.Key_Return, Qt.Key_Enter]:
             ## Enter Pressed
             gsv = str(self.parent().editGSVNamesWidget().currentText())
-            main_widget = getWidgetAncestor(self, GSVManager)
+            main_widget = self.parent().parent().parent().parent()
 
             # Do nothing
             if gsv.rstrip() == '':
@@ -588,7 +575,9 @@ class EditGSVOptionsWidget(QLineEdit):
             # Create new GSV Option
             elif gsv != '<variables>':
                 option = str(self.text())
-                if gsv in GSVUtils().getAllGSV(return_as=GSVUtils.STRING):
+                print(gsv)
+                print(GSVUtils().getAllGSVNames())
+                if gsv in GSVUtils().getAllGSVNames():
                     GSVUtils().addGSVOption(gsv, option)
                     main_widget.update(gsv=gsv, value=option)
                     self.setText('')
@@ -632,26 +621,11 @@ class AbstractGSVComboBox(QComboBox):
                 return self.getMainWidget(widget.parent())        
     
     def populate(self, item_list=[]):
-        """
-
-        Args:
-            item_list (list): of parameters
-
-        Returns:
-
-        """
 
         self.model = QStandardItemModel()
         for i, child in enumerate(item_list):
-            # get child name
-            """ Needs to be different for both string/parameter options"""
-            if hasattr(child, "getName"):
-                child_name = child.getName()
-            else:
-                child_name = child
-
-            if child_name.rstrip() != '':
-                item = QStandardItem(child_name)
+            if child.rstrip() != '':
+                item = QStandardItem(child)
                 self.model.setItem(i, 0, item)
 
         self.setModel(self.model)
@@ -724,9 +698,7 @@ class EditGSVNamesWidget(AbstractGSVComboBox):
     def showOptions(self, gsv):
         # check to see if new
         # list current variables available
-
         main_widget = self.getMainWidget(self)
-
         if main_widget:
             gsv_list = [''] + main_widget.getGSVList()
 
@@ -746,22 +718,23 @@ class EditGSVNamesWidget(AbstractGSVComboBox):
                 layout.addRow(label, combobox)
 
             # Update options available to the user
+            self.parent().displayEditableOptionsWidget().clear()
             if hasattr(main_widget, '_edit_widget'):
-                self.parent().displayEditableOptionsWidget().clearModel()
                 self.parent().displayEditableOptionsWidget().populate()
 
     def showVariables(self):
-        if hasattr(self.parent(), '_display_editable_options_widget'):
+        if hasattr(self.parent(), '_view_editable_gsv_widget'):
+            # update edit widget
+            self.parent().displayEditableOptionsWidget().clear()
+            variables_list = GSVUtils().getAllGSVNames()
             if hasattr(self.main_widget, '_edit_widget'):
-                # update edit widget
-                self.parent().displayEditableOptionsWidget().clearModel()
-                variables_list = GSVUtils().getAllGSV(return_as=GSVUtils.PARAMETER)
                 self.parent().displayEditableOptionsWidget().populate(gsv_list=variables_list)
 
     def changedGSV(self):
         """ Combo box that will update what is displayed in the list widget
         if it is set to <variables> it will show all the GSVs, if it is something
         else, then it will show the options of that variable"""
+
         self.main_widget = self.getMainWidget(self)
         gsv = str(self.currentText())
         if gsv != '<variables>':
@@ -814,8 +787,9 @@ class GSVOptionsComboBox(AbstractGSVComboBox):
                     #get edit combo text?
                     edit_combo_box = main_widget.editWidget().editGSVNamesWidget()
                     if str(edit_combo_box.currentText()) != '<variables>':
-                        main_widget.editWidget().displayEditableOptionsWidget().clearModel()
-                        main_widget.editWidget().displayEditableOptionsWidget().populate()
+                        list_widget = main_widget.editWidget().displayEditableOptionsWidget()
+                        list_widget.clear()
+                        list_widget.populate()
 
     def getMainWidget(self, widget):
         if isinstance(widget, GSVManager):
@@ -827,236 +801,179 @@ class GSVOptionsComboBox(AbstractGSVComboBox):
     def update(self, item_list=[]):
         self.populate(item_list)
 
-from cgwidgets.widgets import ModelViewWidget, AbstractModelViewItem
-from cgwidgets.utils import getWidgetAncestor
-class DisplayEditableOptionsItem(AbstractModelViewItem):
-    def __init__(self, parent=None, parameter=None):
-        super(DisplayEditableOptionsItem, self).__init__(parent)
-        self.setParameter(parameter)
 
-    def parameter(self):
-        return self._parameter
+class ViewEditableGSVWidget(QListWidget):
+    '''
+    list widget that is parented to the EditWidget.  This list will display to the user all of the current
+    options that are available for the particular GSV that is being displayed in the "EditGSVNamesWidget"
+    widget.
+    '''
+    def __init__(self, parent=None, combo_box=None):
+        super(ViewEditableGSVWidget, self).__init__(parent)
+        self.setDragDropMode(QAbstractItemView.InternalMove)
+        self.setDragEnabled(True)
 
-    def setParameter(self, parameter):
-        self._parameter = parameter
-
-
-class DisplayEditableOptionsWidget(ModelViewWidget):
-    def __init__(self, parent=None):
-        super(DisplayEditableOptionsWidget, self).__init__(parent)
-        self.model().setItemType(DisplayEditableOptionsItem)
-
-    def createNewItem(self, name, parameter):
-        index = self.model().insertNewIndex(0, name=str(name))
-        item = index.internalPointer()
-        item.setParameter(parameter)
-
-    def populate(self, gsv_list=None):
+    """ UTILS """
+    def deleteOptions(self):
         """
-        Creates all of the corresponding items provided
-
-        Args:
-            gsv_list (list): of parameters to be populated
+        Removes all of the currently selected GSV options
         """
+        # get attrs
+        main_widget = self.getMainWidget(self)
+        gsv = str(self.parent().editGSVNamesWidget().currentText())
+        current_items_list = self.selectedItems()
+        current_options_list = [str(item.text()) for item in current_items_list]
+        gsv_list = GSVUtils().getGSVOptions(gsv)
+        new_options = list(set(gsv_list) - set(current_options_list))
+
+        # delete GSV Options
+        for option in current_options_list:
+            GSVUtils().deleteGSVOption(gsv, option)
+
+        # update list widget (edit_widget)
+        self.clear()
+        self.populate()
+
+        # update main_widget
+
+        # get combo box
+        layout = main_widget.viewWidget().layout()
+        for index in range(layout.count()):
+            child = layout.itemAt(index).widget()
+            if hasattr(child, 'text'):
+                if child.text() == gsv:
+                    combo_box = layout.itemAt(index + 1).widget()
+                    model = combo_box.getModel()
+
+        # update combo box options
+        for option in current_options_list:
+            row_count = model.rowCount()
+            for index in range(row_count):
+                item = model.item(index)
+                # no attribute item.text()
+                if item:
+                    if str(item.text()) == option:
+                        model.removeRow(index)
+
+        # reset Katana GSV
+        combo_box.populate(item_list=new_options)
+
+    def deleteGSVs(self):
+        """
+        Removes the currently selected GSVs
+        Returns:
+
+        """
+        # get attrs
+        main_widget = self.getMainWidget(self)
+        current_items_list = self.selectedItems()
+        current_options_list = [str(item.text()) for item in current_items_list]
+
+        # delete gsv
+        for gsv in current_options_list:
+            GSVUtils.deleteGSV(gsv)
+            # variables_param = NodegraphAPI.GetRootNode().getParameter('variables')
+            # variables_param.deleteChild(variables_param.getChild(item))
+
+        # update list_widget
+        new_gsv_list = GSVUtils().getAllGSVNames()
+
+        self.clear()
+        self.populate(item_list=new_gsv_list)
+
+        # delete edit_widget combo box model entry...
+        old_gsv_list = main_widget.getGSVList()
+        gsv_list_delta = list(set(old_gsv_list) - set(new_gsv_list))
+
+        main_widget.setGSVList(new_gsv_list)
+
+        model = self.parent().editGSVNamesWidget().getModel()
+        for index in reversed(range(model.rowCount())):
+            item = model.item(index)
+            if str(item.text()) in gsv_list_delta:
+                model.removeRow(index)
+
+        # delete main_widget form widget?
+        layout = self.main_widget.viewWidget().layout()
+        for index in reversed(range(layout.count())):
+            child = layout.itemAt(index).widget()
+            if hasattr(child, 'text'):
+                if child.text() in gsv_list_delta:
+                    layout.itemAt(index + 1).widget().setParent(None)
+                    layout.itemAt(index).widget().setParent(None)
+
+    def populate(self, item_list=None):
         #
-
-        main_widget = getWidgetAncestor(self, GSVManager)
-
-        # populate editable options
-        if main_widget:
-            # populate ALL options, if no gsv_list provided,
-            if not gsv_list:
-                # get all GSVs
-                gsv_keys = GSVUtils().getAllGSV(return_as=GSVUtils.STRING)
+        self.main_widget = self.getMainWidget(self)
+        # populate GSV options
+        if self.main_widget:
+            if not item_list:
+                gsv_keys = GSVUtils().getAllGSVNames()
                 gsv = self.parent().editGSVNamesWidget().currentText()
-
-                # if GSV is valid, populate all options
                 if gsv in gsv_keys:
-                    options_list = GSVUtils().getGSVOptions(gsv, return_as=GSVUtils.PARAMETER)
-                    for option_param in options_list:
-                        option_name = option_param.getValue(0)
-                        if option_name.rstrip() != '':
-                            self.createNewItem(option_name, option_param)
-            # populate GSV names
+                    options_list = GSVUtils().getGSVOptions(gsv)
+                    for option in options_list:
+                        if option.rstrip() != '':
+                            item = QListWidgetItem(option)
+                            self.addItem(item)
             else:
-                for option_param in gsv_list:
-                    option_name = option_param.getName()
-                    if option_name.rstrip() != '':
-                        self.createNewItem(option_name, option_param)
+                #      # populate GSV
+                for option in item_list:
+                    if option.rstrip() != '':
+                        item = QListWidgetItem(option)
+                        self.addItem(item)
+        
+    def getMainWidget(self, widget):
+        
+        if isinstance(widget, GSVManager):
+            return widget
+        else:
+            return self.getMainWidget(widget.parent())        
 
+    """ EVENTS """
+    def keyPressEvent(self, event, *args, **kwargs):
+        if event.key() == Qt.Key_Backspace or event.key() == Qt.Key_Delete:
+            # delete an option (basically if the param on the editWidget().editGSVNamesWidget() != <variables>)
+            main_widget = self.getMainWidget(self)
+            # get gsv (edit combobox)
+            gsv = str(self.parent().editGSVNamesWidget().currentText())
+            if gsv != '<variables>':
+                self.deleteOptions()
+            else:
+                self.deleteGSVs()
 
-# class displayEditableOptionsWidget(QListWidget):
-#     '''
-#     list widget that is parented to the EditWidget.  This list will display to the user all of the current
-#     options that are available for the particular GSV that is being displayed in the "EditGSVNamesWidget"
-#     widget.
-#     '''
-#     def __init__(self, parent=None, combo_box=None):
-#         super(displayEditableOptionsWidget, self).__init__(parent)
-#         self.setDragDropMode(QAbstractItemView.InternalMove)
-#         self.setDragEnabled(True)
-#
-#     """ UTILS """
-#     def deleteOptions(self):
-#         """
-#         Removes all of the currently selected GSV options
-#         """
-#         # get attrs
-#         main_widget = self.getMainWidget(self)
-#         gsv = str(self.parent().editGSVNamesWidget().currentText())
-#         current_items_list = self.selectedItems()
-#         current_options_list = [str(item.text()) for item in current_items_list]
-#         gsv_list = GSVUtils().getGSVOptions(gsv)
-#         new_options = list(set(gsv_list) - set(current_options_list))
-#
-#         # delete GSV Options
-#         for option in current_options_list:
-#             GSVUtils().deleteGSVOption(gsv, option)
-#
-#         # update list widget (edit_widget)
-#         self.clearModel()
-#         self.populate()
-#
-#         # update main_widget
-#
-#         # get combo box
-#         layout = main_widget.viewWidget().layout()
-#         for index in range(layout.count()):
-#             child = layout.itemAt(index).widget()
-#             if hasattr(child, 'text'):
-#                 if child.text() == gsv:
-#                     combo_box = layout.itemAt(index + 1).widget()
-#                     model = combo_box.getModel()
-#
-#         # update combo box options
-#         for option in current_options_list:
-#             row_count = model.rowCount()
-#             for index in range(row_count):
-#                 item = model.item(index)
-#                 # no attribute item.text()
-#                 if item:
-#                     if str(item.text()) == option:
-#                         model.removeRow(index)
-#
-#         # reset Katana GSV
-#         combo_box.populate(item_list=new_options)
-#
-#     def deleteGSVs(self):
-#         """
-#         Removes the currently selected GSVs
-#         Returns:
-#
-#         """
-#         # get attrs
-#         main_widget = self.getMainWidget(self)
-#         current_items_list = self.selectedItems()
-#         current_options_list = [str(item.text()) for item in current_items_list]
-#
-#         # delete gsv
-#         for gsv in current_options_list:
-#             GSVUtils.deleteGSV(gsv)
-#             # variables_param = NodegraphAPI.GetRootNode().getParameter('variables')
-#             # variables_param.deleteChild(variables_param.getChild(item))
-#
-#         # update list_widget
-#         new_gsv_list = GSVUtils().getAllGSV(return_as=GSVUtils.STRING)
-#
-#         self.clearModel()
-#         self.populate(item_list=new_gsv_list)
-#
-#         # delete edit_widget combo box model entry...
-#         old_gsv_list = main_widget.getGSVList()
-#         gsv_list_delta = list(set(old_gsv_list) - set(new_gsv_list))
-#
-#         main_widget.setGSVList(new_gsv_list)
-#
-#         model = self.parent().editGSVNamesWidget().getModel()
-#         for index in reversed(range(model.rowCount())):
-#             item = model.item(index)
-#             if str(item.text()) in gsv_list_delta:
-#                 model.removeRow(index)
-#
-#         # delete main_widget form widget?
-#         layout = self.main_widget.viewWidget().layout()
-#         for index in reversed(range(layout.count())):
-#             child = layout.itemAt(index).widget()
-#             if hasattr(child, 'text'):
-#                 if child.text() in gsv_list_delta:
-#                     layout.itemAt(index + 1).widget().setParent(None)
-#                     layout.itemAt(index).widget().setParent(None)
-#
-#     def populate(self, item_list=None):
-#         #
-#         self.main_widget = self.getMainWidget(self)
-#         # populate GSV options
-#         if self.main_widget:
-#             if not item_list:
-#                 gsv_keys = GSVUtils().getAllGSV(return_as=GSVUtils.STRING)
-#                 gsv = self.parent().editGSVNamesWidget().currentText()
-#                 if gsv in gsv_keys:
-#                     options_list = GSVUtils().getGSVOptions(gsv)
-#                     for option in options_list:
-#                         if option.rstrip() != '':
-#                             item = QListWidgetItem(option)
-#                             self.addItem(item)
-#             else:
-#                 #      # populate GSV
-#                 for option in item_list:
-#                     if option.rstrip() != '':
-#                         item = QListWidgetItem(option)
-#                         self.addItem(item)
-#
-#     def getMainWidget(self, widget):
-#
-#         if isinstance(widget, GSVManager):
-#             return widget
-#         else:
-#             return self.getMainWidget(widget.parent())
-#
-#     """ EVENTS """
-#     def keyPressEvent(self, event, *args, **kwargs):
-#         if event.key() == Qt.Key_Backspace or event.key() == Qt.Key_Delete:
-#             # delete an option (basically if the param on the editWidget().editGSVNamesWidget() != <variables>)
-#             main_widget = self.getMainWidget(self)
-#             # get gsv (edit combobox)
-#             gsv = str(self.parent().editGSVNamesWidget().currentText())
-#             if gsv != '<variables>':
-#                 self.deleteOptions()
-#             else:
-#                 self.deleteGSVs()
-#
-#         return QListWidget.keyPressEvent(self, event, *args, **kwargs)
-#
-#     def dropEvent(self, event):
-#
-#         # get attrs
-#         current_text = self.parent().editGSVNamesWidget().currentText()
-#
-#         # resolve drop event
-#         return_val = super(displayEditableOptionsWidget, self).dropEvent(event)
-#
-#         # move GSV
-#         if current_text == "<variables>":
-#             for index in self.selectedIndexes():
-#                 gsv = str(index.data())
-#                 row = index.row()
-#
-#                 # move GSV to new index
-#                 GSVUtils().moveGSVtoNewIndex(gsv, row)
-#
-#                 main_widget = self.getMainWidget(self)
-#                 main_widget.viewWidget().populate()
-#
-#         # move GSV Option
-#         else:
-#             gsv = current_text
-#             for index in self.selectedIndexes():
-#                 option = index.data()
-#                 row = index.row()
-#
-#                 GSVUtils.moveGSVOptionToNewIndex(gsv, option, row)
-#
-#         return return_val
+        return QListWidget.keyPressEvent(self, event, *args, **kwargs)
+
+    def dropEvent(self, event):
+
+        # get attrs
+        current_text = self.parent().editGSVNamesWidget().currentText()
+
+        # resolve drop event
+        return_val = super(ViewEditableGSVWidget, self).dropEvent(event)
+
+        # move GSV
+        if current_text == "<variables>":
+            for index in self.selectedIndexes():
+                gsv = str(index.data())
+                row = index.row()
+
+                # move GSV to new index
+                GSVUtils().moveGSVtoNewIndex(gsv, row)
+
+                main_widget = self.getMainWidget(self)
+                main_widget.viewWidget().populate()
+
+        # move GSV Option
+        else:
+            gsv = current_text
+            for index in self.selectedIndexes():
+                option = index.data()
+                row = index.row()
+
+                GSVUtils.moveGSVOptionToNewIndex(gsv, option, row)
+
+        return return_val
 
 
 # PluginRegistry = [("KatanaPanel", 2, "GSVManager", GSVManager)]
