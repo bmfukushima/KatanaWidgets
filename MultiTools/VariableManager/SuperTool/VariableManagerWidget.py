@@ -476,7 +476,7 @@ class VariableManagerGSVMenu(ListInputWidget):
 
     """ UTILS """
     def getAllVariables(self):
-        return [[variable] for variable in gsvutils.getAllVariables()]
+        return [[variable] for variable in gsvutils.getAllGSV()]
 
     def gsvChanged(self):
         """
