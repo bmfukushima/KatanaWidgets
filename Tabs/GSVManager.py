@@ -1,23 +1,13 @@
 """
 TODO
-    Handlers:
-        /* Delete
-        /* Drag/Drop
-        /* Rename
-        /* NULL (stop creating empty strings)
-        /* GSV Changed
-            View Widget --> Katana Param
     Hierarchy:
         * Move lists to LabelledInputWidgets
             * EditGSVOptionsWidget --> AbstractStringInput
-        /* ViewWidget --> FrameInputWidgetContainer
-        /* Update ShojiMVW Event Flag
     Katana (Normal GSV updates in Project Settings):
         * Delete
         * Rename
         * New (Option, GSV)
     Katana (Events)
-        /* New Nodegraph Loaded
         * GSV Changed Events
             - create installable event in gsvutils
             - GSV Events Tab, to change when event happens
@@ -261,6 +251,17 @@ class ViewWidget(FrameInputWidgetContainer):
         del self.widgets()[gsv]
 
     def renameWidget(self, gsv, new_name):
+        """
+        Renames the GSV widget to the new name provided
+
+        Args:
+            gsv (str): name of widget to change
+            new_name (str): value to change to
+        """
+        # cast to strings
+        gsv = str(gsv)
+        new_name = str(new_name)
+
         # get widget
         widget = self.widgets()[gsv]
 
@@ -325,9 +326,13 @@ class ViewGSVWidget(LabelledInputWidget):
         Returns:
 
         """
+        # preflight
+        if self.gsv == value: return
+
+        # rename GSV
         gsvutils.renameGSV(self.gsv, value)
         view_widget = getWidgetAncestor(self, ViewWidget)
-        view_widget.renameWidget(self.gsv, value)
+        view_widget.renameWidget(self.gsv, str(value))
 
     def update(self):
         return [[option] for option in gsvutils.getGSVOptions(self.gsv, return_as=gsvutils.STRING)]
