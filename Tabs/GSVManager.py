@@ -1,8 +1,5 @@
 """
 TODO
-    Hierarchy:
-        * Move lists to LabelledInputWidgets
-            * EditGSVOptionsWidget --> AbstractStringInput
     Katana (Normal GSV updates in Project Settings):
         * Delete
         * Rename
@@ -16,7 +13,7 @@ TODO
 """
 
 from qtpy.QtWidgets import (
-    QWidget, QVBoxLayout, QLineEdit)
+    QWidget, QVBoxLayout, QHBoxLayout)
 from qtpy.QtCore import Qt
 
 from Katana import UI4, NodegraphAPI, Utils
@@ -26,20 +23,18 @@ from cgwidgets.widgets import (
     ListInputWidget,
     LabelledInputWidget,
     ModelViewWidget,
+    OverlayInputWidget,
     ShojiModelViewWidget,
     StringInputWidget)
 
 from cgwidgets.utils import getWidgetAncestor
 
-from Utils2 import gsvutils
+from Utils2 import gsvutils, getFontSize
 
 
 class GSVManager(UI4.Tabs.BaseTab):
     """
-
-    Attributes:
-        gsv_list (list): of all GSVs that are currently in this widget.
-            This is separate from Katanas internal GSV's
+    Main convenience widget for displaying GSV maniputors to the user.
 
     Hierarchy:
         QVBoxLayout
@@ -48,8 +43,9 @@ class GSVManager(UI4.Tabs.BaseTab):
                 |    |* ViewGSVWidget --> (LabelledInputWidget)
                 |- editWidget --> (EditWidget --> QWidget)
                     |> VBoxLayout:
-                        |- editGSVNamesWidget --> (ListInputWidget)
-                        |- line_edit --> (EditGSVOptionsWidget --> QLineEdit)
+                        |> HBoxLayout
+                        |   |- GSVSelectorWidget --> (LabelledInputWidget --> ListInputWidget)
+                        |   |- CreateNewGSVOptionWidget --> (LabelledInputWidget --> StringInputWidget)
                         |- displayEditableOptionsWidget --> (ModelViewWidget)
     """
     NAME = "GSVManager"
@@ -358,8 +354,9 @@ class EditWidget(QWidget):
 
     Hierarchy:
         VBoxLayout:
-            |- editGSVNamesWidget --> (ListInputWidget)
-            |- line_edit --> (EditGSVOptionsWidget --> QLineEdit)
+            |>HBoxLayout
+            |   |- GSVSelectorWidget --> (LabelledInputWidget --> ListInputWidget)
+            |   |- CreateNewGSVOptionWidget --> (LabelledInputWidget --> StringInputWidget)
             |- displayEditableOptionsWidget --> (ModelViewWidget)
     """
     def __init__(self, parent=None):
@@ -369,17 +366,23 @@ class EditWidget(QWidget):
         self._display_mode = gsvutils.VARIABLES
 
         # Create Widgets
-        self._create_new_gsv_option_widget = EditGSVOptionsWidget(parent=self)
-        self._edit_gsv_names_widget = EditGSVNamesWidget(parent=self)
+        self._gsv_selector_widget = GSVSelectorWidget(parent=self)
+        self._create_new_gsv_option_widget = CreateNewGSVOptionWidget(parent=self)
         self._display_editable_options_widget = DisplayEditableOptionsWidget(parent=self)
-        self._display_editable_options_widget.show()
-        #self._display_editable_options_widget.setAlternatingRowColors(True)
-        #self._display_editable_options_widget.setSelectionMode(QAbstractItemView.ExtendedSelection)
 
-        # Setup Layout
+        # setup default sizes
+        font_size = getFontSize()
+        self._create_new_gsv_option_widget.setFixedHeight(font_size*6)
+        self._gsv_selector_widget.setFixedHeight(font_size * 6)
+
+        # Setup Top Row
+        self._user_settings_layout = QHBoxLayout()
+        self._user_settings_layout.addWidget(self._gsv_selector_widget)
+        self._user_settings_layout.addWidget(self._create_new_gsv_option_widget)
+
+        #
         QVBoxLayout(self)
-        self.layout().addWidget(self._edit_gsv_names_widget)
-        self.layout().addWidget(self._create_new_gsv_option_widget)
+        self.layout().addLayout(self._user_settings_layout)
         self.layout().addWidget(self._display_editable_options_widget)
 
         # populate
@@ -387,10 +390,10 @@ class EditWidget(QWidget):
 
     """ UTILS """
     def text(self):
-        return str(self.editGSVNamesWidget().text())
+        return str(self.gsvSelectorWidget().delegateWidget().text())
 
     def setText(self, text):
-        self.editGSVNamesWidget().setText(text)
+        self.gsvSelectorWidget().delegateWidget().setText(text)
 
     """ PROPERTIES """
     def displayMode(self):
@@ -400,11 +403,11 @@ class EditWidget(QWidget):
         self._display_mode = _display_mode
 
     """ WIDGETS """
-    def editGSVOptionWidget(self):
-        return self._edit_gsv_names_widget
+    def createNewGSVOptionWidget(self):
+        return self._create_new_gsv_option_widget
 
-    def editGSVNamesWidget(self):
-        return self._edit_gsv_names_widget
+    def gsvSelectorWidget(self):
+        return self._gsv_selector_widget
 
     def displayEditableOptionsWidget(self):
         return self._display_editable_options_widget
@@ -414,7 +417,7 @@ class EditWidget(QWidget):
         self.displayEditableOptionsWidget().update()
 
 
-class EditGSVNamesWidget(ListInputWidget):
+class GSVSelectorWidget(LabelledInputWidget):
     """This will display the currently active GSV to the user
 
     Changing this drop down will change the edit widgets display of the currently available
@@ -425,16 +428,26 @@ class EditGSVNamesWidget(ListInputWidget):
     """
 
     def __init__(self, parent=None):
-        super(EditGSVNamesWidget, self).__init__(parent)
-        # set default attrs
-        self.dynamic_update = True
-        self.filter_results = False
-        self.setText("<variables>")
+        super(GSVSelectorWidget, self).__init__(parent)
+
+        # setup attrs
+        self.setName("GSV")
+        self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
+        self.setDirection(Qt.Vertical)
+
+        # setup delegate widget
+        delegate_widget = ListInputWidget(self)
+        self.setDelegateWidget(delegate_widget)
+
+        # setup delegate widget attrs
+        self.delegateWidget().dynamic_update = True
+        self.delegateWidget().filter_results = False
+        self.delegateWidget().setText("<variables>")
 
         # setup events
-        self.setUserFinishedEditingEvent(self.changedGSV)
-        self.populate(self.getAllGSVNames())
-        self.setCleanItemsFunction(self.getAllGSVNames)
+        self.delegateWidget().setUserFinishedEditingEvent(self.changedGSV)
+        self.delegateWidget().populate(self.getAllGSVNames())
+        self.delegateWidget().setCleanItemsFunction(self.getAllGSVNames)
 
     def getAllGSVNames(self):
         """
@@ -457,7 +470,7 @@ class EditGSVNamesWidget(ListInputWidget):
         main_widget = getWidgetAncestor(self, GSVManager)
 
         if main_widget:
-            gsv = str(self.text())
+            gsv = str(self.delegateWidget().text())
             edit_widget = main_widget.editWidget()
             edit_widget.setDisplayMode(gsvutils.OPTIONS)
             gsv_list = gsvutils.getAllGSV(return_as=gsvutils.STRING)
@@ -491,64 +504,78 @@ class EditGSVNamesWidget(ListInputWidget):
         if it is set to <variables> it will show all the GSVs, if it is something
         else, then it will show the options of that variable"""
         # preflight
-        if str(self.text()) == "": return
+        if str(self.delegateWidget().text()) == "": return
 
         # set modes
-        if str(self.text()) == '<variables>':
+        if str(self.delegateWidget().text()) == '<variables>':
             self.setVariablesDisplayMode()
         else:
             self.setOptionsDisplayMode()
 
 
-class EditGSVOptionsWidget(QLineEdit):
+class CreateNewGSVOptionWidget(LabelledInputWidget):
     """Line Edit widget that creates new GSV options when enter is pressed"""
     def __init__(self, parent=None):
-        super(EditGSVOptionsWidget, self).__init__(parent)
-    
-    def keyPressEvent(self, event, *args, **kwargs):
-        # Enter Pressed
-        if event.key() in [Qt.Key_Return, Qt.Key_Enter]:
-            main_widget = getWidgetAncestor(self, GSVManager)
-            edit_widget = main_widget.editWidget()
-            current_gsv_text = str(edit_widget.text())
+        super(CreateNewGSVOptionWidget, self).__init__(parent)
+        # setup attrs
+        self.setName("Create Option")
+        self.setToolTip(""" Type value in and press ENTER to create a new Option/GSV""")
+        self.setDirection(Qt.Vertical)
+        self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
 
+        # setup delegate widget
+        delegate_widget = StringInputWidget(self)
+        self.setDelegateWidget(delegate_widget)
+        self.delegateWidget().setUserFinishedEditingEvent(self.createNewItem)
 
-            # Pre flight
-            if self.text() == "": return
-            if current_gsv_text == "": return
+    def createNewItem(self, widget, value):
+        """
+        Creates a new entry as a GSV or Option of a GSV.
 
-            # Create new GSV Option
-            elif current_gsv_text != '<variables>':
-                option = str(self.text())
-                if current_gsv_text in gsvutils.getAllGSV(return_as=gsvutils.STRING):
-                    param = gsvutils.addGSVOption(current_gsv_text, option)
-                    new_entry_text = option
+        Which one it sets depends on what is selected in the GSVSelectorWidget
 
-            # Create new GSV
-            elif current_gsv_text == '<variables>':
-                gsv = str(self.text())
-                gsv_list = gsvutils.getAllGSV(return_as=gsvutils.STRING)
-                # create new GSV if it doesn't exist
-                if gsv not in gsv_list:
-                    # create new GSV in katana
-                    param = gsvutils.createNewGSV(gsv)
+        Args:
+            widget (QWidget): sending signal
+            value (str): value being set
+        """
+        main_widget = getWidgetAncestor(self, GSVManager)
+        edit_widget = main_widget.editWidget()
+        current_gsv_text = str(edit_widget.text())
 
-                    # create new entry in the view widget
-                    main_widget.viewWidget().addWidget(gsv)
+        # Pre flight
+        if value == "": return
+        if current_gsv_text == "": return
 
-                    # get new entry text
-                    new_entry_text = gsv
+        # Create new GSV Option
+        if current_gsv_text != '<variables>':
+            option = str(value)
+            if current_gsv_text in gsvutils.getAllGSV(return_as=gsvutils.STRING):
+                param = gsvutils.addGSVOption(current_gsv_text, option)
+                new_entry_text = option
 
-            # create new list entry
-            model = main_widget.editWidget().displayEditableOptionsWidget().model()
-            root_item = model.getRootItem()
-            num_children = len(root_item.children())
-            main_widget.editWidget().displayEditableOptionsWidget().createNewItem(new_entry_text, param, index=num_children)
+        # Create new GSV
+        elif current_gsv_text == '<variables>':
+            gsv = str(value)
+            gsv_list = gsvutils.getAllGSV(return_as=gsvutils.STRING)
+            # create new GSV if it doesn't exist
+            if gsv not in gsv_list:
+                # create new GSV in katana
+                param = gsvutils.createNewGSV(gsv)
 
-            # reset text
-            self.setText('')
+                # create new entry in the view widget
+                main_widget.viewWidget().addWidget(gsv)
 
-        return QLineEdit.keyPressEvent(self, event, *args, **kwargs)
+                # get new entry text
+                new_entry_text = gsv
+
+        # create new list entry
+        model = main_widget.editWidget().displayEditableOptionsWidget().model()
+        root_item = model.getRootItem()
+        num_children = len(root_item.children())
+        main_widget.editWidget().displayEditableOptionsWidget().createNewItem(new_entry_text, param, index=num_children)
+
+        # reset text
+        self.delegateWidget().setText('')
 
 
 class DisplayEditableOptionsItem(AbstractModelViewItem):
