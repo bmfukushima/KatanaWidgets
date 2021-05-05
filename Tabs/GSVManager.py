@@ -2,9 +2,9 @@
 TODO
     Handlers:
         /* Delete
-        * Drag/Drop
+        /* Drag/Drop
         /* Rename
-        * NULL (stop creating empty strings)
+        /* NULL (stop creating empty strings)
         * GSV Changed
             View Widget --> Katana Param
     Hierarchy:
@@ -50,10 +50,14 @@ class GSVManager(UI4.Tabs.BaseTab):
 
     Hierarchy:
         QVBoxLayout
-            |- mainWidget --> ShojiModelViewWidget
+            |- mainWidget --> (ShojiModelViewWidget)
                 |- viewWidget --> (ViewWidget --> QWidget)
+                |    |* ViewGSVWidget --> (LabelledInputWidget)
                 |- editWidget --> (EditWidget --> QWidget)
-
+                    |> VBoxLayout:
+                        |- editGSVNamesWidget --> (ListInputWidget)
+                        |- line_edit --> (EditGSVOptionsWidget --> QLineEdit)
+                        |- displayEditableOptionsWidget --> (ModelViewWidget)
     """
     NAME = "GSVManager"
 
@@ -553,21 +557,22 @@ class EditGSVOptionsWidget(QLineEdit):
         # Enter Pressed
         if event.key() in [Qt.Key_Return, Qt.Key_Enter]:
 
-            current_text = str(self.parent().text())
+            current_gsv_text = str(self.parent().text())
             main_widget = getWidgetAncestor(self, GSVManager)
 
-            # Do nothing
-            if current_text.rstrip() == '':
-                return QLineEdit.keyPressEvent(self, event, *args, **kwargs)
+            # Pre flight
+            if self.text() == "": return
+            if current_gsv_text == "": return
 
             # Create new GSV Option
-            elif current_text != '<variables>':
+            elif current_gsv_text != '<variables>':
                 option = str(self.text())
-                if current_text in gsvutils.getAllGSV(return_as=gsvutils.STRING):
-                    param = gsvutils.addGSVOption(current_text, option)
+                if current_gsv_text in gsvutils.getAllGSV(return_as=gsvutils.STRING):
+                    param = gsvutils.addGSVOption(current_gsv_text, option)
                     new_entry_text = option
+
             # Create new GSV
-            elif current_text == '<variables>':
+            elif current_gsv_text == '<variables>':
                 gsv = str(self.text())
                 gsv_list = gsvutils.getAllGSV(return_as=gsvutils.STRING)
                 # create new GSV if it doesn't exist
@@ -613,6 +618,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         # setup events
         self.setItemDeleteEvent(self.deleteSelection)
         self.setTextChangedEvent(self.renameSelectedItem)
+        self.setDropEvent(self.moveSelectedItems)
 
     def createNewItem(self, name, parameter, index=0):
         index = self.model().insertNewIndex(index, name=str(name))
@@ -677,6 +683,38 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         self.populate()
 
     """ EVENTS """
+    def moveSelectedItems(self, data, items, model, row, parent):
+        """
+        Changes the GSV/Option name to the values provided
+
+        Args:
+            items (list): of DisplayEditableOptionsItem currently being dropped
+            row (int): row being dropped on
+
+
+        Note:
+            When the user Drag/Drops items in the display
+
+        """
+        edit_widget = getWidgetAncestor(self, EditWidget)
+
+        for item in items:
+            # Rename Option
+            if edit_widget.displayMode() == gsvutils.OPTIONS:
+                gsv = edit_widget.text()
+                option = item.columnData()['name']
+                gsvutils.moveGSVOptionToNewIndex(gsv, option, row)
+
+            # Rename GSV
+            if edit_widget.displayMode() == gsvutils.VARIABLES:
+                gsv = item.columnData()['name']
+                gsvutils.moveGSVtoNewIndex(gsv, row)
+
+                # update view
+                main_widget = getWidgetAncestor(self, GSVManager)
+                view_widget = main_widget.viewWidget()
+                view_widget.populate()
+
     def deleteSelection(self, item):
         """ Deletes the specified item, and removes the relevant data.
 
