@@ -286,3 +286,15 @@ def renameGSVOption(gsv, old_name, new_name):
     deleteGSVOption(gsv, old_name)
 
 
+def setGSVOption(gsv, option):
+    """
+    Sets the GSV to the option provided
+
+    Args:
+        gsv (str): gsv to set
+        option (str): option to set the GSV to
+    """
+    gsv_param = getGSVParameter(gsv)
+    value_param = gsv_param.getChild('value')
+    value_param.setValue(str(option), 0)
+
