@@ -207,8 +207,7 @@ class GSVManager(UI4.Tabs.BaseTab):
                     gsv_list = GSVUtils().getGSVOptions(gsv)
                     # update Edit Widgets List View
                     if gsv == combo_box_gsv:
-                        self.editWidget().displayEditableOptionsWidget().clear()
-                        self.editWidget().displayEditableOptionsWidget().populate()
+                        self.editWidget().displayEditableOptionsWidget().update()
 
                     # update View Widgets ComboBox
                     # get combo box
@@ -236,8 +235,7 @@ class GSVManager(UI4.Tabs.BaseTab):
             new_gsv_list = GSVUtils().getAllGSVNames()
 
             if self.editWidget().editGSVNamesWidget().currentText() == '<variables>':
-                self.editWidget().displayEditableOptionsWidget().clear()
-                self.editWidget().displayEditableOptionsWidget().populate(gsv_list=new_gsv_list)
+                self.editWidget().displayEditableOptionsWidget().update()
 
             # delete Edit Widget combo box model entry...
             old_gsv_list = self.getGSVList()

@@ -2,9 +2,14 @@ try:
     import NodegraphAPI
 except ModuleNotFoundError:
     pass
+
+# return as
 STRING = 0
 PARAMETER = 1
 
+# display modes
+VARIABLES = 0
+OPTIONS = 1
 
 def createNewPattern(pattern, variable, set=False):
     """
@@ -35,20 +40,20 @@ def createNewPattern(pattern, variable, set=False):
         variable_param.getChild('value').setValue(pattern, 0)
 
 
-def createNewGSV(gsv):
-    """
-    Creates a new GSV in the project settings.
-
-    Args:
-        gsv (str) the name of the GSV to add
-    """
-    all_variables = getAllGSV()
-    if gsv not in all_variables:
-        variables_group = NodegraphAPI.GetRootNode().getParameter('variables')
-        variable_param = variables_group.createChildGroup(gsv)
-        variable_param.createChildNumber('enable', 1)
-        variable_param.createChildString('value', '')
-        variable_param.createChildStringArray('options', 0)
+# def createNewGSV(gsv):
+#     """
+#     Creates a new GSV in the project settings.
+#
+#     Args:
+#         gsv (str) the name of the GSV to add
+#     """
+#     all_variables = getAllGSV()
+#     if gsv not in all_variables:
+#         variables_group = NodegraphAPI.GetRootNode().getParameter('variables')
+#         variable_param = variables_group.createChildGroup(gsv)
+#         variable_param.createChildNumber('enable', 1)
+#         variable_param.createChildString('value', '')
+#         variable_param.createChildStringArray('options', 0)
 
 
 def addGSVOption(gsv, new_option, row=None):
@@ -99,6 +104,41 @@ def createNewGSV(gsv):
     gsv_param.createChildString('value', '')
     gsv_param.createChildStringArray('options', 0)
     return gsv_param
+
+
+def deleteGSVOption(gsv, option):
+    # update Katana GSV params
+    """note that in the Project Settings tab, the variables has to be
+    expanded/collapsed to refresh teh new list"""
+
+    # get attrs
+    gsv_options = getGSVOptions(gsv)
+    gsv_param = getGSVParameter(gsv)
+    gsv_value_param = gsv_param.getChild("value")
+    options_param = gsv_param.getChild("options")
+    current_gsv = gsv_value_param.getValue(0)
+
+    # if option remove is current, set to first option available
+    if current_gsv == option:
+        if len(gsv_options) > 0:
+            value = gsv_options[0]
+        else:
+            value = ''
+    else:
+        value = ''
+    gsv_value_param.setValue(value, 0)
+
+    # remove option
+    """ No delete function, so need to remove from array and reset"""
+    gsv_options.remove(option)
+    options_param.resizeArray(len(gsv_options))
+    for options_param, optionValue in zip(options_param.getChildren(), gsv_options):
+        options_param.setValue(optionValue, 0)
+
+
+def deleteGSV(gsv):
+    gsv_param = getGSVParameter(gsv)
+    getVariablesParameter().deleteChild(gsv_param)
 
 
 def getAllGSV(return_as=STRING):
@@ -216,37 +256,33 @@ def moveGSVOptionToNewIndex(gsv, option, index):
     gsv_options_param.reorderChild(option_param, index)
 
 
-def deleteGSVOption(gsv, option):
-    # update Katana GSV params
-    """note that in the Project Settings tab, the variables has to be
-    expanded/collapsed to refresh teh new list"""
+def renameGSV(gsv_name, new_name):
+    """
+    Changes the name of a GSV.
 
-    # get attrs
-    gsv_options = getGSVOptions(gsv)
-    #gsv_options = list(set(gsv_list))
-    gsv_param = getGSVParameter(gsv)
-    gsv_value_param = gsv_param.getChild("value")
-    options_param = gsv_param.getChild("options")
-    current_gsv = gsv_value_param.getValue(0)
-
-    # if option remove is current, set to first option available
-    if current_gsv == option:
-        if len(gsv_options) > 0:
-            value = gsv_options[0]
-        else:
-            value = ''
-    else:
-        value = ''
-    gsv_value_param.setValue(value, 0)
-
-    # remove option
-    """ No delete function, so need to remove from array and reset"""
-    gsv_options.remove(option)
-    options_param.resizeArray(len(gsv_options))
-    for options_param, optionValue in zip(options_param.getChildren(), gsv_options):
-        options_param.setValue(optionValue, 0)
+    Args:
+        gsv_name (gsv): name of GSV to be changed
+        new_name (gsv): name to be changed to
+    """
+    gsv_param = getGSVParameter(gsv_name)
+    gsv_param.setName(new_name)
 
 
-def deleteGSV(gsv):
-    gsv_param = getGSVParameter(gsv)
-    getVariablesParameter().deleteChild(gsv_param)
+def renameGSVOption(gsv, old_name, new_name):
+    """
+    Changes the name of a GSV Option
+    Args:
+        gsv (str): GSV to change option name on
+        old_name (str): option name to be changed
+        new_name (str): name to be changed to
+    """
+    option_param = getGSVOptionParameter(gsv, old_name)
+    old_index = option_param.getIndex()
+    # add new option
+    new_option_param = addGSVOption(gsv, new_name)
+    moveGSVOptionToNewIndex(gsv, new_name, old_index)
+
+    # delete old option
+    deleteGSVOption(gsv, old_name)
+
+
