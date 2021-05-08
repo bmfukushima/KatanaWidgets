@@ -66,3 +66,4 @@ Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)
 # change full screen hotkey
 from MonkeyPatches import changeFullscreenHotkey
 changeFullscreenHotkey(Qt.Key_B)
+

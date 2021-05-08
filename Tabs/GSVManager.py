@@ -5,12 +5,17 @@ TODO
         * Rename
         * New (Option, GSV)
     Katana (Events)
-        * GSV Changed Events
-            - create installable event in gsvutils
-            - GSV Events Tab, to change when event happens
+        * displayGSVEventWidget running multiple times... ancient fucking bug
+            EventsWidget --> displayGSVEventWidget
+            because it runs 3 times... and just keeps running on random fucking shit, fuck my code
+        * delete handlers
+            EventsWidget --> setupDeleteHandler
+            GSVEvent --> DeleteOption
+
         * Need to make script ingestor thingymabobber?
             would also run on the EventsTab
 """
+import json
 
 from qtpy.QtWidgets import (
     QHBoxLayout,
@@ -34,12 +39,13 @@ from cgwidgets.widgets import (
     StringInputWidget)
 from cgwidgets.utils import getWidgetAncestor
 from cgwidgets.settings import attrs
+
 from Utils2 import gsvutils, getFontSize
 
 
 class GSVManager(UI4.Tabs.BaseTab):
     """
-    Main convenience widget for displaying GSV maniputors to the user.
+    Main convenience widget for displaying GSV manipulators to the user.
 
     Hierarchy:
         QVBoxLayout
@@ -47,11 +53,17 @@ class GSVManager(UI4.Tabs.BaseTab):
                 |- viewWidget --> (ViewWidget --> QWidget)
                 |    |* ViewGSVWidget --> (LabelledInputWidget)
                 |- editWidget --> (EditWidget --> QWidget)
-                    |> VBoxLayout:
-                        |> HBoxLayout
-                        |   |- GSVSelectorWidget --> (LabelledInputWidget --> ListInputWidget)
-                        |   |- CreateNewGSVOptionWidget --> (LabelledInputWidget --> StringInputWidget)
-                        |- displayEditableOptionsWidget --> (ModelViewWidget)
+                |   |> VBoxLayout:
+                |       |> HBoxLayout
+                |       |   |- GSVSelectorWidget --> (LabelledInputWidget --> ListInputWidget)
+                |       |   |- CreateNewGSVOptionWidget --> (LabelledInputWidget --> StringInputWidget)
+                |       |- displayEditableOptionsWidget --> (ModelViewWidget)
+                |- eventsWidget (EventsWidget --> ShojiMVW)
+                    |- GSVEventsListWidget --> (LabelledInputWidget)
+                    |- DisplayGSVEventWidget (FrameInputWidgetContainer)
+                        |- DisplayGSVEventWidgetHeader (OverlayInputWidget --> ButtonInputWidget)
+                        |* GSVEvent
+
     """
     NAME = "GSVManager"
 
@@ -805,8 +817,15 @@ class EventsWidget(ShojiModelViewWidget):
     and run Python code for a GSV change.
 
     Attributes:
-        events_list (list): of GSV names that are already created as events in this widget.
-
+        current_gsv (str): name of current GSV that is being manipulated
+        events_data (dict): of GSV names that are already created as events in this widget.
+            {gsv_name1: {
+                "option1":"path_to_script.py",
+                "option2":"path_to_script.py"},
+            gsv_name2: {
+                "option3":"path_to_script.py",
+                "option4":"path_to_script.py"},
+            }
     Hierarchy:
         |- GSVEventsListWidget --> (LabelledInputWidget)
         |- DisplayGSVEventWidget (FrameInputWidgetContainer)
@@ -823,7 +842,7 @@ class EventsWidget(ShojiModelViewWidget):
         self.setHeaderItemIsEditable(False)
         self.setHeaderItemIsDragEnabled(False)
 
-        self._events_list = []
+        self._events_data = {}
 
         # setup Dynamic Widgets
         self.setDelegateType(
@@ -843,31 +862,94 @@ class EventsWidget(ShojiModelViewWidget):
     def gsvEventsListWidget(self):
         return self._gsv_events_list_widget
 
+    """ PROPERTIES """
+    def currentGSV(self):
+        return self._current_gsv
+
+    def setCurrentGSV(self, gsv):
+        self._current_gsv = gsv
+
     """ UTILS """
-    def eventsList(self):
-        return self._events_list
+    def eventsData(self):
+        return self._events_data
+
+    def eventsParam(self):
+        """
+        Gets the parameter on the root node which holds the event data
+
+        Returns (Parameter)
+        """
+        self.createGSVEventsParam()
+        events_param = NodegraphAPI.GetRootNode().getParameter("_gsv_events_data")
+        return events_param
+
+    def createGSVEventsParam(self):
+        """
+        Creates the GSV Events param if one doesn't already exist
+        """
+        node = NodegraphAPI.GetRootNode()
+        if not node.getParameter("_gsv_events_data"):
+            node.getParameters().createChildString("_gsv_events_data", "{}")
+
+    def saveEventsData(self):
+        """ Saves the events data to the parameter """
+        # get data
+        events_data = self.eventsData()
+
+        # ensure param exists
+        self.createGSVEventsParam()
+
+        # set data
+        new_data = json.dumps(events_data)
+        self.eventsParam().setValue(new_data, 0)
 
     """ EVENTS """
+    def showEvent(self, event):
+        self.createGSVEventsParam()
+        return ShojiModelViewWidget.showEvent(self, event)
+
     def createNewGSVEvent(self, gsv):
-        self.eventsList().append(gsv)
+        """
+        Creates a new GSVEventItem for the user, and creates the corresponding metadata
+        Args:
+            gsv (str):
+        """
+        gsv = str(gsv)
+
+        # store local dictionary
+        self.eventsData()[gsv] = {}
+
+        # create new index
         self.insertShojiWidget(0, column_data={"name": str(gsv)})
+
+        # save
+        self.saveEventsData()
 
     @staticmethod
     def displayGSVEventWidget(parent, widget, item):
-        print('======display')
+        """ Updates the Dynamic display for the current GSV Event shown to the user"""
+        # preflight
+        if not item: return
+
         # get attrs
         display_widget = widget.getMainWidget()
         gsv = item.columnData()['name']
 
-        # update
+        # update GSV
+        parent.setCurrentGSV(gsv)
         display_widget.setGSV(gsv)
 
-        # todo display events data
-        """ Store this as a parameter on the root node """
+        # # # todo REMOVE OLD DISPLAY
+        # from cgwidgets.utils import clearLayout
+        # clearLayout(display_widget.layout(), start=1)
 
-        print('widget == ', widget)
-        print('item == ', item)
-        print(parent)
+        # update display
+        events_dict = json.loads(parent.eventsParam().getValue(0))[gsv]
+        print("loading... ", events_dict)
+        for option, script in events_dict.items():
+            print("option == ", option)
+            print("script == ", script)
+            display_widget.createNewOptionEvent(option=str(option), script=str(script))
 
 
 class GSVEventsListWidget(LabelledInputWidget):
@@ -917,7 +999,9 @@ class GSVEventsListWidget(LabelledInputWidget):
 
         # preflight
         if value == "": return
-        if value in main_widget.eventsList(): return
+        if value in list(main_widget.eventsData().keys()):
+            print("{gsv} already exists... update the one that already exists you Derpasaur".format(gsv=value))
+            return
 
         # create new GSV event item
         if gsv in gsvutils.getAllGSV(return_as=gsvutils.STRING):
@@ -939,13 +1023,13 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         header_widget = DisplayGSVEventWidgetHeader(self)
         self.setHeaderWidget(header_widget)
 
-        for x in range(3):
-            input_widget = LabelledInputWidget(self, direction=Qt.Horizontal, name=str(x))
-            self.addInputWidget(input_widget)
-
     def setGSV(self, gsv):
         """ When the dynamic update is run, this updates the title"""
         self.headerWidget().setTitle(gsv)
+
+    def createNewOptionEvent(self, option=None, script=None):
+        new_widget = GSVEvent(self)
+        self.addInputWidget(new_widget)
 
 
 class DisplayGSVEventWidgetHeader(OverlayInputWidget):
@@ -956,6 +1040,9 @@ class DisplayGSVEventWidgetHeader(OverlayInputWidget):
     """
     def __init__(self, parent=None):
         super(DisplayGSVEventWidgetHeader, self).__init__(parent)
+
+        # setup default attrs
+        self._current_option = None
 
         # setup delegate
         delegate_widget = ButtonInputWidget(
@@ -971,22 +1058,124 @@ class DisplayGSVEventWidgetHeader(OverlayInputWidget):
         Creates a new event for the user
 
         """
+
+        # add new input
         main_widget = getWidgetAncestor(self, DisplayGSVEventWidget)
-        new_widget = GSVEvent(self)
-        main_widget.addInputWidget(new_widget)
+        main_widget.createNewOptionEvent()
 
 
 class GSVEvent(LabelledInputWidget):
     """
     One input event for a specified GSV.
+
+    Args:
+        option (str):
+        script (str):
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, option=None, script=None):
         super(GSVEvent, self).__init__(parent)
         self.setDirection(Qt.Horizontal)
 
+        # setup default attrs
+        self._current_option = option
+        self._script = script
 
+        # setup view widget
+        view_widget = ListInputWidget()
+        view_widget.populate(self.populateGSVOptions())
+        view_widget.dynamic_update = True
+        view_widget.setCleanItemsFunction(self.populateGSVOptions)
 
+        view_widget.setUserFinishedEditingEvent(self.optionChangedEvent)
 
+        self.setViewWidget(view_widget)
+
+        # setup delegate widget
+        self.delegateWidget().setUserFinishedEditingEvent(self.scriptChangedEvent)
+
+        # add delete button
+        self._delete_button = ButtonInputWidget(
+            user_clicked_event=self.deleteOption, title="DELETE", flag=False, is_toggleable=False)
+        self._delete_button.setFixedWidth(25)
+        self.mainWidget().addWidget(self._delete_button)
+        self.mainWidget().setStretchFactor(2, 0)
+
+        # set display attrs
+        if option:
+            self.viewWidget().setText(option)
+        if script:
+            self.delegateWidget().setText(script)
+
+    """ WIDGETS """
+    def deleteButton(self):
+        return self._delete_button
+
+    """ EVENTS """
+    def deleteOption(self, widget):
+        # todo write deletion handler
+        print('delete option')
+        pass
+
+    def populateGSVOptions(self):
+        events_widget = getWidgetAncestor(self, EventsWidget)
+        gsv = events_widget.currentGSV()
+        return [[option] for option in gsvutils.getGSVOptions(gsv, return_as=gsvutils.STRING)]
+
+    def optionChangedEvent(self, widget, option):
+        """
+        When the user changes the GSV Option, this will create the entry.
+
+        Args:
+            widget (QWidget):
+            option (str):
+        """
+        event_widget = getWidgetAncestor(self, EventsWidget)
+
+        # preflight
+        if option == "": return
+
+        # remove old event
+        if self.currentOption():
+            del event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]
+
+        # create new event
+        event_widget.eventsData()[event_widget.currentGSV()][option] = ""
+
+        # reset to new value
+        self.setCurrentOption(option)
+
+        # save
+        event_widget.saveEventsData()
+
+    def scriptChangedEvent(self, widget, filepath):
+        """
+        When the script changes, this will update the main events dictionary
+        Args:
+            widget:
+            filepath:
+
+        Note: TODO: Check to ensure the python file is valid
+        """
+        event_widget = getWidgetAncestor(self, EventsWidget)
+
+        # update script
+        event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()] = filepath
+
+        # save
+        event_widget.saveEventsData()
+
+    """ PROPERTIES """
+    def currentOption(self):
+        return self._current_option
+
+    def setCurrentOption(self, current_option):
+        self._current_option = current_option
+
+    def script(self):
+        return self._script
+
+    def setScript(self, script):
+        self._script = script
 
 
 
