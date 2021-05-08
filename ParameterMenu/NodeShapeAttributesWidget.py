@@ -53,7 +53,7 @@ class NodeShapeAttrsTab(ShojiModelViewWidget):
         self.setDelegateType(ShojiModelViewWidget.STACKED)
         # todo fix scope out
         # why does this scope out?
-        from cgwidgets.utils import attrs
+        from cgwidgets.settings import attrs
         self.setHeaderPosition(attrs.WEST)
         self.setMultiSelect(True)
         self.setMultiSelectDirection(Qt.Vertical)

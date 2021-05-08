@@ -5,7 +5,7 @@ from qtpy.QtWidgets import (
 
 from qtpy.QtCore import Qt, QEvent
 
-from cgwidgets.utils import attrs
+from cgwidgets.settings import attrs
 from cgwidgets.widgets import ShojiModelViewWidget
 from cgwidgets.views import AbstractDragDropListView
 

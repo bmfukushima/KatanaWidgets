@@ -13,12 +13,18 @@ TODO
 """
 
 from qtpy.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout)
+    QHBoxLayout,
+    QScrollArea,
+    QSizePolicy,
+    QWidget,
+    QVBoxLayout)
 from qtpy.QtCore import Qt
 
 from Katana import UI4, NodegraphAPI, Utils
+
 from cgwidgets.widgets import (
     AbstractModelViewItem,
+    ButtonInputWidget,
     FrameInputWidgetContainer,
     ListInputWidget,
     LabelledInputWidget,
@@ -26,9 +32,8 @@ from cgwidgets.widgets import (
     OverlayInputWidget,
     ShojiModelViewWidget,
     StringInputWidget)
-
 from cgwidgets.utils import getWidgetAncestor
-
+from cgwidgets.settings import attrs
 from Utils2 import gsvutils, getFontSize
 
 
@@ -55,10 +60,19 @@ class GSVManager(UI4.Tabs.BaseTab):
 
         # create widgets
         self._main_widget = ShojiModelViewWidget(parent=self)
+
         self._view_widget = ViewWidget(parent=self)
+        self._view_scroll_area = QScrollArea(self)
+        self._view_scroll_area.setWidget(self._view_widget)
+        self._view_scroll_area.setWidgetResizable(True)
+
         self._edit_widget = EditWidget(parent=self)
-        self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self.viewWidget())
+        self._events_widget = EventsWidget(parent=self)
+
+        # insert widgets
+        self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self._view_scroll_area)
         self._main_widget.insertShojiWidget(1, column_data={"name":"Edit"}, widget=self.editWidget())
+        self._main_widget.insertShojiWidget(2, column_data={"name":"Events"}, widget=self.eventsWidget())
 
         # setup layout
         QVBoxLayout(self)
@@ -77,11 +91,14 @@ class GSVManager(UI4.Tabs.BaseTab):
     def mainWidget(self):
         return self._main_widget
 
-    def viewWidget(self):
-        return self._view_widget
-
     def editWidget(self):
         return self._edit_widget
+
+    def eventsWidget(self):
+        return self._events_widget
+
+    def viewWidget(self):
+        return self._view_widget
 
     """ KATANA EVENTS """
     def nodeGraphLoad(self, args):
@@ -568,6 +585,10 @@ class CreateNewGSVOptionWidget(LabelledInputWidget):
                 # get new entry text
                 new_entry_text = gsv
 
+            # return if GSV exists
+            else:
+                print("{gsv} already exists you dingus".format(gsv))
+                return
         # create new list entry
         model = main_widget.editWidget().displayEditableOptionsWidget().model()
         root_item = model.getRootItem()
@@ -773,3 +794,218 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
             # print(view_widget.widgets())
             # print(old_value)
             # view_widget.widgets()[old_value].setName(new_value)
+
+
+""" EVENTS WIDGET """
+class EventsWidget(ShojiModelViewWidget):
+    """
+    Main tab for displaying the GSV Events to the user.
+
+    This is where the user can setup custom handlers for when GSV's change,
+    and run Python code for a GSV change.
+
+    Attributes:
+        events_list (list): of GSV names that are already created as events in this widget.
+
+    Hierarchy:
+        |- GSVEventsListWidget --> (LabelledInputWidget)
+        |- DisplayGSVEventWidget (FrameInputWidgetContainer)
+            |- Header
+            |   |- DisplayGSVEventWidgetHeader (OverlayInputWidget --> ButtonInputWidget)
+            |- Widgets
+                |* GSVEvent
+    """
+    def __init__(self, parent=None):
+        super(EventsWidget, self).__init__(parent)
+
+        # setup default attrs
+        self.setHeaderPosition(attrs.WEST, attrs.SOUTH)
+        self.setHeaderItemIsEditable(False)
+        self.setHeaderItemIsDragEnabled(False)
+
+        self._events_list = []
+
+        # setup Dynamic Widgets
+        self.setDelegateType(
+            ShojiModelViewWidget.DYNAMIC,
+            dynamic_widget=DisplayGSVEventWidget,
+            dynamic_function=EventsWidget.displayGSVEventWidget
+        )
+
+        # setup creation widget
+        self._gsv_events_list_widget = GSVEventsListWidget(self)
+        self.addHeaderDelegateWidget([], self._gsv_events_list_widget)
+        self._gsv_events_list_widget.show()
+
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    """ WIDGETS """
+    def gsvEventsListWidget(self):
+        return self._gsv_events_list_widget
+
+    """ UTILS """
+    def eventsList(self):
+        return self._events_list
+
+    """ EVENTS """
+    def createNewGSVEvent(self, gsv):
+        self.eventsList().append(gsv)
+        self.insertShojiWidget(0, column_data={"name": str(gsv)})
+
+    @staticmethod
+    def displayGSVEventWidget(parent, widget, item):
+        print('======display')
+        # get attrs
+        display_widget = widget.getMainWidget()
+        gsv = item.columnData()['name']
+
+        # update
+        display_widget.setGSV(gsv)
+
+        # todo display events data
+        """ Store this as a parameter on the root node """
+
+        print('widget == ', widget)
+        print('item == ', item)
+        print(parent)
+
+
+class GSVEventsListWidget(LabelledInputWidget):
+    def __init__(self, parent=None):
+        super(GSVEventsListWidget, self).__init__(parent)
+
+        # setup default attrs
+        self.setDirection(Qt.Horizontal)
+
+        # setup view widget
+        self.setName("GSV")
+        self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
+
+        # setup delegate widget
+        delegate_widget = ListInputWidget(self)
+        self.setDelegateWidget(delegate_widget)
+
+        # setup delegate widget attrs
+        self.delegateWidget().dynamic_update = True
+        self.delegateWidget().filter_results = False
+        self.delegateWidget().setText("")
+
+        # setup events
+        self.delegateWidget().setUserFinishedEditingEvent(self.createNewGSVEventItem)
+        self.delegateWidget().populate(self.getAllGSVNames())
+        self.delegateWidget().setCleanItemsFunction(self.getAllGSVNames)
+
+        #setup display
+        self.setFixedHeight(getFontSize() * 4)
+
+    def getAllGSVNames(self):
+        """
+        Returns a list of lists of all of the GSV names
+        Returns (list): of lists
+            [['var1'], ['var2'], ['var3']]
+
+        """
+        variables = gsvutils.getAllGSV(return_as=gsvutils.STRING)
+        gsv_keys = [[variable] for variable in variables]
+        return gsv_keys
+
+    def createNewGSVEventItem(self, widget, value):
+        """ Create a new event item"""
+        # get attrs
+        main_widget = getWidgetAncestor(self, EventsWidget)
+        gsv = value
+
+        # preflight
+        if value == "": return
+        if value in main_widget.eventsList(): return
+
+        # create new GSV event item
+        if gsv in gsvutils.getAllGSV(return_as=gsvutils.STRING):
+            main_widget.createNewGSVEvent(gsv)
+            print("creating new event for...", gsv)
+            self.delegateWidget().setText("")
+
+        # bypass if doesn't exist
+        else:
+            return
+
+
+class DisplayGSVEventWidget(FrameInputWidgetContainer):
+    def __init__(self, parent=None):
+        super(DisplayGSVEventWidget, self).__init__(parent)
+        self.setDirection(Qt.Vertical)
+
+        # setup header widget
+        header_widget = DisplayGSVEventWidgetHeader(self)
+        self.setHeaderWidget(header_widget)
+
+        for x in range(3):
+            input_widget = LabelledInputWidget(self, direction=Qt.Horizontal, name=str(x))
+            self.addInputWidget(input_widget)
+
+    def setGSV(self, gsv):
+        """ When the dynamic update is run, this updates the title"""
+        self.headerWidget().setTitle(gsv)
+
+
+class DisplayGSVEventWidgetHeader(OverlayInputWidget):
+    """
+    Header for the DisplayGSVEventWidget.  This will automatically turn into a
+    button when the user hovers over it.  Clicking on the button will create a
+    new event input for the user
+    """
+    def __init__(self, parent=None):
+        super(DisplayGSVEventWidgetHeader, self).__init__(parent)
+
+        # setup delegate
+        delegate_widget = ButtonInputWidget(
+            user_clicked_event=self.createNewEvent, title="Create New Event", flag=False, is_toggleable=False)
+        self.setDelegateWidget(delegate_widget)
+
+        # setup display mode
+        self.setDisplayMode(OverlayInputWidget.ENTER)
+        self.setFixedHeight(getFontSize() * 2)
+
+    def createNewEvent(self, widget):
+        """
+        Creates a new event for the user
+
+        """
+        main_widget = getWidgetAncestor(self, DisplayGSVEventWidget)
+        new_widget = GSVEvent(self)
+        main_widget.addInputWidget(new_widget)
+
+
+class GSVEvent(LabelledInputWidget):
+    """
+    One input event for a specified GSV.
+    """
+    def __init__(self, parent=None):
+        super(GSVEvent, self).__init__(parent)
+        self.setDirection(Qt.Horizontal)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

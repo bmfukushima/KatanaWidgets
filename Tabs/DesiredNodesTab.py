@@ -33,7 +33,8 @@ from qtpy.QtCore import Qt
 
 from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, LabelledInputWidget, OverlayInputWidget
 from cgwidgets.views import AbstractDragDropListView
-from cgwidgets.utils import getWidgetAncestor, attrs
+from cgwidgets.utils import getWidgetAncestor
+from cgwidgets.settings import attrs
 
 from Katana import UI4 , NodegraphAPI, Utils
 from Widgets2 import NodeViewWidget

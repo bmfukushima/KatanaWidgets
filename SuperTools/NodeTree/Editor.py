@@ -11,7 +11,8 @@ from qtpy.QtWidgets import (
 
 from qtpy.QtCore import Qt, QEvent, QModelIndex
 
-from cgwidgets.utils import attrs, getWidgetAncestor
+from cgwidgets.utils import getWidgetAncestor
+from cgwidgets.settings import attrs
 from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, NodeTypeListWidget
 from cgwidgets.views import AbstractDragDropTreeView
 from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI

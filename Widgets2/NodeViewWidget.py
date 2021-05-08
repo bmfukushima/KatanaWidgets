@@ -8,7 +8,7 @@
 from qtpy.QtWidgets import QVBoxLayout
 from qtpy.QtCore import QModelIndex
 
-from cgwidgets.utils import attrs
+from cgwidgets.settings import attrs
 from cgwidgets.widgets import ShojiModelViewWidget
 
 from Katana import UI4, NodegraphAPI, Utils

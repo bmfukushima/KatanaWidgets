@@ -38,7 +38,8 @@ from cgwidgets.widgets import (
     ListInputWidget, LabelledInputWidget, StringInputWidget, ButtonInputWidget,
     ShojiModelViewWidget, ShojiModelItem)
 from cgwidgets.views import AbstractDragDropListView, AbstractDragDropModelDelegate
-from cgwidgets.utils import getWidgetAncestor, attrs
+from cgwidgets.utils import getWidgetAncestor
+from cgwidgets.settings import attrs
 
 
 from Katana import Utils, NodegraphAPI

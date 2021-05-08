@@ -59,9 +59,9 @@ from cgwidgets.widgets import (
     BooleanInputWidget,
     PlainTextInputWidget
 )
-from cgwidgets.views import  AbstractDragDropTreeView
-from cgwidgets.utils import attrs, getWidgetAncestor
-
+from cgwidgets.views import AbstractDragDropTreeView
+from cgwidgets.utils import getWidgetAncestor
+from cgwidgets.settings import attrs
 from Katana import UniqueName, PyXmlIO
 
 _DEFAULT_SEPARATOR_LENGTH = 4
