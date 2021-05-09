@@ -5,13 +5,11 @@ TODO
         * Rename
         * New (Option, GSV)
     Katana (Events)
-        * displayGSVEventWidget running multiple times... ancient fucking bug
-            EventsWidget --> displayGSVEventWidget
-            because it runs 3 times... and just keeps running on random fucking shit, fuck my code
         * delete handlers
             EventsWidget --> setupDeleteHandler
             GSVEvent --> DeleteOption
-
+        * GSVEvent
+            Move to ShojiLayout with locked handle
         * Need to make script ingestor thingymabobber?
             would also run on the EventsTab
 """
@@ -1004,7 +1002,6 @@ class GSVEventsListWidget(LabelledInputWidget):
         # create new GSV event item
         if gsv in gsvutils.getAllGSV(return_as=gsvutils.STRING):
             main_widget.createNewGSVEvent(gsv)
-            print("creating new event for...", gsv)
             self.delegateWidget().setText("")
 
         # bypass if doesn't exist
@@ -1061,7 +1058,7 @@ class DisplayGSVEventWidgetHeader(OverlayInputWidget):
         main_widget = getWidgetAncestor(self, DisplayGSVEventWidget)
         main_widget.createNewOptionEvent()
 
-
+from cgwidgets.widgets import ShojiLayout
 class GSVEvent(LabelledInputWidget):
     """
     One input event for a specified GSV.
@@ -1083,9 +1080,7 @@ class GSVEvent(LabelledInputWidget):
         view_widget.populate(self.populateGSVOptions())
         view_widget.dynamic_update = True
         view_widget.setCleanItemsFunction(self.populateGSVOptions)
-
         view_widget.setUserFinishedEditingEvent(self.optionChangedEvent)
-
         self.setViewWidget(view_widget)
 
         # setup delegate widget
@@ -1093,8 +1088,8 @@ class GSVEvent(LabelledInputWidget):
 
         # add delete button
         self._delete_button = ButtonInputWidget(
-            user_clicked_event=self.deleteOption, title="DELETE", flag=False, is_toggleable=False)
-        self._delete_button.setFixedWidth(25)
+            user_clicked_event=self.deleteOption, title="-", flag=False, is_toggleable=False)
+        self._delete_button.setFixedWidth(getFontSize() * 2)
         self.mainWidget().addWidget(self._delete_button)
         self.mainWidget().setStretchFactor(2, 0)
 
@@ -1106,6 +1101,7 @@ class GSVEvent(LabelledInputWidget):
 
         # set fixed height
         self.setFixedHeight(getFontSize() * 2)
+        self.setHandleWidth(1)
 
     """ WIDGETS """
     def deleteButton(self):
@@ -1134,7 +1130,6 @@ class GSVEvent(LabelledInputWidget):
 
         # preflight
         if option == "": return
-        print('creating option for ...' , option)
 
         # remove old event
         if self.currentOption():
@@ -1170,7 +1165,7 @@ class GSVEvent(LabelledInputWidget):
         event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()] = filepath
 
         # save
-        # event_widget.saveEventsData()
+        event_widget.saveEventsData()
 
     """ PROPERTIES """
     def currentOption(self):
