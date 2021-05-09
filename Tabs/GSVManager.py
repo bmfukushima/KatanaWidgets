@@ -901,6 +901,7 @@ class EventsWidget(ShojiModelViewWidget):
 
         # set data
         new_data = json.dumps(events_data)
+        print(" =============== saving .... \n", new_data)
         self.eventsParam().setValue(new_data, 0)
 
     """ EVENTS """
@@ -940,15 +941,12 @@ class EventsWidget(ShojiModelViewWidget):
         display_widget.setGSV(gsv)
 
         # # # todo REMOVE OLD DISPLAY
-        # from cgwidgets.utils import clearLayout
-        # clearLayout(display_widget.layout(), start=1)
+        from cgwidgets.utils import clearLayout
+        clearLayout(display_widget.layout(), start=2)
 
         # update display
         events_dict = json.loads(parent.eventsParam().getValue(0))[gsv]
-        print("loading... ", events_dict)
         for option, script in events_dict.items():
-            print("option == ", option)
-            print("script == ", script)
             display_widget.createNewOptionEvent(option=str(option), script=str(script))
 
 
@@ -1028,7 +1026,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         self.headerWidget().setTitle(gsv)
 
     def createNewOptionEvent(self, option=None, script=None):
-        new_widget = GSVEvent(self)
+        new_widget = GSVEvent(parent=self, option=option, script=script)
         self.addInputWidget(new_widget)
 
 
@@ -1106,6 +1104,9 @@ class GSVEvent(LabelledInputWidget):
         if script:
             self.delegateWidget().setText(script)
 
+        # set fixed height
+        self.setFixedHeight(getFontSize() * 2)
+
     """ WIDGETS """
     def deleteButton(self):
         return self._delete_button
@@ -1133,6 +1134,7 @@ class GSVEvent(LabelledInputWidget):
 
         # preflight
         if option == "": return
+        print('creating option for ...' , option)
 
         # remove old event
         if self.currentOption():
@@ -1156,13 +1158,19 @@ class GSVEvent(LabelledInputWidget):
 
         Note: TODO: Check to ensure the python file is valid
         """
+
+        # preflight
+        if self.currentOption() == "": return
+        if not self.currentOption(): return
+
+        # get events widget
         event_widget = getWidgetAncestor(self, EventsWidget)
 
         # update script
         event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()] = filepath
 
         # save
-        event_widget.saveEventsData()
+        # event_widget.saveEventsData()
 
     """ PROPERTIES """
     def currentOption(self):
@@ -1176,25 +1184,5 @@ class GSVEvent(LabelledInputWidget):
 
     def setScript(self, script):
         self._script = script
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
