@@ -14,6 +14,7 @@ TODO
             would also run on the EventsTab
 """
 import json
+import os
 
 from qtpy.QtWidgets import (
     QHBoxLayout,
@@ -35,8 +36,8 @@ from cgwidgets.widgets import (
     OverlayInputWidget,
     ShojiModelViewWidget,
     StringInputWidget)
-from cgwidgets.utils import getWidgetAncestor
-from cgwidgets.settings import attrs
+from cgwidgets.utils import getWidgetAncestor, convertScriptToString
+from cgwidgets.settings import attrs, icons, iColor
 
 from Utils2 import gsvutils, getFontSize
 
@@ -90,7 +91,7 @@ class GSVManager(UI4.Tabs.BaseTab):
         self.mainWidget().setHeaderItemIsDragEnabled(False)
         self.mainWidget().setHeaderItemIsEditable(False)
         # setup Katana events
-        # Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_finalizeValue', None)
+        Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_finalizeValue', None)
         Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
         # Utils.EventModule.RegisterCollapsedHandler(self.paramChildDeleted, 'parameter_deleteChild', None)
 
@@ -116,6 +117,66 @@ class GSVManager(UI4.Tabs.BaseTab):
         self.editWidget().setText("<variables>")
         self.viewWidget().update()
         self.editWidget().update()
+
+    def gsvChanged(self, args):
+        """
+        Enable
+        ('parameter_finalizeValue', 1136961280, {'node': <RootNode GroupNode 'rootNode'>, 'param': <Parameter object at 0x7f4adcd15f60 number 'enable'>})
+<Parameter object at 0x7f4adcd15e70 group 'var1'>
+
+        Create New
+        =================================
+('parameter_finalizeValue', 1136961280, {'node': <RootNode GroupNode 'rootNode'>, 'param': <Parameter object at 0x7f4adcd15fd8 stringArray 'options'>})
+<Parameter object at 0x7f4adcd15e70 group 'rename'>
+=================================
+('parameter_finalizeValue', 1136961280, {'node': <RootNode GroupNode 'rootNode'>, 'param': <Parameter object at 0x7f4acc2f4060 string 'i1'>})
+<Parameter object at 0x7f4adcd15fd8 stringArray 'options'>
+=================================
+('parameter_finalizeValue', 1136961280, {'node': <RootNode GroupNode 'rootNode'>, 'param': <Parameter object at 0x7f4acc2f41c8 string 'value'>})
+<Parameter object at 0x7f4adcd15e70 group 'rename'>
+
+        Change
+        =================================
+('parameter_finalizeValue', 1136961280, {'node': <RootNode GroupNode 'rootNode'>, 'param': <Parameter object at 0x7f4acc2f41c8 string 'value'>})
+<Parameter object at 0x7f4adcd15e70 group 'rename'>
+
+        Args:
+            args:
+
+        Returns:
+
+        """
+        # create new gsv
+        # create new option?
+        # GSV Value changed
+        root_node = NodegraphAPI.GetRootNode()
+        for arg in args:
+            # print('=================================')
+            # print(arg)
+
+            # preflight
+            if arg[2]['node'] != root_node: return
+            if "param" not in list(arg[2].keys()): return
+            if arg[2]['param'].getParent().getParent() != gsvutils.getVariablesParameter(): return
+
+            print('GSV Changed....')
+            # get attrs
+            param = arg[2]['param']
+            param_name = param.getName()
+            gsv = param.getParent().getName()
+
+            if param_name == "value":
+                new_value = param.getValue(0)
+                print ("{gsv} value changed...".format(gsv), new_value)
+                # todo: setup GSV events
+                # todo: update ViewWidget
+
+            if param_name == "enabled":
+                # todo: setup hide/show events for the view widget
+                # todo: setup disable events on the edit side of the view widget
+                    #handle the enable/disable handler
+                pass
+
 
     # def gsvChanged(self, args):
     #     """ When  GSV is changed, this will updated the main display for the user
@@ -899,7 +960,6 @@ class EventsWidget(ShojiModelViewWidget):
 
         # set data
         new_data = json.dumps(events_data)
-        print(" =============== saving .... \n", new_data)
         self.eventsParam().setValue(new_data, 0)
 
     """ EVENTS """
@@ -1058,7 +1118,7 @@ class DisplayGSVEventWidgetHeader(OverlayInputWidget):
         main_widget = getWidgetAncestor(self, DisplayGSVEventWidget)
         main_widget.createNewOptionEvent()
 
-from cgwidgets.widgets import ShojiLayout
+
 class GSVEvent(LabelledInputWidget):
     """
     One input event for a specified GSV.
@@ -1074,6 +1134,7 @@ class GSVEvent(LabelledInputWidget):
         # setup default attrs
         self._current_option = option
         self._script = script
+        self._is_script_dirty = False
 
         # setup view widget
         view_widget = ListInputWidget()
@@ -1086,12 +1147,14 @@ class GSVEvent(LabelledInputWidget):
         # setup delegate widget
         self.delegateWidget().setUserFinishedEditingEvent(self.scriptChangedEvent)
 
+        # add update script button
+        self._update_script_button = self.__insertButton(
+            2, "", "update script", self.updateScriptEvent, image_path=icons["update"])
+        self._update_script_button.setTextBackgroundColor(iColor["rgba_background_00"])
+
         # add delete button
-        self._delete_button = ButtonInputWidget(
-            user_clicked_event=self.deleteOption, title="-", flag=False, is_toggleable=False)
-        self._delete_button.setFixedWidth(getFontSize() * 2)
-        self.mainWidget().addWidget(self._delete_button)
-        self.mainWidget().setStretchFactor(2, 0)
+        self._delete_button = self.__insertButton(
+            3, "-", "delete", self.deleteOptionEvent)
 
         # set display attrs
         if option:
@@ -1104,19 +1167,81 @@ class GSVEvent(LabelledInputWidget):
         self.setHandleWidth(1)
 
     """ WIDGETS """
+    def __insertButton(self, index, name, tooltip, user_event, image_path=None):
+        """
+        Inserts a new clickable button for the user
+
+        Args:
+            index (int):
+            name (str):
+            tooltip (str):
+            user_event (event):
+
+        Returns:
+
+        """
+        # create button
+        button_widget = ButtonInputWidget(
+            user_clicked_event=user_event, title=name, flag=False, is_toggleable=False)
+
+        # add to main widget
+        self.mainWidget().insertWidget(index, button_widget)
+
+        # setup attrs todo: fix this later...
+        button_widget.setFixedSize(getFontSize() * 2.5, getFontSize() * 2.5)
+        button_widget.setToolTip(tooltip)
+        if image_path:
+            button_widget.setImage(image_path)
+        self.mainWidget().setCollapsible(index, False)
+        self.mainWidget().setStretchFactor(index, 0)
+
+        return button_widget
+
     def deleteButton(self):
         return self._delete_button
 
-    """ EVENTS """
-    def deleteOption(self, widget):
-        # todo write deletion handler
-        print('delete option')
-        pass
+    def optionsWidget(self):
+        return self.viewWidget()
 
+    def scriptWidget(self):
+        return self.delegateWidget()
+
+    def updateScriptButton(self):
+        return self._update_script_button
+
+    """ EVENTS """
     def populateGSVOptions(self):
         events_widget = getWidgetAncestor(self, EventsWidget)
         gsv = events_widget.currentGSV()
         return [[option] for option in gsvutils.getGSVOptions(gsv, return_as=gsvutils.STRING)]
+
+    def deleteOptionEvent(self, widget):
+        # todo write deletion handler
+        print('delete option')
+        pass
+
+    def updateScriptEvent(self, widget):
+        """ This will cache the script to a local value
+
+        Note: The script must be a valid file in order for it to cache
+        """
+        # get file path
+        file_path = self.scriptWidget().text()
+
+        if os.path.exists(file_path):
+
+            script = convertScriptToString(file_path)
+            # get events widget
+            event_widget = getWidgetAncestor(self, EventsWidget)
+
+            # update script
+            event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()] = script
+
+            # save
+            event_widget.saveEventsData()
+            print('update script event...')
+        else:
+            print('{file_path} does not exist... please make one that does...'.format(file_path=file_path))
 
     def optionChangedEvent(self, widget, option):
         """
@@ -1167,6 +1292,25 @@ class GSVEvent(LabelledInputWidget):
         # save
         event_widget.saveEventsData()
 
+        # update script button
+        if os.path.exists(filepath):
+            is_script_dirty = True
+        else:
+            is_script_dirty = False
+
+        self.setIsScriptDirty(is_script_dirty)
+
+    """ UPDATE SCRIPT """
+    def isScriptDirty(self):
+        return self._is_script_dirty
+
+    def setIsScriptDirty(self, is_script_dirty):
+        self._is_script_dirty = is_script_dirty
+        if is_script_dirty:
+            self.updateScriptButton().setTextBackgroundColor(iColor["rgba_gray_4"])
+        if not is_script_dirty:
+            self.updateScriptButton().setTextBackgroundColor(iColor["rgba_background_00"])
+
     """ PROPERTIES """
     def currentOption(self):
         return self._current_option
@@ -1179,5 +1323,6 @@ class GSVEvent(LabelledInputWidget):
 
     def setScript(self, script):
         self._script = script
+
 
 
