@@ -67,3 +67,6 @@ Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)
 from MonkeyPatches import changeFullscreenHotkey
 changeFullscreenHotkey(Qt.Key_B)
 
+#
+from Tabs import installGSVManagerEvents
+installGSVManagerEvents()

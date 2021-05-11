@@ -4,14 +4,21 @@ TODO
         * Delete
         * Rename
         * New (Option, GSV)
+        * Enabled
     Katana (Events)
         * delete handlers
             EventsWidget --> setupDeleteHandler
             GSVEvent --> DeleteOption
-        * GSVEvent
-            Move to ShojiLayout with locked handle
-        * Need to make script ingestor thingymabobber?
-            would also run on the EventsTab
+        * Ensure script location exists
+            GSVEvent -- > scriptChangedEvent
+        * Setup Autoupload
+            GSVEvent -- > scriptChangedEvent
+        * Compare Script to File, and set is dirty
+            EventsWidget --> displayGSVEventWidget
+        * Option changed, update script
+            GSVEvent --> optionChangedEvent
+    View Widget:
+        * If option doesn't exist, do what?
 """
 import json
 import os
@@ -118,6 +125,45 @@ class GSVManager(UI4.Tabs.BaseTab):
         self.viewWidget().update()
         self.editWidget().update()
 
+    def gsvChangedEvent(self, arg):
+        """
+        Runs a user script when a GSV is changed
+
+        Args:
+            arg (arg): from Katana Callbacks/Events (parameter_finalizeValue)
+
+        todo: install this on startup, so that it's only ever run once
+        """
+        # get attrs
+        param = arg[2]['param']
+        param_name = param.getName()
+        gsv = param.getParent().getName()
+
+        if param_name == "value":
+            # get attrs
+            option = param.getValue(0)
+            events_data = json.loads(self.eventsWidget().eventsParam().getValue(0))
+
+            # preflight
+            if gsv not in list(events_data.keys()): return
+            # execute user script
+            if option not in list(events_data.keys()): return
+
+            script = events_data[option]["file_path"]
+
+            # setup local variables
+            local_variables = {}
+            local_variables["gsv"] = gsv
+            local_variables["option"] = option
+            # execute file
+            if os.path.exists(script):
+                with open(script) as script_descriptor:
+                    exec(script_descriptor.read(), globals(), local_variables)
+
+            # execute script
+            else:
+                exec(events_data[option]["script"], globals(), local_variables)
+
     def gsvChanged(self, args):
         """
         Enable
@@ -151,31 +197,28 @@ class GSVManager(UI4.Tabs.BaseTab):
         # GSV Value changed
         root_node = NodegraphAPI.GetRootNode()
         for arg in args:
-            # print('=================================')
-            # print(arg)
-
             # preflight
-            if arg[2]['node'] != root_node: return
-            if "param" not in list(arg[2].keys()): return
-            if arg[2]['param'].getParent().getParent() != gsvutils.getVariablesParameter(): return
+            is_gsv_event = gsvutils.isGSVEvent(arg)
+            if is_gsv_event:
+                # get attrs
+                param = arg[2]['param']
+                param_name = param.getName()
+                gsv = param.getParent().getName()
 
-            print('GSV Changed....')
-            # get attrs
-            param = arg[2]['param']
-            param_name = param.getName()
-            gsv = param.getParent().getName()
+                if param_name == "value":
+                    # update view
+                    view_widget = self.viewWidget().widgets()[gsv]
+                    option = param.getValue(0)
+                    view_widget.delegateWidget().setText(option)
 
-            if param_name == "value":
-                new_value = param.getValue(0)
-                print ("{gsv} value changed...".format(gsv), new_value)
-                # todo: setup GSV events
-                # todo: update ViewWidget
+                    # run user script
+                    # self.gsvChangedEvent(arg)
 
-            if param_name == "enabled":
-                # todo: setup hide/show events for the view widget
-                # todo: setup disable events on the edit side of the view widget
-                    #handle the enable/disable handler
-                pass
+                if param_name == "enabled":
+                    # todo: setup hide/show events for the view widget
+                    # todo: setup disable events on the edit side of the view widget
+                        #handle the enable/disable handler
+                    pass
 
 
     # def gsvChanged(self, args):
@@ -879,11 +922,11 @@ class EventsWidget(ShojiModelViewWidget):
         current_gsv (str): name of current GSV that is being manipulated
         events_data (dict): of GSV names that are already created as events in this widget.
             {gsv_name1: {
-                "option1":"path_to_script.py",
-                "option2":"path_to_script.py"},
+                "option1":{file_path:"path_to_script.py", script: "script text"},
+                "option2":{file_path:"path_to_script.py", script: "script text"}},
             gsv_name2: {
-                "option3":"path_to_script.py",
-                "option4":"path_to_script.py"},
+                "option3":{file_path:"path_to_script.py", script: "script text"},
+                "option4":{file_path:"path_to_script.py", script: "script text"}},
             }
     Hierarchy:
         |- GSVEventsListWidget --> (LabelledInputWidget)
@@ -932,17 +975,19 @@ class EventsWidget(ShojiModelViewWidget):
     def eventsData(self):
         return self._events_data
 
-    def eventsParam(self):
+    @staticmethod
+    def eventsParam():
         """
         Gets the parameter on the root node which holds the event data
 
         Returns (Parameter)
         """
-        self.createGSVEventsParam()
+        EventsWidget.createGSVEventsParam()
         events_param = NodegraphAPI.GetRootNode().getParameter("_gsv_events_data")
         return events_param
 
-    def createGSVEventsParam(self):
+    @staticmethod
+    def createGSVEventsParam():
         """
         Creates the GSV Events param if one doesn't already exist
         """
@@ -956,7 +1001,7 @@ class EventsWidget(ShojiModelViewWidget):
         events_data = self.eventsData()
 
         # ensure param exists
-        self.createGSVEventsParam()
+        EventsWidget.createGSVEventsParam()
 
         # set data
         new_data = json.dumps(events_data)
@@ -964,7 +1009,7 @@ class EventsWidget(ShojiModelViewWidget):
 
     """ EVENTS """
     def showEvent(self, event):
-        self.createGSVEventsParam()
+        EventsWidget.createGSVEventsParam()
         return ShojiModelViewWidget.showEvent(self, event)
 
     def createNewGSVEvent(self, gsv):
@@ -1005,7 +1050,11 @@ class EventsWidget(ShojiModelViewWidget):
         # update display
         events_dict = json.loads(parent.eventsParam().getValue(0))[gsv]
         for option, script in events_dict.items():
-            display_widget.createNewOptionEvent(option=str(option), script=str(script))
+            # todo: check file status
+            """compare script being uploaded to the "script" arg and if they are not the same,
+            break set flag available to update."""
+
+            display_widget.createNewOptionEvent(option=str(option), script=str(script["file_path"]))
 
 
 class GSVEventsListWidget(LabelledInputWidget):
@@ -1229,17 +1278,16 @@ class GSVEvent(LabelledInputWidget):
         file_path = self.scriptWidget().text()
 
         if os.path.exists(file_path):
-
             script = convertScriptToString(file_path)
             # get events widget
             event_widget = getWidgetAncestor(self, EventsWidget)
 
             # update script
-            event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()] = script
+            event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]["script"] = script
 
             # save
             event_widget.saveEventsData()
-            print('update script event...')
+
         else:
             print('{file_path} does not exist... please make one that does...'.format(file_path=file_path))
 
@@ -1261,7 +1309,7 @@ class GSVEvent(LabelledInputWidget):
             del event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]
 
         # create new event
-        event_widget.eventsData()[event_widget.currentGSV()][option] = ""
+        event_widget.eventsData()[event_widget.currentGSV()][option] = {}
 
         # reset to new value
         self.setCurrentOption(option)
@@ -1280,19 +1328,20 @@ class GSVEvent(LabelledInputWidget):
         """
 
         # preflight
-        if self.currentOption() == "": return
+        if self.currentOption() == {}: return
         if not self.currentOption(): return
 
         # get events widget
         event_widget = getWidgetAncestor(self, EventsWidget)
 
         # update script
-        event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()] = filepath
+        event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]["file_path"] = filepath
 
         # save
         event_widget.saveEventsData()
 
         # update script button
+        # todo Setup auto script ingestion here to event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]["script"]
         if os.path.exists(filepath):
             is_script_dirty = True
         else:
@@ -1305,6 +1354,15 @@ class GSVEvent(LabelledInputWidget):
         return self._is_script_dirty
 
     def setIsScriptDirty(self, is_script_dirty):
+        """
+        Determines if the file_path is the same, or needs to be updated.
+
+        Args:
+            is_script_dirty (bool):
+
+        Returns:
+
+        """
         self._is_script_dirty = is_script_dirty
         if is_script_dirty:
             self.updateScriptButton().setTextBackgroundColor(iColor["rgba_gray_4"])

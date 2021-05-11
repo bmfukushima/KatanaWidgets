@@ -87,6 +87,18 @@ def addGSVOption(gsv, new_option, row=None):
         return new_option_param
 
 
+def isGSVEvent(arg):
+    """Checks an arg from the Katana events/callbacks to determine if a GSV Event change is happening"""
+    root_node = NodegraphAPI.GetRootNode()
+    if arg[2]['node'] != root_node: return False
+    if "param" not in list(arg[2].keys()): return False
+    if not arg[2]['param'].getParent(): return False
+    if not arg[2]['param'].getParent().getParent(): return False
+    if arg[2]['param'].getParent().getParent() != getVariablesParameter(): return False
+
+    return True
+
+
 def createNewGSV(gsv):
     """
     Creates a new GSV

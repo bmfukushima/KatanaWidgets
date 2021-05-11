@@ -1,14 +1,14 @@
 from DesiredNodesTab import DesiredNodesTab
 from EventsTab import EventsTab
 from PiPWidget import PiPOrganizerTab
-from GSVManager import GSVManager
+from GSVManager import GSVManager, installGSVManagerEvents
 # compile list of tabs
 
 tabs_list = [
     DesiredNodesTab,
     EventsTab,
+    GSVManager,
     PiPOrganizerTab,
-    GSVManager
 ]
 # register all tabs
 PluginRegistry = []
