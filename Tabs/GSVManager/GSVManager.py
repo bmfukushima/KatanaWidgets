@@ -5,20 +5,6 @@ TODO
             * EventWidget
                 Disable GSV
                 Disable Option
-        # Script
-            * Ensure script location exists
-                GSVEvent -- > scriptChangedEvent
-            * Setup Autoupload
-                GSVEvent -- > scriptChangedEvent
-            * Compare Script to File, and set is dirty
-                EventsWidget --> displayGSVEventWidget
-            * Option changed, update script
-                GSVEvent --> optionChangedEvent
-    View Widget:
-        * If option doesn't exist, do what?
-    Edit Widget:
-        * Enable/Disable
-            Odd reselection bug?
 """
 import json
 import os
@@ -43,7 +29,7 @@ from cgwidgets.widgets import (
     OverlayInputWidget,
     ShojiModelViewWidget,
     StringInputWidget)
-from cgwidgets.utils import getWidgetAncestor, convertScriptToString
+from cgwidgets.utils import getWidgetAncestor, convertScriptToString, clearLayout
 from cgwidgets.settings import attrs, icons, iColor
 
 from Utils2 import gsvutils, getFontSize
@@ -573,6 +559,8 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         item = index.internalPointer()
         item.setParameter(parameter)
 
+        return item
+
     def populate(self):
         """
         Creates all of the corresponding items provided
@@ -601,9 +589,14 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
 
         # create entries
         for gsv_param in reversed(gsv_list):
-            gsv_param = gsv_param.getName()
-            if gsv_param.rstrip() != '':
-                self.createNewItem(gsv_param, gsv_param)
+            gsv_name = gsv_param.getName()
+            if gsv_name.rstrip() != '':
+                item = self.createNewItem(gsv_name, gsv_param)
+
+                # set disabled display flag
+                if not gsv_param.getChild("enable").getValue(0):
+                    self.model().setItemEnabled(item, False)
+                    self.model().layoutChanged.emit()
 
     def populateOptions(self):
         """
@@ -648,9 +641,12 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         if edit_widget.displayMode() == gsvutils.VARIABLES:
             gsv = item.columnData()['name']
             widget = view_widget.widgets()[gsv]
+            param = gsvutils.getGSVParameter(gsv)
             if enabled:
+                param.getChild("enable").setValue(1.0, 0)
                 widget.show()
             elif not enabled:
+                param.getChild("enable").setValue(0.0, 0)
                 widget.hide()
 
     def moveSelectedItems(self, data, items, model, row, parent):
@@ -849,6 +845,26 @@ class EventsWidget(ShojiModelViewWidget):
         self._current_gsv = gsv
 
     """ UTILS """
+    @staticmethod
+    def isScriptDirty(data, widget):
+        # display update button if the scripts do not match
+        if os.path.exists(data["file_path"]):
+            script = data["script"]
+            _is_dirty = False
+            # read filepath
+            with open(data["file_path"], "r") as file_path:
+                file_data = file_path.readlines()
+                file_data = "".join(file_data).split("\n")
+
+            # compare filepath to current script
+            for line1, line2 in zip(file_data, script.split("\n")):
+                if str(line1) != str(line2):
+                    _is_dirty = True
+                    break
+
+            # display update
+            widget.setIsScriptDirty(_is_dirty)
+
     def eventsData(self):
         return self._events_data
 
@@ -930,18 +946,21 @@ class EventsWidget(ShojiModelViewWidget):
         parent.setCurrentGSV(gsv)
         display_widget.setGSV(gsv)
 
-        # # # todo REMOVE OLD DISPLAY
-        from cgwidgets.utils import clearLayout
+        # remove old display
         clearLayout(display_widget.layout(), start=2)
 
         # update display
         events_dict = json.loads(parent.eventsParam().getValue(0))[gsv]
-        for option, script in events_dict.items():
+        for option, data in events_dict.items():
             # todo: check file status
             """compare script being uploaded to the "script" arg and if they are not the same,
             break set flag available to update."""
 
-            display_widget.createNewOptionEvent(option=str(option), script=str(script["file_path"]))
+            # create widget
+            widget = display_widget.createNewOptionEvent(option=str(option), script=str(data["file_path"]))
+
+            # check if cached script is dirty or not
+            EventsWidget.isScriptDirty(data, widget)
 
 
 class GSVEventsListWidget(LabelledInputWidget):
@@ -1023,6 +1042,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
     def createNewOptionEvent(self, option=None, script=None):
         new_widget = GSVEvent(parent=self, option=option, script=script)
         self.addInputWidget(new_widget)
+        return new_widget
 
     def widgets(self):
         return self._widgets
@@ -1089,13 +1109,13 @@ class GSVEvent(LabelledInputWidget):
         self.delegateWidget().setUserFinishedEditingEvent(self.scriptChangedEvent)
 
         # add update script button
-        self._update_script_button = self.__insertButton(
-            2, "", "update script", self.updateScriptEvent, image_path=icons["update"])
-        self._update_script_button.setTextBackgroundColor(iColor["rgba_background_00"])
+        self._cache_script_button = self.__insertButton(
+            2, "", "Cache Script", self.cacheScript, image_path=icons["update"])
+        self._cache_script_button.setTextBackgroundColor(iColor["rgba_background_00"])
 
         # add delete button
         self._delete_button = self.__insertButton(
-            3, "-", "delete", self.deleteOptionEvent)
+            3, "-", "Delete", self.deleteOptionEvent)
 
         # set display attrs
         if option:
@@ -1147,8 +1167,8 @@ class GSVEvent(LabelledInputWidget):
     def scriptWidget(self):
         return self.delegateWidget()
 
-    def updateScriptButton(self):
-        return self._update_script_button
+    def cacheScriptButton(self):
+        return self._cache_script_button
 
     """ EVENTS """
     def populateGSVOptions(self):
@@ -1176,7 +1196,7 @@ class GSVEvent(LabelledInputWidget):
         self.deleteLater()
         self.setParent(None)
 
-    def updateScriptEvent(self, widget):
+    def cacheScript(self, widget):
         """ This will cache the script to a local value
 
         Note: The script must be a valid file in order for it to cache
@@ -1197,6 +1217,7 @@ class GSVEvent(LabelledInputWidget):
 
         else:
             print('{file_path} does not exist... please make one that does...'.format(file_path=file_path))
+        self.setIsScriptDirty(False)
 
     def optionChangedEvent(self, widget, option):
         """
@@ -1261,13 +1282,8 @@ class GSVEvent(LabelledInputWidget):
         event_widget.saveEventsData()
 
         # update script button
-        # todo Setup auto script ingestion here to event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]["script"]
-        if os.path.exists(filepath):
-            is_script_dirty = True
-        else:
-            is_script_dirty = False
-
-        self.setIsScriptDirty(is_script_dirty)
+        self.cacheScript(None)
+        #EventsWidget.isScriptDirty(event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()], self)
 
     """ UPDATE SCRIPT """
     def isScriptDirty(self):
@@ -1285,9 +1301,9 @@ class GSVEvent(LabelledInputWidget):
         """
         self._is_script_dirty = is_script_dirty
         if is_script_dirty:
-            self.updateScriptButton().setTextBackgroundColor(iColor["rgba_gray_4"])
+            self.cacheScriptButton().setTextBackgroundColor(iColor["rgba_gray_4"])
         if not is_script_dirty:
-            self.updateScriptButton().setTextBackgroundColor(iColor["rgba_background_00"])
+            self.cacheScriptButton().setTextBackgroundColor(iColor["rgba_background_00"])
 
     """ PROPERTIES """
     def currentOption(self):

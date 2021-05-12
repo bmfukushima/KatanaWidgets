@@ -273,7 +273,6 @@ def hideEngineersGSVUI():
               'conditionalVisValue': 'asdf'}}))
 
 
-
 def moveGSVtoNewIndex(gsv, index):
     """
     moves the GSV to the index provided
