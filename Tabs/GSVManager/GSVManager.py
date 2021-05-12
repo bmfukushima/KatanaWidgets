@@ -5,6 +5,7 @@ TODO
             * EventWidget
                 Disable GSV
                 Disable Option
+                Will need to update the data structure to support this...
 """
 import json
 import os
@@ -55,6 +56,12 @@ class GSVManager(UI4.Tabs.BaseTab):
                     |- DisplayGSVEventWidget (FrameInputWidgetContainer)
                         |- DisplayGSVEventWidgetHeader (OverlayInputWidget --> ButtonInputWidget)
                         |* GSVEvent
+                            |- optionsWidget --> ListInputWidget
+                            |- scriptWidget --> StringInputWidget
+                            |- buttonsMainWidget --> (QWidget)
+                                |> QHBoxLayout
+                                    |- cacheScriptButton (ButtonInputWidget)
+                                    |- deleteButton (ButtonInputWidget)
 
     """
     NAME = "GSVManager"
@@ -1108,6 +1115,15 @@ class GSVEvent(LabelledInputWidget):
         # setup delegate widget
         self.delegateWidget().setUserFinishedEditingEvent(self.scriptChangedEvent)
 
+        # setup buttons widget
+        self._buttons_main_widget = QWidget()
+        self._buttons_layout = QHBoxLayout(self._buttons_main_widget)
+        self._buttons_layout.setContentsMargins(0, 0, 0, 0)
+        self._buttons_main_widget.setFixedWidth(getFontSize() * 5)
+        self.mainWidget().insertWidget(2, self._buttons_main_widget)
+        self.mainWidget().setCollapsible(2, False)
+        self.mainWidget().setStretchFactor(2, 0)
+
         # add update script button
         self._cache_script_button = self.__insertButton(
             2, "", "Cache Script", self.cacheScript, image_path=icons["update"])
@@ -1146,17 +1162,18 @@ class GSVEvent(LabelledInputWidget):
             user_clicked_event=user_event, title=name, flag=False, is_toggleable=False)
 
         # add to main widget
-        self.mainWidget().insertWidget(index, button_widget)
+        self._buttons_layout.addWidget(button_widget)
 
         # setup attrs todo: fix this later...
         button_widget.setFixedSize(getFontSize() * 2.5, getFontSize() * 2.5)
         button_widget.setToolTip(tooltip)
         if image_path:
             button_widget.setImage(image_path)
-        self.mainWidget().setCollapsible(index, False)
-        self.mainWidget().setStretchFactor(index, 0)
 
         return button_widget
+
+    def buttonsMainWidget(self):
+        return self._buttons_main_widget
 
     def deleteButton(self):
         return self._delete_button
@@ -1184,13 +1201,14 @@ class GSVEvent(LabelledInputWidget):
         """
         # get events widget
         event_widget = getWidgetAncestor(self, EventsWidget)
-        display_widget = event_widget.displayWidget()
+        display_widget = event_widget.delegateWidget().widget(1).getMainWidget()
 
         # remove data
-        del event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]
-        event_widget.saveEventsData()
+        if self.currentOption():
+            del event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]
+            event_widget.saveEventsData()
 
-        del display_widget.widgets()[self.currentOption()]
+            del display_widget.widgets()[self.currentOption()]
 
         # remove widget
         self.deleteLater()
@@ -1214,9 +1232,10 @@ class GSVEvent(LabelledInputWidget):
 
             # save
             event_widget.saveEventsData()
-
         else:
-            print('{file_path} does not exist... please make one that does...'.format(file_path=file_path))
+            if file_path.rstrip():
+                print('{file_path} does not exist... please make one that does...'.format(file_path=file_path))
+
         self.setIsScriptDirty(False)
 
     def optionChangedEvent(self, widget, option):
