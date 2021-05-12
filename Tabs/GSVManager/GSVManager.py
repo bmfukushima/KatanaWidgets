@@ -271,51 +271,31 @@ class ViewGSVWidget(LabelledInputWidget):
 
         self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
 
-        # setup view
-        # view_widget = StringInputWidget(self)
-        # view_widget.setText(self.gsv)
-        # self.setViewWidget(view_widget)
-        # self.viewWidget().setUserFinishedEditingEvent(self.renameGSV)
-
         # setup delegate
         self.delegateWidget().dynamic_update = True
         self.delegateWidget().setUserFinishedEditingEvent(self.setGSVOption)
         self.delegateWidget().populate(self.update())
         self.delegateWidget().setCleanItemsFunction(self.update)
-
-    # def renameGSV(self, widget, value):
-    #     """
-    #     Changes the GSV name to the one provided by the user.
-    #     Args:
-    #         widget:
-    #         value:
-    #
-    #     Returns:
-    #
-    #     """
-    #     # preflight
-    #     if self.gsv == value: return
-    #
-    #     # rename GSV
-    #     gsvutils.renameGSV(self.gsv, value)
-    #     view_widget = getWidgetAncestor(self, ViewWidget)
-    #     view_widget.renameWidget(self.gsv, str(value))
+        self.delegateWidget().setValidateInputFunction(self.validateGSVEntry)
 
     def update(self):
         return [[option] for option in gsvutils.getGSVOptions(self.gsv, return_as=gsvutils.STRING)]
 
-    def setGSVOption(self, widget, value):
+    def validateGSVEntry(self):
         """
-        Sets the current GSV to the option provided
+        Determines if the GSV option entered by the user is valid.
 
-        Args:
-            widget (QWidget): widget sending signal
-            value (str): option the user has changed to
-
-        Returns:
-
+        If it is not valid, it will reset this widget back to its original value
         """
-        gsvutils.setGSVOption(self.gsv, value)
+        option = self.delegateWidget().text()
+        if option not in gsvutils.getGSVOptions(self.gsv, return_as=gsvutils.STRING):
+            return False
+        else:
+            return True
+
+    def setGSVOption(self, widget, option):
+        """Sets the GSV Option parameter to the specified value"""
+        gsvutils.setGSVOption(self.gsv, option)
 
 
 """ EDIT WIDGET """
