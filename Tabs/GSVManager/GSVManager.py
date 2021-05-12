@@ -1,21 +1,24 @@
 """
 TODO
     Katana (Events)
-        * delete handlers
-            EventsWidget --> setupDeleteHandler
-            GSVEvent --> DeleteOption
-        * Ensure script location exists
-            GSVEvent -- > scriptChangedEvent
-        * Setup Autoupload
-            GSVEvent -- > scriptChangedEvent
-        * Compare Script to File, and set is dirty
-            EventsWidget --> displayGSVEventWidget
-        * Option changed, update script
-            GSVEvent --> optionChangedEvent
+        # disable handlers
+            * EventWidget
+                Disable GSV
+                Disable Option
+        # Script
+            * Ensure script location exists
+                GSVEvent -- > scriptChangedEvent
+            * Setup Autoupload
+                GSVEvent -- > scriptChangedEvent
+            * Compare Script to File, and set is dirty
+                EventsWidget --> displayGSVEventWidget
+            * Option changed, update script
+                GSVEvent --> optionChangedEvent
     View Widget:
         * If option doesn't exist, do what?
     Edit Widget:
-        * Set enable/disable
+        * Enable/Disable
+            Odd reselection bug?
 """
 import json
 import os
@@ -95,10 +98,10 @@ class GSVManager(UI4.Tabs.BaseTab):
         self.mainWidget().setHeaderItemIsDragEnabled(False)
         self.mainWidget().setHeaderItemIsEditable(False)
         # setup Katana events
-        Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_finalizeValue', None)
-        Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_createChild', None)
-        Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_deleteChild', None)
-        #Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
+        # Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_finalizeValue', None)
+        # Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_createChild', None)
+        # Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_deleteChild', None)
+        Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
         # Utils.EventModule.RegisterCollapsedHandler(self.paramChildDeleted, 'parameter_deleteChild', None)
 
     def rename(self, args):
@@ -124,195 +127,31 @@ class GSVManager(UI4.Tabs.BaseTab):
         self.viewWidget().update()
         self.editWidget().update()
 
-    def gsvChangedEvent(self, arg):
-        """
-        Runs a user script when a GSV is changed
-
-        Args:
-            arg (arg): from Katana Callbacks/Events (parameter_finalizeValue)
-
-        todo: install this on startup, so that it's only ever run once
-        """
-        # get attrs
-        param = arg[2]['param']
-        param_name = param.getName()
-        gsv = param.getParent().getName()
-
-        if param_name == "value":
-            # get attrs
-            option = param.getValue(0)
-            events_data = json.loads(self.eventsWidget().eventsParam().getValue(0))
-
-            # preflight
-            if gsv not in list(events_data.keys()): return
-            # execute user script
-            if option not in list(events_data.keys()): return
-
-            script = events_data[option]["file_path"]
-
-            # setup local variables
-            local_variables = {}
-            local_variables["gsv"] = gsv
-            local_variables["option"] = option
-            # execute file
-            if os.path.exists(script):
-                with open(script) as script_descriptor:
-                    exec(script_descriptor.read(), globals(), local_variables)
-
-            # execute script
-            else:
-                exec(events_data[option]["script"], globals(), local_variables)
-
-    def gsvChanged(self, args):
-        """
-        Enable
-        ('parameter_finalizeValue', 1136961280, {'node': <RootNode GroupNode 'rootNode'>, 'param': <Parameter object at 0x7f4adcd15f60 number 'enable'>})
-<Parameter object at 0x7f4adcd15e70 group 'var1'>
-
-        Create New
-        =================================
-('parameter_finalizeValue', 1136961280, {'node': <RootNode GroupNode 'rootNode'>, 'param': <Parameter object at 0x7f4adcd15fd8 stringArray 'options'>})
-<Parameter object at 0x7f4adcd15e70 group 'rename'>
-=================================
-('parameter_finalizeValue', 1136961280, {'node': <RootNode GroupNode 'rootNode'>, 'param': <Parameter object at 0x7f4acc2f4060 string 'i1'>})
-<Parameter object at 0x7f4adcd15fd8 stringArray 'options'>
-=================================
-('parameter_finalizeValue', 1136961280, {'node': <RootNode GroupNode 'rootNode'>, 'param': <Parameter object at 0x7f4acc2f41c8 string 'value'>})
-<Parameter object at 0x7f4adcd15e70 group 'rename'>
-
-        Change
-        =================================
-('parameter_finalizeValue', 1136961280, {'node': <RootNode GroupNode 'rootNode'>, 'param': <Parameter object at 0x7f4acc2f41c8 string 'value'>})
-<Parameter object at 0x7f4adcd15e70 group 'rename'>
-
-        Args:
-            args:
-
-        Returns:
-
-        """
-        # create new gsv
-        # create new option?
-        # GSV Value changed
-        print ('=====================')
-        for arg in args:
-            # preflight
-            is_gsv_event = gsvutils.isGSVEvent(arg)
-            if is_gsv_event:
-                print(arg)
-                # get attrs
-                param = arg[2]['param']
-                param_name = param.getName()
-                gsv = param.getParent().getName()
-
-                # GSV changed
-                if param_name == "value":
-                    # update view
-                    view_widget = self.viewWidget().widgets()[gsv]
-                    option = param.getValue(0)
-                    view_widget.delegateWidget().setText(option)
-
-                    # run user script
-                    # self.gsvChangedEvent(arg)
-
-                if param_name == "enabled":
-                    # todo: setup hide/show events for the view widget
-                    # todo: setup disable events on the edit side of the view widget
-                        #handle the enable/disable handler
-                    pass
-
-
     # def gsvChanged(self, args):
-    #     """ When  GSV is changed, this will updated the main display for the user
-    #     #TODO Update this so...
-    #         * Will create new GSV's
-    #     """
-    # 
-    #     root_node = NodegraphAPI.GetRootNode()
-    #     ## NEW
-    #     try:
-    #         if args[2][2]:
-    #             test_param = args[2][2]['param'].getParent().getParent().getName()
-    #             if args[2][2]['node'] == root_node and test_param == 'variables':
-    #                 gsv = args[2][2]['param'].getParent().getName()
-    #                 value = args[2][2]['param'].getValue(0)
-    #                 # self.update(gsv=gsv, value=value)
-    #     except:
-    #         pass
-    # 
-    #     ## MUTATED
-    #     try:
-    #         if args[0][2]:
-    #             test_param = args[0][2]['param'].getParent().getParent().getName()
-    #             if args[0][2]['node'] == root_node and test_param == 'variables':
-    #                 gsv = args[0][2]['param'].getParent().getName()
-    #                 value = args[0][2]['param'].getValue(0)
-    #                 # self.update(gsv=gsv, value=value)
-    #     except:
-    #         pass
-    # 
-    # def paramChildDeleted(self, args):
-    #     '''
-    #     event when the user uses the "Clear Menu Options" from the GSV menu to update
-    #     this GUI
-    #     '''
-    #     
-    #     def clearMenuOptions():
-    #         param = args[0][2]['param']
-    #         if args[0][2]['node'] == NodegraphAPI.GetRootNode(): 
-    #             if param.getParent().getName() == 'variables':
-    #                 gsv = param.getName()
-    #                 combo_box_gsv = str(self.editWidget().text())
-    #                 gsv_list = gsvutils.getGSVOptions(gsv)
-    #                 # update Edit Widgets List View
-    #                 if gsv == combo_box_gsv:
-    #                     self.editWidget().displayEditableOptionsWidget().update()
-    # 
-    #                 # update View Widgets ComboBox
-    #                 # get combo box
-    #                 layout = self.viewWidget().layout()
-    #                 for index in range(layout.count()):
-    #                     child = layout.itemAt(index).widget()
-    #                     if hasattr(child, 'text'):
-    #                         if str(child.text()) == gsv:
-    #                             combo_box = layout.itemAt(index+1).widget()
-    #                             model = combo_box.getModel()
-    #                             child_delete_index = index
-    #                 # remove items from main widget combo box
-    #                 for index in reversed(range(model.rowCount())):
-    #                     item = model.item(index)
-    #                     if str(item.text()) not in gsv_list:
-    #                         model.removeRow(index)
-    #                 current_gsv = param.getChild('value').getValue(0)
-    #                 combo_box.setEditText(current_gsv)
-    # 
-    #     def deleteGSV():
-    #         child_name = args[0][2]['childName']
-    #         current_options_list = [child_name]
-    # 
-    #         # update list_widget
-    #         if self.editWidget().text() == '<variables>':
-    #             self.editWidget().displayEditableOptionsWidget().clearModel()
-    #             self.editWidget().displayEditableOptionsWidget().populate()
-    # 
-    #         # delete Edit Widget combo box model entry...
-    #         new_gsv_list = gsvutils.getAllGSV(return_as=gsvutils.STRING)
-    #         old_gsv_list = self.getGSVList()
-    #         gsv_list_delta = list(set(old_gsv_list) - set(new_gsv_list))
-    #         
-    #         self.setGSVList(new_gsv_list)
-    # 
-    #         # delete main_widget form widget?
-    #         layout = self.viewWidget().layout()
-    #         for index in reversed(range(layout.count())):
-    #             child = layout.itemAt(index).widget()
-    #             if hasattr(child, 'text'):
-    #                 if child.text() in gsv_list_delta:
-    #                     layout.itemAt(index+1).widget().setParent(None)
-    #                     layout.itemAt(index).widget().setParent(None)
-    # 
-    #     clearMenuOptions()
-    #     deleteGSV()
+    #     for arg in args:
+    #         # preflight
+    #         is_gsv_event = gsvutils.isGSVEvent(arg)
+    #         if is_gsv_event:
+    #             # get attrs
+    #             param = arg[2]['param']
+    #             param_name = param.getName()
+    #             gsv = param.getParent().getName()
+    #
+    #             # GSV changed
+    #             if param_name == "value":
+    #                 # update view
+    #                 view_widget = self.viewWidget().widgets()[gsv]
+    #                 option = param.getValue(0)
+    #                 view_widget.delegateWidget().setText(option)
+    #
+    #                 # run user script
+    #                 # self.gsvChangedEvent(arg)
+    #
+    #             if param_name == "enabled":
+    #                 # todo: setup hide/show events for the view widget
+    #                 # todo: setup disable events on the edit side of the view widget
+    #                     #handle the enable/disable handler
+    #                 pass
 
 
 """ VIEW WIDGET """
@@ -394,7 +233,7 @@ class ViewWidget(FrameInputWidgetContainer):
         widget = self.widgets()[gsv]
 
         # update widget
-        widget.viewWidget().setText(new_name)
+        widget.viewWidget().setTitle(new_name)
         widget.gsv = new_name
 
         # update widgets dict
@@ -430,13 +269,13 @@ class ViewGSVWidget(LabelledInputWidget):
         # setup label
         self.gsv = self.name()
 
-        # self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
+        self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
 
         # setup view
-        view_widget = StringInputWidget(self)
-        view_widget.setText(self.gsv)
-        self.setViewWidget(view_widget)
-        self.viewWidget().setUserFinishedEditingEvent(self.renameGSV)
+        # view_widget = StringInputWidget(self)
+        # view_widget.setText(self.gsv)
+        # self.setViewWidget(view_widget)
+        # self.viewWidget().setUserFinishedEditingEvent(self.renameGSV)
 
         # setup delegate
         self.delegateWidget().dynamic_update = True
@@ -444,23 +283,23 @@ class ViewGSVWidget(LabelledInputWidget):
         self.delegateWidget().populate(self.update())
         self.delegateWidget().setCleanItemsFunction(self.update)
 
-    def renameGSV(self, widget, value):
-        """
-        Changes the GSV name to the one provided by the user.
-        Args:
-            widget:
-            value:
-
-        Returns:
-
-        """
-        # preflight
-        if self.gsv == value: return
-
-        # rename GSV
-        gsvutils.renameGSV(self.gsv, value)
-        view_widget = getWidgetAncestor(self, ViewWidget)
-        view_widget.renameWidget(self.gsv, str(value))
+    # def renameGSV(self, widget, value):
+    #     """
+    #     Changes the GSV name to the one provided by the user.
+    #     Args:
+    #         widget:
+    #         value:
+    #
+    #     Returns:
+    #
+    #     """
+    #     # preflight
+    #     if self.gsv == value: return
+    #
+    #     # rename GSV
+    #     gsvutils.renameGSV(self.gsv, value)
+    #     view_widget = getWidgetAncestor(self, ViewWidget)
+    #     view_widget.renameWidget(self.gsv, str(value))
 
     def update(self):
         return [[option] for option in gsvutils.getGSVOptions(self.gsv, return_as=gsvutils.STRING)]
@@ -533,6 +372,12 @@ class EditWidget(QWidget):
 
     def setDisplayMode(self, _display_mode):
         self._display_mode = _display_mode
+
+        # toggle enable of the list view
+        if _display_mode == gsvutils.VARIABLES:
+            self.displayEditableOptionsWidget().setIsEnableable(True)
+        if _display_mode == gsvutils.OPTIONS:
+            self.displayEditableOptionsWidget().setIsEnableable(False)
 
     """ WIDGETS """
     def createNewGSVOptionWidget(self):
@@ -735,6 +580,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         self.setItemDeleteEvent(self.deleteSelection)
         self.setTextChangedEvent(self.renameSelectedItem)
         self.setDropEvent(self.moveSelectedItems)
+        self.setItemEnabledEvent(self.enableItem)
 
         # setup attrs
         self.setMultiSelect(True)
@@ -814,6 +660,19 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         self.populate()
 
     """ EVENTS """
+    def enableItem(self, item, enabled):
+        main_widget = getWidgetAncestor(self, GSVManager)
+        view_widget = main_widget.viewWidget()
+        edit_widget = main_widget.editWidget()
+
+        if edit_widget.displayMode() == gsvutils.VARIABLES:
+            gsv = item.columnData()['name']
+            widget = view_widget.widgets()[gsv]
+            if enabled:
+                widget.show()
+            elif not enabled:
+                widget.hide()
+
     def moveSelectedItems(self, data, items, model, row, parent):
         """
         Changes the GSV/Option name to the values provided
@@ -852,7 +711,10 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         Args:
             item (DisplayEditableOptionsItem): currently selected
         """
-        edit_widget = getWidgetAncestor(self, EditWidget)
+        main_widget = getWidgetAncestor(self, GSVManager)
+        edit_widget = main_widget.editWidget()
+        events_widget = main_widget.eventsWidget()
+
         # Remove Option
         if edit_widget.displayMode() == gsvutils.OPTIONS:
             # get attrs
@@ -861,6 +723,26 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
 
             # remove param
             gsvutils.deleteGSVOption(gsv, option)
+
+            # remove event
+            if gsv in list(events_widget.eventsData().keys()):
+                # check to see if GSV is selected
+                selected_indexes = events_widget.getAllSelectedIndexes()
+                for index in selected_indexes:
+                    if index.internalPointer().columnData()['name'] == gsv:
+                        # check to make sure option exists
+                        if option in list(events_widget.eventsData()[gsv].keys()):
+                            # get delegate widget
+                            main_delegate_widget = events_widget.delegateWidget().widget(1).getMainWidget()
+
+                            # delete widget
+                            main_delegate_widget.widgets()[option].deleteLater()
+                            main_delegate_widget.widgets()[option].setParent(None)
+                            del main_delegate_widget.widgets()[option]
+
+                            # destroy event data
+                            del events_widget.eventsData()[gsv][option]
+                            events_widget.saveEventsData()
 
         # Remove Variable
         if edit_widget.displayMode() == gsvutils.VARIABLES:
@@ -874,6 +756,12 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
 
             # remove widget
             view_widget.removeWidget(gsv)
+
+            # remove event
+            if gsv in list(events_widget.eventsData().keys()):
+                # remove item
+                for item in events_widget.model().findItems(gsv):
+                    events_widget.model().deleteItem(item.internalPointer(), event_update=True)
 
     def renameSelectedItem(self, item, old_value, new_value):
         """
@@ -959,11 +847,19 @@ class EventsWidget(ShojiModelViewWidget):
         self.addHeaderDelegateWidget([], self._gsv_events_list_widget)
         self._gsv_events_list_widget.show()
 
+        # setup events
+        self.setHeaderItemDeleteEvent(self.deleteGSVEvent)
+
+        # set style
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
     """ WIDGETS """
     def gsvEventsListWidget(self):
         return self._gsv_events_list_widget
+
+    def displayWidget(self):
+        # todo this doesnt work...
+        self.delegateWidget().widget(1).getMainWidget()
 
     """ PROPERTIES """
     def currentGSV(self):
@@ -1009,6 +905,16 @@ class EventsWidget(ShojiModelViewWidget):
         self.eventsParam().setValue(new_data, 0)
 
     """ EVENTS """
+    def deleteGSVEvent(self, item):
+        """
+        When the user deletes a GSV event, this will remove the meta data.
+        """
+        gsv = item.columnData()['name']
+
+        # delete data
+        del self.eventsData()[gsv]
+        self.saveEventsData()
+
     def showEvent(self, event):
         EventsWidget.createGSVEventsParam()
         return ShojiModelViewWidget.showEvent(self, event)
@@ -1085,6 +991,7 @@ class GSVEventsListWidget(LabelledInputWidget):
 
         #setup display
         self.setFixedHeight(getFontSize() * 4)
+        self.setDefaultLabelLength(getFontSize() * 6)
 
     def getAllGSVNames(self):
         """
@@ -1123,6 +1030,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
     def __init__(self, parent=None):
         super(DisplayGSVEventWidget, self).__init__(parent)
         self.setDirection(Qt.Vertical)
+        self._widgets = {}
 
         # setup header widget
         header_widget = DisplayGSVEventWidgetHeader(self)
@@ -1135,6 +1043,9 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
     def createNewOptionEvent(self, option=None, script=None):
         new_widget = GSVEvent(parent=self, option=option, script=script)
         self.addInputWidget(new_widget)
+
+    def widgets(self):
+        return self._widgets
 
 
 class DisplayGSVEventWidgetHeader(OverlayInputWidget):
@@ -1266,9 +1177,24 @@ class GSVEvent(LabelledInputWidget):
         return [[option] for option in gsvutils.getGSVOptions(gsv, return_as=gsvutils.STRING)]
 
     def deleteOptionEvent(self, widget):
-        # todo write deletion handler
-        print('delete option')
-        pass
+        """
+        Deletes the user event created for this GSV/Option pairing
+        Args:
+            widget:
+        """
+        # get events widget
+        event_widget = getWidgetAncestor(self, EventsWidget)
+        display_widget = event_widget.displayWidget()
+
+        # remove data
+        del event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]
+        event_widget.saveEventsData()
+
+        del display_widget.widgets()[self.currentOption()]
+
+        # remove widget
+        self.deleteLater()
+        self.setParent(None)
 
     def updateScriptEvent(self, widget):
         """ This will cache the script to a local value
@@ -1299,24 +1225,37 @@ class GSVEvent(LabelledInputWidget):
         Args:
             widget (QWidget):
             option (str):
+
+        https://stackoverflow.com/questions/16475384/rename-a-dictionary-key
         """
-        event_widget = getWidgetAncestor(self, EventsWidget)
+        events_widget = getWidgetAncestor(self, EventsWidget)
+        display_widget = events_widget.delegateWidget().widget(1).getMainWidget()
 
         # preflight
         if option == "": return
 
-        # remove old event
+        # rename existing item
         if self.currentOption():
-            del event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]
+            # update main events
+            data = events_widget.eventsData()[events_widget.currentGSV()]
+            data[option] = data.pop(self.currentOption())
+
+            # update DisplayGSVEventWidget
+            display_widget.widgets()[option] = display_widget.widgets()[self.currentOption()]
 
         # create new event
-        event_widget.eventsData()[event_widget.currentGSV()][option] = {}
+        else:
+            # update main events
+            events_widget.eventsData()[events_widget.currentGSV()][option] = {"file_path": "", "script": ""}
+
+            # add widget entry into DisplayGSVEventWidget
+            display_widget.widgets()[option] = self
 
         # reset to new value
         self.setCurrentOption(option)
 
         # save
-        event_widget.saveEventsData()
+        events_widget.saveEventsData()
 
     def scriptChangedEvent(self, widget, filepath):
         """
