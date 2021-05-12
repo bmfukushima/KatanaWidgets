@@ -69,4 +69,4 @@ changeFullscreenHotkey(Qt.Key_B)
 
 #
 from Tabs import installGSVManagerEvents
-installGSVManagerEvents()
+Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGSVManagerEvents)

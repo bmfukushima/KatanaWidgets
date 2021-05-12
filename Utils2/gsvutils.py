@@ -56,37 +56,6 @@ def createNewPattern(pattern, variable, set=False):
 #         variable_param.createChildStringArray('options', 0)
 
 
-def addGSVOption(gsv, new_option, row=None):
-    """Adds an option to an already existing GSV
-
-    Args:
-        gsv (str):
-        new_option (str):
-
-    """
-    # get gsv param
-    gsv_param = getGSVParameter(gsv)
-
-    # get options param
-    if 'options' not in [child.getName() for child in gsv_param.getChildren()]:
-        options = gsv_param.createChildStringArray('options', 0)
-    else:
-        options = gsv_param.getChild("options")
-
-    # get all options
-    options_list = [gsv_param.getValue(0) for gsv_param in options.getChildren()]
-
-    # create new GSV option
-    if new_option not in options_list:
-        if not row:
-            row = options.getNumChildren()
-
-        new_option_param = options.insertArrayElement(row)
-        new_option_param.setValue(str(new_option), 0)
-
-        return new_option_param
-
-
 def isGSVEvent(arg):
     """Checks an arg from the Katana events/callbacks to determine if a GSV Event change is happening"""
     root_node = NodegraphAPI.GetRootNode()
@@ -116,6 +85,37 @@ def createNewGSV(gsv):
     gsv_param.createChildString('value', '')
     gsv_param.createChildStringArray('options', 0)
     return gsv_param
+
+
+def createNewGSVOption(gsv, new_option, row=None):
+    """Adds an option to an already existing GSV
+
+    Args:
+        gsv (str):
+        new_option (str):
+
+    """
+    # get gsv param
+    gsv_param = getGSVParameter(gsv)
+
+    # get options param
+    if 'options' not in [child.getName() for child in gsv_param.getChildren()]:
+        options = gsv_param.createChildStringArray('options', 0)
+    else:
+        options = gsv_param.getChild("options")
+
+    # get all options
+    options_list = [gsv_param.getValue(0) for gsv_param in options.getChildren()]
+
+    # create new GSV option
+    if new_option not in options_list:
+        if not row:
+            row = options.getNumChildren()
+
+        new_option_param = options.insertArrayElement(row)
+        new_option_param.setValue(str(new_option), 0)
+
+        return new_option_param
 
 
 def deleteGSVOption(gsv, option):
@@ -236,6 +236,44 @@ def getGSVOptionParameter(gsv, option):
     return None
 
 
+def hideEngineersGSVUI():
+    """
+    Hides one of the worst GUI's ever created.
+
+    Note:
+        To the engineer who made this GUI,
+
+        It's ok, I still love you, and I know you're a much better engineer than designer.
+
+        Cheers,
+        Me
+    """
+    from Katana import UI4
+    from UI4.Widgets import VariablesPopupButton
+
+    main_window = UI4.App.MainWindow.CurrentMainWindow()
+    main_layout = main_window._KatanaWindow__topLayout
+
+    for index in range(main_layout.count()):
+        widget = main_layout.itemAt(index).widget()
+        if isinstance(widget, VariablesPopupButton):
+            # hide widget
+            widget.hide()
+
+            # hide divider
+            divider = main_layout.itemAt(index + 1).widget()
+            divider.hide()
+
+    # Hide default variables parameter
+    variables_param = getVariablesParameter()
+    variables_param.setHintString(repr(
+        {'conditionalVisOps':
+             {'conditionalVisOp': 'contains',
+              'conditionalVisPath': '../inTime',
+              'conditionalVisValue': 'asdf'}}))
+
+
+
 def moveGSVtoNewIndex(gsv, index):
     """
     moves the GSV to the index provided
@@ -291,7 +329,7 @@ def renameGSVOption(gsv, old_name, new_name):
     option_param = getGSVOptionParameter(gsv, old_name)
     old_index = option_param.getIndex()
     # add new option
-    new_option_param = addGSVOption(gsv, new_name)
+    new_option_param = createNewGSVOption(gsv, new_name)
     moveGSVOptionToNewIndex(gsv, new_name, old_index)
 
     # delete old option

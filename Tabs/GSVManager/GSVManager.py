@@ -1,10 +1,5 @@
 """
 TODO
-    Katana (Normal GSV updates in Project Settings):
-        * Delete
-        * Rename
-        * New (Option, GSV)
-        * Enabled
     Katana (Events)
         * delete handlers
             EventsWidget --> setupDeleteHandler
@@ -19,6 +14,8 @@ TODO
             GSVEvent --> optionChangedEvent
     View Widget:
         * If option doesn't exist, do what?
+    Edit Widget:
+        * Set enable/disable
 """
 import json
 import os
@@ -99,7 +96,9 @@ class GSVManager(UI4.Tabs.BaseTab):
         self.mainWidget().setHeaderItemIsEditable(False)
         # setup Katana events
         Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_finalizeValue', None)
-        Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
+        Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_createChild', None)
+        Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_deleteChild', None)
+        #Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
         # Utils.EventModule.RegisterCollapsedHandler(self.paramChildDeleted, 'parameter_deleteChild', None)
 
     def rename(self, args):
@@ -195,16 +194,18 @@ class GSVManager(UI4.Tabs.BaseTab):
         # create new gsv
         # create new option?
         # GSV Value changed
-        root_node = NodegraphAPI.GetRootNode()
+        print ('=====================')
         for arg in args:
             # preflight
             is_gsv_event = gsvutils.isGSVEvent(arg)
             if is_gsv_event:
+                print(arg)
                 # get attrs
                 param = arg[2]['param']
                 param_name = param.getName()
                 gsv = param.getParent().getName()
 
+                # GSV changed
                 if param_name == "value":
                     # update view
                     view_widget = self.viewWidget().widgets()[gsv]
@@ -681,7 +682,7 @@ class CreateNewGSVOptionWidget(LabelledInputWidget):
         if current_gsv_text != '<variables>':
             option = str(value)
             if current_gsv_text in gsvutils.getAllGSV(return_as=gsvutils.STRING):
-                param = gsvutils.addGSVOption(current_gsv_text, option)
+                param = gsvutils.createNewGSVOption(current_gsv_text, option)
                 new_entry_text = option
 
         # Create new GSV

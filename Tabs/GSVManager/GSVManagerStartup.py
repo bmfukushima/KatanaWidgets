@@ -48,6 +48,11 @@ def gsvChangedEvent(args):
         # else:
             # exec(events_data[option]["script"], globals(), local_variables)
 
-def installGSVManagerEvents():
+def installGSVManagerEvents(*args, **kwargs):
     from Katana import Utils
+    # create default param
+    EventsWidget.createGSVEventsParam()
+
+    gsvutils.hideEngineersGSVUI()
+
     Utils.EventModule.RegisterCollapsedHandler(gsvChangedEvent, 'parameter_finalizeValue', None)

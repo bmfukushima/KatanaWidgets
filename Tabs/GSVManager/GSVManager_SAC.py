@@ -266,7 +266,7 @@ class GSVUtils(object):
     STRING = 0
     PARAMETER = 1
     @staticmethod
-    def addGSVOption(gsv, new_option, row=None):
+    def createNewGSVOption(gsv, new_option, row=None):
         """Adds an option to an already existing GSV
 
         Args:
@@ -576,7 +576,7 @@ class EditGSVOptionsWidget(QLineEdit):
                 print(gsv)
                 print(GSVUtils().getAllGSVNames())
                 if gsv in GSVUtils().getAllGSVNames():
-                    GSVUtils().addGSVOption(gsv, option)
+                    GSVUtils().createNewGSVOption(gsv, option)
                     main_widget.update(gsv=gsv, value=option)
                     self.setText('')
 
@@ -781,7 +781,7 @@ class GSVOptionsComboBox(AbstractGSVComboBox):
             if option not in options_list:
                 if main_widget:
                     # create new GSV Option
-                    GSVUtils().addGSVOption(gsv, option)
+                    GSVUtils().createNewGSVOption(gsv, option)
                     #get edit combo text?
                     edit_combo_box = main_widget.editWidget().editGSVNamesWidget()
                     if str(edit_combo_box.currentText()) != '<variables>':
