@@ -5,7 +5,7 @@ This tab has multiple groups inside of it so that the user may
 make subcategories of desirable nodes.
 
 How it works:
-This works by storing a parameter string on the project settings called "_desirable_nodes".
+This works by storing a parameter string on the project settings called "KatanaBebop.DesirableNodes.data".
 This parameter will essentially be a CSV list of all of the possible groups that the user
 has created for this Katana File.
 
@@ -38,7 +38,7 @@ from cgwidgets.settings import attrs
 
 from Katana import UI4 , NodegraphAPI, Utils
 from Widgets2 import NodeViewWidget
-from Utils2 import nodeutils, getFontSize
+from Utils2 import nodeutils, getFontSize, paramutils
 
 
 class DesiredNodesTab(UI4.Tabs.BaseTab):
@@ -49,7 +49,7 @@ class DesiredNodesTab(UI4.Tabs.BaseTab):
     def __init__(self, parent=None):
         super(DesiredNodesTab, self).__init__(parent)
         # create default parameter
-        self.createProjectSettingsEntry()
+        self.createDesirableNodesParam()
 
         # create main widget
         self.desired_nodes_frame = DesiredNodesFrame(self)
@@ -58,16 +58,14 @@ class DesiredNodesTab(UI4.Tabs.BaseTab):
         QVBoxLayout(self)
         self.layout().addWidget(self.desired_nodes_frame)
 
-    def createProjectSettingsEntry(self):
+    def createDesirableNodesParam(self):
         """
-        Ensures that the parameter "_desirable_nodes" exists in the project settings.
+        Ensures that the parameter "KatanaBebop.DesirableNodes.data" exists in the project settings.
         """
-        root_node = NodegraphAPI.GetRootNode()
-        desirable_groups_param = root_node.getParameter("_desirable_nodes")
-
-        # create param if it doesn't exist
-        if not desirable_groups_param:
-            root_node.getParameters().createChildString("_desirable_nodes", "")
+        param_location = "KatanaBebop.DesirableNodes.data"
+        node = NodegraphAPI.GetRootNode()
+        param_type = paramutils.STRING
+        paramutils.createParamAtLocation(param_location, node, param_type, initial_value="")
 
 
 class DesiredNodesFrame(ShojiModelViewWidget):
@@ -166,17 +164,20 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         """
         Returns (parameter): that stores the data for all of the desirable node groups
         """
-        root_node = NodegraphAPI.GetRootNode()
-        desirable_groups_param = root_node.getParameter("_desirable_nodes")
-        if not desirable_groups_param:
-            desirable_groups_param = root_node.getParameters().createChildString("_desirable_nodes", "")
+        # create param if it doesnt exist
+        param_location = "KatanaBebop.DesirableNodes.data"
+        node = NodegraphAPI.GetRootNode()
+        param_type = paramutils.STRING
+        paramutils.createParamAtLocation(param_location, node, param_type, initial_value="")
+
+        # get param
+        desirable_groups_param = node.getParameter("KatanaBebop.DesirableNodes.data")
         return desirable_groups_param
 
     def desiredNodes(self):
         selection = self.getAllSelectedIndexes()
         if 0 < len(selection):
             selected_index = selection[0]
-            print(selected_index)
 
     def addNewGroup(self, name):
         """

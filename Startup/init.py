@@ -1,5 +1,10 @@
 from Katana import Utils, Callbacks
 from qtpy.QtCore import Qt
+
+# initialize Bebop Parameter
+from Utils2 import parameters
+Callbacks.addCallback(Callbacks.Type.onStartupComplete, parameters.createKatanaBebopParameter)
+
 # initialize bebop menu
 from ParameterMenu import installCustomParametersMenu
 installCustomParametersMenu()

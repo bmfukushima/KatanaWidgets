@@ -33,12 +33,14 @@ from cgwidgets.widgets import (
 from cgwidgets.utils import getWidgetAncestor, convertScriptToString, clearLayout
 from cgwidgets.settings import attrs, icons, iColor
 
-from Utils2 import gsvutils, getFontSize
+from Utils2 import gsvutils, getFontSize, paramutils
 
 
 class GSVManager(UI4.Tabs.BaseTab):
     """
     Main convenience widget for displaying GSV manipulators to the user.
+
+
 
     Hierarchy:
         QVBoxLayout
@@ -62,6 +64,18 @@ class GSVManager(UI4.Tabs.BaseTab):
                                 |> QHBoxLayout
                                     |- cacheScriptButton (ButtonInputWidget)
                                     |- deleteButton (ButtonInputWidget)
+
+    Data:
+        Stored as a parameter on the root node.  Under KatanaBebop.GSVEventsData.data
+
+        eventsWidget() --> eventsData()
+            {gsv_name1: {
+                "option1":{file_path:"path_to_script.py", script: "script text"},
+                "option2":{file_path:"path_to_script.py", script: "script text"}},
+            gsv_name2: {
+                "option3":{file_path:"path_to_script.py", script: "script text"},
+                "option4":{file_path:"path_to_script.py", script: "script text"}},
+            }
 
     """
     NAME = "GSVManager"
@@ -119,32 +133,6 @@ class GSVManager(UI4.Tabs.BaseTab):
         self.editWidget().setText("<variables>")
         self.viewWidget().update()
         self.editWidget().update()
-
-    # def gsvChanged(self, args):
-    #     for arg in args:
-    #         # preflight
-    #         is_gsv_event = gsvutils.isGSVEvent(arg)
-    #         if is_gsv_event:
-    #             # get attrs
-    #             param = arg[2]['param']
-    #             param_name = param.getName()
-    #             gsv = param.getParent().getName()
-    #
-    #             # GSV changed
-    #             if param_name == "value":
-    #                 # update view
-    #                 view_widget = self.viewWidget().widgets()[gsv]
-    #                 option = param.getValue(0)
-    #                 view_widget.delegateWidget().setText(option)
-    #
-    #                 # run user script
-    #                 # self.gsvChangedEvent(arg)
-    #
-    #             if param_name == "enabled":
-    #                 # todo: setup hide/show events for the view widget
-    #                 # todo: setup disable events on the edit side of the view widget
-    #                     #handle the enable/disable handler
-    #                 pass
 
 
 """ VIEW WIDGET """
@@ -883,7 +871,7 @@ class EventsWidget(ShojiModelViewWidget):
         Returns (Parameter)
         """
         EventsWidget.createGSVEventsParam()
-        events_param = NodegraphAPI.GetRootNode().getParameter("_gsv_events_data")
+        events_param = NodegraphAPI.GetRootNode().getParameter("KatanaBebop.GSVEventsData.data")
         return events_param
 
     @staticmethod
@@ -892,8 +880,12 @@ class EventsWidget(ShojiModelViewWidget):
         Creates the GSV Events param if one doesn't already exist
         """
         node = NodegraphAPI.GetRootNode()
-        if not node.getParameter("_gsv_events_data"):
-            node.getParameters().createChildString("_gsv_events_data", "{}")
+        param_location = "KatanaBebop.GSVEventsData.data"
+        param_type = paramutils.STRING
+        paramutils.createParamAtLocation(param_location, node, param_type, initial_value="{}")
+        # if not node.getParameter("KatanaBebop.GSVEventsData"):
+        #     node.getParameter("KatanaBebop").createChildGroup("GSVEventsData")
+        #     node.getParameter("KatanaBebop.GSVEventsData").createChildString("data", "{}")
 
     def saveEventsData(self):
         """ Saves the events data to the parameter """
