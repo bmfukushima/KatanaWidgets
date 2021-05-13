@@ -1,11 +1,15 @@
 """
 TODO
     Katana (Events)
+        # Show Event - Populate
+        # Option Changed BUG
+            If option exists, it deletes, and overrides, so other options will fail...
+                GSVEvent --> OptionChangedEvent
         # disable handlers
             * EventWidget
-                Disable GSV
                 Disable Option
                 Will need to update the data structure to support this...
+
 """
 import json
 import os
@@ -22,6 +26,7 @@ from Katana import UI4, NodegraphAPI, Utils
 
 from cgwidgets.widgets import (
     AbstractModelViewItem,
+    BooleanInputWidget,
     ButtonInputWidget,
     FrameInputWidgetContainer,
     ListInputWidget,
@@ -39,8 +44,6 @@ from Utils2 import gsvutils, getFontSize, paramutils
 class GSVManager(UI4.Tabs.BaseTab):
     """
     Main convenience widget for displaying GSV manipulators to the user.
-
-
 
     Hierarchy:
         QVBoxLayout
@@ -70,11 +73,15 @@ class GSVManager(UI4.Tabs.BaseTab):
 
         eventsWidget() --> eventsData()
             {gsv_name1: {
-                "option1":{file_path:"path_to_script.py", script: "script text"},
-                "option2":{file_path:"path_to_script.py", script: "script text"}},
-            gsv_name2: {
-                "option3":{file_path:"path_to_script.py", script: "script text"},
-                "option4":{file_path:"path_to_script.py", script: "script text"}},
+                data: {
+                    "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
+                    "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
+                enabled: boolean}
+            {gsv_name2: {
+                data: {
+                    "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
+                    "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
+                enabled: boolean}
             }
 
     """
@@ -702,7 +709,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
                 for index in selected_indexes:
                     if index.internalPointer().columnData()['name'] == gsv:
                         # check to make sure option exists
-                        if option in list(events_widget.eventsData()[gsv].keys()):
+                        if option in list(events_widget.eventsData()[gsv]["data"].keys()):
                             # get delegate widget
                             main_delegate_widget = events_widget.delegateWidget().widget(1).getMainWidget()
 
@@ -712,7 +719,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
                             del main_delegate_widget.widgets()[option]
 
                             # destroy event data
-                            del events_widget.eventsData()[gsv][option]
+                            del events_widget.eventsData()[gsv]["data"][option]
                             events_widget.saveEventsData()
 
         # Remove Variable
@@ -782,12 +789,17 @@ class EventsWidget(ShojiModelViewWidget):
         current_gsv (str): name of current GSV that is being manipulated
         events_data (dict): of GSV names that are already created as events in this widget.
             {gsv_name1: {
-                "option1":{file_path:"path_to_script.py", script: "script text"},
-                "option2":{file_path:"path_to_script.py", script: "script text"}},
-            gsv_name2: {
-                "option3":{file_path:"path_to_script.py", script: "script text"},
-                "option4":{file_path:"path_to_script.py", script: "script text"}},
+                data: {
+                    "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
+                    "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
+                enabled: boolean}
+            {gsv_name2: {
+                data: {
+                    "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
+                    "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
+                enabled: boolean}
             }
+
     Hierarchy:
         |- GSVEventsListWidget --> (LabelledInputWidget)
         |- DisplayGSVEventWidget (FrameInputWidgetContainer)
@@ -820,6 +832,7 @@ class EventsWidget(ShojiModelViewWidget):
 
         # setup events
         self.setHeaderItemDeleteEvent(self.deleteGSVEvent)
+        self.setHeaderItemEnabledEvent(self.disableGSVEvent)
 
         # set style
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -857,9 +870,6 @@ class EventsWidget(ShojiModelViewWidget):
                     _is_dirty = True
                     break
 
-            # display update
-            widget.setIsScriptDirty(_is_dirty)
-
     def eventsData(self):
         return self._events_data
 
@@ -883,9 +893,6 @@ class EventsWidget(ShojiModelViewWidget):
         param_location = "KatanaBebop.GSVEventsData.data"
         param_type = paramutils.STRING
         paramutils.createParamAtLocation(param_location, node, param_type, initial_value="{}")
-        # if not node.getParameter("KatanaBebop.GSVEventsData"):
-        #     node.getParameter("KatanaBebop").createChildGroup("GSVEventsData")
-        #     node.getParameter("KatanaBebop.GSVEventsData").createChildString("data", "{}")
 
     def saveEventsData(self):
         """ Saves the events data to the parameter """
@@ -910,6 +917,16 @@ class EventsWidget(ShojiModelViewWidget):
         del self.eventsData()[gsv]
         self.saveEventsData()
 
+    def disableGSVEvent(self, item, enabled):
+        """
+        When the user deletes a GSV event, this will remove the meta data.
+        """
+        gsv = item.columnData()['name']
+
+        # disable data
+        self.eventsData()[gsv]["enabled"] = enabled
+        self.saveEventsData()
+
     def showEvent(self, event):
         EventsWidget.createGSVEventsParam()
         return ShojiModelViewWidget.showEvent(self, event)
@@ -924,6 +941,8 @@ class EventsWidget(ShojiModelViewWidget):
 
         # store local dictionary
         self.eventsData()[gsv] = {}
+        self.eventsData()[gsv]["data"] = {}
+        self.eventsData()[gsv]["enabled"] = True
 
         # create new index
         self.insertShojiWidget(0, column_data={"name": str(gsv)})
@@ -949,15 +968,16 @@ class EventsWidget(ShojiModelViewWidget):
         clearLayout(display_widget.layout(), start=2)
 
         # update display
-        events_dict = json.loads(parent.eventsParam().getValue(0))[gsv]
+        events_dict = json.loads(parent.eventsParam().getValue(0))[gsv]["data"]
         for option, data in events_dict.items():
             # todo: check file status
             """compare script being uploaded to the "script" arg and if they are not the same,
             break set flag available to update."""
 
             # create widget
-            widget = display_widget.createNewOptionEvent(option=str(option), script=str(data["file_path"]))
+            widget = display_widget.createNewOptionEvent(option=str(option), script=str(data["file_path"]), enabled=data["enabled"])
 
+            # parent.model().setItemEnabled(item, option["enabled"])
             # check if cached script is dirty or not
             EventsWidget.isScriptDirty(data, widget)
 
@@ -1038,8 +1058,8 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         """ When the dynamic update is run, this updates the title"""
         self.headerWidget().setTitle(gsv)
 
-    def createNewOptionEvent(self, option=None, script=None):
-        new_widget = GSVEvent(parent=self, option=option, script=script)
+    def createNewOptionEvent(self, option=None, script=None, enabled=True):
+        new_widget = GSVEvent(parent=self, option=option, script=script, enabled=enabled)
         self.addInputWidget(new_widget)
         return new_widget
 
@@ -1087,7 +1107,7 @@ class GSVEvent(LabelledInputWidget):
         option (str):
         script (str):
     """
-    def __init__(self, parent=None, option=None, script=None):
+    def __init__(self, parent=None, option=None, script=None, enabled=True):
         super(GSVEvent, self).__init__(parent)
         self.setDirection(Qt.Horizontal)
 
@@ -1116,14 +1136,18 @@ class GSVEvent(LabelledInputWidget):
         self.mainWidget().setCollapsible(2, False)
         self.mainWidget().setStretchFactor(2, 0)
 
-        # add update script button
-        self._cache_script_button = self.__insertButton(
-            2, "", "Cache Script", self.cacheScript, image_path=icons["update"])
-        self._cache_script_button.setTextBackgroundColor(iColor["rgba_background_00"])
+        # add disable script button
+        if enabled:
+            self._disable_script_button = BooleanInputWidget(text="D", is_selected=True)
+        if not enabled:
+            self._disable_script_button = BooleanInputWidget(text="E", is_selected=False)
+        self._disable_script_button.setUserFinishedEditingEvent(self.toggleScriptDisable)
+        self.__insertButton(self._disable_script_button, "Handicap")
 
         # add delete button
-        self._delete_button = self.__insertButton(
-            3, "-", "Delete", self.deleteOptionEvent)
+        self._delete_button = ButtonInputWidget(
+            user_clicked_event=self.deleteOptionEvent, title="-", flag=False, is_toggleable=False)
+        self.__insertButton(self._delete_button, "Delete")
 
         # set display attrs
         if option:
@@ -1136,7 +1160,7 @@ class GSVEvent(LabelledInputWidget):
         self.setHandleWidth(1)
 
     """ WIDGETS """
-    def __insertButton(self, index, name, tooltip, user_event, image_path=None):
+    def __insertButton(self, widget, tooltip):
         """
         Inserts a new clickable button for the user
 
@@ -1150,19 +1174,15 @@ class GSVEvent(LabelledInputWidget):
 
         """
         # create button
-        button_widget = ButtonInputWidget(
-            user_clicked_event=user_event, title=name, flag=False, is_toggleable=False)
 
         # add to main widget
-        self._buttons_layout.addWidget(button_widget)
+        self._buttons_layout.addWidget(widget)
 
         # setup attrs todo: fix this later...
-        button_widget.setFixedSize(getFontSize() * 2.5, getFontSize() * 2.5)
-        button_widget.setToolTip(tooltip)
-        if image_path:
-            button_widget.setImage(image_path)
+        widget.setFixedSize(getFontSize() * 2.5, getFontSize() * 2.5)
+        widget.setToolTip(tooltip)
 
-        return button_widget
+        return widget
 
     def buttonsMainWidget(self):
         return self._buttons_main_widget
@@ -1176,8 +1196,8 @@ class GSVEvent(LabelledInputWidget):
     def scriptWidget(self):
         return self.delegateWidget()
 
-    def cacheScriptButton(self):
-        return self._cache_script_button
+    def disableScriptButton(self):
+        return self._disable_script_button
 
     """ EVENTS """
     def populateGSVOptions(self):
@@ -1197,7 +1217,7 @@ class GSVEvent(LabelledInputWidget):
 
         # remove data
         if self.currentOption():
-            del event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]
+            del event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]
             event_widget.saveEventsData()
 
             del display_widget.widgets()[self.currentOption()]
@@ -1220,15 +1240,13 @@ class GSVEvent(LabelledInputWidget):
             event_widget = getWidgetAncestor(self, EventsWidget)
 
             # update script
-            event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]["script"] = script
+            event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["script"] = script
 
             # save
             event_widget.saveEventsData()
         else:
             if file_path.rstrip():
                 print('{file_path} does not exist... please make one that does...'.format(file_path=file_path))
-
-        self.setIsScriptDirty(False)
 
     def optionChangedEvent(self, widget, option):
         """
@@ -1249,7 +1267,7 @@ class GSVEvent(LabelledInputWidget):
         # rename existing item
         if self.currentOption():
             # update main events
-            data = events_widget.eventsData()[events_widget.currentGSV()]
+            data = events_widget.eventsData()[events_widget.currentGSV()]["data"]
             data[option] = data.pop(self.currentOption())
 
             # update DisplayGSVEventWidget
@@ -1258,7 +1276,7 @@ class GSVEvent(LabelledInputWidget):
         # create new event
         else:
             # update main events
-            events_widget.eventsData()[events_widget.currentGSV()][option] = {"file_path": "", "script": ""}
+            events_widget.eventsData()[events_widget.currentGSV()]["data"][option] = {"file_path": "", "script": "", "enabled":True}
 
             # add widget entry into DisplayGSVEventWidget
             display_widget.widgets()[option] = self
@@ -1287,34 +1305,41 @@ class GSVEvent(LabelledInputWidget):
         event_widget = getWidgetAncestor(self, EventsWidget)
 
         # update script
-        event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()]["file_path"] = filepath
+        event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["file_path"] = filepath
 
         # save
         event_widget.saveEventsData()
 
         # update script button
         self.cacheScript(None)
-        #EventsWidget.isScriptDirty(event_widget.eventsData()[event_widget.currentGSV()][self.currentOption()], self)
 
-    """ UPDATE SCRIPT """
-    def isScriptDirty(self):
-        return self._is_script_dirty
-
-    def setIsScriptDirty(self, is_script_dirty):
+    def toggleScriptDisable(self, widget, enabled):
         """
-        Determines if the file_path is the same, or needs to be updated.
+        When the user presses the disable button.  This will disable/enable the current option
 
         Args:
-            is_script_dirty (bool):
-
-        Returns:
-
+            widget (QWidget):
+            enabled (bool):
         """
-        self._is_script_dirty = is_script_dirty
-        if is_script_dirty:
-            self.cacheScriptButton().setTextBackgroundColor(iColor["rgba_gray_4"])
-        if not is_script_dirty:
-            self.cacheScriptButton().setTextBackgroundColor(iColor["rgba_background_00"])
+
+        # preflight
+        if self.currentOption() == {}: return
+        if not self.currentOption(): return
+
+        # update display
+        if enabled:
+            widget.setText("D")
+            widget.setToolTip("Handicap")
+        if not enabled:
+            widget.setText("E")
+            widget.setToolTip("Unhandicap")
+
+        # update data
+        events_widget = getWidgetAncestor(widget, EventsWidget)
+
+        events_widget.eventsData()[events_widget.currentGSV()]["data"][self.currentOption()]["enabled"] = enabled
+
+        events_widget.saveEventsData()
 
     """ PROPERTIES """
     def currentOption(self):

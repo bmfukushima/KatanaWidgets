@@ -28,8 +28,16 @@ def gsvChangedEvent(args):
 
         # preflight
         if gsv not in list(events_data.keys()): return
-        if option not in list(events_data[gsv].keys()): return
-        if "script" not in list(events_data[gsv][option].keys()): return
+
+        # user defined disable on GSV
+        if not events_data[gsv]["enabled"]: return
+
+        # option does not exist
+        if not events_data[gsv]["data"][option]["enabled"]: return
+
+        # user defined option disable
+        # script does not exist
+        # if "script" not in list(events_data[gsv]["data"][option].keys()): return
 
         # setup local variables
         local_variables = {}
@@ -37,7 +45,7 @@ def gsvChangedEvent(args):
         local_variables["option"] = option
 
         # execute script
-        exec(events_data[gsv][option]["script"], globals(), local_variables)
+        exec(events_data[gsv]["data"][option]["script"], globals(), local_variables)
 
         # execute file
         # if os.path.exists(script):
