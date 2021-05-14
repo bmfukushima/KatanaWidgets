@@ -1,15 +1,9 @@
 """
 TODO
-    Katana (Events)
-        # Show Event - Populate
-        # Option Changed BUG
-            If option exists, it deletes, and overrides, so other options will fail...
-                GSVEvent --> OptionChangedEvent
-        # disable handlers
-            * EventWidget
-                Disable Option
-                Will need to update the data structure to support this...
-
+    Katana Events | GSVManager --> nodeGraphLoad
+        # On scene load
+            * Clear existing events, load new events
+            * create new param if it doesn't exist
 """
 import json
 import os
@@ -137,9 +131,19 @@ class GSVManager(UI4.Tabs.BaseTab):
     """ KATANA EVENTS """
     def nodeGraphLoad(self, args):
         """ Reload the View Widget when a new Katana scene is opened"""
+        # create param if it doesnt exist
+        EventsWidget.createGSVEventsParam()
+
+        # reload events data
+        events_data = json.loads(self.eventsWidget().eventsParam().getValue(0))
+        self.eventsWidget().setEventsData(events_data)
+        # update variable text
         self.editWidget().setText("<variables>")
+
+        # update all widgets
         self.viewWidget().update()
         self.editWidget().update()
+        self.eventsWidget().update()
 
 
 """ VIEW WIDGET """
@@ -837,6 +841,12 @@ class EventsWidget(ShojiModelViewWidget):
         # set style
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+        # populate
+        self._events_data = json.loads(self.eventsParam().getValue(0))
+        gsv_list = list(self.eventsData().keys())
+        for gsv in gsv_list:
+            self.insertShojiWidget(0, column_data={"name": str(gsv)})
+
     """ WIDGETS """
     def gsvEventsListWidget(self):
         return self._gsv_events_list_widget
@@ -872,6 +882,9 @@ class EventsWidget(ShojiModelViewWidget):
 
     def eventsData(self):
         return self._events_data
+
+    def setEventsData(self, events_data):
+        self._events_data = events_data
 
     @staticmethod
     def eventsParam():
@@ -949,6 +962,15 @@ class EventsWidget(ShojiModelViewWidget):
 
         # save
         self.saveEventsData()
+
+    def update(self):
+        """ Clears the model and repopulates it """
+        # clear model
+        self.clearModel()
+
+        # get GSVs
+        for gsv in list(json.loads(self.eventsParam().getValue(0)).keys()):
+            self.insertShojiWidget(0, column_data={"name": str(gsv)})
 
     @staticmethod
     def displayGSVEventWidget(parent, widget, item):
@@ -1122,6 +1144,7 @@ class GSVEvent(LabelledInputWidget):
         view_widget.dynamic_update = True
         view_widget.setCleanItemsFunction(self.populateGSVOptions)
         view_widget.setUserFinishedEditingEvent(self.optionChangedEvent)
+        view_widget.setValidateInputFunction(self.validateOptionInputEvent)
         self.setViewWidget(view_widget)
 
         # setup delegate widget
@@ -1248,6 +1271,26 @@ class GSVEvent(LabelledInputWidget):
             if file_path.rstrip():
                 print('{file_path} does not exist... please make one that does...'.format(file_path=file_path))
 
+    def validateOptionInputEvent(self):
+        """
+        Determines if the optionsWidget() should update or not.
+
+        When the user changes the value in the options widget, this will
+        be called to determine if the user input is valid or not. If the option
+        already exists, it will be considered invalid, and set to the pervious value.
+
+        Returns (bool):
+        """
+        # get attrs
+        events_widget = getWidgetAncestor(self, EventsWidget)
+        option = self.viewWidget().text()
+
+        # check if already exists
+        if option in list(events_widget.eventsData()[events_widget.currentGSV()]["data"].keys()):
+            return False
+
+        return True
+
     def optionChangedEvent(self, widget, option):
         """
         When the user changes the GSV Option, this will create the entry.
@@ -1353,6 +1396,5 @@ class GSVEvent(LabelledInputWidget):
 
     def setScript(self, script):
         self._script = script
-
 
 
