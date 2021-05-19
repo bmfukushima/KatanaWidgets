@@ -1,10 +1,69 @@
 """
-TODO
-    Katana Events | GSVManager --> nodeGraphLoad
-        # On scene load
-            * Clear existing events, load new events
-            * create new param if it doesn't exist
+The GSVManager is a TAB that has three separate portions. View, Create/Edit, Events.
+
+View:
+    The area that the user can use as a read only aspect to display/change
+    the GSV.
+Edit:
+    The area where the user can:
+        1.) create/edit/destroy GSVs/Options
+        2.) Reorder GSV's/options
+        3.) Enable/Disable
+Events:
+    The area where the user can setup Python scripts to be run when GSV's are changed
+    and the conditions are met.  This works the same way that VariableSwitches/VEG work
+    in that when the GSV/Pattern condition is met, then the script will run.
+
+    These scripts will receive two LOCAL VARIABLES in their scope, "gsv" and "option"
+    which are both STRINGS that provide the GSV that was changed, and the option it
+    was changed to.
+
+    Note:
+        Events have their filepath, and the script stored.  The filepath is cached into a
+        string, and then the string is executed if a match is made.  There are certain
+        procedures in place to auto update the filepath and recache it, if it has changed
+        on disk.
+
+Hierarchy:
+    GSVManager(UI4.Tabs.BaseTab)
+        |- QVBoxLayout
+            |- mainWidget --> (ShojiModelViewWidget)
+                |- viewWidget --> (ViewWidget --> QWidget)
+                |    |* ViewGSVWidget --> (LabelledInputWidget)
+                |- editWidget --> (EditWidget --> QWidget)
+                |   |> VBoxLayout:
+                |       |> HBoxLayout
+                |       |   |- GSVSelectorWidget --> (LabelledInputWidget --> ListInputWidget)
+                |       |   |- CreateNewGSVOptionWidget --> (LabelledInputWidget --> StringInputWidget)
+                |       |- displayEditableOptionsWidget --> (ModelViewWidget)
+                |- eventsWidget (EventsWidget --> ShojiMVW)
+                    |- GSVEventsListWidget --> (LabelledInputWidget)
+                    |- DisplayGSVEventWidget (FrameInputWidgetContainer)
+                        |- DisplayGSVEventWidgetHeader (OverlayInputWidget --> ButtonInputWidget)
+                        |* GSVEvent
+                            |- optionsWidget --> ListInputWidget
+                            |- scriptWidget --> StringInputWidget
+                            |- buttonsMainWidget --> (QWidget)
+                                |> QHBoxLayout
+                                    |- disableScriptButton (BooleanInputWidget)
+                                    |- deleteButton (ButtonInputWidget)
+
+Data:
+    Stored as a parameter on the root node.  Under KatanaBebop.GSVEventsData.data
+    eventsWidget() --> eventsData()
+        {gsv_name1: {
+            data: {
+                "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
+                "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
+            enabled: boolean}
+        {gsv_name2: {
+            data: {
+                "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
+                "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
+            enabled: boolean}
+        }
 """
+
 import json
 import os
 
@@ -30,7 +89,7 @@ from cgwidgets.widgets import (
     ShojiModelViewWidget,
     StringInputWidget)
 from cgwidgets.utils import getWidgetAncestor, convertScriptToString, clearLayout
-from cgwidgets.settings import attrs, icons, iColor
+from cgwidgets.settings import attrs
 
 from Utils2 import gsvutils, getFontSize, paramutils
 
@@ -38,46 +97,6 @@ from Utils2 import gsvutils, getFontSize, paramutils
 class GSVManager(UI4.Tabs.BaseTab):
     """
     Main convenience widget for displaying GSV manipulators to the user.
-
-    Hierarchy:
-        QVBoxLayout
-            |- mainWidget --> (ShojiModelViewWidget)
-                |- viewWidget --> (ViewWidget --> QWidget)
-                |    |* ViewGSVWidget --> (LabelledInputWidget)
-                |- editWidget --> (EditWidget --> QWidget)
-                |   |> VBoxLayout:
-                |       |> HBoxLayout
-                |       |   |- GSVSelectorWidget --> (LabelledInputWidget --> ListInputWidget)
-                |       |   |- CreateNewGSVOptionWidget --> (LabelledInputWidget --> StringInputWidget)
-                |       |- displayEditableOptionsWidget --> (ModelViewWidget)
-                |- eventsWidget (EventsWidget --> ShojiMVW)
-                    |- GSVEventsListWidget --> (LabelledInputWidget)
-                    |- DisplayGSVEventWidget (FrameInputWidgetContainer)
-                        |- DisplayGSVEventWidgetHeader (OverlayInputWidget --> ButtonInputWidget)
-                        |* GSVEvent
-                            |- optionsWidget --> ListInputWidget
-                            |- scriptWidget --> StringInputWidget
-                            |- buttonsMainWidget --> (QWidget)
-                                |> QHBoxLayout
-                                    |- cacheScriptButton (ButtonInputWidget)
-                                    |- deleteButton (ButtonInputWidget)
-
-    Data:
-        Stored as a parameter on the root node.  Under KatanaBebop.GSVEventsData.data
-
-        eventsWidget() --> eventsData()
-            {gsv_name1: {
-                data: {
-                    "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
-                    "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
-                enabled: boolean}
-            {gsv_name2: {
-                data: {
-                    "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
-                    "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
-                enabled: boolean}
-            }
-
     """
     NAME = "GSVManager"
 

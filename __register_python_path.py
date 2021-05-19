@@ -27,9 +27,10 @@ import inspect
 CURRENT_DIR = (
     os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 )
+sys.path.append(CURRENT_DIR)
+
 
 LOGO = {}
-
 
 LOGO['STAR_WARS'] = """
 //   __  ___      ___   .___________.    ___      .__   __.      ___         .______    _______ .______     ______   .______   
@@ -170,7 +171,7 @@ LOGO['SMALL_MODIFIED'] = """
 #     {logo}
 #     """.format(name=name, logo=logo))
 
-sys.path.append(CURRENT_DIR)
+
 print("""
 ...............................................................................
 ..............................      LOADING      ..............................
