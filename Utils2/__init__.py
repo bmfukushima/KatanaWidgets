@@ -4,6 +4,6 @@ from .Utils2 import *
 import gsvutils
 import nodeutils
 #import nodeinterface
-import parameters
+import paramutils
 import colors
 

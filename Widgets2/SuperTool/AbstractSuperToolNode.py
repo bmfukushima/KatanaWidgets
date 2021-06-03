@@ -1,8 +1,8 @@
-try:
-    from Katana import NodegraphAPI
-    from Utils2.nodeutils import createIOPorts
-except ModuleNotFoundError:
-    pass
+#try:
+from Katana import NodegraphAPI
+from Utils2.nodeutils import createIOPorts
+# except ModuleNotFoundError:
+#     pass
 
 
 class AbstractSuperToolNode(NodegraphAPI.SuperTool):
