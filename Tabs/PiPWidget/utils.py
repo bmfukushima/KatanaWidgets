@@ -2,6 +2,58 @@ import os
 
 from cgwidgets.utils import getJSONData
 
+def getAllTabTypes():
+    """
+    Gets a list of all of the different possible tab types.
+
+    Returns (list): of tab names (strings)
+
+    """
+    from UI4.App import Tabs
+
+    tabPluginSearchPaths = Tabs.GetTabPluginSearchPaths()
+    tabTypeNamesByPath = {}
+    tabs = []
+
+    for tabTypeName in sorted(Tabs.GetAvailableTabTypeNames()):
+        tabPluginPath = Tabs.GetTabPluginPath(tabTypeName)
+        for tabPluginSearchPath in tabPluginSearchPaths:
+            if tabPluginPath.startswith(tabPluginSearchPath):
+                tabTypeNamesByPath.setdefault(tabPluginSearchPath, []).append(tabTypeName)
+
+    for tabPluginSearchPath in tabPluginSearchPaths:
+        tabTypeNames = tabTypeNamesByPath.get(tabPluginSearchPath)
+        if not tabTypeNames:
+            continue
+
+        tabs += tabTypeNames
+
+    return tabs
+
+
+def getKatanaConstructors():
+    """
+    Gets all of the tabs, and returns them
+    Returns:
+
+    """
+    tabs = getAllTabTypes()
+    tab_data = {}
+
+    for TAB_NAME in tabs:
+        if TAB_NAME == "Node Graph":
+            tab_data[TAB_NAME] = """
+from Widgets2 import AbstractNodegraphWidget
+widget=AbstractNodegraphWidget(self)"""
+        else:
+            tab_data[TAB_NAME] = """
+from UI4.App import Tabs
+tab_constructor = Tabs._LoadedTabPluginsByTabTypeName
+widget = tab_constructor[\"{TAB_NAME}\"].data(None)""".format(TAB_NAME=TAB_NAME)
+
+    return tab_data
+
+
 def getConstructors(*args):
     """
     Retuns all of the widgets that are available to to be used in the PiPWidget.
@@ -16,14 +68,14 @@ def getConstructors(*args):
 
             Note: Constructor code returns the instance of a widget defined as the variable "widget"
                 ie. widget = QLabel()
-
     """
 
     constructors = {}
 
     # get Katana PiP constructors
-    constructors_file_path = os.path.dirname(__file__) + '/KatanaConstructors.json'
-    katana_constructors = getJSONData(constructors_file_path)
+    #constructors_file_path = os.path.dirname(__file__) + '/KatanaConstructors.json'
+    #katana_constructors = getJSONData(constructors_file_path)
+    katana_constructors = getKatanaConstructors()
     constructors.update(katana_constructors)
 
     # get args provided
@@ -65,7 +117,7 @@ def getSaveData(*args):
     save_data = {
         "KatanaBebop": {
             "file_path": built_ins_file_path,
-            "locked": True},
+            "locked": False},
         "User": {
             "file_path": user_save_path,
             "locked": False}
