@@ -60,7 +60,25 @@ def loadGlobalEvents(*args):
         katana_main.global_events_widget.main_widget.clearModel()
         katana_main.global_events_widget.loadEventsDataFromJSON()
 
+def simpleToolNameChange(args):
+    """ Updates the events data when a Simple Tools node name is changed to match the new name.
+    """
+    for arg in args:
+        # get data
+        node = arg[2]["node"]
+        old_name = arg[2]["oldName"]
+        new_name = arg[2]["newName"]
+
+        # update events data
+        if node.getType() == "SimpleTool":
+            param = node.main_node.getParameter("events_data")
+            if param:
+                new_value = param.getValue(0).replace(old_name, new_name)
+                param.setValue(new_value, 0)
+
+
 def installBebopGlobalEvents():
     Utils.EventModule.RegisterCollapsedHandler(loadLocalEvents, 'nodegraph_loadEnd')
     Utils.EventModule.RegisterCollapsedHandler(loadGlobalEvents, 'nodegraph_setRootNode')
+    # Utils.EventModule.RegisterCollapsedHandler(simpleToolNameChange, 'node_setName')
     Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, cleanupGlobalEvents)

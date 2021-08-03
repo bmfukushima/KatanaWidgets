@@ -374,9 +374,12 @@ class KatanaLauncher(QWidget):
         # display launcher text
         self.launcherText()
 
+        # TODO Move this to a dynamic module
         # image library directory
         os.environ['LIBRARY_DIR'] = '/media/ssd01/library/library'
 
+        # additional 2.7 libs
+        os.environ["PYTHONPATH"] += ":/usr/local/lib/python2.7/dist-packages"
         # # launch katana instance
         subprocess.Popen([self.katana_bin])
         self.close()

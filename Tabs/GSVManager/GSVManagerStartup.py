@@ -56,6 +56,7 @@ def gsvChangedEvent(args):
         # else:
             # exec(events_data[option]["script"], globals(), local_variables)
 
+
 def installGSVManagerEvents(*args, **kwargs):
     from Katana import Utils
     # create default param

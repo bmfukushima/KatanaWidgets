@@ -1,5 +1,25 @@
 """
+Abstract class for creating EventsWidgets.  These widgets will be able to create
+user driven events based off of the Callbacks and Events in Katana
+(https://learn.foundry.com/katana/dev-guide/Scripting/CallbacksAndEvents.html).
 
+This class will most notably be used in:
+    SimpleTools (SuperTool)
+    GSVManager (Tab)
+    Event Manager (tab)
+
+Hierarchy:
+EventWidget --> (QWidget)
+    | -- VBox
+        | -- new_event_button --> (QPushButton)
+        | -- main_widget --> (ShojiModelViewWidget)
+            | -- label type (EventsLabelWidget --> ShojiLabelWidget)
+            | -- Dynamic Widget (UserInputMainWidget --> QWidget)
+                | -- VBox
+                    | -- events_type_menu ( EventTypeInputWidget)
+                    | -- script_widget (DynamicArgsInputWidget)
+                    | -- dynamic_args_widget (DynamicArgsWidget)
+                            | -* DynamicArgsInputWidget
 TODO:
     *   Globals
             - disable does not work
@@ -27,22 +47,21 @@ TODO:
 
 """
 
-import sys, os, json
-
+import os, json
 from qtpy.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QPushButton, QMenu)
+    QApplication, QWidget, QVBoxLayout, QMenu, QSizePolicy)
 from qtpy.QtCore import Qt
-from qtpy.QtGui import QCursor, QKeySequence
+from qtpy.QtGui import QKeySequence
 
 from cgwidgets.widgets import (
-    ListInputWidget, LabelledInputWidget, StringInputWidget, ButtonInputWidget,
+    ListInputWidget, LabelledInputWidget, ButtonInputWidget,
     ShojiModelViewWidget, ShojiModelItem)
 from cgwidgets.views import AbstractDragDropListView, AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestor
 from cgwidgets.settings import attrs
 
 
-from Katana import Utils, NodegraphAPI
+from Katana import Utils, NodegraphAPI, UI4
 
 
 class EventWidget(QWidget):
@@ -71,6 +90,7 @@ class EventWidget(QWidget):
     def __init__(self, parent=None, node=None):
         super(EventWidget, self).__init__(parent)
         self.generateDefaultEventTypesDict()
+
         if not node:
             node = NodegraphAPI.GetRootNode()
         if not node.getParameter("events_data"):
@@ -80,6 +100,8 @@ class EventWidget(QWidget):
         # setup attrs
         self._events_model = []
         self._new_event_key = Qt.Key_Q
+        self._events_dict = {}
+
         # setup layout
         QVBoxLayout(self)
 
@@ -104,7 +126,6 @@ class EventWidget(QWidget):
         self.__setupNodeDeleteDisableHandler()
 
         # set up stretch
-        from qtpy.QtWidgets import QSizePolicy
         self.main_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         self.update_events_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
 
@@ -259,27 +280,33 @@ class EventWidget(QWidget):
         return True
 
     """ EVENTS DICT """
-    def getUserEventsDict(self):
+    def getUserEventsDict(self, from_param=False):
         """
         Returns the dictionary of events data that was set up by the user.
         This is also stored in the parameter on the main node as "events_data"
         """
-        root_item = self.main_widget.model().getRootItem()
-        events_dict = {}
-        # get all children
-        for child in root_item.children():
-            event_name = child.columnData()['event_type']
-            if event_name != '<New Event>':
-                events_dict[event_name] = {}
-                # update all args
-                for arg in child.getArgsList():
-                    value = child.getArg(arg)
-                    if value:
-                        events_dict[event_name][arg] = value
+        # load from parameters
+        if from_param:
+            events_dict = json.loads(self.main_node.getParameter("events_data").getValue(0))
 
-                # add additional args (has to come after, or will be overwritten)
-                events_dict[event_name]['script'] = child.getScript()
-                events_dict[event_name]['enabled'] = child.isEnabled()
+        # load from current GUI (unsaved) values
+        else:
+            root_item = self.main_widget.model().getRootItem()
+            events_dict = {}
+            # get all children
+            for child in root_item.children():
+                event_name = child.columnData()['event_type']
+                if event_name != '<New Event>':
+                    events_dict[event_name] = {}
+                    # update all args
+                    for arg in child.getArgsList():
+                        value = child.getArg(arg)
+                        if value:
+                            events_dict[event_name][arg] = value
+
+                    # add additional args (has to come after, or will be overwritten)
+                    events_dict[event_name]['script'] = child.getScript()
+                    events_dict[event_name]['enabled'] = child.isEnabled()
 
         return events_dict
 
@@ -393,7 +420,7 @@ class EventWidget(QWidget):
             event_type = arg[0]
             event_data = arg[2]
 
-            user_event_data = self.getUserEventsDict()
+            user_event_data = self.getUserEventsDict(from_param=True)
             if event_type in list(user_event_data.keys()):
                 user_data = user_event_data[str(event_type)]
                 filepath = user_data['script']
@@ -495,9 +522,9 @@ class EventTypeModelItem(ShojiModelItem):
         #self._name = name
         self._event_type = event_type
         self._script = script
-        if not args:
-            args = {}
-        self._args = args
+        # if not args:
+        #     args = {}
+        # self._args = args
 
     def setScript(self, script):
         self._script = script
@@ -506,6 +533,9 @@ class EventTypeModelItem(ShojiModelItem):
         return self._script
 
     """ args """
+    def args(self):
+        return self.columnData()
+
     def setArg(self, arg, value):
         self.columnData()[arg] = value
 
@@ -565,6 +595,7 @@ class EventsUserInputWidget(AbstractDragDropListView):
     #     if event.key() == main_widget._new_event_key:
     #         main_widget.createNewEvent()
     #     return AbstractDragDropListView.keyPressEvent(self, event)
+
 
 """ INPUT WIDGETS"""
 class UserInputMainWidget(QWidget):
@@ -645,22 +676,12 @@ class UserInputMainWidget(QWidget):
         # preflight
         if not item: return
 
-        # todo: update running to many times?
-        """
-        Run once for every item/dynamic arg that is being populate, thus if the
-        event has 3 args, this will run 3 times, and create multiple duplicates of
-        itself.
-        
-        Appears to be an issue in cleanup
-        """
         # set item
         main_widget = widget.getMainWidget()
         main_widget.setItem(item)
 
-        # # update event type
-        #event_type = item.getEventType()
+        # update event type
         event_type = item.getArg('event_type')
-        # main_widget.events_type_menu.setText(event_type)
 
         # set script widget to label.item().getScript()
         script_location = item.getScript()
@@ -674,7 +695,6 @@ class UserInputMainWidget(QWidget):
         main_widget.dynamic_args_widget.update()
 
         # set dynamic args values
-        #if main_widget.events_type_menu.text() != '':
         for arg in item.getArgsList():
             try:
                 arg_value = item.getArg(arg)
@@ -829,3 +849,21 @@ class DynamicArgsWidget(QWidget):
     @event_type.setter
     def event_type(self, event_type):
         self._event_type = event_type
+
+
+class PythonWidget(QWidget):
+    def __init__(self, parent=None):
+        super(PythonWidget, self).__init__(parent)
+
+        layout = QVBoxLayout(self)
+        python_tab = UI4.App.Tabs.CreateTab('Python', None)
+
+        layout.addWidget(python_tab)
+
+        widget = python_tab.getWidget()
+        python_widget = widget._pythonWidget
+        script_widget = python_widget._FullInteractivePython__scriptWidget
+        self.command_widget = script_widget.commandWidget()
+
+    def getCommandWidget(self):
+        return self.command_widget

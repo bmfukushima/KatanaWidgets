@@ -54,7 +54,7 @@ from qtpy.QtCore import Qt, QEvent
 from cgwidgets.views import AbstractDragDropListView
 from cgwidgets.widgets import ShojiLayout
 
-from Katana import UI4
+from Katana import UI4, Utils
 from Widgets2 import (TwoFacedSuperToolWidget, EventWidget)
 
 from .GroupNodeEditor import GroupNodeEditorMainWidget
@@ -92,6 +92,9 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.getDesignWidget().setHeaderItemIsDropEnabled(False)
         self.getDesignWidget().setHeaderItemIsEditable(False)
 
+        # setup events
+        Utils.EventModule.RegisterCollapsedHandler(self.simpleToolNameChange, 'node_setName')
+
     # def getEventTypes(self):
     #     """
     #     Right now this is just printing out all the different args and what not...
@@ -111,6 +114,33 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
     def showEvent(self, event):
         self.getDesignWidget().show()
         return TwoFacedSuperToolWidget.showEvent(self, event)
+
+    def simpleToolNameChange(self, args):
+        """ Updates the events data when a Simple Tools node name is changed to match the new name.
+        """
+        for arg in args:
+            # get data
+            node = arg[2]["node"]
+            old_name = arg[2]["oldName"]
+            new_name = arg[2]["newName"]
+
+            # update events data
+            if node.getType() == "SimpleTool":
+                param = node.main_node.getParameter("events_data")
+                if param:
+                    new_value = param.getValue(0).replace(old_name, new_name)
+                    param.setValue(new_value, 0)
+
+                    # get shoji model view widget...
+                    indexes = self.events_widget.main_widget.getAllIndexes()
+                    for index in indexes:
+                        item = index.internalPointer()
+                        if "node" not in item.getArgsList(): continue
+                        if item.getArg("node") != old_name: continue
+
+                        item.setArg("node", new_name)
+
+                    self.events_widget.main_widget.updateDelegateDisplay()
 
 
 class SimpleToolViewWidget(AbstractDragDropListView):
