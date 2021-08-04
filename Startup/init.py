@@ -1,17 +1,25 @@
-from Katana import Utils, Callbacks
 from qtpy.QtCore import Qt
+from Katana import Utils, Callbacks
+
 
 # initialize Bebop Parameter
 from Utils2 import paramutils
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, paramutils.createKatanaBebopParameter)
 
-# initialize bebop menu
+# Init Bebop Menu
 from ParameterMenu import installCustomParametersMenu
 installCustomParametersMenu()
 
+# Need to do this like this... because I'm importing the actual modules over
+# these ones =\
+
 # Simple Tools
-from MultiTools.SimpleTool import installBebopGlobalEvents
-installBebopGlobalEvents()
+from MultiTools.SimpleTool import installSimpleTools
+installSimpleTools()
+
+# Global Events
+from MultiTools.EventsTab import installGlobalEvents
+installGlobalEvents()
 
 
 # Variable Switch | Populate

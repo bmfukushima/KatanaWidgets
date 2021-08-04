@@ -31,9 +31,9 @@ from MultiTools import VariableManager, SimpleTool
 
 # compile list of super tools
 superdooper_tools_list = [
-    SimpleTool,
+    SimpleTool.SuperTool,
     NodeTree,
-    VariableManager,
+    VariableManager.SuperTool,
     # SuperToolTemplate
 ]
 

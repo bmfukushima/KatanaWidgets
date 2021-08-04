@@ -9,18 +9,34 @@ This class will most notably be used in:
     Event Manager (tab)
 
 Hierarchy:
-EventWidget --> (QWidget)
-    | -- VBox
-        | -- new_event_button --> (QPushButton)
-        | -- main_widget --> (ShojiModelViewWidget)
-            | -- label type (EventsLabelWidget --> ShojiLabelWidget)
-            | -- Dynamic Widget (UserInputMainWidget --> QWidget)
-                | -- VBox
-                    | -- events_type_menu ( EventTypeInputWidget)
-                    | -- script_widget (DynamicArgsInputWidget)
-                    | -- dynamic_args_widget (DynamicArgsWidget)
-                            | -* DynamicArgsInputWidget
+EventWidget --> (ShojiLayout)
+    | -- main_widget (QWidget)
+    |    | -- VBox
+    |        | -- new_event_button --> (QPushButton)
+    |        | -- events_widget --> (ShojiModelViewWidget)
+    |        |    | -- label type (EventsLabelWidget --> ShojiLabelWidget)
+    |        |    | -- Dynamic Widget (UserInputMainWidget --> QWidget)
+    |        |        | -- VBox
+    |        |            | -- events_type_menu ( EventTypeInputWidget)
+    |        |            | -- script_widget (DynamicArgsInputWidget)
+    |        |            | -- dynamic_args_widget (DynamicArgsWidget)
+    |        |                    | -* DynamicArgsInputWidget
+    |        | -- update_events_button --> (ButtonInputWidget)
+    | -- python_widget --> (PythonWidget)
 TODO:
+    * PYTHON Script (Moving this to have the option between SCRIPT and FILE modes)
+        Store hash in the events_data, and use that hash to get a parameter
+        which can hold the raw text script (avoid char limits)
+        - get/create parameter
+        - update events_data to have a "script_mode" option
+        - Get Script Text
+        - Update text in Python Widget
+            UserInputMainWidget --> updateGUI
+            ScriptInputWidget --> updateUserInput
+            # SAVE TEXT
+        - Update events call to handle args...
+            EventWidget --> eventHandler
+
     *   Globals
             - disable does not work
                 on simple tools auto toggles/updates
@@ -47,15 +63,18 @@ TODO:
 
 """
 
-import os, json
+import json
+import os
 from qtpy.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QMenu, QSizePolicy)
 from qtpy.QtCore import Qt
 from qtpy.QtGui import QKeySequence
 
+import Utils2.paramutils
 from cgwidgets.widgets import (
     ListInputWidget, LabelledInputWidget, ButtonInputWidget,
-    ShojiModelViewWidget, ShojiModelItem)
+    ShojiModelViewWidget, ShojiModelItem, OverlayInputWidget,
+    ShojiLayout)
 from cgwidgets.views import AbstractDragDropListView, AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestor
 from cgwidgets.settings import attrs
@@ -64,9 +83,13 @@ from cgwidgets.settings import attrs
 from Katana import Utils, NodegraphAPI, UI4
 
 
-class EventWidget(QWidget):
+class EventWidget(ShojiLayout):
     """
     The main widget for setting up the events triggers on the node.
+
+    Args:
+        node (Node): Node to store events data on
+        param (str): Location of param to create events data at
 
     Attributes:
         events_model (list): of EventTypeModelItem's.  This list is the model
@@ -77,8 +100,7 @@ class EventWidget(QWidget):
 
     Hierarchy:
         | -- VBox
-            | -- new_event_button --> (QPushButton)
-            | -- main_widget --> (ShojiModelViewWidget)
+            | -- events_widget --> (ShojiModelViewWidget)
                 | -- label type (EventsLabelWidget --> ShojiLabelWidget)
                 | -- Dynamic Widget (UserInputMainWidget --> QWidget)
                     | -- VBox
@@ -87,15 +109,19 @@ class EventWidget(QWidget):
                         | -- dynamic_args_widget (DynamicArgsWidget)
                                 | -* DynamicArgsInputWidget
     """
-    def __init__(self, parent=None, node=None):
+    def __init__(self, parent=None, node=None, param="events_data"):
         super(EventWidget, self).__init__(parent)
         self.generateDefaultEventTypesDict()
 
+        # init data param
         if not node:
             node = NodegraphAPI.GetRootNode()
-        if not node.getParameter("events_data"):
-            node.getParameters().createChildString("events_data", "")
-        self.main_node = node
+        if not node.getParameter(param):
+            Utils2.paramutils.createParamAtLocation(param, node, Utils2.paramutils.STRING, initial_value="{}")
+            #node.getParameters().createChildString(param, "")
+
+        self._param_location = param
+        self._node = node
 
         # setup attrs
         self._events_model = []
@@ -103,30 +129,39 @@ class EventWidget(QWidget):
         self._events_dict = {}
 
         # setup layout
-        QVBoxLayout(self)
+        self.main_widget = QWidget()
+        QVBoxLayout(self.main_widget)
 
-        # create main widget
-        self.main_widget = self.setupEventsWidgetGUI()
-        self.layout().addWidget(self.main_widget)
+        # create events widget
+        self.events_widget = self.setupEventsWidgetGUI()
+        self.main_widget.layout().addWidget(self.events_widget)
 
         # create new event button
         new_event_button_title = 'New Event ({key})'.format(key=QKeySequence(self._new_event_key).toString())
-        self.new_event_button = ButtonInputWidget(self, title=new_event_button_title, is_toggleable=False, user_clicked_event=self.createNewEvent)
+        self.new_event_button = ButtonInputWidget(
+            self, title=new_event_button_title, is_toggleable=False, user_clicked_event=self.createNewEvent)
 
-        self.main_widget.addHeaderDelegateWidget(
+        self.events_widget.addHeaderDelegateWidget(
             [self._new_event_key], self.new_event_button)
         self.new_event_button.show()
 
         # create update button
         self.update_events_button = ButtonInputWidget(self, title="Update Events", is_toggleable=False, user_clicked_event=self.updateEvents)
-        self.layout().addWidget(self.update_events_button)
+        self.main_widget.layout().addWidget(self.update_events_button)
 
         # load events
         self.loadEventsDataFromJSON()
         self.__setupNodeDeleteDisableHandler()
 
+        # create Python tab
+        self.python_widget = PythonWidget()
+
+        # add widgets to layout
+        self.addWidget(self.main_widget)
+        self.addWidget(self.python_widget)
+
         # set up stretch
-        self.main_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
+        self.events_widget.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         self.update_events_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
 
     def setupEventsWidgetGUI(self):
@@ -134,36 +169,36 @@ class EventWidget(QWidget):
         Sets up the main Shoji widget that is showing the events to the user
         """
         # create widget
-        main_widget = ShojiModelViewWidget(self)
+        events_widget = ShojiModelViewWidget(self)
 
         # setup header
         events_view = EventsUserInputWidget(self)
-        main_widget.setHeaderViewWidget(events_view)
-        main_widget.setHeaderData(['event_type'])
+        events_widget.setHeaderViewWidget(events_view)
+        events_widget.setHeaderData(['event_type'])
 
         # setup custom item type
-        main_widget.model().setItemType(EventTypeModelItem)
+        events_widget.model().setItemType(EventTypeModelItem)
 
         # setup flags
-        main_widget.setHeaderItemIsDropEnabled(False)
-        main_widget.setHeaderItemIsEnableable(True)
-        main_widget.setHeaderItemIsDeleteEnabled(True)
+        events_widget.setHeaderItemIsDropEnabled(False)
+        events_widget.setHeaderItemIsEnableable(True)
+        events_widget.setHeaderItemIsDeleteEnabled(True)
 
         # setup signals
-        main_widget.setHeaderItemDeleteEvent(self.removeItemEvent)
-        main_widget.setHeaderItemEnabledEvent(self._updateEvents)
-        main_widget.setHeaderItemTextChangedEvent(self.eventTypeChanged)
+        events_widget.setHeaderItemDeleteEvent(self.removeItemEvent)
+        events_widget.setHeaderItemEnabledEvent(self._updateEvents)
+        events_widget.setHeaderItemTextChangedEvent(self.eventTypeChanged)
 
         # set type / position
-        main_widget.setHeaderPosition(attrs.WEST, attrs.SOUTH)
-        main_widget.setDelegateType(
+        events_widget.setHeaderPosition(attrs.WEST, attrs.SOUTH)
+        events_widget.setDelegateType(
             ShojiModelViewWidget.DYNAMIC,
             dynamic_widget=UserInputMainWidget,
             dynamic_function=UserInputMainWidget.updateGUI
         )
-        main_widget.setHeaderDefaultLength(250)
+        events_widget.setHeaderDefaultLength(250)
 
-        return main_widget
+        return events_widget
 
     """ Node Disabled / Deleted """
     def __nodeDeleteDisable(self, *args, **kwargs):
@@ -176,7 +211,7 @@ class EventWidget(QWidget):
             # preflight
             arg = arg[0]
             node = arg[2]['node']
-            if (node == self.main_node.getParent()
+            if (node == self.node().getParent()
                 or node == NodegraphAPI.GetRootNode()
             ):
                 # disable event handlers
@@ -283,15 +318,15 @@ class EventWidget(QWidget):
     def getUserEventsDict(self, from_param=False):
         """
         Returns the dictionary of events data that was set up by the user.
-        This is also stored in the parameter on the main node as "events_data"
+        This is also stored in the parameter on the node() under the paramLocation()
         """
         # load from parameters
         if from_param:
-            events_dict = json.loads(self.main_node.getParameter("events_data").getValue(0))
+            events_dict = json.loads(self.node().getParameter(self.paramLocation()).getValue(0))
 
         # load from current GUI (unsaved) values
         else:
-            root_item = self.main_widget.model().getRootItem()
+            root_item = self.events_widget.model().getRootItem()
             events_dict = {}
             # get all children
             for child in root_item.children():
@@ -333,15 +368,19 @@ class EventWidget(QWidget):
     def saveEventsDataToJSON(self):
         events_dict = self.getUserEventsDict()
         events_string = json.dumps(events_dict)
-        self.main_node.getParameter("events_data").setValue(events_string, 0)
+        self.node().getParameter(self.paramLocation()).setValue(events_string, 0)
 
     def loadEventsDataFromJSON(self):
         # TODO clear all items
         try:
-            json_data = json.loads(self.main_node.getParameter("events_data").getValue(0))
+            json_data = json.loads(self.node().getParameter(self.paramLocation()).getValue(0))
         except ValueError:
             return
 
+        print (json_data)
+        print(self.node())
+        print(self.paramLocation())
+        print(self.node().getParameter(self.paramLocation()))
         for event_type in json_data:
             event = json_data[str(event_type)]
             self.createNewEvent(None, column_data=event)
@@ -357,7 +396,7 @@ class EventWidget(QWidget):
         to avoid double event registry in Katana.
         """
         # preflight
-        root_item = self.main_widget.model().getRootItem()
+        root_item = self.events_widget.model().getRootItem()
 
         # duplicate event type
         for child in root_item.children():
@@ -377,7 +416,7 @@ class EventWidget(QWidget):
         else:
             item.clearArgsList()
             item.setArg('event_type', new_value)
-            self.main_widget.updateDelegateDisplay()
+            self.events_widget.updateDelegateDisplay()
 
     def createNewEvent(self, widget, column_data=None):
         """
@@ -386,7 +425,7 @@ class EventWidget(QWidget):
         if not column_data:
             column_data = {'event_type': "<New Event>"}
         # create model item
-        new_index = self.main_widget.insertShojiWidget(0, column_data=column_data)
+        new_index = self.events_widget.insertShojiWidget(0, column_data=column_data)
         item = new_index.internalPointer()
 
         # update script / enabled args
@@ -396,7 +435,7 @@ class EventWidget(QWidget):
         except KeyError:
             pass
         try:
-            self.main_widget.model().setItemEnabled(item, column_data['enabled'])
+            self.events_widget.model().setItemEnabled(item, column_data['enabled'])
         except KeyError:
             pass
 
@@ -432,7 +471,7 @@ class EventWidget(QWidget):
                 # run script
                 if os.path.exists(filepath):
                     with open(filepath) as script_descriptor:
-                        event_data['self'] = self.main_node.getParent()
+                        event_data['self'] = self.node().getParent()
                         exec(script_descriptor.read(), event_data)
 
     def removeItemEvent(self, item):
@@ -506,6 +545,12 @@ class EventWidget(QWidget):
         """
         self.updateEvents()
 
+    """ PROPERTIES """
+    def paramLocation(self):
+        return self._param_location
+
+    def node(self):
+        return self._node
 
 class EventTypeModelItem(ShojiModelItem):
     """
@@ -591,9 +636,9 @@ class EventsUserInputWidget(AbstractDragDropListView):
     # todo: Hotkey for new event creation...
     # currently overrides the delete handlers and what not... not sure why.. =\
     # def keyPressEvent(self, event):
-    #     main_widget = getWidgetAncestor(self, EventWidget)
-    #     if event.key() == main_widget._new_event_key:
-    #         main_widget.createNewEvent()
+    #     events_widget = getWidgetAncestor(self, EventWidget)
+    #     if event.key() == events_widget._new_event_key:
+    #         events_widget.createNewEvent()
     #     return AbstractDragDropListView.keyPressEvent(self, event)
 
 
@@ -677,28 +722,31 @@ class UserInputMainWidget(QWidget):
         if not item: return
 
         # set item
-        main_widget = widget.getMainWidget()
-        main_widget.setItem(item)
+        events_widget = widget.getMainWidget()
+        events_widget.setItem(item)
 
         # update event type
         event_type = item.getArg('event_type')
 
         # set script widget to label.item().getScript()
         script_location = item.getScript()
-        main_widget.script_widget.setText(script_location)
+        events_widget.script_widget.setText(script_location)
+        # TODO Update Script Text
+        """
+        events_widget = getWidgetAncestor(widget, EventWidget)
+        python_widget = events_widget.python_widget"""
+        events_widget.script_widget.resetSliderPositionToDefault()
 
-        """
-        dynamic_args_widget --> DynamicArgsWidget
-        """
+        """dynamic_args_widget --> DynamicArgsWidget"""
         # update dynamic args widget
-        main_widget.dynamic_args_widget.event_type = event_type
-        main_widget.dynamic_args_widget.update()
+        events_widget.dynamic_args_widget.event_type = event_type
+        events_widget.dynamic_args_widget.update()
 
         # set dynamic args values
         for arg in item.getArgsList():
             try:
                 arg_value = item.getArg(arg)
-                main_widget.dynamic_args_widget.widget_dict[arg].setText(arg_value)
+                events_widget.dynamic_args_widget.widget_dict[arg].setText(arg_value)
             except KeyError:
                 pass
 
@@ -725,8 +773,8 @@ class DynamicArgsInputWidget(LabelledInputWidget):
         self.arg = name
         self.setToolTip(note)
         self.setUserFinishedEditingEvent(self.userInputEvent)
-
         self.setDefaultLabelLength(200)
+        self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
 
     def setText(self, text):
         self.delegateWidget().setText(text)
@@ -739,8 +787,8 @@ class DynamicArgsInputWidget(LabelledInputWidget):
         When the user inputs something into the arg, this event is triggered
         updating the model item
         """
-        main_widget = getWidgetAncestor(self, UserInputMainWidget)
-        main_widget.item().setArg(self.arg, value)
+        events_widget = getWidgetAncestor(self, UserInputMainWidget)
+        events_widget.item().setArg(self.arg, value)
 
     @property
     def arg(self):
@@ -765,8 +813,8 @@ class EventTypeDelegate(AbstractDragDropModelDelegate):
 
         # set update trigger
         def updateDisplay(widget, value):
-            main_widget = getWidgetAncestor(self._parent, EventWidget)
-            main_widget.main_widget.updateDelegateDisplay()
+            events_widget = getWidgetAncestor(self._parent, EventWidget)
+            events_widget.events_widget.updateDelegateDisplay()
 
         delegate_widget.setUserFinishedEditingEvent(updateDisplay)
         return delegate_widget
@@ -776,14 +824,39 @@ class ScriptInputWidget(DynamicArgsInputWidget):
     """
     The script input widget
     """
+
+    FILE = 0
+    SCRIPT = 1
     def __init__(self, parent=None):
         name = 'script'
-        note = "path on disk to the script you want to run"
+        note = "Click to toggle between SCRIPT and FILE modes"
         super(ScriptInputWidget, self).__init__(parent, name=name, note=note)
+        self.setMode(ScriptInputWidget.SCRIPT)
+        self._toggle_mode_button = ButtonInputWidget(title="script", user_clicked_event=self.toggleMode)
+        self.setViewWidget(self._toggle_mode_button)
+
+    def mode(self):
+        return self._mode
+
+    def setMode(self, mode):
+        self._mode = mode
+
+    def toggleMode(self, widget):
+        if self.mode() == ScriptInputWidget.FILE:
+            self.setMode(ScriptInputWidget.SCRIPT)
+            self.viewWidget().setText("script")
+        elif self.mode() == ScriptInputWidget.SCRIPT:
+            self.setMode(ScriptInputWidget.FILE)
+            self.viewWidget().setText("file")
 
     def userInputEvent(self, widget, value):
-        main_widget = getWidgetAncestor(self, UserInputMainWidget)
-        main_widget.item().setScript(self.text())
+        # TODO Update Python Widget text
+        """
+        events_widget = getWidgetAncestor(widget, EventWidget)
+        python_widget = events_widget.python_widget
+        """
+        events_widget = getWidgetAncestor(self, UserInputMainWidget)
+        events_widget.item().setScript(self.text())
 
 
 class DynamicArgsWidget(QWidget):

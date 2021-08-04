@@ -10,7 +10,11 @@ GROUP = 2
 NUMBER_ARRAY = 3
 STRING_ARRAY = 4
 def createParamAtLocation(param_location, node, param_type, param=None, initial_value=0):
-    """
+    """Creates a parameter of the supplied type at the location provided.
+
+    This will create also create all additional groups/locations required
+    to create the parameter.
+
     Args:
         initial_value (str/int): what the initial value should be, if the param type is
             set to an ARRAY, then this will be the length of the array

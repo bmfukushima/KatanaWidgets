@@ -31,6 +31,7 @@ def gsvChangedEvent(args):
 
         # user defined disable on GSV
         if not events_data[gsv]["enabled"]: return
+        if option not in list(events_data[gsv]["data"].keys()): return
 
         # option does not exist
         if not events_data[gsv]["data"][option]["enabled"]: return

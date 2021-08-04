@@ -91,6 +91,7 @@ from cgwidgets.widgets import (
 from cgwidgets.utils import getWidgetAncestor, convertScriptToString, clearLayout
 from cgwidgets.settings import attrs
 
+from Widgets2 import EventWidget
 from Utils2 import gsvutils, getFontSize, paramutils
 
 
@@ -112,7 +113,8 @@ class GSVManager(UI4.Tabs.BaseTab):
         self._view_scroll_area.setWidgetResizable(True)
 
         self._edit_widget = EditWidget(parent=self)
-        self._events_widget = EventsWidget(parent=self)
+        #self._events_widget = EventsWidget(parent=self)
+        self._event_widget = EventWidget(parent=self)
 
         # insert widgets
         self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self._view_scroll_area)
@@ -800,6 +802,10 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
             # view_widget.widgets()[old_value].setName(new_value)
 
 
+""" EVENTS WIDGET (INHERIT)"""
+
+
+
 """ EVENTS WIDGET """
 class EventsWidget(ShojiModelViewWidget):
     """
@@ -1086,6 +1092,7 @@ class GSVEventsListWidget(LabelledInputWidget):
 
 
 class DisplayGSVEventWidget(FrameInputWidgetContainer):
+    """Widget that is shown when the user clicks on a GSV item in the EventsWidget"""
     def __init__(self, parent=None):
         super(DisplayGSVEventWidget, self).__init__(parent)
         self.setDirection(Qt.Vertical)

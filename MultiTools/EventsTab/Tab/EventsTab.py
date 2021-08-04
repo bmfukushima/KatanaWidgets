@@ -16,6 +16,7 @@ class EventsTab(UI4.Tabs.BaseTab):
     NAME = 'Global Events'
     def __init__(self, parent=None):
         super(EventsTab, self).__init__(parent)
+        self._param_location = "KatanaBebop.GlobalEventsData.data"
 
         QVBoxLayout(self)
         # setup main widget
@@ -25,19 +26,23 @@ class EventsTab(UI4.Tabs.BaseTab):
 
         node = NodegraphAPI.GetRootNode()
         if not hasattr(katana_main, "global_events_widget"):
-            katana_main.global_events_widget = EventWidget(katana_main, node=node)
+            katana_main.global_events_widget = EventWidget(
+                katana_main, node=node, param=self.paramLocation())
 
         self.main_widget = katana_main.global_events_widget
         self.layout().addWidget(self.main_widget)
 
+    def paramLocation(self):
+        return self._param_location
+
     def showEvent(self, event):
         self.layout().addWidget(self.main_widget)
         node = NodegraphAPI.GetRootNode()
-        if not node.getParameter("events_data"):
-            node.getParameters().createChildString("events_data", "")
+        if not node.getParameter(self.paramLocation()):
+            node.getParameters().createChildString(self.paramLocation(), "")
 
         self.main_widget.main_node = node
-        self.main_widget.main_widget.clearModel()
+        self.main_widget.events_widget.clearModel()
         self.main_widget.loadEventsDataFromJSON()
         self.main_widget.show()
 

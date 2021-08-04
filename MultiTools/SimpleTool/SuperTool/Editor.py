@@ -132,7 +132,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
                     param.setValue(new_value, 0)
 
                     # get shoji model view widget...
-                    indexes = self.events_widget.main_widget.getAllIndexes()
+                    indexes = self.events_widget.events_widget.getAllIndexes()
                     for index in indexes:
                         item = index.internalPointer()
                         if "node" not in item.getArgsList(): continue
@@ -140,7 +140,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
                         item.setArg("node", new_name)
 
-                    self.events_widget.main_widget.updateDelegateDisplay()
+                    self.events_widget.events_widget.updateDelegateDisplay()
 
 
 class SimpleToolViewWidget(AbstractDragDropListView):
