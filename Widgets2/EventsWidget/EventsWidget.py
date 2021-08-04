@@ -377,10 +377,6 @@ class EventWidget(ShojiLayout):
         except ValueError:
             return
 
-        print (json_data)
-        print(self.node())
-        print(self.paramLocation())
-        print(self.node().getParameter(self.paramLocation()))
         for event_type in json_data:
             event = json_data[str(event_type)]
             self.createNewEvent(None, column_data=event)

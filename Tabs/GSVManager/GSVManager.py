@@ -114,7 +114,7 @@ class GSVManager(UI4.Tabs.BaseTab):
 
         self._edit_widget = EditWidget(parent=self)
         #self._events_widget = EventsWidget(parent=self)
-        self._event_widget = EventWidget(parent=self)
+        self._events_widget = EventWidget(parent=self)
 
         # insert widgets
         self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self._view_scroll_area)

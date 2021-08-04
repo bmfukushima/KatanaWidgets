@@ -1,5 +1,7 @@
 from Katana import Utils, Callbacks
 
+# copy/paste
+_param_location = "KatanaBebop.GlobalEventsData.data"
 
 def cleanupGlobalEvents(**kwargs):
     """ Destroys all global events"""
@@ -9,11 +11,11 @@ def cleanupGlobalEvents(**kwargs):
     node = NodegraphAPI.GetRootNode()
 
     katana_main = UI4.App.MainWindow.GetMainWindow()
-    events_data = node.getParameter("KatanaBebop.GlobalEventsData.data")
+    events_data = node.getParameter(_param_location)
 
     # create default parameter if needed
     if not events_data:
-        node.getParameters().createChildString("KatanaBebop.GlobalEventsData.data", "")
+        node.getParameters().createChildString(_param_location, "")
 
     # cleanup data
     if events_data:
@@ -33,8 +35,8 @@ def loadGlobalEvents(*args):
     # load global events
     if katana_main:
         # create Event Widget if needed
-        if not node.getParameter("KatanaBebop.GlobalEventsData.data"):
-            node.getParameters().createChildString("KatanaBebop.GlobalEventsData.data", "")
+        if not node.getParameter(_param_location):
+            node.getParameters().createChildString(_param_location, "")
         if not hasattr(katana_main, "global_events_widget"):
             katana_main.global_events_widget = EventWidget(katana_main, node=node)
 
