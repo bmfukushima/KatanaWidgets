@@ -894,21 +894,6 @@ class EventsWidget(AbstractEventWidget):
                     _is_dirty = True
                     break
 
-    def eventsData(self):
-        return self._events_data
-
-    def setEventsData(self, events_data):
-        self._events_data = events_data
-
-    def saveEventsData(self, *args):
-        """ Saves the events data to the parameter """
-        # get data
-        events_data = self.eventsData()
-
-        # set data
-        new_data = json.dumps(events_data)
-        self.param().setValue(new_data, 0)
-
     """ EVENTS """
     def deleteGSVEvent(self, item):
         """
@@ -942,11 +927,14 @@ class EventsWidget(AbstractEventWidget):
         if gsv == "": return
         if gsv in list(self.eventsData().keys()):
             print("{gsv} already exists... update the one that already exists you Derpasaur".format(gsv=gsv))
+            item.setArg("name", old_value)
             return
-        if gsv not in gsvutils.getAllGSV(return_as=gsvutils.STRING): return
+        if gsv not in gsvutils.getAllGSV(return_as=gsvutils.STRING):
+            item.setArg("name", old_value)
+            return
 
         # update attr
-        item.columnData()["name"] = gsv
+        item.setArg("name", gsv)
 
         # create new GSV event item
         self.eventsData()[gsv] = {}
@@ -979,20 +967,7 @@ class GSVPopupSelector(AbstractEventListViewItemDelegate):
 
     def __init__(self, parent=None):
         super(GSVPopupSelector, self).__init__(self._getEventsList, parent=parent)
-        self.setValidateInputFunction(self.isUserInputGSVValid)
         self._parent = parent
-
-    def isUserInputGSVValid(self):
-        """ TODO Validate List Input...
-        Works... but why isn't it blocking ittttt"""
-        input = self._current_delegate_widget.getInput()
-        # get all GSVs
-        if input not in gsvutils.getAllGSV(return_as=gsvutils.STRING): return False
-
-        events_widget = getWidgetAncestor(self, EventsWidget)
-        if input in list(events_widget.eventsData().keys()): return False
-        # get all created GSVs?
-        return True
 
     def _getEventsList(self, parent):
         return gsvutils.getAllGSV(gsvutils.STRING)

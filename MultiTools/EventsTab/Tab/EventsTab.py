@@ -1,7 +1,5 @@
-from Widgets2 import EventWidget
 '''
-To Do 
-
+To Do
     - Drag/Drop move nodes via Node List
     - option for syncing the state
     - option for viewing super tool children
@@ -11,6 +9,8 @@ To Do
 '''
 from qtpy.QtWidgets import QVBoxLayout
 from Katana import UI4 , NodegraphAPI, Utils
+from Widgets2 import EventWidget
+from Utils2 import widgetutils
 
 class EventsTab(UI4.Tabs.BaseTab):
     NAME = 'Global Events'
@@ -22,33 +22,41 @@ class EventsTab(UI4.Tabs.BaseTab):
         # setup main widget
 
         self.node = NodegraphAPI.GetRootNode()
-        katana_main = UI4.App.MainWindow.GetMainWindow()
+        #katana_main = UI4.App.MainWindow.GetMainWindow()
 
         node = NodegraphAPI.GetRootNode()
-        if not hasattr(katana_main, "global_events_widget"):
-            katana_main.global_events_widget = EventWidget(
-                katana_main, node=node, param=self.paramLocation())
+        if not hasattr(widgetutils.katanaMainWindow(), "global_events_widget"):
+            widgetutils.katanaMainWindow().global_events_widget = EventWidget(
+                widgetutils.katanaMainWindow(), node=node, param=self.paramLocation())
 
-        self.main_widget = katana_main.global_events_widget
-        self.layout().addWidget(self.main_widget)
+        self._events_widget = widgetutils.katanaMainWindow().global_events_widget
+        self.layout().addWidget(self.eventsWidget())
 
     def paramLocation(self):
         return self._param_location
 
     def showEvent(self, event):
-        self.layout().addWidget(self.main_widget)
+        """ Overrides show event, as this is a UNIQUE widget.
+
+        So showing it multiple times can cause this to break.  Thus it will use
+        the same widget, and reparent that widget to the current Events Tab"""
+        self.layout().addWidget(self.eventsWidget())
         node = NodegraphAPI.GetRootNode()
         if not node.getParameter(self.paramLocation()):
             node.getParameters().createChildString(self.paramLocation(), "")
 
-        self.main_widget.main_node = node
-        self.main_widget.eventsWidget().clearModel()
-        self.main_widget.loadEventsDataFromJSON()
-        self.main_widget.show()
+        # update data
+        self.eventsWidget().setNode(node)
+        self.eventsWidget().eventsWidget().clearModel()
+        self.eventsWidget().loadEventsDataFromParam()
+        self.eventsWidget().show()
 
     def closeEvent(self, event):
-        katana_main = UI4.App.MainWindow.GetMainWindow()
-        self.main_widget.setParent(katana_main)
-        self.main_widget.hide()
+        self.eventsWidget().setParent(widgetutils.katanaMainWindow())
+        self.eventsWidget().hide()
+
+    """ WIDGETS """
+    def eventsWidget(self):
+        return widgetutils.katanaMainWindow().global_events_widget
 
 #PluginRegistry = [("KatanaPanel", 2, "Events", EventsTab)]

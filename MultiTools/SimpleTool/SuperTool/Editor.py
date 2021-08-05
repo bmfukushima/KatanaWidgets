@@ -75,17 +75,18 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         # set up attrs
         self.node = node
         self.main_node = node.getChildByIndex(0)
+
         # self.events_param = self.main_node.getParameters().createChildString("events_data", "")
         self.getDesignWidget().setDelegateTitleIsShown(False)
         # create widgets
-        self.group_node_editor = GroupNodeEditorMainWidget(self, self.node, self.main_node)
-        self.events_widget = EventWidget(self, self.main_node)
+        self._group_node_editor_widget = GroupNodeEditorMainWidget(self, self.node, self.main_node)
+        self._events_widget = EventWidget(self, self.main_node)
 
         # setup tabs
         self.getDesignWidget().insertShojiWidget(
-            0, column_data={'name':"Params"}, widget=self.group_node_editor)
+            0, column_data={'name':"Params"}, widget=self.groupNodeEditorWidget())
         self.getDesignWidget().insertShojiWidget(
-            1, column_data={'name':'Events'}, widget=self.events_widget)
+            1, column_data={'name':'Events'}, widget=self.eventsWidget())
 
         # setup flags
         self.getDesignWidget().setHeaderItemIsDragEnabled(False)
@@ -93,55 +94,17 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.getDesignWidget().setHeaderItemIsEditable(False)
 
         # setup events
-        Utils.EventModule.RegisterCollapsedHandler(self.simpleToolNameChange, 'node_setName')
-
-    # def getEventTypes(self):
-    #     """
-    #     Right now this is just printing out all the different args and what not...
-    #     """
-    #     import json
-    #
-    #     with open('args.json', 'r') as args:
-    #         args_dict = json.load(args)
-    #         for event_type in args_dict.keys():
-    #             print('')
-    #             print(event_type, args_dict[event_type]['note'])
-    #             for arg in args_dict[event_type]['args']:
-    #                 arg_name = arg['arg']
-    #                 arg_note = arg['note']
-    #                 print('-----|', arg_name, arg_note)
 
     def showEvent(self, event):
         self.getDesignWidget().show()
         return TwoFacedSuperToolWidget.showEvent(self, event)
 
-    def simpleToolNameChange(self, args):
-        """ Updates the events data when a Simple Tools node name is changed to match the new name.
-        """
-        for arg in args:
-            # get data
-            node = arg[2]["node"]
-            old_name = arg[2]["oldName"]
-            new_name = arg[2]["newName"]
+    """ WIDGETS """
+    def eventsWidget(self):
+        return self._events_widget
 
-            # update events data
-            if node.getType() == "SimpleTool":
-                param = node.main_node.getParameter("events_data")
-                if param:
-                    new_value = param.getValue(0).replace(old_name, new_name)
-                    param.setValue(new_value, 0)
-
-                    # get shoji model view widget...
-                    indexes = self.events_widget.events_widget.getAllIndexes()
-                    for index in indexes:
-                        item = index.internalPointer()
-                        if "node" not in item.getArgsList(): continue
-                        if item.getArg("node") != old_name: continue
-
-                        item.setArg("node", new_name)
-
-                    self.events_widget.events_widget.updateDelegateDisplay()
-
+    def groupNodeEditorWidget(self):
+        return self._group_node_editor_widget
 
 class SimpleToolViewWidget(AbstractDragDropListView):
     def __init__(self, parent=None):

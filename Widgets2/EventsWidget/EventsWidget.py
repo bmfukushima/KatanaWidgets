@@ -36,6 +36,12 @@ TODO:
             # SAVE TEXT
         - Update events call to handle args...
             EventWidget --> eventHandler
+    * Node arg
+        - not working... when putting node name in
+        - need to add node auto name update?
+            pretty sure this is only for simple tools...
+
+
 
     *   Globals
             - disable does not work
@@ -96,13 +102,6 @@ class AbstractEventListViewItem(ShojiModelItem):
         super(AbstractEventListViewItem, self).__init__(name)
         self.columnData()["name"] = name
         self._event_type = event_type
-        self._script = script
-
-    def setScript(self, script):
-        self._script = script
-
-    def getScript(self):
-        return self._script
 
     """ args """
     def args(self):
@@ -171,7 +170,7 @@ class AbstractEventWidget(ShojiLayout):
         # setup attrs
         self._events_model = []
         self._new_event_key = Qt.Key_Q
-        self._events_dict = {}
+        self._events_data = {}
 
         # setup layout
         # TODO CHANGE MAIN WIDGET...
@@ -193,7 +192,7 @@ class AbstractEventWidget(ShojiLayout):
 
         # create update button
         self.update_events_button = ButtonInputWidget(
-            self, title="Update Events", is_toggleable=False, user_clicked_event=self.updateEvents)
+            self, title="Update Events", is_toggleable=False, user_clicked_event=self.installEvents)
         self.main_widget.layout().addWidget(self.update_events_button)
 
         # create Python tab
@@ -206,6 +205,9 @@ class AbstractEventWidget(ShojiLayout):
         # set up stretch
         self.eventsWidget().setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
         self.update_events_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+
+        # setup events
+        Utils.EventModule.RegisterCollapsedHandler(self.nodeNameChange, 'node_setName')
 
     def setupEventsWidgetGUI(self):
         """
@@ -245,23 +247,18 @@ class AbstractEventWidget(ShojiLayout):
         Creates a new event item
         """
         if not column_data:
-            column_data = {"name": "<New Event>"}
+            column_data = {"name": "<New Event>", "enabled": "True", "script": "", "filepath": ""}
         # create model item
         new_index = self.eventsWidget().insertShojiWidget(0, column_data=column_data)
         item = new_index.internalPointer()
 
         # update script / enabled args
-        # TODO get defaults - these should probably be moved to args?
-        try:
-            item.setScript(column_data['script'])
-        except KeyError:
-            pass
-        try:
-            self.eventsWidget().model().setItemEnabled(item, column_data['enabled'])
-        except KeyError:
-            pass
+        for arg in ["enabled", "filepath", "script"]:
+            item.setArg(arg, column_data[arg])
+            if arg == "script":
+                self.eventsWidget().model().setItemEnabled(item, column_data["enabled"])
 
-    def updateEvents(self, *args):
+    def installEvents(self, *args):
         """
         In charge of installing / uninstalling events.
 
@@ -271,68 +268,34 @@ class AbstractEventWidget(ShojiLayout):
             * uninstall event filters
             * items need enabled / disabled flag to call
         """
-        events_dict = self.getUserEventsDict()
+        # self.updateEventsData()
+        events_dict = self.eventsData()
         for key in events_dict:
             event_data = events_dict[key]
             enabled = event_data['enabled']
             event_type = event_data["name"]
-            if event_type in self.eventDict():
-                #print('installing event... {event_name} --> {event_type}'.format(event_name=key, event_type=event_type))
-                # TODO If already registered creates warning
-                try:
-                    Utils.EventModule.RegisterCollapsedHandler(
-                        self.eventHandler, event_type, enabled=enabled
-                    )
-                except ValueError:
-                    # pass if the handler exists
-                    pass
+
+            #if event_type in self.eventsData():
+            # TODO If already registered creates warning
+            try:
+                Utils.EventModule.RegisterCollapsedHandler(
+                    self.eventHandler, event_type, enabled=enabled
+                )
+            except ValueError:
+                # pass if the handler exists
+                pass
 
         # save to param
-        self.saveEventsDataToJSON()
+        self.saveEventsData()
 
-    def _updateEvents(self, item, enabled):
+    def _installEvents(self, item, enabled):
         """
-        Wrapper for updateEvents so that it can be used when the user
+        Wrapper for installEvents so that it can be used when the user
         disabled an event.
         """
-        self.updateEvents()
+        self.installEvents()
 
-    def getUserEventsDict(self, from_param=False):
-        """
-        Returns the dictionary of events data that was set up by the user.
-        This is also stored in the parameter on the node() under the paramLocation()
-        """
-        # load from parameters
-        if from_param:
-            events_dict = json.loads(self.node().getParameter(self.paramLocation()).getValue(0))
-
-        # load from current GUI (unsaved) values
-        else:
-            root_item = self.eventsWidget().model().getRootItem()
-            events_dict = {}
-            # get all children
-            for child in root_item.children():
-                event_name = child.columnData()["name"]
-                if event_name != '<New Event>':
-                    events_dict[event_name] = {}
-                    # update all args
-                    for arg in child.getArgsList():
-                        value = child.getArg(arg)
-                        if value:
-                            events_dict[event_name][arg] = value
-
-                    # add additional args (has to come after, or will be overwritten)
-                    events_dict[event_name]['script'] = child.getScript()
-                    events_dict[event_name]['enabled'] = child.isEnabled()
-
-        return events_dict
-
-    def saveEventsDataToJSON(self):
-        events_dict = self.getUserEventsDict()
-        events_string = json.dumps(events_dict)
-        self.node().getParameter(self.paramLocation()).setValue(events_string, 0)
-
-    def loadEventsDataFromJSON(self):
+    def loadEventsDataFromParam(self):
         # TODO clear all items
         try:
             json_data = json.loads(self.node().getParameter(self.paramLocation()).getValue(0))
@@ -343,15 +306,81 @@ class AbstractEventWidget(ShojiLayout):
             event = json_data[str(event_type)]
             self.createNewEvent(None, column_data=event)
 
-    """ PROPERTIES """
-    def eventDict(self):
-        """
-        returns
-        """
-        return self._events_dict
+    def nodeNameChange(self, args):
+        """ Updates the events data when a node name has been changed in Katana """
+        for arg in args:
+            # get data
+            node = arg[2]["node"]
+            old_name = arg[2]["oldName"]
+            new_name = arg[2]["newName"]
 
+            indexes = self.eventsWidget().getAllIndexes()
+            for index in indexes:
+                item = index.internalPointer()
+                if "node" not in item.getArgsList(): continue
+                if item.getArg("node") != old_name: continue
+                item.setArg("node", new_name)
+
+            self.updateEventsData()
+            self.saveEventsData()
+            self.eventsWidget().updateDelegateDisplay()
+
+    """ EVENTS DATA """
+    def eventsData(self, from_param=False):
+        """
+        Returns the dictionary of events data that was set up by the user.
+        This is also stored in the parameter on the node() under the paramLocation()
+        """
+        # load from parameters
+        if from_param:
+            return json.loads(self.node().getParameter(self.paramLocation()).getValue(0))
+        # load from current GUI (unsaved) values
+        else:
+            self.updateEventsData()
+            return self._events_data
+
+    def setEventsData(self, events_data):
+        self._events_data = events_data
+
+    def saveEventsData(self, *args):
+        """ Saves the events data to the parameter """
+        # get data
+        events_data = self.eventsData()
+
+        # set data
+        new_data = json.dumps(events_data)
+        self.param().setValue(new_data, 0)
+
+    def updateEventsData(self):
+        """ Updates the internal _events_data attr with all of the options
+        add by the user..."""
+        root_item = self.eventsWidget().model().getRootItem()
+        events_data = {}
+        # get all children
+        for child in root_item.children():
+            event_name = child.columnData()["name"]
+            if event_name != '<New Event>':
+                events_data[event_name] = {}
+                # update all args
+                for arg in child.getArgsList():
+                    value = child.getArg(arg)
+                    if value:
+                        events_data[event_name][arg] = value
+
+                # add additional args (has to come after, or will be overwritten)
+                """ Script needs to be down here to ensure that a SCRIPT attr exists """
+                events_data[event_name]["filepath"] = child.getArg("filepath")
+                events_data[event_name]["script"] = child.getArg("script")
+                events_data[event_name]["enabled"] = child.isEnabled()
+
+        self._events_data = events_data
+
+    """ PROPERTIES """
     def node(self):
         return self._node
+
+    def setNode(self, node):
+        self._node = node
 
     def param(self):
         return self.node().getParameter(self.paramLocation())
@@ -440,27 +469,19 @@ class AbstractEventListViewItemDelegate(AbstractDragDropModelDelegate):
     def getEventsList(self, parent):
         return self._populate_events_list_func(parent)
 
-    def setValidateInputFunction(self, func):
-        self._validateInput = func
-
-    def _validateInput(self):
-        return True
-
     def createEditor(self, parent, option, index):
-        self._current_delegate_widget = self.delegateWidget(parent)
+        delegate_widget = self.delegateWidget(parent)
 
         # populate events
-        self._current_delegate_widget.populate([[item] for item in sorted(self.getEventsList(parent))])
-
-        self._current_delegate_widget.setValidateInputFunction(self._validateInput)
+        delegate_widget.populate([[item] for item in sorted(self.getEventsList(parent))])
 
         # set update trigger
         def updateDisplay(widget, value):
             events_widget = getWidgetAncestor(self._parent, EventWidget)
             events_widget.eventsWidget().updateDelegateDisplay()
 
-        self._current_delegate_widget.setUserFinishedEditingEvent(updateDisplay)
-        return self._current_delegate_widget
+        delegate_widget.setUserFinishedEditingEvent(updateDisplay)
+        return delegate_widget
 
 
 """ GLOBAL EVENTS"""
@@ -497,12 +518,12 @@ class EventWidget(AbstractEventWidget):
         self.generateDefaultEventTypesDict()
 
         # load events
-        self.loadEventsDataFromJSON()
+        self.loadEventsDataFromParam()
         self.__setupNodeDeleteDisableHandler()
 
         # setup signals
         self.eventsWidget().setHeaderItemDeleteEvent(self.removeItemEvent)
-        self.eventsWidget().setHeaderItemEnabledEvent(self._updateEvents)
+        self.eventsWidget().setHeaderItemEnabledEvent(self._installEvents)
         self.eventsWidget().setHeaderItemTextChangedEvent(self.eventTypeChanged)
 
     """ Node Disabled / Deleted """
@@ -524,7 +545,7 @@ class EventWidget(AbstractEventWidget):
                 if event_type == "node_setBypassed":
                     enabled = arg[2]['bypassed']
                     if not enabled:
-                        self.updateEvents()
+                        self.installEvents()
                     else:
                         self.disableAllEvents()
 
@@ -566,9 +587,13 @@ class EventWidget(AbstractEventWidget):
         """
         # Get Node
         try:
+            print("try")
             node_name = user_data["node"]
+            print(node_name)
             node = NodegraphAPI.GetNode(node_name)
+            print(node)
         except KeyError:
+            print("fail")
             node = None
 
         for key in event_data.keys():
@@ -620,6 +645,9 @@ class EventWidget(AbstractEventWidget):
         return True
 
     """ EVENTS DICT """
+    def defaultEventsData(self):
+        return self._default_events_data
+
     def generateDefaultEventTypesDict(self):
         """
         Creates a dictionary which has all of the default event data.
@@ -627,12 +655,12 @@ class EventWidget(AbstractEventWidget):
         args_file = os.path.dirname(__file__) + '/args.json'
         #args_file = '/media/ssd01/dev/katana/KatanaWidgets/SuperTools/SimpleTool/args.json'
         with open(args_file, 'r') as args:
-            self._events_dict = json.load(args)
-            for event_type in self._events_dict.keys():
-                for arg in self._events_dict[event_type]['args']:
-                    arg_name = arg['arg']
-                    arg_note = arg['note']
-                    #print('-----|', arg_name, arg_note)
+            self._default_events_data = json.load(args)
+            # for event_type in self._events_data.keys():
+            #     for arg in self._events_data[event_type]['args']:
+            #         arg_name = arg['arg']
+            #         arg_note = arg['note']
+            #         print('-----|', arg_name, arg_note)
 
     """ EVENTS """
     def eventTypeChanged(self, item, old_value, new_value):
@@ -656,7 +684,7 @@ class EventWidget(AbstractEventWidget):
                     return
 
         # invalid event type
-        events_list = self.eventDict()
+        events_list = self.defaultEventsData()
         if new_value not in events_list:
             item.setArg("name", '<New Event>')
             return
@@ -665,6 +693,10 @@ class EventWidget(AbstractEventWidget):
         else:
             item.clearArgsList()
             item.setArg("name", new_value)
+            item.setArg("script", "")
+            item.setArg("enabled", "")
+            item.setArg("filepath", "")
+            self.updateEventsData()
             self.eventsWidget().updateDelegateDisplay()
 
     @classmethod
@@ -687,7 +719,7 @@ class EventWidget(AbstractEventWidget):
             event_type = arg[0]
             event_data = arg[2]
 
-            user_event_data = self.getUserEventsDict(from_param=True)
+            user_event_data = self.eventsData(from_param=True)
             if event_type in list(user_event_data.keys()):
                 user_data = user_event_data[str(event_type)]
                 filepath = user_data['script']
@@ -704,7 +736,7 @@ class EventWidget(AbstractEventWidget):
 
     def removeItemEvent(self, item):
         item.setIsEnabled(False)
-        self.updateEvents()
+        self.installEvents()
         # TODO disable item
         # get item dict
         # disable item
@@ -715,21 +747,21 @@ class EventWidget(AbstractEventWidget):
         Disables all of the events associated with this EventsWidget.
 
         If an events_dict is provided, it will disable all of the events in that
-        dict, if none is provided it will use the default call to getUserEventsDict()
+        dict, if none is provided it will use the default call to eventsData()
 
         Args:
-            events_dict (dict): associated with getUserEventsDict call.
+            events_dict (dict): associated with eventsData call.
         """
         if events_dict:
             events_dict = json.loads(events_dict)
         else:
-            events_dict = self.getUserEventsDict()
+            events_dict = self.eventsData()
 
         for key in events_dict:
             event_data = events_dict[key]
             event_type = event_data["name"]
 
-            if event_type in self.eventDict():
+            if event_type in self.eventsData():
                 Utils.EventModule.RegisterCollapsedHandler(
                     self.eventHandler, event_type, enabled=False
                 )
@@ -751,7 +783,7 @@ class EventListViewItemDelegate(AbstractEventListViewItemDelegate):
         self._parent = parent
 
     def _getEventsList(self, parent):
-        return list(getWidgetAncestor(parent, EventWidget).eventDict())
+        return list(getWidgetAncestor(parent, EventWidget).defaultEventsData())
 
 
 """ INPUT WIDGETS"""
@@ -788,7 +820,6 @@ class UserInputMainWidget(QWidget):
         super(UserInputMainWidget, self).__init__(parent)
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
-        self.generateDefaultEventTypesDict()
 
         # create scripts thingy
         self.script_widget = ScriptInputWidget(self)
@@ -798,21 +829,6 @@ class UserInputMainWidget(QWidget):
 
         self.layout().addWidget(self.script_widget)
         self.layout().addWidget(self.dynamic_args_widget)
-
-    def generateDefaultEventTypesDict(self):
-        """
-        Sets up the event_dict to be usd as global list of possible events
-        that the user can create.
-        """
-        # todo Qt Legacy?
-        args_file = os.path.dirname(__file__) + '/args.json'
-        with open(args_file, 'r') as args:
-            self._events_dict = json.load(args)
-            for event_type in self._events_dict.keys():
-                for arg in self._events_dict[event_type]['args']:
-                    arg_name = arg['arg']
-                    arg_note = arg['note']
-                    #print('-----|', arg_name, arg_note)
 
     def setEventType(self, event_type):
         if hasattr(self, '_item'):
@@ -841,7 +857,7 @@ class UserInputMainWidget(QWidget):
         event_type = item.getArg("name")
 
         # set script widget to label.item().getScript()
-        script_location = item.getScript()
+        script_location = item.getArg("script")
         events_widget.script_widget.setText(script_location)
         # TODO Update Script Text
         """
@@ -947,7 +963,8 @@ class ScriptInputWidget(DynamicArgsInputWidget):
         python_widget = events_widget.python_widget
         """
         events_widget = getWidgetAncestor(self, UserInputMainWidget)
-        events_widget.item().setScript(self.text())
+        events_widget.item().setArg("script", self.text())
+        #events_widget.item().setScript(self.text())
 
 
 class DynamicArgsWidget(QWidget):
@@ -984,7 +1001,9 @@ class DynamicArgsWidget(QWidget):
         model items args
         """
         # preflight
-        try: args_list = self.parent()._events_dict[self.event_type]['args']
+        try:
+            events_widget = getWidgetAncestor(self, EventWidget)
+            args_list = events_widget.defaultEventsData()[self.event_type]['args']
         except KeyError: return
 
         # update dynamic widget
