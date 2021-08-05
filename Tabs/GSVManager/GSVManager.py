@@ -62,6 +62,8 @@ Data:
                 "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
             enabled: boolean}
         }
+
+EventsWidget --> gsvChangedEvent
 """
 
 import json
@@ -94,6 +96,7 @@ from cgwidgets.settings import attrs
 from Widgets2 import EventWidget, AbstractEventListViewItemDelegate, AbstractEventListView, AbstractEventWidget
 from Utils2 import gsvutils, getFontSize, paramutils
 
+_PARAM_LOCATION = "KatanaBebop.GSVEventsData.data"
 
 class GSVManager(UI4.Tabs.BaseTab):
     """
@@ -113,14 +116,12 @@ class GSVManager(UI4.Tabs.BaseTab):
         self._view_scroll_area.setWidgetResizable(True)
 
         self._edit_widget = EditWidget(parent=self)
-        self._events_widget_old = EventsWidget(parent=self)
-        self._events_widget = NewEventsWidget(parent=self)
+        self._events_widget = EventsWidget(parent=self)
 
         # insert widgets
         self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self._view_scroll_area)
         self._main_widget.insertShojiWidget(1, column_data={"name":"Edit"}, widget=self.editWidget())
         self._main_widget.insertShojiWidget(2, column_data={"name":"Events"}, widget=self.eventsWidget())
-        self._main_widget.insertShojiWidget(2, column_data={"name":"Events (Old)"}, widget=self._events_widget_old)
 
         # setup layout
         QVBoxLayout(self)
@@ -153,11 +154,8 @@ class GSVManager(UI4.Tabs.BaseTab):
     """ KATANA EVENTS """
     def nodeGraphLoad(self, args):
         """ Reload the View Widget when a new Katana scene is opened"""
-        # create param if it doesnt exist
-        EventsWidget.createGSVEventsParam()
-
         # reload events data
-        events_data = json.loads(self.eventsWidget().eventsParam().getValue(0))
+        events_data = json.loads(self.eventsWidget().param().getValue(0))
         self.eventsWidget().setEventsData(events_data)
         # update variable text
         self.editWidget().setText("<variables>")
@@ -798,13 +796,9 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
             view_widget = main_widget.viewWidget()
             view_widget.renameWidget(old_value, new_value)
 
-            # print(view_widget.widgets())
-            # print(old_value)
-            # view_widget.widgets()[old_value].setName(new_value)
-
 
 """ EVENTS WIDGET (INHERIT)"""
-class NewEventsWidget(AbstractEventWidget):
+class EventsWidget(AbstractEventWidget):
     """
     The main widget for setting up the events triggers on the node.
 
@@ -830,8 +824,9 @@ class NewEventsWidget(AbstractEventWidget):
                         | -- dynamic_args_widget (DynamicArgsWidget)
                                 | -* DynamicArgsInputWidget
     """
-    def __init__(self, parent=None, node=None, param="events_data"):
-        super(NewEventsWidget, self).__init__(
+
+    def __init__(self, parent=None, node=None, param=_PARAM_LOCATION):
+        super(EventsWidget, self).__init__(
             delegate_widget_type=DisplayGSVEventWidget,
             events_list_view=GSVEventsListView,
             parent=parent,
@@ -854,7 +849,7 @@ class NewEventsWidget(AbstractEventWidget):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         # populate
-        self._events_data = json.loads(self.eventsParam().getValue(0))
+        self._events_data = json.loads(self.param().getValue(0))
         gsv_list = list(self.eventsData().keys())
         for gsv in gsv_list:
             self.eventsWidget().insertShojiWidget(0, column_data={"name": str(gsv)})
@@ -864,13 +859,15 @@ class NewEventsWidget(AbstractEventWidget):
         self.eventsWidget().setHeaderItemEnabledEvent(self.disableGSVEvent)
         self.eventsWidget().setHeaderItemTextChangedEvent(self.gsvChangedEvent)
 
+        self.update_events_button.setUserClickedEvent(self.saveEventsData)
+
     """ WIDGETS """
     def gsvEventsListWidget(self):
         return self._gsv_events_list_widget
 
     def displayWidget(self):
         # todo this doesnt work...
-        self.delegateWidget().widget(1).getMainWidget()
+        self.eventsWidget().delegateWidget().widget(1).getMainWidget()
 
     """ PROPERTIES """
     def currentGSV(self):
@@ -903,38 +900,14 @@ class NewEventsWidget(AbstractEventWidget):
     def setEventsData(self, events_data):
         self._events_data = events_data
 
-    @staticmethod
-    def eventsParam():
-        """
-        Gets the parameter on the root node which holds the event data
-
-        Returns (Parameter)
-        """
-        EventsWidget.createGSVEventsParam()
-        events_param = NodegraphAPI.GetRootNode().getParameter("KatanaBebop.GSVEventsData.data")
-        return events_param
-
-    @staticmethod
-    def createGSVEventsParam():
-        """
-        Creates the GSV Events param if one doesn't already exist
-        """
-        node = NodegraphAPI.GetRootNode()
-        param_location = "KatanaBebop.GSVEventsData.data"
-        param_type = paramutils.STRING
-        paramutils.createParamAtLocation(param_location, node, param_type, initial_value="{}")
-
-    def saveEventsData(self):
+    def saveEventsData(self, *args):
         """ Saves the events data to the parameter """
         # get data
         events_data = self.eventsData()
 
-        # ensure param exists
-        EventsWidget.createGSVEventsParam()
-
         # set data
         new_data = json.dumps(events_data)
-        self.eventsParam().setValue(new_data, 0)
+        self.param().setValue(new_data, 0)
 
     """ EVENTS """
     def deleteGSVEvent(self, item):
@@ -980,15 +953,10 @@ class NewEventsWidget(AbstractEventWidget):
         self.eventsData()[gsv]["data"] = {}
         self.eventsData()[gsv]["enabled"] = True
 
-        # save
+        # update data
         self.saveEventsData()
-
-        # todo update display
+        self.setCurrentGSV(gsv)
         self.eventsWidget().updateDelegateDisplay()
-
-    def showEvent(self, event):
-        NewEventsWidget.createGSVEventsParam()
-        return AbstractEventWidget.showEvent(self, event)
 
     def update(self):
         """ Clears the model and repopulates it """
@@ -996,7 +964,7 @@ class NewEventsWidget(AbstractEventWidget):
         self.clearModel()
 
         # get GSVs
-        for gsv in list(json.loads(self.eventsParam().getValue(0)).keys()):
+        for gsv in list(json.loads(self.param().getValue(0)).keys()):
             self.insertShojiWidget(0, column_data={"name": str(gsv)})
 
 
@@ -1011,204 +979,26 @@ class GSVPopupSelector(AbstractEventListViewItemDelegate):
 
     def __init__(self, parent=None):
         super(GSVPopupSelector, self).__init__(self._getEventsList, parent=parent)
+        self.setValidateInputFunction(self.isUserInputGSVValid)
         self._parent = parent
+
+    def isUserInputGSVValid(self):
+        """ TODO Validate List Input...
+        Works... but why isn't it blocking ittttt"""
+        input = self._current_delegate_widget.getInput()
+        # get all GSVs
+        if input not in gsvutils.getAllGSV(return_as=gsvutils.STRING): return False
+
+        events_widget = getWidgetAncestor(self, EventsWidget)
+        if input in list(events_widget.eventsData().keys()): return False
+        # get all created GSVs?
+        return True
 
     def _getEventsList(self, parent):
         return gsvutils.getAllGSV(gsvutils.STRING)
 
 
 """ EVENTS WIDGET """
-class EventsWidget(ShojiModelViewWidget):
-    """
-    Main tab for displaying the GSV Events to the user.
-
-    This is where the user can setup custom handlers for when GSV's change,
-    and run Python code for a GSV change.
-
-    Attributes:
-        current_gsv (str): name of current GSV that is being manipulated
-        events_data (dict): of GSV names that are already created as events in this widget.
-            {gsv_name1: {
-                data: {
-                    "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
-                    "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
-                enabled: boolean}
-            {gsv_name2: {
-                data: {
-                    "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
-                    "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
-                enabled: boolean}
-            }
-
-    Hierarchy:
-        |- GSVEventsListWidget --> (LabelledInputWidget)
-        |- DisplayGSVEventWidget (FrameInputWidgetContainer)
-            |- Header
-            |   |- DisplayGSVEventWidgetHeader (OverlayInputWidget --> ButtonInputWidget)
-            |- Widgets
-                |* GSVEvent
-    """
-    def __init__(self, parent=None):
-        super(EventsWidget, self).__init__(parent)
-
-        # setup default attrs
-        self.setHeaderPosition(attrs.WEST, attrs.SOUTH)
-        self.setHeaderItemIsEditable(False)
-        self.setHeaderItemIsDragEnabled(False)
-
-        self._events_data = {}
-
-        # setup Dynamic Widgets
-        self.setDelegateType(
-            ShojiModelViewWidget.DYNAMIC,
-            dynamic_widget=DisplayGSVEventWidget,
-            dynamic_function=DisplayGSVEventWidget.updateGUI
-        )
-
-        # setup creation widget
-        self._gsv_events_list_widget = GSVEventsListWidget(self)
-        self.addHeaderDelegateWidget([], self._gsv_events_list_widget)
-        self._gsv_events_list_widget.show()
-
-        # setup events
-        self.setHeaderItemDeleteEvent(self.deleteGSVEvent)
-        self.setHeaderItemEnabledEvent(self.disableGSVEvent)
-
-        # set style
-        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-
-        # populate
-        self._events_data = json.loads(self.eventsParam().getValue(0))
-        gsv_list = list(self.eventsData().keys())
-        for gsv in gsv_list:
-            self.insertShojiWidget(0, column_data={"name": str(gsv)})
-
-    """ WIDGETS """
-    def gsvEventsListWidget(self):
-        return self._gsv_events_list_widget
-
-    def displayWidget(self):
-        # todo this doesnt work...
-        self.delegateWidget().widget(1).getMainWidget()
-
-    """ PROPERTIES """
-    def currentGSV(self):
-        return self._current_gsv
-
-    def setCurrentGSV(self, gsv):
-        self._current_gsv = gsv
-
-    """ UTILS """
-    @staticmethod
-    def isScriptDirty(data, widget):
-        # display update button if the scripts do not match
-        if os.path.exists(data["file_path"]):
-            script = data["script"]
-            _is_dirty = False
-            # read filepath
-            with open(data["file_path"], "r") as file_path:
-                file_data = file_path.readlines()
-                file_data = "".join(file_data).split("\n")
-
-            # compare filepath to current script
-            for line1, line2 in zip(file_data, script.split("\n")):
-                if str(line1) != str(line2):
-                    _is_dirty = True
-                    break
-
-    def eventsData(self):
-        return self._events_data
-
-    def setEventsData(self, events_data):
-        self._events_data = events_data
-
-    @staticmethod
-    def eventsParam():
-        """
-        Gets the parameter on the root node which holds the event data
-
-        Returns (Parameter)
-        """
-        EventsWidget.createGSVEventsParam()
-        events_param = NodegraphAPI.GetRootNode().getParameter("KatanaBebop.GSVEventsData.data")
-        return events_param
-
-    @staticmethod
-    def createGSVEventsParam():
-        """
-        Creates the GSV Events param if one doesn't already exist
-        """
-        node = NodegraphAPI.GetRootNode()
-        param_location = "KatanaBebop.GSVEventsData.data"
-        param_type = paramutils.STRING
-        paramutils.createParamAtLocation(param_location, node, param_type, initial_value="{}")
-
-    def saveEventsData(self):
-        """ Saves the events data to the parameter """
-        # get data
-        events_data = self.eventsData()
-
-        # ensure param exists
-        EventsWidget.createGSVEventsParam()
-
-        # set data
-        new_data = json.dumps(events_data)
-        self.eventsParam().setValue(new_data, 0)
-
-    """ EVENTS """
-    def deleteGSVEvent(self, item):
-        """
-        When the user deletes a GSV event, this will remove the meta data.
-        """
-        gsv = item.columnData()['name']
-
-        # delete data
-        del self.eventsData()[gsv]
-        self.saveEventsData()
-
-    def disableGSVEvent(self, item, enabled):
-        """
-        When the user deletes a GSV event, this will remove the meta data.
-        """
-        gsv = item.columnData()['name']
-
-        # disable data
-        self.eventsData()[gsv]["enabled"] = enabled
-        self.saveEventsData()
-
-    def showEvent(self, event):
-        EventsWidget.createGSVEventsParam()
-        return ShojiModelViewWidget.showEvent(self, event)
-
-    def createNewGSVEvent(self, gsv):
-        """
-        Creates a new GSVEventItem for the user, and creates the corresponding metadata
-        Args:
-            gsv (str):
-        """
-        gsv = str(gsv)
-
-        # store local dictionary
-        self.eventsData()[gsv] = {}
-        self.eventsData()[gsv]["data"] = {}
-        self.eventsData()[gsv]["enabled"] = True
-
-        # create new index
-        self.insertShojiWidget(0, column_data={"name": str(gsv)})
-
-        # save
-        self.saveEventsData()
-
-    def update(self):
-        """ Clears the model and repopulates it """
-        # clear model
-        self.clearModel()
-
-        # get GSVs
-        for gsv in list(json.loads(self.eventsParam().getValue(0)).keys()):
-            self.insertShojiWidget(0, column_data={"name": str(gsv)})
-
-
 class GSVEventsListWidget(LabelledInputWidget):
     def __init__(self, parent=None):
         super(GSVEventsListWidget, self).__init__(parent)
@@ -1317,7 +1107,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
     #     clearLayout(display_widget.layout(), start=2)
     #
     #     # update display
-    #     events_dict = json.loads(parent.eventsParam().getValue(0))[gsv]["data"]
+    #     events_dict = json.loads(parent.param().getValue(0))[gsv]["data"]
     #     for option, data in events_dict.items():
     #         # todo: check file status
     #         """compare script being uploaded to the "script" arg and if they are not the same,
@@ -1338,11 +1128,11 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         if not item: return
 
         # get attrs
-        events_widget = getWidgetAncestor(parent, NewEventsWidget)
+        events_widget = getWidgetAncestor(parent, EventsWidget)
         display_widget = widget.getMainWidget()
         gsv = item.columnData()['name']
 
-        if gsv not in json.loads(events_widget.eventsParam().getValue(0)).keys(): return
+        if gsv not in json.loads(events_widget.param().getValue(0)).keys(): return
 
         # update GSV
         events_widget.setCurrentGSV(gsv)
@@ -1352,7 +1142,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         clearLayout(display_widget.layout(), start=2)
 
         # update display
-        events_dict = json.loads(events_widget.eventsParam().getValue(0))[gsv]["data"]
+        events_dict = json.loads(events_widget.param().getValue(0))[gsv]["data"]
 
         for option, data in events_dict.items():
             # todo: check file status
@@ -1365,7 +1155,6 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
             # parent.model().setItemEnabled(item, option["enabled"])
             # check if cached script is dirty or not
             EventsWidget.isScriptDirty(data, widget)
-
 
 
 class DisplayGSVEventWidgetHeader(OverlayInputWidget):
@@ -1581,7 +1370,7 @@ class GSVEvent(LabelledInputWidget):
         https://stackoverflow.com/questions/16475384/rename-a-dictionary-key
         """
         events_widget = getWidgetAncestor(self, EventsWidget)
-        display_widget = events_widget.delegateWidget().widget(1).getMainWidget()
+        display_widget = events_widget.eventsWidget().delegateWidget().widget(1).getMainWidget()
 
         # preflight
         if option == "": return

@@ -1,7 +1,10 @@
 import json
 
-from .GSVManager import EventsWidget
+from Katana import NodegraphAPI
+
+from .GSVManager import EventsWidget, _PARAM_LOCATION
 from Utils2 import gsvutils
+
 
 def gsvChangedEvent(args):
     """
@@ -24,7 +27,7 @@ def gsvChangedEvent(args):
         # get attrs
         gsv = param.getParent().getName()
         option = param.getValue(0)
-        events_data = json.loads(EventsWidget.eventsParam().getValue(0))
+        events_data = json.loads(NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION).getValue(0))
 
         # preflight
         if gsv not in list(events_data.keys()): return
@@ -61,7 +64,7 @@ def gsvChangedEvent(args):
 def installGSVManagerEvents(*args, **kwargs):
     from Katana import Utils
     # create default param
-    EventsWidget.createGSVEventsParam()
+    # EventsWidget.createGSVEventsParam()
 
     gsvutils.hideEngineersGSVUI()
 

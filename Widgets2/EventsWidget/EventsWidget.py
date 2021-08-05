@@ -348,10 +348,13 @@ class AbstractEventWidget(ShojiLayout):
         """
         returns
         """
-        return self._event_dict
+        return self._events_dict
 
     def node(self):
         return self._node
+
+    def param(self):
+        return self.node().getParameter(self.paramLocation())
 
     def paramLocation(self):
         return self._param_location
@@ -437,19 +440,27 @@ class AbstractEventListViewItemDelegate(AbstractDragDropModelDelegate):
     def getEventsList(self, parent):
         return self._populate_events_list_func(parent)
 
+    def setValidateInputFunction(self, func):
+        self._validateInput = func
+
+    def _validateInput(self):
+        return True
+
     def createEditor(self, parent, option, index):
-        delegate_widget = self.delegateWidget(parent)
+        self._current_delegate_widget = self.delegateWidget(parent)
 
         # populate events
-        delegate_widget.populate([[item] for item in sorted(self.getEventsList(parent))])
+        self._current_delegate_widget.populate([[item] for item in sorted(self.getEventsList(parent))])
+
+        self._current_delegate_widget.setValidateInputFunction(self._validateInput)
 
         # set update trigger
         def updateDisplay(widget, value):
             events_widget = getWidgetAncestor(self._parent, EventWidget)
             events_widget.eventsWidget().updateDelegateDisplay()
 
-        delegate_widget.setUserFinishedEditingEvent(updateDisplay)
-        return delegate_widget
+        self._current_delegate_widget.setUserFinishedEditingEvent(updateDisplay)
+        return self._current_delegate_widget
 
 
 """ GLOBAL EVENTS"""
@@ -616,9 +627,9 @@ class EventWidget(AbstractEventWidget):
         args_file = os.path.dirname(__file__) + '/args.json'
         #args_file = '/media/ssd01/dev/katana/KatanaWidgets/SuperTools/SimpleTool/args.json'
         with open(args_file, 'r') as args:
-            self._event_dict = json.load(args)
-            for event_type in self._event_dict.keys():
-                for arg in self._event_dict[event_type]['args']:
+            self._events_dict = json.load(args)
+            for event_type in self._events_dict.keys():
+                for arg in self._events_dict[event_type]['args']:
                     arg_name = arg['arg']
                     arg_note = arg['note']
                     #print('-----|', arg_name, arg_note)
@@ -796,9 +807,9 @@ class UserInputMainWidget(QWidget):
         # todo Qt Legacy?
         args_file = os.path.dirname(__file__) + '/args.json'
         with open(args_file, 'r') as args:
-            self._event_dict = json.load(args)
-            for event_type in self._event_dict.keys():
-                for arg in self._event_dict[event_type]['args']:
+            self._events_dict = json.load(args)
+            for event_type in self._events_dict.keys():
+                for arg in self._events_dict[event_type]['args']:
                     arg_name = arg['arg']
                     arg_note = arg['note']
                     #print('-----|', arg_name, arg_note)
@@ -973,7 +984,7 @@ class DynamicArgsWidget(QWidget):
         model items args
         """
         # preflight
-        try: args_list = self.parent()._event_dict[self.event_type]['args']
+        try: args_list = self.parent()._events_dict[self.event_type]['args']
         except KeyError: return
 
         # update dynamic widget
