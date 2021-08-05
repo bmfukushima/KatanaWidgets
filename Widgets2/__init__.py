@@ -16,4 +16,11 @@ from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
 
 from .NodeTypeListWidget import NodeTypeListWidget
 from .NodeViewWidget import NodeViewWidget
-from .EventsWidget import EventWidget
+from .EventsWidget import (
+    AbstractEventListView,
+    AbstractEventListViewItem,
+    AbstractEventListViewItemDelegate,
+    AbstractEventWidget,
+    EventWidget
+)
+

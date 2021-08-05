@@ -139,7 +139,6 @@ def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=
     Returns:
 
     """
-    print(node)
     # create input ports
     if in_port is True:
         if force_create:

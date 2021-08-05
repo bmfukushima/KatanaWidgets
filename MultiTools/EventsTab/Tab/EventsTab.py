@@ -42,7 +42,7 @@ class EventsTab(UI4.Tabs.BaseTab):
             node.getParameters().createChildString(self.paramLocation(), "")
 
         self.main_widget.main_node = node
-        self.main_widget.events_widget.clearModel()
+        self.main_widget.eventsWidget().clearModel()
         self.main_widget.loadEventsDataFromJSON()
         self.main_widget.show()
 

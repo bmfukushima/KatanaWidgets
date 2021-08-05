@@ -41,7 +41,7 @@ def loadGlobalEvents(*args):
             katana_main.global_events_widget = EventWidget(katana_main, node=node)
 
         katana_main.global_events_widget.main_node = node
-        katana_main.global_events_widget.events_widget.clearModel()
+        katana_main.global_events_widget.eventsWidget().clearModel()
         katana_main.global_events_widget.loadEventsDataFromJSON()
 
 
