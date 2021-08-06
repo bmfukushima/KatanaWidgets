@@ -909,7 +909,11 @@ class EventsWidget(AbstractEventWidget):
         """
         When the user deletes a GSV event, this will remove the meta data.
         """
+        # get attrs
         gsv = item.columnData()['name']
+
+        # preflight
+        if gsv not in list(self.eventsData().keys()): return
 
         # disable data
         self.eventsData()[gsv]["enabled"] = enabled
@@ -925,7 +929,7 @@ class EventsWidget(AbstractEventWidget):
 
         # preflight
         if gsv == "": return
-        if gsv in list(self.eventsData().keys()):
+        if gsv in list(self.eventsData(from_param=True).keys()):
             print("{gsv} already exists... update the one that already exists you Derpasaur".format(gsv=gsv))
             item.setArg("name", old_value)
             return

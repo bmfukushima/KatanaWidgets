@@ -268,7 +268,6 @@ class AbstractEventWidget(ShojiLayout):
             * uninstall event filters
             * items need enabled / disabled flag to call
         """
-        # self.updateEventsData()
         events_dict = self.eventsData()
         for key in events_dict:
             event_data = events_dict[key]
@@ -352,28 +351,9 @@ class AbstractEventWidget(ShojiLayout):
         self.param().setValue(new_data, 0)
 
     def updateEventsData(self):
-        """ Updates the internal _events_data attr with all of the options
-        add by the user..."""
-        root_item = self.eventsWidget().model().getRootItem()
-        events_data = {}
-        # get all children
-        for child in root_item.children():
-            event_name = child.columnData()["name"]
-            if event_name != '<New Event>':
-                events_data[event_name] = {}
-                # update all args
-                for arg in child.getArgsList():
-                    value = child.getArg(arg)
-                    if value:
-                        events_data[event_name][arg] = value
-
-                # add additional args (has to come after, or will be overwritten)
-                """ Script needs to be down here to ensure that a SCRIPT attr exists """
-                events_data[event_name]["filepath"] = child.getArg("filepath")
-                events_data[event_name]["script"] = child.getArg("script")
-                events_data[event_name]["enabled"] = child.isEnabled()
-
-        self._events_data = events_data
+        """ Needs to be overwritten, this will be called before every
+        call to eventsData()"""
+        return
 
     """ PROPERTIES """
     def node(self):
@@ -644,7 +624,7 @@ class EventWidget(AbstractEventWidget):
         # passed all checks
         return True
 
-    """ EVENTS DICT """
+    """ EVENTS """
     def defaultEventsData(self):
         return self._default_events_data
 
@@ -661,6 +641,30 @@ class EventWidget(AbstractEventWidget):
             #         arg_name = arg['arg']
             #         arg_note = arg['note']
             #         print('-----|', arg_name, arg_note)
+
+    def updateEventsData(self):
+        """ Updates the internal _events_data attr with all of the options
+        add by the user..."""
+        root_item = self.eventsWidget().model().getRootItem()
+        events_data = {}
+        # get all children
+        for child in root_item.children():
+            event_name = child.columnData()["name"]
+            if event_name != '<New Event>':
+                events_data[event_name] = {}
+                # update all args
+                for arg in child.getArgsList():
+                    value = child.getArg(arg)
+                    if value:
+                        events_data[event_name][arg] = value
+
+                # add additional args (has to come after, or will be overwritten)
+                """ Script needs to be down here to ensure that a SCRIPT attr exists """
+                events_data[event_name]["filepath"] = child.getArg("filepath")
+                events_data[event_name]["script"] = child.getArg("script")
+                events_data[event_name]["enabled"] = child.isEnabled()
+
+        self._events_data = events_data
 
     """ EVENTS """
     def eventTypeChanged(self, item, old_value, new_value):
@@ -760,7 +764,6 @@ class EventWidget(AbstractEventWidget):
         for key in events_dict:
             event_data = events_dict[key]
             event_type = event_data["name"]
-
             if event_type in self.eventsData():
                 Utils.EventModule.RegisterCollapsedHandler(
                     self.eventHandler, event_type, enabled=False
