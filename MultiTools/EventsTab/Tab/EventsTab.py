@@ -22,7 +22,6 @@ class EventsTab(UI4.Tabs.BaseTab):
         # setup main widget
 
         self.node = NodegraphAPI.GetRootNode()
-        #katana_main = UI4.App.MainWindow.GetMainWindow()
 
         node = NodegraphAPI.GetRootNode()
         if not hasattr(widgetutils.katanaMainWindow(), "global_events_widget"):

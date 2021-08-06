@@ -53,13 +53,13 @@ Data:
     eventsWidget() --> eventsData()
         {gsv_name1: {
             data: {
-                "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
-                "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
+                "option1":{filepath:"path_to_script.py", script: "script text", enabled: boolean},
+                "option2":{filepath:"path_to_script.py", script: "script text", enabled: boolean}}
             enabled: boolean}
         {gsv_name2: {
             data: {
-                "option1":{file_path:"path_to_script.py", script: "script text", enabled: boolean},
-                "option2":{file_path:"path_to_script.py", script: "script text", enabled: boolean}}
+                "option1":{filepath:"path_to_script.py", script: "script text", enabled: boolean},
+                "option2":{filepath:"path_to_script.py", script: "script text", enabled: boolean}}
             enabled: boolean}
         }
 
@@ -97,6 +97,7 @@ from Widgets2 import EventWidget, AbstractEventListViewItemDelegate, AbstractEve
 from Utils2 import gsvutils, getFontSize, paramutils
 
 _PARAM_LOCATION = "KatanaBebop.GSVEventsData.data"
+
 
 class GSVManager(UI4.Tabs.BaseTab):
     """
@@ -859,8 +860,6 @@ class EventsWidget(AbstractEventWidget):
         self.eventsWidget().setHeaderItemEnabledEvent(self.disableGSVEvent)
         self.eventsWidget().setHeaderItemTextChangedEvent(self.gsvChangedEvent)
 
-        self.update_events_button.setUserClickedEvent(self.saveEventsData)
-
     """ WIDGETS """
     def gsvEventsListWidget(self):
         return self._gsv_events_list_widget
@@ -880,12 +879,12 @@ class EventsWidget(AbstractEventWidget):
     @staticmethod
     def isScriptDirty(data, widget):
         # display update button if the scripts do not match
-        if os.path.exists(data["file_path"]):
+        if os.path.exists(data["filepath"]):
             script = data["script"]
             _is_dirty = False
             # read filepath
-            with open(data["file_path"], "r") as file_path:
-                file_data = file_path.readlines()
+            with open(data["filepath"], "r") as filepath:
+                file_data = filepath.readlines()
                 file_data = "".join(file_data).split("\n")
 
             # compare filepath to current script
@@ -1093,7 +1092,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
     #         break set flag available to update."""
     #
     #         # create widget
-    #         widget = display_widget.createNewOptionEvent(option=str(option), script=str(data["file_path"]), enabled=data["enabled"])
+    #         widget = display_widget.createNewOptionEvent(option=str(option), script=str(data["filepath"]), enabled=data["enabled"])
     #
     #         # parent.model().setItemEnabled(item, option["enabled"])
     #         # check if cached script is dirty or not
@@ -1129,7 +1128,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
             break set flag available to update."""
 
             # create widget
-            widget = display_widget.createNewOptionEvent(option=str(option), script=str(data["file_path"]), enabled=data["enabled"])
+            widget = display_widget.createNewOptionEvent(option=str(option), script=str(data["filepath"]), enabled=data["enabled"])
 
             # parent.model().setItemEnabled(item, option["enabled"])
             # check if cached script is dirty or not
@@ -1302,10 +1301,10 @@ class GSVEvent(LabelledInputWidget):
         Note: The script must be a valid file in order for it to cache
         """
         # get file path
-        file_path = self.scriptWidget().text()
+        filepath = self.scriptWidget().text()
 
-        if os.path.exists(file_path):
-            script = convertScriptToString(file_path)
+        if os.path.exists(filepath):
+            script = convertScriptToString(filepath)
             # get events widget
             event_widget = getWidgetAncestor(self, EventsWidget)
 
@@ -1315,8 +1314,8 @@ class GSVEvent(LabelledInputWidget):
             # save
             event_widget.saveEventsData()
         else:
-            if file_path.rstrip():
-                print('{file_path} does not exist... please make one that does...'.format(file_path=file_path))
+            if filepath.rstrip():
+                print('{filepath} does not exist... please make one that does...'.format(filepath=filepath))
 
     def validateOptionInputEvent(self):
         """
@@ -1366,7 +1365,7 @@ class GSVEvent(LabelledInputWidget):
         # create new event
         else:
             # update main events
-            events_widget.eventsData()[events_widget.currentGSV()]["data"][option] = {"file_path": "", "script": "", "enabled":True}
+            events_widget.eventsData()[events_widget.currentGSV()]["data"][option] = {"filepath": "", "script": "", "enabled":True}
 
             # add widget entry into DisplayGSVEventWidget
             display_widget.widgets()[option] = self
@@ -1395,7 +1394,7 @@ class GSVEvent(LabelledInputWidget):
         event_widget = getWidgetAncestor(self, EventsWidget)
 
         # update script
-        event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["file_path"] = filepath
+        event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["filepath"] = filepath
 
         # save
         event_widget.saveEventsData()

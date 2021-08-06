@@ -12,7 +12,7 @@ Hierarchy:
 EventWidget --> (ShojiLayout)
     | -- main_widget (QWidget)
     |    | -- VBox
-    |        | -- new_event_button --> (QPushButton)
+    |        | -- newEventButton() --> (QPushButton)
     |        | -- events_widget --> (ShojiModelViewWidget)
     |        |    | -- label type (EventsLabelWidget --> ShojiLabelWidget)
     |        |    | -- Dynamic Widget (UserInputMainWidget --> QWidget)
@@ -21,7 +21,7 @@ EventWidget --> (ShojiLayout)
     |        |            | -- script_widget (DynamicArgsInputWidget)
     |        |            | -- dynamic_args_widget (DynamicArgsWidget)
     |        |                    | -* DynamicArgsInputWidget
-    |        | -- update_events_button --> (ButtonInputWidget)
+    |        | -- _update_events_button --> (ButtonInputWidget)
     | -- python_widget --> (PythonWidget)
 TODO:
     * PYTHON Script (Moving this to have the option between SCRIPT and FILE modes)
@@ -36,12 +36,7 @@ TODO:
             # SAVE TEXT
         - Update events call to handle args...
             EventWidget --> eventHandler
-    * Node arg
-        - not working... when putting node name in
-        - need to add node auto name update?
-            pretty sure this is only for simple tools...
-
-
+        IDE popup is causing PythonWidget to lose focus
 
     *   Globals
             - disable does not work
@@ -71,22 +66,24 @@ TODO:
 
 import json
 import os
+
 from qtpy.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QMenu, QSizePolicy)
-from qtpy.QtCore import Qt
+    QApplication, QWidget, QHBoxLayout, QVBoxLayout, QMenu, QSizePolicy)
+from qtpy.QtCore import Qt, QEvent
 from qtpy.QtGui import QKeySequence
 
-import Utils2.paramutils
+from Katana import Utils, NodegraphAPI, UI4
+
 from cgwidgets.widgets import (
-    ListInputWidget, LabelledInputWidget, ButtonInputWidget,
+    ListInputWidget, LabelledInputWidget, BooleanInputWidget, ButtonInputWidget, FileBrowserInputWidget,
     ShojiModelViewWidget, ShojiModelItem, OverlayInputWidget,
     ShojiLayout)
 from cgwidgets.views import AbstractDragDropListView, AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestor
 from cgwidgets.settings import attrs
 
+from Utils2 import paramutils, getFontSize
 
-from Katana import Utils, NodegraphAPI, UI4
 
 """ ABSTRACT EVENTS"""
 class AbstractEventListViewItem(ShojiModelItem):
@@ -161,7 +158,7 @@ class AbstractEventWidget(ShojiLayout):
         if not node:
             node = NodegraphAPI.GetRootNode()
         if not node.getParameter(param):
-            Utils2.paramutils.createParamAtLocation(param, node, Utils2.paramutils.STRING, initial_value="{}")
+            paramutils.createParamAtLocation(param, node, paramutils.STRING, initial_value="{}")
             #node.getParameters().createChildString(param, "")
 
         self._param_location = param
@@ -174,37 +171,31 @@ class AbstractEventWidget(ShojiLayout):
 
         # setup layout
         # TODO CHANGE MAIN WIDGET...
-        self.main_widget = QWidget()
-        QVBoxLayout(self.main_widget)
+        self._main_widget = QWidget()
+        QVBoxLayout(self.mainWidget())
 
         # create events widget
         self.setupEventsWidgetGUI()
-        self.main_widget.layout().addWidget(self.eventsWidget())
+        self.mainWidget().layout().addWidget(self.eventsWidget())
 
         # create new event button
         new_event_button_title = 'New Event ({key})'.format(key=QKeySequence(self._new_event_key).toString())
-        self.new_event_button = ButtonInputWidget(
+        self._new_event_button = ButtonInputWidget(
             self, title=new_event_button_title, is_toggleable=False, user_clicked_event=self.createNewEvent)
 
         self.eventsWidget().addHeaderDelegateWidget(
-            [self._new_event_key], self.new_event_button)
-        self.new_event_button.show()
-
-        # create update button
-        self.update_events_button = ButtonInputWidget(
-            self, title="Update Events", is_toggleable=False, user_clicked_event=self.installEvents)
-        self.main_widget.layout().addWidget(self.update_events_button)
+            [self._new_event_key], self.newEventButton())
+        self.newEventButton().show()
 
         # create Python tab
-        self.python_widget = PythonWidget()
+        self._python_widget = PythonWidget()
 
         # add widgets to layout
-        self.addWidget(self.main_widget)
-        self.addWidget(self.python_widget)
+        self.addWidget(self.mainWidget())
+        self.addWidget(self.pythonWidget())
 
         # set up stretch
         self.eventsWidget().setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
-        self.update_events_button.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
 
         # setup events
         Utils.EventModule.RegisterCollapsedHandler(self.nodeNameChange, 'node_setName')
@@ -241,6 +232,10 @@ class AbstractEventWidget(ShojiLayout):
 
         return self.eventsWidget()
 
+    """ UTILS """
+    def setCurrentScript(self, filepath):
+        self.pythonWidget().setFilePath(filepath)
+
     """ EVENTS """
     def createNewEvent(self, widget, column_data=None):
         """
@@ -257,42 +252,6 @@ class AbstractEventWidget(ShojiLayout):
             item.setArg(arg, column_data[arg])
             if arg == "script":
                 self.eventsWidget().model().setItemEnabled(item, column_data["enabled"])
-
-    def installEvents(self, *args):
-        """
-        In charge of installing / uninstalling events.
-
-        This should be called everytime the user hits the update button
-        todo
-            * should this be a user input?  Or dynamically updating?
-            * uninstall event filters
-            * items need enabled / disabled flag to call
-        """
-        events_dict = self.eventsData()
-        for key in events_dict:
-            event_data = events_dict[key]
-            enabled = event_data['enabled']
-            event_type = event_data["name"]
-
-            #if event_type in self.eventsData():
-            # TODO If already registered creates warning
-            try:
-                Utils.EventModule.RegisterCollapsedHandler(
-                    self.eventHandler, event_type, enabled=enabled
-                )
-            except ValueError:
-                # pass if the handler exists
-                pass
-
-        # save to param
-        self.saveEventsData()
-
-    def _installEvents(self, item, enabled):
-        """
-        Wrapper for installEvents so that it can be used when the user
-        disabled an event.
-        """
-        self.installEvents()
 
     def loadEventsDataFromParam(self):
         # TODO clear all items
@@ -381,6 +340,15 @@ class AbstractEventWidget(ShojiLayout):
     def eventsWidget(self):
         return self._events_widget
 
+    def mainWidget(self):
+        return self._main_widget
+
+    def newEventButton(self):
+        return self._new_event_button
+
+    def pythonWidget(self):
+        return self._python_widget
+
 
 class AbstractEventListView(AbstractDragDropListView):
     """ List View that is shown on the left side of the widget.
@@ -464,6 +432,114 @@ class AbstractEventListViewItemDelegate(AbstractDragDropModelDelegate):
         return delegate_widget
 
 
+""" PYTHON SCRIPT """
+class PythonWidget(QWidget):
+    def __init__(self, parent=None):
+        super(PythonWidget, self).__init__(parent)
+        self._filepath = ""
+
+        self.createUI()
+
+    def createUI(self):
+        layout = QVBoxLayout(self)
+
+        filepath_layout = QHBoxLayout()
+
+        # create filepath widget
+        self._filepath_widget = FileBrowserInputWidget(self)
+        self._filepath_widget.setUserFinishedEditingEvent(self.filepathChanged)
+        # create save widget
+        self._save_widget = ButtonInputWidget(title="Save", user_clicked_event=self.saveEvent)
+        self._save_widget.setFixedWidth(125)
+
+        # create is changed widget
+        # self._is_dirty_widget = BooleanInputWidget(self)
+        # self._is_dirty_widget.setFixedWidth(25)
+
+        filepath_layout.addWidget(self.filepathWidget())
+        filepath_layout.addWidget(self.saveWidget())
+        #filepath_layout.addWidget(self.isDirtyWidget())
+
+        # create Python Tab
+        python_tab = UI4.App.Tabs.CreateTab('Python', None)
+
+        self._python_tab_widget = python_tab.getWidget()
+        python_widget = self._python_tab_widget._pythonWidget
+        script_widget = python_widget._FullInteractivePython__scriptWidget
+        self._command_widget = script_widget.commandWidget()
+        self._command_widget.installEventFilter(self)
+
+        # add widgets to layout
+        layout.addWidget(python_tab)
+        layout.addLayout(filepath_layout)
+
+        # set size
+        self._filepath_widget.setFixedHeight(getFontSize() * 2)
+        self._save_widget.setFixedHeight(getFontSize() * 2)
+
+    """ PROPERTIES """
+    def filepath(self):
+        return self._filepath
+
+    def setFilePath(self, filepath):
+        self.filepathWidget().setText(filepath)
+        self.filepathChanged(self, filepath)
+        self._filepath = filepath
+        if filepath.endswith(".py"):
+            # todo update save button to valid
+            pass
+        else:
+            # todo update save button to invalid
+            pass
+
+    def getCurrentScript(self):
+        return self.commandWidget().toPlainText()
+
+    """ EVENTS """
+    def saveEvent(self, widget):
+        """ Saves the current IDE text to the current file"""
+        text = self.getCurrentScript()
+        with open(self.filepath(), "w") as file:
+            file.write(text)
+
+    def filepathChanged(self, widget, filepath):
+        """ Sets the IDE text to the filepath provided
+
+        Args:
+            filepath (str): path on disk to file
+        """
+        if filepath.endswith(".py"):
+            with open(filepath, "r") as file:
+                text_list = file.readlines()
+                text = "".join(text_list)
+        else:
+            # todo update save button to invalid
+            text = ""
+        self.commandWidget().setPlainText(text)
+
+    def eventFilter(self, obj, event, *args, **kwargs):
+        if event.type() == QEvent.Enter:
+            obj.setFocus()
+
+        return False
+
+    """ WIDGETS """
+    def filepathWidget(self):
+        return self._filepath_widget
+
+    def saveWidget(self):
+        return self._save_widget
+
+    def isDirtyWidget(self):
+        return self._is_dirty_widget
+
+    def pythonTabWidget(self):
+        return self._python_tab_widget
+
+    def commandWidget(self):
+        return self._command_widget
+
+
 """ GLOBAL EVENTS"""
 class EventWidget(AbstractEventWidget):
     """
@@ -496,6 +572,11 @@ class EventWidget(AbstractEventWidget):
             param=param)
 
         self.generateDefaultEventTypesDict()
+        # create update button
+        self._update_events_button = ButtonInputWidget(
+            self, title="Update Events", is_toggleable=False, user_clicked_event=self.installEvents)
+        self.mainWidget().layout().addWidget(self.updateEventsButton())
+        self.updateEventsButton().setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
 
         # load events
         self.loadEventsDataFromParam()
@@ -505,6 +586,8 @@ class EventWidget(AbstractEventWidget):
         self.eventsWidget().setHeaderItemDeleteEvent(self.removeItemEvent)
         self.eventsWidget().setHeaderItemEnabledEvent(self._installEvents)
         self.eventsWidget().setHeaderItemTextChangedEvent(self.eventTypeChanged)
+
+        self.eventsWidget().setHeaderItemSelectedEvent(self.updateScriptWidget)
 
     """ Node Disabled / Deleted """
     def __nodeDeleteDisable(self, *args, **kwargs):
@@ -624,7 +707,7 @@ class EventWidget(AbstractEventWidget):
         # passed all checks
         return True
 
-    """ EVENTS """
+    """ EVENTS DATA """
     def defaultEventsData(self):
         return self._default_events_data
 
@@ -667,6 +750,16 @@ class EventWidget(AbstractEventWidget):
         self._events_data = events_data
 
     """ EVENTS """
+    def updateScriptWidget(self, item, enabled):
+        """ When the user changes the selected item, this will update the current script
+
+        Args:
+            item (AbstractEventListViewItem):
+            enabled (bool):
+        """
+        if enabled:
+            self.setCurrentScript(item.getArg("script"))
+
     def eventTypeChanged(self, item, old_value, new_value):
         """
         When the user updates the event_type by editing the views
@@ -702,6 +795,42 @@ class EventWidget(AbstractEventWidget):
             item.setArg("filepath", "")
             self.updateEventsData()
             self.eventsWidget().updateDelegateDisplay()
+
+    def installEvents(self, *args):
+        """
+        In charge of installing / uninstalling events.
+
+        This should be called everytime the user hits the update button
+        todo
+            * should this be a user input?  Or dynamically updating?
+            * uninstall event filters
+            * items need enabled / disabled flag to call
+        """
+        events_dict = self.eventsData()
+        for key in events_dict:
+            event_data = events_dict[key]
+            enabled = event_data['enabled']
+            event_type = event_data["name"]
+
+            #if event_type in self.eventsData():
+            # TODO If already registered creates warning
+            try:
+                Utils.EventModule.RegisterCollapsedHandler(
+                    self.eventHandler, event_type, enabled=enabled
+                )
+            except ValueError:
+                # pass if the handler exists
+                pass
+
+        # save to param
+        self.saveEventsData()
+
+    def _installEvents(self, item, enabled):
+        """
+        Wrapper for installEvents so that it can be used when the user
+        disabled an event.
+        """
+        self.installEvents()
 
     @classmethod
     def test(cls, instance, *args, **kwargs):
@@ -771,6 +900,10 @@ class EventWidget(AbstractEventWidget):
 
         # update events?
         Utils.EventModule.ProcessAllEvents()
+
+    """ WIDGETS """
+    def updateEventsButton(self):
+        return self._update_events_button
 
 
 class EventListView(AbstractEventListView):
@@ -965,9 +1098,11 @@ class ScriptInputWidget(DynamicArgsInputWidget):
         events_widget = getWidgetAncestor(widget, EventWidget)
         python_widget = events_widget.python_widget
         """
-        events_widget = getWidgetAncestor(self, UserInputMainWidget)
-        events_widget.item().setArg("script", self.text())
-        #events_widget.item().setScript(self.text())
+        input_widget = getWidgetAncestor(self, UserInputMainWidget)
+        input_widget.item().setArg("script", self.text())
+
+        events_widget = getWidgetAncestor(self, EventWidget)
+        events_widget.setCurrentScript(self.text())
 
 
 class DynamicArgsWidget(QWidget):
@@ -1037,19 +1172,3 @@ class DynamicArgsWidget(QWidget):
         self._event_type = event_type
 
 
-class PythonWidget(QWidget):
-    def __init__(self, parent=None):
-        super(PythonWidget, self).__init__(parent)
-
-        layout = QVBoxLayout(self)
-        python_tab = UI4.App.Tabs.CreateTab('Python', None)
-
-        layout.addWidget(python_tab)
-
-        widget = python_tab.getWidget()
-        python_widget = widget._pythonWidget
-        script_widget = python_widget._FullInteractivePython__scriptWidget
-        self.command_widget = script_widget.commandWidget()
-
-    def getCommandWidget(self):
-        return self.command_widget

@@ -1,3 +1,4 @@
+
 try:
     import NodegraphAPI
 except ModuleNotFoundError:
@@ -250,9 +251,9 @@ def hideEngineersGSVUI():
     """
     from Katana import UI4
     from UI4.Widgets import VariablesPopupButton
+    from .widgetutils import katanaMainWindow
 
-    main_window = UI4.App.MainWindow.CurrentMainWindow()
-    main_layout = main_window._KatanaWindow__topLayout
+    main_layout = katanaMainWindow()._KatanaWindow__topLayout
 
     for index in range(main_layout.count()):
         widget = main_layout.itemAt(index).widget()
