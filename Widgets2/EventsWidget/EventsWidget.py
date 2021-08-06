@@ -23,6 +23,12 @@ EventWidget --> (ShojiLayout)
     |        |                    | -* DynamicArgsInputWidget
     |        | -- _update_events_button --> (ButtonInputWidget)
     | -- python_widget --> (PythonWidget)
+        |-- VBoxLayout
+            |-- QHBoxLayout
+            |    |-- filepath_widget --> (FileBrowserInputWidget)
+            |    |-- save_widget --> (ButtonInputWidget)
+            |-- python_tab --> (PythonTab)
+                    main widget to get can be gotten through pythonWidget()
 TODO:
     * PYTHON Script (Moving this to have the option between SCRIPT and FILE modes)
         Store hash in the events_data, and use that hash to get a parameter
@@ -519,7 +525,17 @@ class PythonWidget(QWidget):
 
     def eventFilter(self, obj, event, *args, **kwargs):
         if event.type() == QEvent.Enter:
+            print("enter")
             obj.setFocus()
+        # for some reason the leave/re-enter doesn't actually set the focus...
+        # if event.type() == QEvent.HoverEnter:
+        #     print('hover enter')
+        #
+        # if event.type() == QEvent.HoverLeave:
+        #     print('hover leave')
+        # if event.type() == QEvent.Leave:
+        #     print('leave')
+        #    #obj.clearFocus()
 
         return False
 

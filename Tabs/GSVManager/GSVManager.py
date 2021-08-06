@@ -91,7 +91,7 @@ from cgwidgets.widgets import (
     ShojiModelViewWidget,
     StringInputWidget)
 from cgwidgets.utils import getWidgetAncestor, convertScriptToString, clearLayout
-from cgwidgets.settings import attrs
+from cgwidgets.settings import attrs, iColor
 
 from Widgets2 import EventWidget, AbstractEventListViewItemDelegate, AbstractEventListView, AbstractEventWidget
 from Utils2 import gsvutils, getFontSize, paramutils
@@ -952,11 +952,11 @@ class EventsWidget(AbstractEventWidget):
     def update(self):
         """ Clears the model and repopulates it """
         # clear model
-        self.clearModel()
+        self.eventsWidget().clearModel()
 
         # get GSVs
         for gsv in list(json.loads(self.param().getValue(0)).keys()):
-            self.insertShojiWidget(0, column_data={"name": str(gsv)})
+            self.eventsWidget().insertShojiWidget(0, column_data={"name": str(gsv)})
 
 
 class GSVEventsListView(AbstractEventListView):
@@ -1128,8 +1128,10 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
             break set flag available to update."""
 
             # create widget
-            widget = display_widget.createNewOptionEvent(option=str(option), script=str(data["filepath"]), enabled=data["enabled"])
+            widget = display_widget.createNewOptionEvent(
+                option=str(option), script=str(data["filepath"]), enabled=data["enabled"])
 
+            widget.setCurrentOption(str(option))
             # parent.model().setItemEnabled(item, option["enabled"])
             # check if cached script is dirty or not
             EventsWidget.isScriptDirty(data, widget)
@@ -1183,6 +1185,7 @@ class GSVEvent(LabelledInputWidget):
         self._current_option = option
         self._script = script
         self._is_script_dirty = False
+        self._is_editing_active = False
 
         # setup view widget
         view_widget = ListInputWidget()
@@ -1204,6 +1207,11 @@ class GSVEvent(LabelledInputWidget):
         self.mainWidget().insertWidget(2, self._buttons_main_widget)
         self.mainWidget().setCollapsible(2, False)
         self.mainWidget().setStretchFactor(2, 0)
+
+        # add show script button
+        self._show_script_button = ButtonInputWidget(
+            title="py", user_clicked_event=self.showScript, is_toggleable=True, flag=False)
+        self.__insertButton(self._show_script_button, "Click to edit this script")
 
         # add disable script button
         if enabled:
@@ -1265,6 +1273,9 @@ class GSVEvent(LabelledInputWidget):
     def scriptWidget(self):
         return self.delegateWidget()
 
+    def showScriptWidget(self):
+        return self._show_script_button
+
     def disableScriptButton(self):
         return self._disable_script_button
 
@@ -1294,6 +1305,20 @@ class GSVEvent(LabelledInputWidget):
         # remove widget
         self.deleteLater()
         self.setParent(None)
+
+    def showScript(self, *args):
+        """ Show the current script in the Python tab."""
+        events_widget = getWidgetAncestor(self, EventsWidget)
+        events_widget.setCurrentScript(self.filepath())
+
+        # disable all other scripts displays
+        # for child in self.parent().widgets().values():
+        #     child.setIsEditingActive(False)
+        #     child.showScriptWidget().setTextColor(iColor["rgba_text"])
+        #
+        # # enable this script
+        # self.setIsEditingActive(True)
+        # self.showScriptWidget().setTextColor(iColor["rgba_accept"])
 
     def cacheScript(self, widget):
         """ This will cache the script to a local value
@@ -1327,15 +1352,20 @@ class GSVEvent(LabelledInputWidget):
 
         Returns (bool):
         """
+        # TODO this is causing display bug...
+
+
         # get attrs
         events_widget = getWidgetAncestor(self, EventsWidget)
         option = self.viewWidget().text()
 
-        # check if already exists
-        if option in list(events_widget.eventsData()[events_widget.currentGSV()]["data"].keys()):
+        #check if already exists
+        if option == self.currentOption():
+            return True
+        elif option in list(events_widget.eventsData()[events_widget.currentGSV()]["data"].keys()):
             return False
-
-        return True
+        else:
+            return True
 
     def optionChangedEvent(self, widget, option):
         """
@@ -1347,11 +1377,13 @@ class GSVEvent(LabelledInputWidget):
 
         https://stackoverflow.com/questions/16475384/rename-a-dictionary-key
         """
+
         events_widget = getWidgetAncestor(self, EventsWidget)
         display_widget = events_widget.eventsWidget().delegateWidget().widget(1).getMainWidget()
 
         # preflight
         if option == "": return
+        if option == self.currentOption(): return
 
         # rename existing item
         if self.currentOption():
@@ -1360,7 +1392,7 @@ class GSVEvent(LabelledInputWidget):
             data[option] = data.pop(self.currentOption())
 
             # update DisplayGSVEventWidget
-            display_widget.widgets()[option] = display_widget.widgets()[self.currentOption()]
+            # display_widget.widgets()[option] = display_widget.widgets()[self.currentOption()]
 
         # create new event
         else:
@@ -1372,7 +1404,7 @@ class GSVEvent(LabelledInputWidget):
 
         # reset to new value
         self.setCurrentOption(option)
-
+        self.setOrigValue(option)
         # save
         events_widget.saveEventsData()
 
@@ -1398,6 +1430,10 @@ class GSVEvent(LabelledInputWidget):
 
         # save
         event_widget.saveEventsData()
+
+        # showScript
+        if self.isEditingActive():
+            self.showScript()
 
         # update script button
         self.cacheScript(None)
@@ -1443,4 +1479,12 @@ class GSVEvent(LabelledInputWidget):
     def setScript(self, script):
         self._script = script
 
+    def filepath(self):
+        return self.delegateWidget().text()
+
+    def isEditingActive(self):
+        return self._is_editing_active
+
+    def setIsEditingActive(self, enabled):
+        self._is_editing_active = enabled
 
