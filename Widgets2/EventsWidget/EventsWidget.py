@@ -85,7 +85,7 @@ from cgwidgets.widgets import (
     ShojiModelViewWidget, ShojiModelItem, OverlayInputWidget,
     ShojiLayout)
 from cgwidgets.views import AbstractDragDropListView, AbstractDragDropModelDelegate
-from cgwidgets.utils import getWidgetAncestor
+from cgwidgets.utils import getWidgetAncestor, convertScriptToString
 from cgwidgets.settings import attrs
 
 from Utils2 import paramutils, getFontSize
@@ -247,17 +247,19 @@ class AbstractEventWidget(ShojiLayout):
         """
         Creates a new event item
         """
+        # create default data
         if not column_data:
-            column_data = {"name": "<New Event>", "enabled": "True", "script": "", "filepath": ""}
+            column_data = {
+                "name": "<New Event>",
+                "enabled": "True",
+                "is_script": "True",
+                "script": "",
+                "filepath": ""}
+
         # create model item
         new_index = self.eventsWidget().insertShojiWidget(0, column_data=column_data)
         item = new_index.internalPointer()
-
-        # update script / enabled args
-        for arg in ["enabled", "filepath", "script"]:
-            item.setArg(arg, column_data[arg])
-            if arg == "script":
-                self.eventsWidget().model().setItemEnabled(item, column_data["enabled"])
+        self.eventsWidget().model().setItemEnabled(item, column_data["enabled"])
 
     def loadEventsDataFromParam(self):
         # TODO clear all items
@@ -315,10 +317,23 @@ class AbstractEventWidget(ShojiLayout):
         new_data = json.dumps(events_data)
         self.param().setValue(new_data, 0)
 
+    # virtual
     def updateEventsData(self):
         """ Needs to be overwritten, this will be called before every
         call to eventsData()"""
         return
+
+    # virtual
+    def cacheScriptToParam(self, script):
+        """ Caches the script provided to a parameter
+
+        Args:
+            script (str): plain text of current text in the Python Widget
+
+        Note:
+            This function is virtual and needs to be overridden
+            """
+        print("override this...")
 
     """ PROPERTIES """
     def node(self):
@@ -440,9 +455,12 @@ class AbstractEventListViewItemDelegate(AbstractDragDropModelDelegate):
 
 """ PYTHON SCRIPT """
 class PythonWidget(QWidget):
+    SCRIPT = 0
+    FILE = 1
     def __init__(self, parent=None):
         super(PythonWidget, self).__init__(parent)
         self._filepath = ""
+        self._mode = PythonWidget.SCRIPT
 
         self.createUI()
 
@@ -458,13 +476,8 @@ class PythonWidget(QWidget):
         self._save_widget = ButtonInputWidget(title="Save", user_clicked_event=self.saveEvent)
         self._save_widget.setFixedWidth(125)
 
-        # create is changed widget
-        # self._is_dirty_widget = BooleanInputWidget(self)
-        # self._is_dirty_widget.setFixedWidth(25)
-
         filepath_layout.addWidget(self.filepathWidget())
         filepath_layout.addWidget(self.saveWidget())
-        #filepath_layout.addWidget(self.isDirtyWidget())
 
         # create Python Tab
         python_tab = UI4.App.Tabs.CreateTab('Python', None)
@@ -501,12 +514,24 @@ class PythonWidget(QWidget):
     def getCurrentScript(self):
         return self.commandWidget().toPlainText()
 
+    def mode(self):
+        return self._mode
+
+    def setMode(self, mode):
+        self._mode = mode
+
     """ EVENTS """
     def saveEvent(self, widget):
         """ Saves the current IDE text to the current file"""
         text = self.getCurrentScript()
-        with open(self.filepath(), "w") as file:
-            file.write(text)
+        if self.mode() == PythonWidget.FILE:
+
+            with open(self.filepath(), "w") as file:
+                file.write(text)
+
+        elif self.mode() == PythonWidget.SCRIPT:
+            events_widget = getWidgetAncestor(self, AbstractEventWidget)
+            events_widget.cacheScriptToParam(text)
 
     def filepathChanged(self, widget, filepath):
         """ Sets the IDE text to the filepath provided
@@ -544,9 +569,6 @@ class PythonWidget(QWidget):
 
     def saveWidget(self):
         return self._save_widget
-
-    def isDirtyWidget(self):
-        return self._is_dirty_widget
 
     def pythonTabWidget(self):
         return self._python_tab_widget
@@ -665,13 +687,9 @@ class EventWidget(AbstractEventWidget):
         """
         # Get Node
         try:
-            print("try")
             node_name = user_data["node"]
-            print(node_name)
             node = NodegraphAPI.GetNode(node_name)
-            print(node)
         except KeyError:
-            print("fail")
             node = None
 
         for key in event_data.keys():
@@ -760,11 +778,29 @@ class EventWidget(AbstractEventWidget):
                 """ Script needs to be down here to ensure that a SCRIPT attr exists """
                 events_data[event_name]["filepath"] = child.getArg("filepath")
                 events_data[event_name]["script"] = child.getArg("script")
+                events_data[event_name]["is_script"] = child.getArg("is_script")
                 events_data[event_name]["enabled"] = child.isEnabled()
 
         self._events_data = events_data
 
     """ EVENTS """
+    def cacheScriptToParam(self, script):
+        """ This will cache the script to a local value
+
+        Note: The script must be a valid file in order for it to cache
+        """
+        # update script
+        selected_indexes = self.eventsWidget().getAllSelectedIndexes()
+        if 0 < len(selected_indexes):
+            item = selected_indexes[0].internalPointer()
+            event_type = item.getArg("name")
+
+            if event_type in self.defaultEventsData():
+                item.setArg("script", script)
+
+                # save
+                self.saveEventsData()
+
     def updateScriptWidget(self, item, enabled):
         """ When the user changes the selected item, this will update the current script
 
@@ -808,6 +844,7 @@ class EventWidget(AbstractEventWidget):
             item.setArg("script", "")
             item.setArg("enabled", "")
             item.setArg("filepath", "")
+            item.setArg("is_script", "")
             self.updateEventsData()
             self.eventsWidget().updateDelegateDisplay()
 
@@ -870,17 +907,20 @@ class EventWidget(AbstractEventWidget):
             user_event_data = self.eventsData(from_param=True)
             if event_type in list(user_event_data.keys()):
                 user_data = user_event_data[str(event_type)]
-                filepath = user_data['script']
+                filepath = user_data["filepath"]
 
                 # check params
                 if not self.__checkUserData(event_data, user_data): return
-                if not filepath: return
 
                 # run script
-                if os.path.exists(filepath):
-                    with open(filepath) as script_descriptor:
-                        event_data['self'] = self.node().getParent()
-                        exec(script_descriptor.read(), event_data)
+                if user_data["is_script"]:
+                    exec(user_data["script"], globals(), event_data)
+                # run as filepath
+                elif not user_data["is_script"]:
+                    if os.path.exists(filepath):
+                        with open(filepath) as script_descriptor:
+                            event_data['self'] = self.node().getParent()
+                            exec(script_descriptor.read(), event_data)
 
     def removeItemEvent(self, item):
         item.setIsEnabled(False)
@@ -1000,32 +1040,44 @@ class UserInputMainWidget(QWidget):
         # preflight
         if not item: return
 
+        events_widget = getWidgetAncestor(widget, EventWidget)
         # set item
-        events_widget = widget.getMainWidget()
-        events_widget.setItem(item)
+        this = widget.getMainWidget()
+        this.setItem(item)
 
         # update event type
         event_type = item.getArg("name")
 
         # set script widget to label.item().getScript()
-        script_location = item.getArg("script")
-        events_widget.script_widget.setText(script_location)
+        script_location = item.getArg("filepath")
+
+        # update if script
+        if item.getArg("is_script"):
+            this.script_widget.setMode(PythonWidget.SCRIPT)
+            events_widget.pythonWidget().setMode(PythonWidget.SCRIPT)
+            events_widget.pythonWidget().commandWidget().setText(item.getArg("script"))
+        # update if file
+        elif not item.getArg("is_script"):
+            this.script_widget.setMode(PythonWidget.FILE)
+            events_widget.pythonWidget().setMode(PythonWidget.FILE)
+            this.script_widget.setText(script_location)
+
         # TODO Update Script Text
         """
-        events_widget = getWidgetAncestor(widget, EventWidget)
-        python_widget = events_widget.python_widget"""
-        events_widget.script_widget.resetSliderPositionToDefault()
+        this = getWidgetAncestor(widget, EventWidget)
+        python_widget = this.python_widget"""
+        this.script_widget.resetSliderPositionToDefault()
 
         """dynamic_args_widget --> DynamicArgsWidget"""
         # update dynamic args widget
-        events_widget.dynamic_args_widget.event_type = event_type
-        events_widget.dynamic_args_widget.update()
+        this.dynamic_args_widget.event_type = event_type
+        this.dynamic_args_widget.update()
 
         # set dynamic args values
         for arg in item.getArgsList():
             try:
                 arg_value = item.getArg(arg)
-                events_widget.dynamic_args_widget.widget_dict[arg].setText(arg_value)
+                this.dynamic_args_widget.widget_dict[arg].setText(arg_value)
             except KeyError:
                 pass
 
@@ -1082,30 +1134,37 @@ class ScriptInputWidget(DynamicArgsInputWidget):
     """
     The script input widget
     """
-
-    FILE = 0
-    SCRIPT = 1
     def __init__(self, parent=None):
         name = 'script'
         note = "Click to toggle between SCRIPT and FILE modes"
         super(ScriptInputWidget, self).__init__(parent, name=name, note=note)
-        self.setMode(ScriptInputWidget.SCRIPT)
         self._toggle_mode_button = ButtonInputWidget(title="script", user_clicked_event=self.toggleMode)
         self.setViewWidget(self._toggle_mode_button)
+        self._mode = PythonWidget.SCRIPT
 
     def mode(self):
         return self._mode
 
     def setMode(self, mode):
+        # set mode
         self._mode = mode
+        events_widget = getWidgetAncestor(self, EventWidget)
+        events_widget.pythonWidget().setMode(mode)
 
-    def toggleMode(self, widget):
-        if self.mode() == ScriptInputWidget.FILE:
-            self.setMode(ScriptInputWidget.SCRIPT)
-            self.viewWidget().setText("script")
-        elif self.mode() == ScriptInputWidget.SCRIPT:
-            self.setMode(ScriptInputWidget.FILE)
+        # update display / item data
+        input_widget = getWidgetAncestor(self, UserInputMainWidget)
+        if self.mode() == PythonWidget.FILE:
             self.viewWidget().setText("file")
+            input_widget.item().setArg("is_script", False)
+        elif self.mode() == PythonWidget.SCRIPT:
+            self.viewWidget().setText("script")
+            input_widget.item().setArg("is_script", True)
+
+    def toggleMode(self, *args):
+        if self.mode() == PythonWidget.FILE:
+            self.setMode(PythonWidget.SCRIPT)
+        elif self.mode() == PythonWidget.SCRIPT:
+            self.setMode(PythonWidget.FILE)
 
     def userInputEvent(self, widget, value):
         # TODO Update Python Widget text
@@ -1114,10 +1173,12 @@ class ScriptInputWidget(DynamicArgsInputWidget):
         python_widget = events_widget.python_widget
         """
         input_widget = getWidgetAncestor(self, UserInputMainWidget)
-        input_widget.item().setArg("script", self.text())
 
-        events_widget = getWidgetAncestor(self, EventWidget)
-        events_widget.setCurrentScript(self.text())
+        if self.mode() == PythonWidget.FILE:
+            input_widget.item().setArg("filepath", self.text())
+
+            events_widget = getWidgetAncestor(self, EventWidget)
+            events_widget.setCurrentScript(self.text())
 
 
 class DynamicArgsWidget(QWidget):

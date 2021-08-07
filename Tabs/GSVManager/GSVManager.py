@@ -1295,6 +1295,7 @@ class GSVEvent(LabelledInputWidget):
         self.setIsEditingActive(True)
         self.showScriptWidget().setTextColor(iColor["rgba_selected"])
 
+    # todo move this to events widget
     def cacheScript(self, widget):
         """ This will cache the script to a local value
 
