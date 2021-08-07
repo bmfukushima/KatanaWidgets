@@ -895,11 +895,10 @@ class EventsWidget(AbstractEventWidget):
 
     """ EVENTS """
     def deleteGSVEvent(self, item):
-        """
-        When the user deletes a GSV event, this will remove the meta data.
-        """
-        gsv = item.columnData()['name']
+        """When the user deletes a GSV event, this will remove the meta data."""
 
+        gsv = item.columnData()['name']
+        if gsv not in list(self.eventsData().keys()): return
         # delete data
         del self.eventsData()[gsv]
         self.saveEventsData()
