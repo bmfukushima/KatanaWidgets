@@ -16,7 +16,7 @@ class EventsTab(UI4.Tabs.BaseTab):
     NAME = 'Global Events'
     def __init__(self, parent=None):
         super(EventsTab, self).__init__(parent)
-        self._param_location = "KatanaBebop.GlobalEventsData.data"
+        self._param_location = "KatanaBebop.GlobalEventsData"
 
         QVBoxLayout(self)
         # setup main widget

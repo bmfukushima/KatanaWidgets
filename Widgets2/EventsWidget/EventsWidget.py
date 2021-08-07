@@ -164,7 +164,8 @@ class AbstractEventWidget(ShojiLayout):
         if not node:
             node = NodegraphAPI.GetRootNode()
         if not node.getParameter(param):
-            paramutils.createParamAtLocation(param, node, paramutils.STRING, initial_value="{}")
+            paramutils.createParamAtLocation(param + ".data", node, paramutils.STRING, initial_value="{}")
+            paramutils.createParamAtLocation(param + ".scripts", node, paramutils.GROUP)
             #node.getParameters().createChildString(param, "")
 
         self._param_location = param
@@ -264,7 +265,7 @@ class AbstractEventWidget(ShojiLayout):
     def loadEventsDataFromParam(self):
         # TODO clear all items
         try:
-            json_data = json.loads(self.node().getParameter(self.paramLocation()).getValue(0))
+            json_data = json.loads(self.paramData().getValue(0))
         except ValueError:
             return
 
@@ -299,7 +300,7 @@ class AbstractEventWidget(ShojiLayout):
         """
         # load from parameters
         if from_param:
-            return json.loads(self.node().getParameter(self.paramLocation()).getValue(0))
+            return json.loads(self.paramData().getValue(0))
         # load from current GUI (unsaved) values
         else:
             self.updateEventsData()
@@ -315,7 +316,7 @@ class AbstractEventWidget(ShojiLayout):
 
         # set data
         new_data = json.dumps(events_data)
-        self.param().setValue(new_data, 0)
+        self.paramData().setValue(new_data, 0)
 
     # virtual
     def updateEventsData(self):
@@ -344,6 +345,12 @@ class AbstractEventWidget(ShojiLayout):
 
     def param(self):
         return self.node().getParameter(self.paramLocation())
+
+    def paramData(self):
+        return self.node().getParameter(self.paramLocation() + ".data")
+
+    def paramScripts(self):
+        return self.node().getParameter(self.paramLocation() + ".scripts")
 
     def paramLocation(self):
         return self._param_location
@@ -389,6 +396,10 @@ class AbstractEventListView(AbstractDragDropListView):
 
     def contextMenuEvent(self, event):
         index = self.getIndexUnderCursor()
+        item = index.internalPointer()
+
+        for arg in item.getArgsList():
+            print("{arg} == ".format(arg=arg), item.getArg(arg))
         # create menu
         menu = QMenu(self)
         menu.addAction('test"')
@@ -525,7 +536,6 @@ class PythonWidget(QWidget):
         """ Saves the current IDE text to the current file"""
         text = self.getCurrentScript()
         if self.mode() == PythonWidget.FILE:
-
             with open(self.filepath(), "w") as file:
                 file.write(text)
 
@@ -623,8 +633,6 @@ class EventWidget(AbstractEventWidget):
         self.eventsWidget().setHeaderItemDeleteEvent(self.removeItemEvent)
         self.eventsWidget().setHeaderItemEnabledEvent(self._installEvents)
         self.eventsWidget().setHeaderItemTextChangedEvent(self.eventTypeChanged)
-
-        self.eventsWidget().setHeaderItemSelectedEvent(self.updateScriptWidget)
 
     """ Node Disabled / Deleted """
     def __nodeDeleteDisable(self, *args, **kwargs):
@@ -796,20 +804,10 @@ class EventWidget(AbstractEventWidget):
             event_type = item.getArg("name")
 
             if event_type in self.defaultEventsData():
-                item.setArg("script", script)
+                self.node().getParameter(item.getArg("script")).setValue(str(script), 0)
 
                 # save
                 self.saveEventsData()
-
-    def updateScriptWidget(self, item, enabled):
-        """ When the user changes the selected item, this will update the current script
-
-        Args:
-            item (AbstractEventListViewItem):
-            enabled (bool):
-        """
-        if enabled:
-            self.setCurrentScript(item.getArg("script"))
 
     def eventTypeChanged(self, item, old_value, new_value):
         """
@@ -841,10 +839,13 @@ class EventWidget(AbstractEventWidget):
         else:
             item.clearArgsList()
             item.setArg("name", new_value)
-            item.setArg("script", "")
             item.setArg("enabled", "")
             item.setArg("filepath", "")
             item.setArg("is_script", "")
+            param_location = self.paramLocation() + ".scripts." + new_value
+            paramutils.createParamAtLocation(param_location, self.node(), paramutils.STRING, initial_value="")
+            item.setArg("script", param_location)
+
             self.updateEventsData()
             self.eventsWidget().updateDelegateDisplay()
 
@@ -914,7 +915,8 @@ class EventWidget(AbstractEventWidget):
 
                 # run script
                 if user_data["is_script"]:
-                    exec(user_data["script"], globals(), event_data)
+                    script = self.node().getParameter(user_data["script"]).getValue(0)
+                    exec(script, globals(), event_data)
                 # run as filepath
                 elif not user_data["is_script"]:
                     if os.path.exists(filepath):
@@ -1049,18 +1051,24 @@ class UserInputMainWidget(QWidget):
         event_type = item.getArg("name")
 
         # set script widget to label.item().getScript()
-        script_location = item.getArg("filepath")
+
 
         # update if script
         if item.getArg("is_script"):
             this.script_widget.setMode(PythonWidget.SCRIPT)
             events_widget.pythonWidget().setMode(PythonWidget.SCRIPT)
-            events_widget.pythonWidget().commandWidget().setText(item.getArg("script"))
+            this.script_widget.setText(item.getArg("script"))
+            try:
+                script_text = events_widget.node().getParameter(item.getArg("script")).getValue(0)
+                events_widget.pythonWidget().commandWidget().setText(script_text)
+            except AttributeError:
+                pass
+
         # update if file
         elif not item.getArg("is_script"):
             this.script_widget.setMode(PythonWidget.FILE)
             events_widget.pythonWidget().setMode(PythonWidget.FILE)
-            this.script_widget.setText(script_location)
+            this.script_widget.setText(item.getArg("filepath"))
 
         # TODO Update Script Text
         """
@@ -1156,9 +1164,13 @@ class ScriptInputWidget(DynamicArgsInputWidget):
         if self.mode() == PythonWidget.FILE:
             self.viewWidget().setText("file")
             input_widget.item().setArg("is_script", False)
+            self.setText(input_widget.item().getArg("filepath"))
+            events_widget.pythonWidget().setFilePath(input_widget.item().getArg("filepath"))
         elif self.mode() == PythonWidget.SCRIPT:
             self.viewWidget().setText("script")
             input_widget.item().setArg("is_script", True)
+            self.setText(input_widget.item().getArg("script"))
+            events_widget.pythonWidget().setFilePath(input_widget.item().getArg("script"))
 
     def toggleMode(self, *args):
         if self.mode() == PythonWidget.FILE:
@@ -1178,6 +1190,13 @@ class ScriptInputWidget(DynamicArgsInputWidget):
             input_widget.item().setArg("filepath", self.text())
 
             events_widget = getWidgetAncestor(self, EventWidget)
+            events_widget.setCurrentScript(self.text())
+
+        elif self.mode() == PythonWidget.SCRIPT:
+            input_widget.item().setArg("script", self.text())
+            events_widget = getWidgetAncestor(self, EventWidget)
+            # todo load / create?
+            #events_widget.paramData()
             events_widget.setCurrentScript(self.text())
 
 

@@ -96,7 +96,7 @@ from cgwidgets.settings import attrs, iColor
 from Widgets2 import EventWidget, AbstractEventListViewItemDelegate, AbstractEventListView, AbstractEventWidget
 from Utils2 import gsvutils, getFontSize, paramutils
 
-_PARAM_LOCATION = "KatanaBebop.GSVEventsData.data"
+_PARAM_LOCATION = "KatanaBebop.GSVEventsData"
 
 
 class GSVManager(UI4.Tabs.BaseTab):
@@ -156,7 +156,7 @@ class GSVManager(UI4.Tabs.BaseTab):
     def nodeGraphLoad(self, args):
         """ Reload the View Widget when a new Katana scene is opened"""
         # reload events data
-        events_data = json.loads(self.eventsWidget().param().getValue(0))
+        events_data = json.loads(self.eventsWidget().paramData().getValue(0))
         self.eventsWidget().setEventsData(events_data)
         # update variable text
         self.editWidget().setText("<variables>")
@@ -850,7 +850,7 @@ class EventsWidget(AbstractEventWidget):
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
         # populate
-        self._events_data = json.loads(self.param().getValue(0))
+        self._events_data = json.loads(self.paramData().getValue(0))
         gsv_list = list(self.eventsData().keys())
         for gsv in gsv_list:
             self.eventsWidget().insertShojiWidget(0, column_data={"name": str(gsv)})
@@ -954,7 +954,7 @@ class EventsWidget(AbstractEventWidget):
         self.eventsWidget().clearModel()
 
         # get GSVs
-        for gsv in list(json.loads(self.param().getValue(0)).keys()):
+        for gsv in list(json.loads(self.paramData().getValue(0)).keys()):
             self.eventsWidget().insertShojiWidget(0, column_data={"name": str(gsv)})
 
 
@@ -1074,7 +1074,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         display_widget = widget.getMainWidget()
         gsv = item.columnData()['name']
 
-        if gsv not in json.loads(events_widget.param().getValue(0)).keys(): return
+        if gsv not in json.loads(events_widget.paramData().getValue(0)).keys(): return
 
         # update GSV
         events_widget.setCurrentGSV(gsv)
@@ -1084,7 +1084,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         clearLayout(display_widget.layout(), start=2)
 
         # update display
-        events_dict = json.loads(events_widget.param().getValue(0))[gsv]["data"]
+        events_dict = json.loads(events_widget.paramData().getValue(0))[gsv]["data"]
 
         for option, data in events_dict.items():
             # todo: check file status
