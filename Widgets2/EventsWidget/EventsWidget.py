@@ -525,7 +525,6 @@ class PythonWidget(QWidget):
 
     def eventFilter(self, obj, event, *args, **kwargs):
         if event.type() == QEvent.Enter:
-            print("enter")
             obj.setFocus()
         # for some reason the leave/re-enter doesn't actually set the focus...
         # if event.type() == QEvent.HoverEnter:

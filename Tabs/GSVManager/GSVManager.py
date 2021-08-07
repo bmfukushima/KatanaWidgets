@@ -1063,41 +1063,6 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
     def widgets(self):
         return self._widgets
 
-    # @staticmethod
-    # def updateGUI(parent, widget, item):
-    #     """ Updates the Dynamic display for the current GSV Event shown to the user"""
-    #     # preflight
-    #     if not item: return
-    #
-    #     # get attrs
-    #     display_widget = widget.getMainWidget()
-    #     gsv = item.columnData()['name']
-    #
-    #     # update GSV
-    #     print(parent)
-    #     print(widget)
-    #     print(item)
-    #
-    #     parent.setCurrentGSV(gsv)
-    #     display_widget.setGSV(gsv)
-    #
-    #     # remove old display
-    #     clearLayout(display_widget.layout(), start=2)
-    #
-    #     # update display
-    #     events_dict = json.loads(parent.param().getValue(0))[gsv]["data"]
-    #     for option, data in events_dict.items():
-    #         # todo: check file status
-    #         """compare script being uploaded to the "script" arg and if they are not the same,
-    #         break set flag available to update."""
-    #
-    #         # create widget
-    #         widget = display_widget.createNewOptionEvent(option=str(option), script=str(data["filepath"]), enabled=data["enabled"])
-    #
-    #         # parent.model().setItemEnabled(item, option["enabled"])
-    #         # check if cached script is dirty or not
-    #         EventsWidget.isScriptDirty(data, widget)
-
     @staticmethod
     def updateGUI(parent, widget, item):
         """ Updates the Dynamic display for the current GSV Event shown to the user"""
@@ -1130,8 +1095,15 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
             # create widget
             widget = display_widget.createNewOptionEvent(
                 option=str(option), script=str(data["filepath"]), enabled=data["enabled"])
-
             widget.setCurrentOption(str(option))
+            display_widget.widgets()[option] = widget
+
+            # check to see if script is active
+            if str(data["filepath"]) == events_widget.pythonWidget().filepath():
+                widget.updateScriptDisplayFlag()
+                # auto update?
+                # events_widget.pythonWidget().setFilePath(data["filepath"])
+                # widget.showScript()
             # parent.model().setItemEnabled(item, option["enabled"])
             # check if cached script is dirty or not
             EventsWidget.isScriptDirty(data, widget)
@@ -1311,14 +1283,18 @@ class GSVEvent(LabelledInputWidget):
         events_widget = getWidgetAncestor(self, EventsWidget)
         events_widget.setCurrentScript(self.filepath())
 
-        # disable all other scripts displays
-        # for child in self.parent().widgets().values():
-        #     child.setIsEditingActive(False)
-        #     child.showScriptWidget().setTextColor(iColor["rgba_text"])
-        #
-        # # enable this script
-        # self.setIsEditingActive(True)
-        # self.showScriptWidget().setTextColor(iColor["rgba_accept"])
+        self.updateScriptDisplayFlag()
+
+    def updateScriptDisplayFlag(self):
+        """ Updates the color of all of the show script display buttons"""
+        #disable all other scripts displays
+        for child in self.parent().widgets().values():
+            child.setIsEditingActive(False)
+            child.showScriptWidget().setTextColor(iColor["rgba_text"])
+
+        # enable this script
+        self.setIsEditingActive(True)
+        self.showScriptWidget().setTextColor(iColor["rgba_selected"])
 
     def cacheScript(self, widget):
         """ This will cache the script to a local value
@@ -1352,9 +1328,6 @@ class GSVEvent(LabelledInputWidget):
 
         Returns (bool):
         """
-        # TODO this is causing display bug...
-
-
         # get attrs
         events_widget = getWidgetAncestor(self, EventsWidget)
         option = self.viewWidget().text()
@@ -1391,6 +1364,7 @@ class GSVEvent(LabelledInputWidget):
             data = events_widget.eventsData()[events_widget.currentGSV()]["data"]
             data[option] = data.pop(self.currentOption())
 
+            # todo not sure why I had this... but it was breaking it...
             # update DisplayGSVEventWidget
             # display_widget.widgets()[option] = display_widget.widgets()[self.currentOption()]
 
