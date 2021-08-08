@@ -15,7 +15,7 @@ EventWidget --> (ShojiLayout)
     |        | -- newEventButton() --> (QPushButton)
     |        | -- events_widget --> (ShojiModelViewWidget)
     |        |    | -- label type (EventsLabelWidget --> ShojiLabelWidget)
-    |        |    | -- Dynamic Widget (UserInputMainWidget --> QWidget)
+    |        |    | -- Dynamic Widget (EventDelegateWidget --> QWidget)
     |        |        | -- VBox
     |        |            | -- events_type_menu ( EventTypeInputWidget)
     |        |            | -- script_widget (DynamicArgsInputWidget)
@@ -37,7 +37,7 @@ TODO:
         - update events_data to have a "script_mode" option
         - Get Script Text
         - Update text in Python Widget
-            UserInputMainWidget --> updateGUI
+            EventDelegateWidget --> updateGUI
             ScriptInputWidget --> updateUserInput
             # SAVE TEXT
         - Update events call to handle args...
@@ -139,7 +139,7 @@ class AbstractEventWidget(ShojiLayout):
         | -- VBox
             | -- events_widget --> (ShojiModelViewWidget)
                 | -- label type (EventsLabelWidget --> ShojiLabelWidget)
-                | -- Dynamic Widget (UserInputMainWidget --> QWidget)
+                | -- Dynamic Widget (EventDelegateWidget --> QWidget)
                     | -- VBox
                         | -- events_type_menu ( EventTypeInputWidget)
                         | -- script_widget (DynamicArgsInputWidget)
@@ -471,18 +471,20 @@ class PythonWidget(QWidget):
     def __init__(self, parent=None):
         super(PythonWidget, self).__init__(parent)
         self._filepath = ""
+        self._previous_filepaths = []
         self._mode = PythonWidget.SCRIPT
 
         self.createUI()
 
     def createUI(self):
         layout = QVBoxLayout(self)
-
         filepath_layout = QHBoxLayout()
 
         # create filepath widget
-        self._filepath_widget = FileBrowserInputWidget(self)
+        self._filepath_widget = ListInputWidget(self)
+        self._filepath_widget.setCleanItemsFunction(self.showPreviousFilepaths)
         self._filepath_widget.setUserFinishedEditingEvent(self.filepathChanged)
+        self._filepath_widget.filter_results = False
         # create save widget
         self._save_widget = ButtonInputWidget(title="Save", user_clicked_event=self.saveEvent)
         self._save_widget.setFixedWidth(125)
@@ -507,24 +509,52 @@ class PythonWidget(QWidget):
         self._filepath_widget.setFixedHeight(getFontSize() * 2)
         self._save_widget.setFixedHeight(getFontSize() * 2)
 
+    """ UTILS """
+    def previousFilepaths(self):
+        return self._previous_filepaths
+
     """ PROPERTIES """
     def filepath(self):
         return self._filepath
 
     def setFilePath(self, filepath):
+        """ Sets the current script that is displayed
+
+        Args:
+            filepath (str): Depending on the current mode set (self.mode()),
+                this can either be the name of a param located under
+                eventsWidget.paramScripts().getChild(filepath)
+                    OR
+                a path on disk to a file. """
         self.filepathWidget().setText(filepath)
-        self.filepathChanged(self, filepath)
         self._filepath = filepath
+        text = None
         if self.mode() == PythonWidget.FILE:
             if filepath.endswith(".py"):
-                # todo update save button to valid
-                pass
+                with open(filepath, "r") as file:
+                    text_list = file.readlines()
+                    text = "".join(text_list)
+
+                # append to previous paths
+                if filepath not in self.previousFilepaths():
+                    self.previousFilepaths().insert(0, filepath)
+                    if 10 < len(self.previousFilepaths()):
+                        self._previous_filepaths = self.previousFilepaths()[:10]
             else:
                 # todo update save button to invalid
-                pass
-        elif self.mode() == PythonWidget.SCRIPT:
-            pass
+                text = ""
 
+        elif self.mode() == PythonWidget.SCRIPT:
+            event_widget = getWidgetAncestor(self, AbstractEventWidget)
+            try:
+                text = event_widget.paramScripts().getChild(filepath).getValue(0)
+            except:
+                # no param found
+                pass
+
+        # update text
+        if text:
+            self.commandWidget().setPlainText(text)
 
     def getCurrentScript(self):
         return self.commandWidget().toPlainText()
@@ -551,16 +581,9 @@ class PythonWidget(QWidget):
         """ Sets the IDE text to the filepath provided
 
         Args:
-            filepath (str): path on disk to file
+            filepath (str): path on disk to file OR param name
         """
-        if filepath.endswith(".py"):
-            with open(filepath, "r") as file:
-                text_list = file.readlines()
-                text = "".join(text_list)
-        else:
-            # todo update save button to invalid
-            text = ""
-        self.commandWidget().setPlainText(text)
+        self.setFilePath(filepath)
 
     def eventFilter(self, obj, event, *args, **kwargs):
         if event.type() == QEvent.Enter:
@@ -577,6 +600,12 @@ class PythonWidget(QWidget):
 
         return False
 
+    def showPreviousFilepaths(self):
+        if self.mode() == PythonWidget.FILE:
+            return [[filepath] for filepath in self.previousFilepaths()]
+        else:
+            return []
+
     """ WIDGETS """
     def filepathWidget(self):
         return self._filepath_widget
@@ -589,6 +618,106 @@ class PythonWidget(QWidget):
 
     def commandWidget(self):
         return self._command_widget
+
+
+class AbstractScriptInputWidget(LabelledInputWidget):
+    """
+    The script input widget
+    """
+    def __init__(self, parent=None, name='', note='', delegate_widget=None):
+        name = 'script'
+        note = "Click to toggle between SCRIPT and FILE modes"
+        super(AbstractScriptInputWidget, self).__init__(parent, name=name, delegate_widget=delegate_widget)
+
+        self.setDefaultLabelLength(200)
+        self.setToolTip(note)
+        self._toggle_mode_button = ButtonInputWidget(title="script", user_clicked_event=self.toggleMode)
+        self.setViewWidget(self._toggle_mode_button)
+        self._mode = PythonWidget.SCRIPT
+
+        _delegate_widget = ListInputWidget()
+        self.setDelegateWidget(_delegate_widget)
+        _delegate_widget.setCleanItemsFunction(self.getAllScripts)
+        _delegate_widget.setUserFinishedEditingEvent(self.userInputEvent)
+
+    """ EVENTS """
+    def userInputEvent(self, widget, value):
+        # TODO Update Python Widget text
+        """
+        events_widget = getWidgetAncestor(widget, EventWidget)
+        python_widget = events_widget.python_widget
+        """
+        events_widget = getWidgetAncestor(self, AbstractEventWidget)
+        # preflight
+        if value == "": return
+
+        if self.mode() == PythonWidget.FILE:
+            #input_widget.item().setArg("filepath", self.text())
+            self.setFilepath(self.text())
+
+        elif self.mode() == PythonWidget.SCRIPT:
+            #input_widget.item().setArg("script", self.text())
+            self.setScript(self.text())
+            paramutils.createParamAtLocation(
+                events_widget.paramLocation() + ".scripts." + self.text(),
+                events_widget.node(),
+                paramutils.STRING,
+                initial_value=""
+            )
+
+    # VIRTUAL
+    def setFilepath(self, filepath):
+        """ Needs to be overridden to set the filepath"""
+        pass
+
+    # VIRTUAL
+    def setScript(self, script):
+        pass
+
+    """ UTILS """
+    def getAllScripts(self):
+        if self.mode() == PythonWidget.SCRIPT:
+            events_widget = getWidgetAncestor(self, AbstractEventWidget)
+            return [[child.getName()] for child in events_widget.paramScripts().getChildren()]
+        else:
+            return []
+
+    """ PROPERTIES """
+    def text(self):
+        return self.delegateWidget().text()
+
+    def setText(self, text):
+        self.delegateWidget().setText(text)
+
+    def mode(self):
+        return self._mode
+
+    def setMode(self, mode):
+        # set mode
+        self._mode = mode
+        events_widget = getWidgetAncestor(self, AbstractEventWidget)
+        events_widget.pythonWidget().setMode(mode)
+
+        # update display / item data
+        if self.mode() == PythonWidget.FILE:
+            self.viewWidget().setText("file")
+
+        elif self.mode() == PythonWidget.SCRIPT:
+            self.viewWidget().setText("script")
+
+        # custom functionality
+        self._setMode(self.mode())
+
+    # VIRTUAL
+    def _setMode(self, mode):
+        """ Needs to be overwritten """
+        pass
+
+    def toggleMode(self, *args):
+        if self.mode() == PythonWidget.FILE:
+            self.setMode(PythonWidget.SCRIPT)
+        elif self.mode() == PythonWidget.SCRIPT:
+            self.setMode(PythonWidget.FILE)
 
 
 """ GLOBAL EVENTS"""
@@ -604,7 +733,7 @@ class EventWidget(AbstractEventWidget):
         | -- VBox
             | -- events_widget --> (ShojiModelViewWidget)
                 | -- label type (EventsLabelWidget --> ShojiLabelWidget)
-                | -- Dynamic Widget (UserInputMainWidget --> QWidget)
+                | -- Dynamic Widget (EventDelegateWidget --> QWidget)
                     | -- VBox
                         | -- events_type_menu ( EventTypeInputWidget)
                         | -- script_widget (DynamicArgsInputWidget)
@@ -612,7 +741,7 @@ class EventWidget(AbstractEventWidget):
                                 | -* DynamicArgsInputWidget
     """
     def __init__(self, parent=None, node=None, param="events_data"):
-        delegate_widget_type = UserInputMainWidget
+        delegate_widget_type = EventDelegateWidget
         events_list_view = EventListView
 
         super(EventWidget, self).__init__(
@@ -983,14 +1112,13 @@ class EventListViewItemDelegate(AbstractEventListViewItemDelegate):
         return list(getWidgetAncestor(parent, EventWidget).defaultEventsData())
 
 
-""" INPUT WIDGETS"""
-class UserInputMainWidget(QWidget):
+class EventDelegateWidget(QWidget):
     """
     Main widgets for inputting args to the Events widget.  This is the dynamic
     widget that will be used for the shoji widget.
 
     Widgets
-    UserInputMainWidget
+    EventDelegateWidget
         | -- QVBoxLayout
             | -- events_type_menu (EventTypeInputWidget)
             | -- script_widget (ScriptInputWidget)
@@ -1014,7 +1142,7 @@ class UserInputMainWidget(QWidget):
 
     """
     def __init__(self, parent=None):
-        super(UserInputMainWidget, self).__init__(parent)
+        super(EventDelegateWidget, self).__init__(parent)
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
 
@@ -1054,20 +1182,19 @@ class UserInputMainWidget(QWidget):
         # update event type
         event_type = item.getArg("name")
 
-        # set script widget to label.item().getScript()
-
-
         # update if script
         if item.getArg("is_script"):
             this.script_widget.setMode(PythonWidget.SCRIPT)
             events_widget.pythonWidget().setMode(PythonWidget.SCRIPT)
-            this.script_widget.setText(item.getArg("script"))
-            try:
-                script_text = events_widget.paramScripts().getChild(item.getArg("script")).getValue(0)
-                #script_text = events_widget.node().getParameter(item.getArg("script")).getValue(0)
-                events_widget.pythonWidget().commandWidget().setText(script_text)
-            except AttributeError:
-                pass
+            events_widget.setCurrentScript(item.getArg("script"))
+
+            # this.script_widget.setText(item.getArg("script"))
+            # try:
+            #     script_text = events_widget.paramScripts().getChild(item.getArg("script")).getValue(0)
+            #     #script_text = events_widget.node().getParameter(item.getArg("script")).getValue(0)
+            #     events_widget.pythonWidget().commandWidget().setText(script_text)
+            # except AttributeError:
+            #     pass
 
         # update if file
         elif not item.getArg("is_script"):
@@ -1102,6 +1229,7 @@ class UserInputMainWidget(QWidget):
         return self._item
 
 
+""" INPUT WIDGETS"""
 class DynamicArgsInputWidget(LabelledInputWidget):
     """
     One individual arg
@@ -1131,7 +1259,7 @@ class DynamicArgsInputWidget(LabelledInputWidget):
         When the user inputs something into the arg, this event is triggered
         updating the model item
         """
-        events_widget = getWidgetAncestor(self, UserInputMainWidget)
+        events_widget = getWidgetAncestor(self, EventDelegateWidget)
         events_widget.item().setArg(self.arg, value)
 
     @property
@@ -1141,86 +1269,6 @@ class DynamicArgsInputWidget(LabelledInputWidget):
     @arg.setter
     def arg(self, arg):
         self._arg = arg
-
-
-class ScriptInputWidget(DynamicArgsInputWidget):
-    """
-    The script input widget
-    """
-    def __init__(self, parent=None):
-        name = 'script'
-        note = "Click to toggle between SCRIPT and FILE modes"
-        super(ScriptInputWidget, self).__init__(parent, name=name, note=note)
-        self._toggle_mode_button = ButtonInputWidget(title="script", user_clicked_event=self.toggleMode)
-        self.setViewWidget(self._toggle_mode_button)
-        self._mode = PythonWidget.SCRIPT
-
-        _delegate_widget = ListInputWidget()
-        self.setDelegateWidget(_delegate_widget)
-        _delegate_widget.setCleanItemsFunction(self.getAllScripts)
-        _delegate_widget.setUserFinishedEditingEvent(self.userInputEvent)
-
-    def getAllScripts(self):
-        if self.mode() == PythonWidget.SCRIPT:
-            events_widget = getWidgetAncestor(self, EventWidget)
-            return [[child.getName()] for child in events_widget.paramScripts().getChildren()]
-        else:
-            return []
-
-    def mode(self):
-        return self._mode
-
-    def setMode(self, mode):
-        # set mode
-        self._mode = mode
-        events_widget = getWidgetAncestor(self, EventWidget)
-        events_widget.pythonWidget().setMode(mode)
-
-        # update display / item data
-        input_widget = getWidgetAncestor(self, UserInputMainWidget)
-        if self.mode() == PythonWidget.FILE:
-            self.viewWidget().setText("file")
-            input_widget.item().setArg("is_script", False)
-            self.setText(input_widget.item().getArg("filepath"))
-            events_widget.pythonWidget().setFilePath(input_widget.item().getArg("filepath"))
-
-        elif self.mode() == PythonWidget.SCRIPT:
-            self.viewWidget().setText("script")
-            input_widget.item().setArg("is_script", True)
-            self.setText(input_widget.item().getArg("script"))
-            events_widget.pythonWidget().setFilePath(input_widget.item().getArg("script"))
-
-    def toggleMode(self, *args):
-        if self.mode() == PythonWidget.FILE:
-            self.setMode(PythonWidget.SCRIPT)
-        elif self.mode() == PythonWidget.SCRIPT:
-            self.setMode(PythonWidget.FILE)
-
-    def userInputEvent(self, widget, value):
-        # TODO Update Python Widget text
-        """
-        events_widget = getWidgetAncestor(widget, EventWidget)
-        python_widget = events_widget.python_widget
-        """
-        input_widget = getWidgetAncestor(self, UserInputMainWidget)
-        events_widget = getWidgetAncestor(self, EventWidget)
-        if self.mode() == PythonWidget.FILE:
-            input_widget.item().setArg("filepath", self.text())
-            events_widget.setCurrentScript(self.text())
-
-        elif self.mode() == PythonWidget.SCRIPT:
-            input_widget.item().setArg("script", self.text())
-
-            paramutils.createParamAtLocation(
-                events_widget.paramLocation() + ".scripts." + self.text(),
-                events_widget.node(),
-                paramutils.STRING,
-                initial_value=""
-            )
-
-            events_widget.setCurrentScript(self.text())
-            script_text = events_widget.paramScripts().getChild(self.text()).getValue(0)
-            events_widget.pythonWidget().commandWidget().setText(script_text)
 
 
 class DynamicArgsWidget(QWidget):
@@ -1290,3 +1338,50 @@ class DynamicArgsWidget(QWidget):
         self._event_type = event_type
 
 
+class ScriptInputWidget(AbstractScriptInputWidget):
+    def __init__(self, parent=None, name='', note='', delegate_widget=None):
+        super(ScriptInputWidget, self).__init__(parent, name=name, delegate_widget=delegate_widget)
+        self.arg = name
+        self.setDefaultLabelLength(200)
+
+    def _updatePythonWidgetPath(self):
+        events_widget = getWidgetAncestor(self, AbstractEventWidget)
+        events_widget.setCurrentScript(self.text())
+        script_text = events_widget.paramScripts().getChild(self.text()).getValue(0)
+        events_widget.pythonWidget().commandWidget().setText(script_text)
+
+    def setFilepath(self, filepath):
+        input_widget = getWidgetAncestor(self, EventDelegateWidget)
+        input_widget.item().setArg("filepath", self.text())
+
+        # update python widget
+        self._updatePythonWidgetPath()
+
+    def setScript(self, script):
+        input_widget = getWidgetAncestor(self, EventDelegateWidget)
+        input_widget.item().setArg("script", self.text())
+
+        # update python widget
+        self._updatePythonWidgetPath()
+
+    def _setMode(self, mode):
+        events_widget = getWidgetAncestor(self, AbstractEventWidget)
+        input_widget = getWidgetAncestor(self, EventDelegateWidget)
+
+        if self.mode() == PythonWidget.FILE:
+            events_widget.pythonWidget().setFilePath(input_widget.item().getArg("filepath"))
+            input_widget.item().setArg("is_script", False)
+            self.setText(input_widget.item().getArg("filepath"))
+
+        elif self.mode() == PythonWidget.SCRIPT:
+            events_widget.pythonWidget().setFilePath(input_widget.item().getArg("script"))
+            input_widget.item().setArg("is_script", True)
+            self.setText(input_widget.item().getArg("script"))
+
+    @property
+    def arg(self):
+        return self._arg
+
+    @arg.setter
+    def arg(self, arg):
+        self._arg = arg

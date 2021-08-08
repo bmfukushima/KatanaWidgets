@@ -21,6 +21,8 @@ from .EventsWidget import (
     AbstractEventListViewItem,
     AbstractEventListViewItemDelegate,
     AbstractEventWidget,
-    EventWidget
+    AbstractScriptInputWidget,
+    EventWidget,
+    PythonWidget
 )
 
