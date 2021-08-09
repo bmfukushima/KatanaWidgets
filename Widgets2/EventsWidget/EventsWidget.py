@@ -648,22 +648,31 @@ class AbstractScriptInputWidget(LabelledInputWidget):
         python_widget = events_widget.python_widget
         """
         events_widget = getWidgetAncestor(self, AbstractEventWidget)
+
         # preflight
         if value == "": return
 
         if self.mode() == PythonWidget.FILE:
-            #input_widget.item().setArg("filepath", self.text())
             self.setFilepath(self.text())
 
         elif self.mode() == PythonWidget.SCRIPT:
-            #input_widget.item().setArg("script", self.text())
-            self.setScript(self.text())
+            # preflight
+            if self.text().rstrip("") != "":
+                if self.text()[0].isdigit():
+                    self.text()[0] = "_"
+                    self.setText()
+                    return
+
+            # create param
             paramutils.createParamAtLocation(
                 events_widget.paramLocation() + ".scripts." + self.text(),
                 events_widget.node(),
                 paramutils.STRING,
                 initial_value=""
             )
+
+            # set
+            self.setScript(self.text())
 
     # VIRTUAL
     def setFilepath(self, filepath):
@@ -1377,6 +1386,8 @@ class ScriptInputWidget(AbstractScriptInputWidget):
             events_widget.pythonWidget().setFilePath(input_widget.item().getArg("script"))
             input_widget.item().setArg("is_script", True)
             self.setText(input_widget.item().getArg("script"))
+
+        events_widget.updateEventsData()
 
     @property
     def arg(self):

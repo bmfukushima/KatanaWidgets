@@ -1,8 +1,9 @@
 import json
+import os
 
 from Katana import NodegraphAPI
 
-from .GSVManager import EventWidget, _PARAM_LOCATION
+from .GSVManager import EventWidget
 from Utils2 import gsvutils
 
 
@@ -27,38 +28,38 @@ def gsvChangedEvent(args):
         # get attrs
         gsv = param.getParent().getName()
         option = param.getValue(0)
-        events_data = json.loads(NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION).getValue(0))
+        event_data = json.loads(EventWidget.paramDataStatic())
 
         # preflight
-        if gsv not in list(events_data.keys()): return
+        if gsv not in list(event_data.keys()): return
 
         # user defined disable on GSV
-        if not events_data[gsv]["enabled"]: return
-        if option not in list(events_data[gsv]["data"].keys()): return
+        if not event_data[gsv]["enabled"]: return
+        if option not in list(event_data[gsv]["data"].keys()): return
 
         # option does not exist
-        if not events_data[gsv]["data"][option]["enabled"]: return
+        if not event_data[gsv]["data"][option]["enabled"]: return
 
         # user defined option disable
         # script does not exist
-        # if "script" not in list(events_data[gsv]["data"][option].keys()): return
+        # if "script" not in list(event_data[gsv]["data"][option].keys()): return
 
         # setup local variables
         local_variables = {}
         local_variables["gsv"] = gsv
         local_variables["option"] = option
 
-        # execute script
-        exec(events_data[gsv]["data"][option]["script"], globals(), local_variables)
-
-        # execute file
-        # if os.path.exists(script):
-        #     with open(script) as script_descriptor:
-        #         exec(script_descriptor.read(), globals(), local_variables)
+        # get data
+        user_data = event_data[gsv]["data"][option]
 
         # execute script
-        # else:
-            # exec(events_data[option]["script"], globals(), local_variables)
+        if user_data["is_script"]:
+            script = EventWidget.paramScriptsStatic().getChild(user_data["script"]).getValue(0)
+            exec(script, globals(), local_variables)
+        elif not user_data["is_script"]:
+            if os.path.exists(user_data["filepath"]):
+                with open(user_data["filepath"]) as script_descriptor:
+                    exec(script_descriptor.read(), local_variables)
 
 
 def installGSVManagerEvents(*args, **kwargs):
