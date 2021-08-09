@@ -1093,7 +1093,6 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
 
         # get attrs
         events_widget = getWidgetAncestor(parent, EventWidget)
-        print(events_widget.currentScript())
         display_widget = widget.getMainWidget()
         gsv = item.columnData()['name']
 
@@ -1138,12 +1137,11 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
             widget.setText(text)
 
             # check to see if script is active
-            print(str(text), events_widget.currentScript())
-            if str(text) == events_widget.currentScript():
-                print('tada?')
+            """ for some reason events_widget.currentScript(),
+            which literally calls events_widget.pythonWidget().filepath()
+            doesnt work =/"""
+            if str(text) == events_widget.pythonWidget().filepath():
                 widget.updateScriptDisplayFlag()
-                events_widget.setCurrentScript(text)
-                print('end tada')
 
 
 class DisplayGSVEventWidgetHeader(OverlayInputWidget):
