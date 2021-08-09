@@ -568,7 +568,6 @@ class PythonWidget(QWidget):
     def saveEvent(self, widget):
         """ Saves the current IDE text to the current file"""
         text = self.getCurrentScript()
-        print('save filepath ==', self.filepath())
         if self.mode() == PythonWidget.FILE:
             with open(self.filepath(), "w") as file:
                 file.write(text)

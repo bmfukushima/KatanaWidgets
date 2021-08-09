@@ -1298,7 +1298,7 @@ class GSVEvent(AbstractScriptInputWidget):
         """Deletes the user event created for this GSV/Option pairing"""
         # get events widget
         event_widget = getWidgetAncestor(self, EventWidget)
-        display_widget = event_widget.delegateWidget().widget(1).getMainWidget()
+        display_widget = event_widget.eventsWidget().delegateWidget().widget(1).getMainWidget()
 
         # remove data
         if self.currentOption():
@@ -1314,8 +1314,12 @@ class GSVEvent(AbstractScriptInputWidget):
     def showScript(self, *args):
         """ Show the current script in the Python tab."""
         events_widget = getWidgetAncestor(self, EventWidget)
+
+        # update Python Widget
+        events_widget.pythonWidget().setMode(self.mode())
         events_widget.setCurrentScript(self.text())
 
+        # update display
         self.updateScriptDisplayFlag()
 
     def updateScriptDisplayFlag(self):
