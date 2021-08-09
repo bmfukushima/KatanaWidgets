@@ -240,6 +240,9 @@ class AbstractEventWidget(ShojiLayout):
         return self.eventsWidget()
 
     """ UTILS """
+    def currentScript(self):
+        self.pythonWidget().filepath()
+
     def setCurrentScript(self, filepath):
         self.pythonWidget().setFilePath(filepath)
 
@@ -528,7 +531,7 @@ class PythonWidget(QWidget):
                 a path on disk to a file. """
         self.filepathWidget().setText(filepath)
         self._filepath = filepath
-        text = None
+        text = ""
         if self.mode() == PythonWidget.FILE:
             if filepath.endswith(".py"):
                 with open(filepath, "r") as file:
@@ -540,9 +543,6 @@ class PythonWidget(QWidget):
                     self.previousFilepaths().insert(0, filepath)
                     if 10 < len(self.previousFilepaths()):
                         self._previous_filepaths = self.previousFilepaths()[:10]
-            else:
-                # todo update save button to invalid
-                text = ""
 
         elif self.mode() == PythonWidget.SCRIPT:
             event_widget = getWidgetAncestor(self, AbstractEventWidget)
@@ -553,8 +553,7 @@ class PythonWidget(QWidget):
                 pass
 
         # update text
-        if text:
-            self.commandWidget().setPlainText(text)
+        self.commandWidget().setPlainText(text)
 
     def getCurrentScript(self):
         return self.commandWidget().toPlainText()
@@ -569,6 +568,7 @@ class PythonWidget(QWidget):
     def saveEvent(self, widget):
         """ Saves the current IDE text to the current file"""
         text = self.getCurrentScript()
+        print('save filepath ==', self.filepath())
         if self.mode() == PythonWidget.FILE:
             with open(self.filepath(), "w") as file:
                 file.write(text)
@@ -653,16 +653,18 @@ class AbstractScriptInputWidget(LabelledInputWidget):
         if value == "": return
 
         if self.mode() == PythonWidget.FILE:
+            self._filepath = self.text()
             self.setFilepath(self.text())
 
         elif self.mode() == PythonWidget.SCRIPT:
             # preflight
             if self.text().rstrip("") != "":
                 if self.text()[0].isdigit():
-                    self.text()[0] = "_"
-                    self.setText()
+                    text = "_" + self.text()[1:]
+                    self.setText(text)
                     return
 
+            self._script = self.text()
             # create param
             paramutils.createParamAtLocation(
                 events_widget.paramLocation() + ".scripts." + self.text(),

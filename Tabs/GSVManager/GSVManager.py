@@ -1060,10 +1060,17 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         super(DisplayGSVEventWidget, self).__init__(parent)
         self.setDirection(Qt.Vertical)
         self._widgets = {}
+        self._active_path = ""
 
         # setup header widget
         header_widget = DisplayGSVEventWidgetHeader(self)
         self.setHeaderWidget(header_widget)
+
+    def activePath(self):
+        return self._active_path
+
+    def setActivePath(self, active_path):
+        self._active_path = active_path
 
     def setGSV(self, gsv):
         """ When the dynamic update is run, this updates the title"""
@@ -1086,6 +1093,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
 
         # get attrs
         events_widget = getWidgetAncestor(parent, EventWidget)
+        print(events_widget.currentScript())
         display_widget = widget.getMainWidget()
         gsv = item.columnData()['name']
 
@@ -1116,17 +1124,26 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
             widget.setCurrentOption(str(option))
             display_widget.widgets()[option] = widget
 
-            # check to see if script is active
-            if str(data["filepath"]) == events_widget.pythonWidget().filepath():
-                widget.updateScriptDisplayFlag()
+            # hack
+            # active_path = events_widget.pythonWidget().filepath()
 
             # check to see if script or filepath
             if data["is_script"]:
-                widget.setText(data["script"])
+                text = data["script"]
                 widget.setMode(PythonWidget.SCRIPT)
-            elif not ["is_script"]:
-                widget.setText(data["filepath"])
+            elif not data["is_script"]:
+                text = data["filepath"]
                 widget.setMode(PythonWidget.FILE)
+
+            widget.setText(text)
+
+            # check to see if script is active
+            print(str(text), events_widget.currentScript())
+            if str(text) == events_widget.currentScript():
+                print('tada?')
+                widget.updateScriptDisplayFlag()
+                events_widget.setCurrentScript(text)
+                print('end tada')
 
 
 class DisplayGSVEventWidgetHeader(OverlayInputWidget):
@@ -1299,12 +1316,7 @@ class GSVEvent(AbstractScriptInputWidget):
     def showScript(self, *args):
         """ Show the current script in the Python tab."""
         events_widget = getWidgetAncestor(self, EventWidget)
-        if self.mode() == PythonWidget.FILE:
-            events_widget.setCurrentScript(self.text())
-        elif self.mode() == PythonWidget.SCRIPT:
-            script_text = events_widget.paramScripts().getChild(self.text()).getValue(0)
-            events_widget.pythonWidget().commandWidget().setText(script_text)
-            events_widget.setCurrentScript(self.text())
+        events_widget.setCurrentScript(self.text())
 
         self.updateScriptDisplayFlag()
 
@@ -1365,10 +1377,6 @@ class GSVEvent(AbstractScriptInputWidget):
             data = events_widget.eventsData()[events_widget.currentGSV()]["data"]
             data[option] = data.pop(self.currentOption())
 
-            # todo not sure why I had this... but it was breaking it...
-            # update DisplayGSVEventWidget
-            # display_widget.widgets()[option] = display_widget.widgets()[self.currentOption()]
-
         # create new event
         else:
             # get script status
@@ -1408,14 +1416,18 @@ class GSVEvent(AbstractScriptInputWidget):
         # update meta data
         if self.mode() == PythonWidget.FILE:
             event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["is_script"] = False
-            file_path = event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["filepath"]
-            event_widget.pythonWidget().setFilePath(file_path)
+            text = event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["filepath"]
+
         elif self.mode() == PythonWidget.SCRIPT:
             event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["is_script"] = True
-            script = event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["script"]
-            event_widget.pythonWidget().setFilePath(script)
+            text = event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["script"]
 
-        # save to param
+        # show if enabled
+        if self.isEditingActive():
+            event_widget.pythonWidget().setFilePath(text)
+
+        # update
+        self.setText(text)
         event_widget.saveEventsData()
 
     def setFilepath(self, filepath):
@@ -1439,7 +1451,6 @@ class GSVEvent(AbstractScriptInputWidget):
         # preflight
         if self.currentOption() == {}: return
         if not self.currentOption(): return
-
         self._script = script
         #
         event_widget = getWidgetAncestor(self, EventWidget)
