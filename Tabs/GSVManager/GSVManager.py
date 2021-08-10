@@ -135,12 +135,12 @@ class GSVManager(UI4.Tabs.BaseTab):
         self.layout().addWidget(self._main_widget)
         self.mainWidget().setHeaderItemIsDragEnabled(False)
         self.mainWidget().setHeaderItemIsEditable(False)
+        self.mainWidget().setHeaderItemIsDeleteEnabled(False)
+        self.mainWidget().setHeaderItemIsEnableable(False)
+        self.mainWidget().setHeaderItemIsDropEnabled(False)
+
         # setup Katana events
-        # Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_finalizeValue', None)
-        # Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_createChild', None)
-        # Utils.EventModule.RegisterCollapsedHandler(self.gsvChanged, 'parameter_deleteChild', None)
         Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
-        # Utils.EventModule.RegisterCollapsedHandler(self.paramChildDeleted, 'parameter_deleteChild', None)
 
     def rename(self, args):
         pass
