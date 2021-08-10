@@ -169,13 +169,6 @@ class KatanaLauncher(QWidget):
             envars (dict): of envars/values
                 {'envar':'value', 'envar2', 'value2'}
         """
-        # os.environ['PYTHONPATH'] += ':'.join(
-        #     [os.environ['PYTHONPATH'],
-        #      '/usr/local/lib/python2.7/dist-packages',
-        #      '/media/ssd01/Scripts/WidgetFactory'
-        #      ]
-        # )
-
         # setup katana resources
         os.environ['KATANA_RESOURCES'] = self.katanaResources(katana_resources)
 
@@ -456,7 +449,7 @@ if __name__ == "__main__":
 
     plugins = {
         'Foundry': {
-            'KATANA_RESOURCES':'/media/ssd01/Katana/dev/resources-foundry/katana_resources',
+            'KATANA_RESOURCES':'/media/ssd01/dev/katana/KatanaResources_foundry/',
             '__ENABLED__': False},
         'Katana Widgets': {
             'KATANA_RESOURCES': '/media/ssd01/dev/katana/KatanaWidgets',
@@ -469,12 +462,17 @@ if __name__ == "__main__":
             'KATANA_RESOURCES': '{katana_root}/plugins/Src/Resources/Examples',
             '__ENABLED__': False},
         'Old Crap': {
-            'KATANA_RESOURCES': '/media/ssd01/Katana/dev/resources',
+            'KATANA_RESOURCES': '/media/ssd01/dev/katana/KatanaResources_old/',
             '__ENABLED__': False}
     }
 
     # create main application
     launcher = KatanaLauncher(plugins=plugins)
+
+    # force widget on top
+    launcher.setWindowFlag(Qt.WindowStaysOnTopHint)
+    launcher.setWindowState(launcher.windowState() & ~Qt.WindowMinimized | Qt.WindowActive)
+    launcher.activateWindow()
 
     # show widget
     launcher.show()
