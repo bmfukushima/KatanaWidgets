@@ -37,7 +37,6 @@ Hierarchy:
                 |       |   |- CreateNewGSVOptionWidget --> (LabelledInputWidget --> StringInputWidget)
                 |       |- displayEditableOptionsWidget --> (ModelViewWidget)
                 |- eventsWidget (EventWidget --> ShojiMVW)
-                    |- GSVEventsListWidget --> (LabelledInputWidget)
                     |- DisplayGSVEventWidget (FrameInputWidgetContainer)
                         |- DisplayGSVEventWidgetHeader (OverlayInputWidget --> ButtonInputWidget)
                         |* GSVEvent
@@ -546,7 +545,7 @@ class CreateNewGSVOptionWidget(LabelledInputWidget):
 
             # return if GSV exists
             else:
-                print("{gsv} already exists you dingus".format(gsv))
+                print("{gsv} already exists you dingus".format(gsv=gsv))
                 return
         # create new list entry
         model = main_widget.editWidget().displayEditableOptionsWidget().model()
@@ -991,69 +990,6 @@ class GSVPopupSelector(AbstractEventListViewItemDelegate):
 
 
 """ EVENTS WIDGET """
-class GSVEventsListWidget(LabelledInputWidget):
-    def __init__(self, parent=None):
-        super(GSVEventsListWidget, self).__init__(parent)
-
-        # setup default attrs
-        self.setDirection(Qt.Horizontal)
-
-        # setup view widget
-        self.setName("GSV")
-        self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
-
-        # setup delegate widget
-        delegate_widget = ListInputWidget(self)
-        self.setDelegateWidget(delegate_widget)
-
-        # setup delegate widget attrs
-        self.delegateWidget().dynamic_update = True
-        self.delegateWidget().filter_results = False
-        self.delegateWidget().setText("")
-
-        # setup events
-        self.delegateWidget().setUserFinishedEditingEvent(self.createNewGSVEventItem)
-        self.delegateWidget().populate(self.getAllGSVNames())
-        self.delegateWidget().setCleanItemsFunction(self.getAllGSVNames)
-
-        #setup display
-        self.setFixedHeight(getFontSize() * 4)
-        self.setDefaultLabelLength(getFontSize() * 6)
-
-    def getAllGSVNames(self):
-        """
-        Returns a list of lists of all of the GSV names
-        Returns (list): of lists
-            [['var1'], ['var2'], ['var3']]
-
-        """
-        variables = gsvutils.getAllGSV(return_as=gsvutils.STRING)
-        gsv_keys = [[variable] for variable in variables]
-        return gsv_keys
-
-    # todo delete during cleanup (old)
-    def createNewGSVEventItem(self, widget, value):
-        """ Create a new event item"""
-        # get attrs
-        main_widget = getWidgetAncestor(self, EventWidget)
-        gsv = value
-
-        # preflight
-        if value == "": return
-        if value in list(main_widget.eventsData().keys()):
-            print("{gsv} already exists... update the one that already exists you Derpasaur".format(gsv=value))
-            return
-
-        # create new GSV event item
-        if gsv in gsvutils.getAllGSV(return_as=gsvutils.STRING):
-            main_widget.createNewGSVEvent(gsv)
-            self.delegateWidget().setText("")
-
-        # bypass if doesn't exist
-        else:
-            return
-
-
 class DisplayGSVEventWidget(FrameInputWidgetContainer):
     """Widget that is shown when the user clicks on a GSV item in the EventWidget"""
     def __init__(self, parent=None):
@@ -1199,11 +1135,7 @@ class GSVEvent(AbstractScriptInputWidget):
         # setup buttons widget
         self._buttons_main_widget = QWidget()
         self._buttons_layout = QHBoxLayout(self._buttons_main_widget)
-        self._buttons_layout.setContentsMargins(0, 0, 0, 0)
-        self._buttons_main_widget.setFixedWidth(getFontSize() * 10)
         self.mainWidget().insertWidget(2, self._buttons_main_widget)
-        self.mainWidget().setCollapsible(2, False)
-        self.mainWidget().setStretchFactor(2, 0)
 
         # setup view widget
         self._gsv_widget = ListInputWidget()
@@ -1212,7 +1144,7 @@ class GSVEvent(AbstractScriptInputWidget):
         self._gsv_widget.setCleanItemsFunction(self.populateGSVOptions)
         self._gsv_widget.setUserFinishedEditingEvent(self.optionChangedEvent)
         self._gsv_widget.setValidateInputFunction(self.validateOptionInputEvent)
-        self.__insertButton(self._gsv_widget, "Set GSV")
+        self.__insertButton(self._gsv_widget, "Set GSV", fixed_size=False)
 
         # add show script button
         self._show_script_button = ButtonInputWidget(
@@ -1238,12 +1170,26 @@ class GSVEvent(AbstractScriptInputWidget):
         if text:
             self.setText(text)
 
-        # set fixed height
+        # setup stretch/collapse
+        self.mainWidget().setCollapsible(0, False)
+        self.mainWidget().setCollapsible(2, False)
+        self.mainWidget().setStretchFactor(2, 0)
+        self.mainWidget().setStretchFactor(1, 100)
+        self.mainWidget().setStretchFactor(0, 0)
+
+        self._buttons_layout.setStretch(0, 100)
+        self._buttons_layout.setStretch(1, 0)
+        self._buttons_layout.setStretch(2, 0)
+        self._buttons_layout.setStretch(3, 0)
+
+        # set sizes
         self.setFixedHeight(getFontSize() * 2)
         self.setHandleWidth(1)
+        self.setDefaultLabelLength(100)
+        self._buttons_layout.setContentsMargins(0, 0, 0, 0)
 
     """ WIDGETS """
-    def __insertButton(self, widget, tooltip):
+    def __insertButton(self, widget, tooltip, fixed_size=True):
         """
         Inserts a new clickable button for the user
 
@@ -1262,7 +1208,8 @@ class GSVEvent(AbstractScriptInputWidget):
         self._buttons_layout.addWidget(widget)
 
         # setup attrs todo: fix this later...
-        widget.setFixedSize(getFontSize() * 2.5, getFontSize() * 2.5)
+        if fixed_size:
+            widget.setFixedSize(getFontSize() * 2.5, getFontSize() * 2.5)
         widget.setToolTip(tooltip)
 
         return widget
@@ -1310,6 +1257,13 @@ class GSVEvent(AbstractScriptInputWidget):
         # remove widget
         self.deleteLater()
         self.setParent(None)
+
+    def showEvent(self, event):
+        """ Sets the default size of the main buttons widget (far right buttons)"""
+        super(GSVEvent, self).showEvent(event)
+        self.mainWidget().moveSplitter(self.width() - self.defaultLabelLength() - 200, 2)
+
+        return AbstractScriptInputWidget.showEvent(self, event)
 
     def showScript(self, *args):
         """ Show the current script in the Python tab."""
