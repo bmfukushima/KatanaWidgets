@@ -74,7 +74,7 @@ import json
 import os
 
 from qtpy.QtWidgets import (
-    QApplication, QWidget, QHBoxLayout, QVBoxLayout, QMenu, QSizePolicy)
+    QApplication, QWidget, QHBoxLayout, QVBoxLayout, QMenu, QSizePolicy, QCompleter)
 from qtpy.QtCore import Qt, QEvent
 from qtpy.QtGui import QKeySequence
 
@@ -431,8 +431,23 @@ class AbstractEventListView(AbstractDragDropListView):
         #     self.deleteItem()
 
 
+class AbstractEventListViewItemDelegateWidget(ListInputWidget):
+    """ The drop down menu that pops up when the user double clicks on an item in the list view"""
+    def __init__(self, parent=None):
+        super(AbstractEventListViewItemDelegateWidget, self).__init__(parent)
+
+    def showEvent(self, event):
+        if self.text() == "<New Event>":
+            self.setText("")
+            # todo show completer...
+            """ So that its a double click to enter/show, instead of a tripple click"""
+            # self.completer().setCompletionMode(QCompleter.UnfilteredPopupCompletion)
+            # self.completer().complete()
+        return ListInputWidget.showEvent(self, event)
+
+
 class AbstractEventListViewItemDelegate(AbstractDragDropModelDelegate):
-    """ Creates the popup for the ShojiMVW item
+    """ The delegate for the ListView that holds that creates the popup for the user.
 
     Args:
         populate_events_list_func (function): returns a list of strings
@@ -441,7 +456,7 @@ class AbstractEventListViewItemDelegate(AbstractDragDropModelDelegate):
     def __init__(self, populate_events_list_func, parent=None):
         super(AbstractEventListViewItemDelegate, self).__init__(parent)
         self._populate_events_list_func = populate_events_list_func
-        self.setDelegateWidget(ListInputWidget)
+        self.setDelegateWidget(AbstractEventListViewItemDelegateWidget)
         self._parent = parent
 
     def _populate_events_list_func(self, parent):
@@ -464,6 +479,7 @@ class AbstractEventListViewItemDelegate(AbstractDragDropModelDelegate):
             events_widget.eventsWidget().updateDelegateDisplay()
 
         delegate_widget.setUserFinishedEditingEvent(updateDisplay)
+
         return delegate_widget
 
 
@@ -638,6 +654,7 @@ class AbstractScriptInputWidget(LabelledInputWidget):
         self.setDelegateWidget(_delegate_widget)
         _delegate_widget.setCleanItemsFunction(self.getAllScripts)
         _delegate_widget.setUserFinishedEditingEvent(self.userInputEvent)
+        _delegate_widget.filter_results = False
 
     """ EVENTS """
     def userInputEvent(self, widget, value):
