@@ -203,6 +203,7 @@ class AbstractEventWidget(ShojiLayout):
 
         # set up stretch
         self.eventsWidget().setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
+        self.eventsWidget().delegateWidget().setMinimumHeight(500)
 
         # setup events
         Utils.EventModule.RegisterCollapsedHandler(self.nodeNameChange, 'node_setName')
@@ -639,13 +640,12 @@ class AbstractScriptInputWidget(LabelledInputWidget):
     """
     The script input widget
     """
-    def __init__(self, parent=None, name='', note='', delegate_widget=None):
+    def __init__(self, parent=None, delegate_widget=None):
         name = 'script'
-        note = "Click to toggle between SCRIPT and FILE modes"
+
         super(AbstractScriptInputWidget, self).__init__(parent, name=name, delegate_widget=delegate_widget)
 
         self.setDefaultLabelLength(200)
-        self.setToolTip(note)
         self._toggle_mode_button = ButtonInputWidget(title="script", user_clicked_event=self.toggleMode)
         self.setViewWidget(self._toggle_mode_button)
         self._mode = PythonWidget.SCRIPT
@@ -655,6 +655,10 @@ class AbstractScriptInputWidget(LabelledInputWidget):
         _delegate_widget.setCleanItemsFunction(self.getAllScripts)
         _delegate_widget.setUserFinishedEditingEvent(self.userInputEvent)
         _delegate_widget.filter_results = False
+
+        # set tooltips
+        self.viewWidget().setToolTip("Click to toggle between SCRIPT and FILE modes")
+        self.delegateWidget().setToolTip("The name/location of the script/filepath")
 
     """ EVENTS """
     def userInputEvent(self, widget, value):
@@ -1366,8 +1370,8 @@ class DynamicArgsWidget(QWidget):
 
 
 class ScriptInputWidget(AbstractScriptInputWidget):
-    def __init__(self, parent=None, name='', note='', delegate_widget=None):
-        super(ScriptInputWidget, self).__init__(parent, name=name, delegate_widget=delegate_widget)
+    def __init__(self, parent=None, name='', delegate_widget=None):
+        super(ScriptInputWidget, self).__init__(parent, delegate_widget=delegate_widget)
         self.arg = name
         self.setDefaultLabelLength(200)
 

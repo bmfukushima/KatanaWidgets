@@ -964,6 +964,7 @@ class EventWidget(AbstractEventWidget):
 
     def update(self):
         """ Clears the model and repopulates it """
+        print("========== updating event widget???")
         # clear model
         self.eventsWidget().clearModel()
 
@@ -1024,6 +1025,9 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
     def updateGUI(parent, widget, item):
         """ Updates the Dynamic display for the current GSV Event shown to the user"""
 
+        # import time
+        # start = time.time()
+        # print(time.time() - start)
         # preflight
         if not item: return
 
@@ -1031,8 +1035,9 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         events_widget = getWidgetAncestor(parent, EventWidget)
         display_widget = widget.getMainWidget()
         gsv = item.columnData()['name']
+        param_data = events_widget.paramData().getValue(0)
 
-        if gsv not in json.loads(events_widget.paramData().getValue(0)).keys():
+        if gsv not in json.loads(param_data).keys():
             events_widget.setCurrentGSV(None)
             display_widget.headerWidget().setDisplayMode(OverlayInputWidget.DISABLED)
             return
@@ -1045,22 +1050,16 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         clearLayout(display_widget.layout(), start=2)
 
         # update display
-        events_dict = json.loads(events_widget.paramData().getValue(0))[gsv]["data"]
+        events_dict = json.loads(param_data)[gsv]["data"]
         display_widget.headerWidget().setDisplayMode(OverlayInputWidget.ENTER)
-
+        
+        # todo figure out why this sometimes runs 4 times when looking at Katana...
         for option, data in events_dict.items():
-            # todo: check file status
-            """compare script being uploaded to the "script" arg and if they are not the same,
-            break set flag available to update."""
-
             # create widget
             widget = display_widget.createNewOptionEvent(
                 option=str(option), text=str(data["filepath"]), enabled=data["enabled"])
             widget.setCurrentOption(str(option))
             display_widget.widgets()[option] = widget
-
-            # hack
-            # active_path = events_widget.pythonWidget().filepath()
 
             # check to see if script or filepath
             if data["is_script"]:
@@ -1071,7 +1070,6 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
                 widget.setMode(PythonWidget.FILE)
 
             widget.setText(text)
-
             # check to see if script is active
             """ for some reason events_widget.currentScript(),
             which literally calls events_widget.pythonWidget().filepath()
@@ -1183,7 +1181,7 @@ class GSVEvent(AbstractScriptInputWidget):
         self._buttons_layout.setStretch(3, 0)
 
         # set sizes
-        self.setFixedHeight(getFontSize() * 2)
+        self.setMinimumHeight(getFontSize() * 2)
         self.setHandleWidth(1)
         self.setDefaultLabelLength(100)
         self._buttons_layout.setContentsMargins(0, 0, 0, 0)
