@@ -237,6 +237,12 @@ def getGSVOptionParameter(gsv, option):
     return None
 
 
+def getGSVValue(gsv):
+    """ Gets the current value of the GSV provided
+
+    Returns (str) """
+    return getGSVParameter(gsv).getChild("value").getValue(0)
+
 def hideEngineersGSVUI():
     """
     Hides one of the worst GUI's ever created.

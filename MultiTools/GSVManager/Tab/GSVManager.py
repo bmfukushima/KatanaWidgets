@@ -66,7 +66,6 @@ EventWidget --> gsvChangedEvent
 """
 
 import json
-import os
 
 from qtpy.QtWidgets import (
     QHBoxLayout,
@@ -89,7 +88,7 @@ from cgwidgets.widgets import (
     OverlayInputWidget,
     ShojiModelViewWidget,
     StringInputWidget)
-from cgwidgets.utils import getWidgetAncestor, convertScriptToString, clearLayout
+from cgwidgets.utils import getWidgetAncestor, clearLayout
 from cgwidgets.settings import attrs, iColor
 
 from Widgets2 import (
@@ -99,15 +98,13 @@ from Widgets2 import (
     AbstractScriptInputWidget,
     PythonWidget
 )
-from Utils2 import gsvutils, getFontSize, paramutils
+from Utils2 import gsvutils, getFontSize
 
 _PARAM_LOCATION = "KatanaBebop.GSVEventsData"
 
 
 class GSVManager(UI4.Tabs.BaseTab):
-    """
-    Main convenience widget for displaying GSV manipulators to the user.
-    """
+    """Main convenience widget for displaying GSV manipulators to the user."""
     NAME = "GSVManager"
 
     def __init__(self, parent=None):
@@ -171,6 +168,11 @@ class GSVManager(UI4.Tabs.BaseTab):
         self.editWidget().update()
         self.eventsWidget().update()
 
+    def update(self):
+        self.eventsWidget().update()
+        self.editWidget().update()
+        self.viewWidget().update()
+
 
 """ VIEW WIDGET """
 class ViewWidget(FrameInputWidgetContainer):
@@ -223,7 +225,7 @@ class ViewWidget(FrameInputWidgetContainer):
             gsv (str): name of GSV to create
         """
         widget = ViewGSVWidget(self, name=gsv)
-
+        widget.delegateWidget().setText(gsvutils.getGSVValue(gsv))
         self.addInputWidget(widget)
         self.widgets()[gsv] = widget
 
@@ -964,13 +966,17 @@ class EventWidget(AbstractEventWidget):
 
     def update(self):
         """ Clears the model and repopulates it """
-        print("========== updating event widget???")
         # clear model
         self.eventsWidget().clearModel()
 
+        # get data
+        event_data = json.loads(NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION+".data").getValue(0))
+
         # get GSVs
-        for gsv in list(json.loads(self.paramData().getValue(0)).keys()):
+        for gsv in list(event_data.keys()):
             self.eventsWidget().insertShojiWidget(0, column_data={"name": str(gsv)})
+
+        self.setEventsData(event_data)
 
 
 class GSVEventsListView(AbstractEventListView):
@@ -1024,7 +1030,8 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
     @staticmethod
     def updateGUI(parent, widget, item):
         """ Updates the Dynamic display for the current GSV Event shown to the user"""
-
+        # todo this is updating like 4 times.. which makes it slow...
+        #print('update gui')
         # import time
         # start = time.time()
         # print(time.time() - start)
@@ -1052,7 +1059,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         # update display
         events_dict = json.loads(param_data)[gsv]["data"]
         display_widget.headerWidget().setDisplayMode(OverlayInputWidget.ENTER)
-        
+
         # todo figure out why this sometimes runs 4 times when looking at Katana...
         for option, data in events_dict.items():
             # create widget
@@ -1181,7 +1188,7 @@ class GSVEvent(AbstractScriptInputWidget):
         self._buttons_layout.setStretch(3, 0)
 
         # set sizes
-        self.setMinimumHeight(getFontSize() * 2)
+        self.setFixedHeight(getFontSize() * 2)
         self.setHandleWidth(1)
         self.setDefaultLabelLength(100)
         self._buttons_layout.setContentsMargins(0, 0, 0, 0)

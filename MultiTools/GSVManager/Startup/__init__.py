@@ -1,10 +1,21 @@
 import json
 import os
 
-from Katana import NodegraphAPI
+from Katana import NodegraphAPI, UI4
 
-from .GSVManager import EventWidget
 from Utils2 import gsvutils
+
+_PARAM_LOCATION = "KatanaBebop.GSVEventsData"
+
+def paramScriptsStatic():
+    return NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION + ".scripts")
+
+def paramDataStatic():
+    """ Gets the events data
+
+    Returns (str): repr of JSON
+    """
+    return NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION+".data").getValue(0)
 
 
 def gsvChangedEvent(args):
@@ -28,7 +39,7 @@ def gsvChangedEvent(args):
         # get attrs
         gsv = param.getParent().getName()
         option = param.getValue(0)
-        event_data = json.loads(EventWidget.paramDataStatic())
+        event_data = json.loads(paramDataStatic())
 
         # preflight
         if gsv not in list(event_data.keys()): return
@@ -54,7 +65,7 @@ def gsvChangedEvent(args):
 
         # execute script
         if user_data["is_script"]:
-            script = EventWidget.paramScriptsStatic().getChild(user_data["script"]).getValue(0)
+            script = paramScriptsStatic().getChild(user_data["script"]).getValue(0)
             exec(script, globals(), local_variables)
         elif not user_data["is_script"]:
             if os.path.exists(user_data["filepath"]):
@@ -62,11 +73,24 @@ def gsvChangedEvent(args):
                     exec(script_descriptor.read(), local_variables)
 
 
+def updateGSVsOnSceneLoad(args):
+    """ When a new scene is loaded, this will reset all of the GSVManager tabs to the new data"""
+    # get all tabs
+    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSVManager")
+
+    # # for each tab, update tab data
+    for gsv_manager in gsv_manager_tabs:
+        gsv_manager.eventsWidget().setNode(NodegraphAPI.GetRootNode())
+        gsv_manager.update()
+        # set event data
+        # update events view
+        pass
+
 def installGSVManagerEvents(*args, **kwargs):
     from Katana import Utils
     # create default param
     # EventWidget.createGSVEventsParam()
 
     gsvutils.hideEngineersGSVUI()
-
+    Utils.EventModule.RegisterCollapsedHandler(updateGSVsOnSceneLoad, 'nodegraph_setRootNode')
     Utils.EventModule.RegisterCollapsedHandler(gsvChangedEvent, 'parameter_finalizeValue', None)

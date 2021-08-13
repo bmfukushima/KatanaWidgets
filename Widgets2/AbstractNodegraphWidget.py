@@ -43,7 +43,6 @@ class AbstractNodegraphWidget(QWidget):
 
         # setup nodegraph display
         panel = self.getPanel()
-        #self.panel_scroll_area = getWidgetAncestor(self, PanelScrollArea) # old
 
         self.panel_scroll_area = getWidgetAncestorByObjectName(self, "qt_scrollarea_viewport")
 
@@ -92,13 +91,7 @@ class AbstractNodegraphWidget(QWidget):
 
     """ WHEEL EVENT OVERRIDES """
     def wheelEventFilter(self, obj, event):
-        #scroll wheel  and AbstractNodegraphWidget.is_scrolling is True
         current_widget = getWidgetUnderCursor()
-        # from qtpy.QtWidgets import QApplication
-        # print('focus == ', QApplication.focusWidget())
-        # print('current == ', current_widget)
-        # print('widget == ', self.getWidget())
-        # print('object == ', obj)
         if current_widget == self.getWidget():
             if event.type() == QEvent.Wheel:
                 modifiers = event.modifiers()
@@ -153,8 +146,6 @@ class AbstractNodegraphWidget(QWidget):
         )
 
         # additional widgets closed to destroy this...
-        #QApplication.processEvents()
-        #Utils.EventModule.ProcessAllEvents()
         self.parameters_panel = self.panel_scroll_area.parent()
         self.parameters_panel.installEventFilter(self)
 
@@ -183,10 +174,6 @@ class AbstractNodegraphWidget(QWidget):
         # destroy
         self.destroyNodegraphEventFilter(obj, event)
         return False
-        # print('5')
-        # return_val = super(AbstractNodegraphWidget, self).eventFilter(obj, event)
-        # print('6')
-        # return return_val
 
     def nodeDelete(self, args):
         node = self.getNode()
@@ -218,7 +205,6 @@ class AbstractNodegraphWidget(QWidget):
         # ToDo Somehow this line of code breaks the NMC Context...
         """ For some reason calling this class method calls it NO MATTER WHAT...
         and apparently I don't need it... so fuck it"""
-        # NodeGraphView.CleanupModule(self)
         nodegraph_widget.cleanup()
 
     def closeEvent(self, event):

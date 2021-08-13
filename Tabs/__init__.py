@@ -1,7 +1,7 @@
 from DesiredNodesTab import DesiredNodesTab
-from MultiTools import EventsTab
+from MultiTools import EventsTab, GSVManager
 from PiPWidget import PiPOrganizerTab
-from GSVManager import GSVManager, installGSVManagerEvents
+
 # compile list of tabs
 
 #print(EventsTab.EventsTab)
@@ -9,7 +9,7 @@ from GSVManager import GSVManager, installGSVManagerEvents
 tabs_list = [
     DesiredNodesTab,
     EventsTab.Tab,
-    GSVManager,
+    GSVManager.Tab,
     PiPOrganizerTab,
 ]
 # register all tabs

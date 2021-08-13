@@ -60,6 +60,7 @@ for file_name in save_data.keys():
         pip_tab_data = {}
         pip_tab_data["file_name"] = file_name
         pip_tab_data["widget_name"] = pip_widget_name
+        print(file_name, pip_widget_name)
         pip_tab_data["constructor"] = createConstructor(save_data, widget_constructors, file_name, pip_widget_name)
 
         # append data to global tabs list

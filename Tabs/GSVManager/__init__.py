@@ -1,2 +1,0 @@
-from .GSVManager import GSVManager
-from .GSVManagerStartup import installGSVManagerEvents

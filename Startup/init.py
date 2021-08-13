@@ -77,11 +77,12 @@ def contextMenu(**kwargs):
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)
 
 # change full screen hotkey
-from MonkeyPatches import changeFullscreenHotkey
+from MonkeyPatches import changeFullscreenHotkey, installNodegraphHotkeyOverrides
 changeFullscreenHotkey(Qt.Key_B)
+# installNodegraphHotkeyOverrides()
 
-#
-from Tabs import installGSVManagerEvents
+# todo import from Tabs causes double load...
+from MultiTools.GSVManager import installGSVManagerEvents
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGSVManagerEvents)
 
 # update NMC node

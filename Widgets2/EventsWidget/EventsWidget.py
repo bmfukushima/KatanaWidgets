@@ -166,7 +166,6 @@ class AbstractEventWidget(ShojiLayout):
         if not node.getParameter(param):
             paramutils.createParamAtLocation(param + ".data", node, paramutils.STRING, initial_value="{}")
             paramutils.createParamAtLocation(param + ".scripts", node, paramutils.GROUP)
-            #node.getParameters().createChildString(param, "")
 
         self._param_location = param
         self._node = node
@@ -265,17 +264,6 @@ class AbstractEventWidget(ShojiLayout):
         new_index = self.eventsWidget().insertShojiWidget(0, column_data=column_data)
         item = new_index.internalPointer()
         self.eventsWidget().model().setItemEnabled(item, column_data["enabled"])
-
-    def loadEventsDataFromParam(self):
-        # TODO clear all items
-        try:
-            json_data = json.loads(self.paramData().getValue(0))
-        except ValueError:
-            return
-
-        for event_type in json_data:
-            event = json_data[str(event_type)]
-            self.createNewEvent(None, column_data=event)
 
     def nodeNameChange(self, args):
         """ Updates the events data when a node name has been changed in Katana """
@@ -929,6 +917,25 @@ class EventWidget(AbstractEventWidget):
             #         arg_name = arg['arg']
             #         arg_note = arg['note']
             #         print('-----|', arg_name, arg_note)
+
+    def loadEventsDataFromParam(self):
+        """ Loads all of the events data from the param and resets the current events data"""
+        # clear model
+        self.eventsWidget().clearModel()
+
+        # get data
+        try:
+            json_data = json.loads(self.paramData().getValue(0))
+        except ValueError:
+            return
+
+        # create new events
+        for event_type in json_data:
+            event = json_data[str(event_type)]
+            self.createNewEvent(None, column_data=event)
+
+        # set data
+        self.setEventsData(json_data)
 
     def updateEventsData(self):
         """ Updates the internal _events_data attr with all of the options

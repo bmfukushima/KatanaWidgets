@@ -16,9 +16,6 @@ def changeFullscreenHotkey(hotkey):
         from qtpy.QtWidgets import QTabWidget
 
         if event.key() == hotkey:
-            # isNoModifierPressed = event.modifiers() == Qt.NoModifier
-            # isCtrlOnlyModifier = event.modifiers() == Qt.ControlModifier
-            # if isNoModifierPressed or isCtrlOnlyModifier:
             if event.modifiers() == Qt.ControlModifier:
                 self.setFrameMaximized(not self.getFrameMaximized())
                 event.accept()
