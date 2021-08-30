@@ -42,9 +42,7 @@ from Utils2 import nodeutils, getFontSize, paramutils
 
 
 class DesiredNodesTab(UI4.Tabs.BaseTab):
-    """
-    Main tab widget for the desirable widgets
-    """
+    """Main tab widget for the desirable widgets"""
     NAME = 'Desired Nodes'
     def __init__(self, parent=None):
         super(DesiredNodesTab, self).__init__(parent)

@@ -64,6 +64,13 @@ Data:
 
 EventWidget --> gsvChangedEvent
 """
+""" TODO:
+Katana 4.5
+    * OnStartupComplete
+        - Not registering events
+        - Should this even be on startup complete? Yes
+    * Showing/hiding events before its saved can cause a disconnect
+        of the availbe events"""
 
 import json
 
@@ -157,6 +164,9 @@ class GSVManager(UI4.Tabs.BaseTab):
     """ KATANA EVENTS """
     def nodeGraphLoad(self, args):
         """ Reload the View Widget when a new Katana scene is opened"""
+        # preflight
+        if not self.eventsWidget().paramData(): return
+
         # reload events data
         events_data = json.loads(self.eventsWidget().paramData().getValue(0))
         self.eventsWidget().setEventsData(events_data)
@@ -308,10 +318,12 @@ class ViewGSVWidget(LabelledInputWidget):
         If it is not valid, it will reset this widget back to its original value
         """
         option = self.delegateWidget().text()
-        if option not in gsvutils.getGSVOptions(self.gsv, return_as=gsvutils.STRING):
-            return False
-        else:
+        if option in gsvutils.getGSVOptions(self.gsv, return_as=gsvutils.STRING):
             return True
+        elif option == "":
+            return True
+        else:
+            return False
 
     def setGSVOption(self, widget, option):
         """Sets the GSV Option parameter to the specified value"""
@@ -343,8 +355,10 @@ class EditWidget(QWidget):
 
         # setup default sizes
         font_size = getFontSize()
-        self._create_new_gsv_option_widget.setFixedHeight(font_size*6)
-        self._gsv_selector_widget.setFixedHeight(font_size * 6)
+        self._create_new_gsv_option_widget.setFixedHeight(font_size*7)
+        self._gsv_selector_widget.setFixedHeight(font_size * 7)
+        self._create_new_gsv_option_widget.resize(self._create_new_gsv_option_widget.width(), font_size*7)
+        self._gsv_selector_widget.resize(self._gsv_selector_widget.width(), font_size*7)
 
         # Setup Top Row
         self._user_settings_layout = QHBoxLayout()
@@ -848,10 +862,6 @@ class EventWidget(AbstractEventWidget):
         self.eventsWidget().setHeaderItemIsDragEnabled(False)
 
         self._events_data = {}
-
-        # setup events
-        self.eventsWidget().setHeaderItemDeleteEvent(self.deleteGSVEvent)
-        self.eventsWidget().setHeaderItemEnabledEvent(self.disableGSVEvent)
 
         # set style
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)

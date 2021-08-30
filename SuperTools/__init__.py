@@ -1,9 +1,8 @@
 import sys
 import os
 import inspect
-#############################################################
-#########              REGISTER PYTHON PATH              ##############
-#############################################################
+
+# REGISTER PYTHON PATH
 CURRENT_DIR = (
     os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 )
@@ -13,9 +12,8 @@ with open(__register_python_path, "rb") as source_file:
     code = compile(source_file.read(), __register_python_path, "exec")
 exec(code)
 
-#############################################################
-########                REGISTER SUPER TOOLS                #############
-#############################################################
+
+# REGISTER SUPER TOOLS
 """
 Register a new sooperdooper tool...
 1.) Add to import super tools

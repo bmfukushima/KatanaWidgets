@@ -3,7 +3,7 @@ import os
 from Katana import UI4
 from qtpy.QtWidgets import QVBoxLayout
 
-from cgwidgets.widgets import PiPWidget
+from cgwidgets.widgets import PiPOrganizerWidget
 from cgwidgets.utils import getJSONData
 from .utils import getConstructors, getSaveData
 from Utils2 import getFontSize
@@ -33,7 +33,7 @@ class PiPOrganizerTab(UI4.Tabs.BaseTab):
         sava_data = getSaveData()
 
         # create pip widget
-        self.main_widget = PiPWidget(self, save_data=sava_data, widget_types=widget_constructors)
+        self.main_widget = PiPOrganizerWidget(self, save_data=sava_data, widget_types=widget_constructors)
         self.main_widget.setHeaderDefaultLength(getFontSize() * 6)
         # add PiPWidget to Katana tab
         QVBoxLayout(self)

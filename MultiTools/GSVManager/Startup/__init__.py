@@ -1,14 +1,15 @@
 import json
 import os
 
-from Katana import NodegraphAPI, UI4
+from Katana import NodegraphAPI, UI4, Callbacks
 
-from Utils2 import gsvutils
+from Utils2 import gsvutils, paramutils
 
 _PARAM_LOCATION = "KatanaBebop.GSVEventsData"
 
 def paramScriptsStatic():
     return NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION + ".scripts")
+
 
 def paramDataStatic():
     """ Gets the events data
@@ -86,11 +87,24 @@ def updateGSVsOnSceneLoad(args):
         # update events view
         pass
 
+def createDataParamsOnSceneLoad(*args, **kwargs):
+    """Creates the parameters that store the event data on scene load/new scene """
+    node = NodegraphAPI.GetRootNode()
+    events_data = node.getParameter(_PARAM_LOCATION)
+    # create default parameter if needed
+    if not events_data:
+        paramutils.createParamAtLocation(_PARAM_LOCATION + ".data", node, paramutils.STRING, initial_value="{}")
+        paramutils.createParamAtLocation(_PARAM_LOCATION + ".scripts", node, paramutils.GROUP)
+
+
 def installGSVManagerEvents(*args, **kwargs):
     from Katana import Utils
     # create default param
     # EventWidget.createGSVEventsParam()
 
     gsvutils.hideEngineersGSVUI()
+    #Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, createDataParamsOnSceneLoad)
+
     Utils.EventModule.RegisterCollapsedHandler(updateGSVsOnSceneLoad, 'nodegraph_setRootNode')
+    Utils.EventModule.RegisterCollapsedHandler(createDataParamsOnSceneLoad, 'nodegraph_loadEnd')
     Utils.EventModule.RegisterCollapsedHandler(gsvChangedEvent, 'parameter_finalizeValue', None)

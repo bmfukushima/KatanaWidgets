@@ -48,9 +48,9 @@ class KatanaLauncher(QWidget):
             plugins = {}
         self._plugins = plugins
 
-        self.default_katana_version = '4.0v2'
-        self.default_render_engine = 'delight'
-        self.default_render_engine_version = '2.0.1'
+        self.default_katana_version = '4.0v5a010005'
+        self.default_render_engine = 'prman'
+        self.default_render_engine_version = '24.1'
 
         self.katana_dir = '/opt/katana'
         self.render_engine_dir = '/opt/renderEngines'
@@ -111,6 +111,7 @@ class KatanaLauncher(QWidget):
         for option in ['Katana', "Render Engine", "Render Version"]:
             # create widget
             input_widget = LabelledInputWidget(name=option, delegate_widget=ListInputWidget(self))
+            input_widget.delegateWidget().filter_results = False
             self.launcher_args_widgets[option] = input_widget.delegateWidget()
             self.launcher_args_widgets[option].setAlignment(Qt.AlignCenter)
             launcher_args_view.addWidget(input_widget)
@@ -150,6 +151,8 @@ class KatanaLauncher(QWidget):
         render_engines = [[renderer] for renderer in sorted(os.listdir(self.render_engine_dir))]
         self.launcher_args_widgets['Render Engine'].populate(render_engines)
         self.launcher_args_widgets['Render Engine'].setUserFinishedEditingEvent(updateRenderVersions)
+
+        updateRenderVersions(None, "prman")
 
     def __setupPlugins(self, plugins):
         self._plugins = plugins
@@ -305,7 +308,7 @@ class KatanaLauncher(QWidget):
             envars = {
                 'RMANTREE': '%s/PROSERVER' % resources,
                 'DEFAULT_RENDERER': 'prman',
-                'PIXAR_LICENSE_FILE': '/opt/renderEngines/prman/23.4/pixar.license'
+                'PIXAR_LICENSE_FILE': '/opt/renderEngines/prman/24.1/pixar.license'
             }
             return envars
 

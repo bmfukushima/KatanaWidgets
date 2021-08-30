@@ -1,5 +1,17 @@
 from qtpy.QtCore import Qt
 from Katana import Utils, Callbacks
+# import os
+# import inspect
+#
+# # REGISTER PYTHON PATH
+# CURRENT_DIR = (
+#     os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+# )
+# __register_python_path = '/'.join(CURRENT_DIR.split('/')[:-1]) + '/__register_python_path.py'
+#
+# with open(__register_python_path, "rb") as source_file:
+#     code = compile(source_file.read(), __register_python_path, "exec")
+# exec(code)
 
 
 # initialize Bebop Parameter
@@ -77,11 +89,10 @@ def contextMenu(**kwargs):
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)
 
 # change full screen hotkey
-from MonkeyPatches import changeFullscreenHotkey, installNodegraphHotkeyOverrides
-changeFullscreenHotkey(Qt.Key_B)
+# from MonkeyPatches import changeFullscreenHotkey, installNodegraphHotkeyOverrides
+# changeFullscreenHotkey(Qt.Key_B)
 # installNodegraphHotkeyOverrides()
 
-# todo import from Tabs causes double load...
 from MultiTools.GSVManager import installGSVManagerEvents
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGSVManagerEvents)
 

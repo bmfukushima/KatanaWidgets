@@ -19,7 +19,7 @@ from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI
 
 from Katana import UI4, NodegraphAPI, Utils
 from Widgets2 import AbstractSuperToolEditor, NodeViewWidget
-from Utils2 import nodeutils
+from Utils2 import nodeutils, getFontSize
 
 
 class NodeTreeEditor(AbstractSuperToolEditor):
@@ -77,9 +77,11 @@ class NodeTreeMainWidget(NodeViewWidget):
         self.setHeaderItemDeleteEvent(self.nodeDeleteEvent)
 
         # node create widget
-        self.node_create_widget = NodeTreeHeaderDelegate(self)
-        self.addHeaderDelegateWidget([Qt.Key_Q, Qt.Key_Tab], self.node_create_widget, modifier=Qt.NoModifier, focus=True)
-        self.node_create_widget.setUserFinishedEditingEvent(self.createNewNode)
+        self._node_create_widget = NodeTreeHeaderDelegate(self)
+        self.addHeaderDelegateWidget([], self._node_create_widget, modifier=Qt.NoModifier, focus=True)
+        self._node_create_widget.show()
+        self._node_create_widget.setUserFinishedEditingEvent(self.createNewNode)
+        self._node_create_widget.setFixedHeight(getFontSize() * 2)
 
     def showEvent(self, event):
         """ refresh UI on show event """
@@ -173,7 +175,6 @@ class NodeTreeMainWidget(NodeViewWidget):
 
             # create new item
             new_index = self.createNewIndexFromNode(new_node, parent_index=parent_index)
-            #new_index = self.insertShojiWidget(0, column_data={'name': name, 'type': node_type}, parent=parent_index)
             new_item = new_index.internalPointer()
 
             # set up node
@@ -208,7 +209,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
             # reset widget
             widget.setText('')
-            widget.hide()
+            # widget.hide()
 
             # TODO Set focus back on header?
             header_view_widget = self.headerViewWidget()
@@ -258,6 +259,9 @@ class NodeTreeMainWidget(NodeViewWidget):
         nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
         node.delete()
 
+    """ WIDGETS """
+    def nodeCreateWidget(self):
+        return self._node_create_widget
 
 class NodeTreeHeaderDelegate(NodeTypeListWidget):
     def __init__(self, parent=None):

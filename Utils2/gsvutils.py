@@ -243,6 +243,7 @@ def getGSVValue(gsv):
     Returns (str) """
     return getGSVParameter(gsv).getChild("value").getValue(0)
 
+
 def hideEngineersGSVUI():
     """
     Hides one of the worst GUI's ever created.

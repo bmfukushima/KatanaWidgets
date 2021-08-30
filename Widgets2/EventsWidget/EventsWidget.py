@@ -30,20 +30,6 @@ EventWidget --> (ShojiLayout)
             |-- python_tab --> (PythonTab)
                     main widget to get can be gotten through pythonWidget()
 TODO:
-    * PYTHON Script (Moving this to have the option between SCRIPT and FILE modes)
-        Store hash in the events_data, and use that hash to get a parameter
-        which can hold the raw text script (avoid char limits)
-        - get/create parameter
-        - update events_data to have a "script_mode" option
-        - Get Script Text
-        - Update text in Python Widget
-            EventDelegateWidget --> updateGUI
-            ScriptInputWidget --> updateUserInput
-            # SAVE TEXT
-        - Update events call to handle args...
-            EventWidget --> eventHandler
-        IDE popup is causing PythonWidget to lose focus
-
     *   Globals
             - disable does not work
                 on simple tools auto toggles/updates
@@ -176,7 +162,6 @@ class AbstractEventWidget(ShojiLayout):
         self._events_data = {}
 
         # setup layout
-        # TODO CHANGE MAIN WIDGET...
         self._main_widget = QWidget()
         QVBoxLayout(self.mainWidget())
 
@@ -282,7 +267,7 @@ class AbstractEventWidget(ShojiLayout):
 
             self.updateEventsData()
             self.saveEventsData()
-            self.eventsWidget().updateDelegateDisplay()
+            # self.eventsWidget().updateDelegateDisplay()
 
     """ EVENTS DATA """
     def eventsData(self, from_param=False):
@@ -465,7 +450,7 @@ class AbstractEventListViewItemDelegate(AbstractDragDropModelDelegate):
         # set update trigger
         def updateDisplay(widget, value):
             events_widget = getWidgetAncestor(self._parent, EventWidget)
-            events_widget.eventsWidget().updateDelegateDisplay()
+            # events_widget.eventsWidget().updateDelegateDisplay()
 
         delegate_widget.setUserFinishedEditingEvent(updateDisplay)
 

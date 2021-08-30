@@ -6,7 +6,21 @@ _param_location = "KatanaBebop.GlobalEventsData"
 
 def cleanupGlobalEvents(**kwargs):
     """ Destroys all global events"""
-    from Katana import NodegraphAPI, UI4
+    from Katana import UI4, NodegraphAPI
+
+    # get attrs
+    node = NodegraphAPI.GetRootNode()
+    events_data = node.getParameter(_param_location + ".data")
+
+    # cleanup data
+    if events_data:
+        if hasattr(katanaMainWindow(), "global_events_widget"):
+            katanaMainWindow().global_events_widget.disableAllEvents(events_data.getValue(0))
+
+
+def createDataParamsOnSceneLoad(*args, **kwargs):
+    """Creates the parameters that store the event data on scene load/new scene """
+    from Katana import NodegraphAPI
 
     # get attrs
     node = NodegraphAPI.GetRootNode()
@@ -16,11 +30,7 @@ def cleanupGlobalEvents(**kwargs):
     # create default parameter if needed
     if not events_data:
         paramutils.createParamAtLocation(_param_location + ".data", node, paramutils.STRING, initial_value="{}")
-        paramutils.createParamAtLocation(_param_location + ".scripts", node, paramutils.STRING, initial_value="{}")
-    # cleanup data
-    if events_data:
-        if hasattr(katanaMainWindow(), "global_events_widget"):
-            katanaMainWindow().global_events_widget.disableAllEvents(events_data.getValue(0))
+        paramutils.createParamAtLocation(_param_location + ".scripts", node, paramutils.GROUP)
 
 
 def loadGlobalEvents(*args):
@@ -45,4 +55,5 @@ def loadGlobalEvents(*args):
 
 def installGlobalEvents():
     Utils.EventModule.RegisterCollapsedHandler(loadGlobalEvents, 'nodegraph_setRootNode')
+    Utils.EventModule.RegisterCollapsedHandler(createDataParamsOnSceneLoad, 'nodegraph_loadEnd')
     Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, cleanupGlobalEvents)

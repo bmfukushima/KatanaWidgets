@@ -50,7 +50,7 @@ class NodeShapeAttrsTab(ShojiModelViewWidget):
 
     def __init__(self, parent, node):
         super(NodeShapeAttrsTab, self).__init__(parent)
-        self.setDelegateType(ShojiModelViewWidget.STACKED)
+        self.setDelegateType(ShojiModelViewWidget.STzACKED)
         # todo fix scope out
         # why does this scope out?
         from cgwidgets.settings import attrs
