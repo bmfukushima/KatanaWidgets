@@ -9,7 +9,7 @@ To Do
 '''
 from qtpy.QtWidgets import QVBoxLayout
 from Katana import UI4 , NodegraphAPI, Utils
-from Widgets2 import EventWidget
+from Widgets2 import GlobalEventWidget
 from Utils2 import widgetutils
 
 class EventsTab(UI4.Tabs.BaseTab):
@@ -25,7 +25,7 @@ class EventsTab(UI4.Tabs.BaseTab):
 
         node = NodegraphAPI.GetRootNode()
         if not hasattr(widgetutils.katanaMainWindow(), "global_events_widget"):
-            widgetutils.katanaMainWindow().global_events_widget = EventWidget(
+            widgetutils.katanaMainWindow().global_events_widget = GlobalEventWidget(
                 widgetutils.katanaMainWindow(), node=node, param=self.paramLocation())
 
         self._events_widget = widgetutils.katanaMainWindow().global_events_widget

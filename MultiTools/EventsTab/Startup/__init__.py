@@ -45,7 +45,7 @@ def createDataParamsOnSceneLoad(*args, **kwargs):
 def loadGlobalEvents(*args):
     """ Loads all global events"""
     from Katana import NodegraphAPI, UI4
-    from Widgets2 import EventWidget
+    from Widgets2 import GlobalEventWidget
 
     node = NodegraphAPI.GetRootNode()
     # load global events
@@ -54,7 +54,7 @@ def loadGlobalEvents(*args):
         # if not node.getParameter(PARAM_LOCATION):
         #     paramutils.createParamAtLocation(PARAM_LOCATION, node, paramutils.STRING, initial_value="{}")
         if not hasattr(katanaMainWindow(), "global_events_widget"):
-            katanaMainWindow().global_events_widget = EventWidget(katanaMainWindow(), node=node, param=PARAM_LOCATION)
+            katanaMainWindow().global_events_widget = GlobalEventWidget(katanaMainWindow(), node=node, param=PARAM_LOCATION)
 
         # load events
         katanaMainWindow().global_events_widget.setNode(node)

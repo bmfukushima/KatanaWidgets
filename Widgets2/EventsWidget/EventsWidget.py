@@ -818,73 +818,6 @@ class EventWidget(AbstractEventWidget):
             self.__nodeDeleteDisable, "node_setBypassed", enabled=True
         )
 
-    """ UTILS """
-    def __checkUserData(self, event_data, user_data):
-        """
-        Checks the user data against the event data to determine
-        if the the script should be running during an event
-
-        Args:
-            event_data (dict):
-            user_data (dict):
-
-        Returns (bool):
-        """
-        # Get Node
-        try:
-            node_name = user_data["node"]
-            node = NodegraphAPI.GetNode(node_name)
-        except KeyError:
-            node = None
-
-        for key in event_data.keys():
-            event_arg_data = event_data[key]
-            try:
-                user_arg_data = user_data[key]
-                #print(key, type(event_data[key]), event_data[key], user_arg_data)
-
-                # Port
-                # if isinstance(event_arg_data, "Port"):
-                if type(event_arg_data) == "Port":
-                    # output = 0
-                    # input = 1
-                    port_type = event_arg_data.getType()
-                    if port_type == 0:
-                        port = NodegraphAPI.GetOutputPort(user_arg_data)
-                    else:
-                        port = NodegraphAPI.GetInputPort(user_arg_data)
-                    if port != event_arg_data:
-                        return False
-
-                # Param
-                # if isinstance(event_arg_data, "Parameter"):
-                elif type(event_arg_data) == "Parameter":
-                    param = node.getParameter(user_arg_data)
-                    if param != event_arg_data:
-                        return False
-                    pass
-
-                # Node
-                elif key == "node":
-                    if node:
-                        if node != event_arg_data:
-                            return False
-                    else:
-                        return False
-
-                # PyXmlIO
-
-                # default data types
-                else:
-                    if event_arg_data != user_arg_data:
-                        return False
-
-            except KeyError:
-                pass
-
-        # passed all checks
-        return True
-
     """ EVENTS DATA """
     def defaultEventsData(self):
         return self._default_events_data
@@ -1005,6 +938,87 @@ class EventWidget(AbstractEventWidget):
             self.updateEventsData()
             self.eventsWidget().updateDelegateDisplay()
 
+    @classmethod
+    def test(cls, instance, *args, **kwargs):
+        instance.eventHandler()
+
+
+    """ WIDGETS """
+    def updateEventsButton(self):
+        return self._update_events_button
+
+
+class GlobalEventWidget(EventWidget):
+    def __init__(self, parent=None, node=None, param="events_data"):
+        super(GlobalEventWidget, self).__init__(parent, node, param)
+
+    """ UTILS """
+    def __checkUserData(self, event_data, user_data):
+        """
+        Checks the user data against the event data to determine
+        if the the script should be running during an event
+
+        Args:
+            event_data (dict):
+            user_data (dict):
+
+        Returns (bool):
+        """
+        # Get Node
+        try:
+            node_name = user_data["node"]
+            node = NodegraphAPI.GetNode(node_name)
+        except KeyError:
+            node = None
+
+        for key in event_data.keys():
+            event_arg_data = event_data[key]
+            try:
+                user_arg_data = user_data[key]
+                #print(key, type(event_data[key]), event_data[key], user_arg_data)
+
+                # Port
+                # if isinstance(event_arg_data, "Port"):
+                if type(event_arg_data) == "Port":
+                    # output = 0
+                    # input = 1
+                    port_type = event_arg_data.getType()
+                    if port_type == 0:
+                        port = NodegraphAPI.GetOutputPort(user_arg_data)
+                    else:
+                        port = NodegraphAPI.GetInputPort(user_arg_data)
+                    if port != event_arg_data:
+                        return False
+
+                # Param
+                # if isinstance(event_arg_data, "Parameter"):
+                elif type(event_arg_data) == "Parameter":
+                    param = node.getParameter(user_arg_data)
+                    if param != event_arg_data:
+                        return False
+                    pass
+
+                # Node
+                elif key == "node":
+                    if node:
+                        if node != event_arg_data:
+                            return False
+                    else:
+                        return False
+
+                # PyXmlIO
+
+                # default data types
+                else:
+                    if event_arg_data != user_arg_data:
+                        return False
+
+            except KeyError:
+                pass
+
+        # passed all checks
+        return True
+
     def installEvents(self, *args):
         """
         In charge of installing / uninstalling events.
@@ -1041,10 +1055,6 @@ class EventWidget(AbstractEventWidget):
         """
         self.installEvents()
 
-    @classmethod
-    def test(cls, instance, *args, **kwargs):
-        instance.eventHandler()
-
     def eventHandler(self, *args, **kwargs):
         """
         This is run every time Katana does an event that is registered with this
@@ -1053,6 +1063,7 @@ class EventWidget(AbstractEventWidget):
         script so that all of the variables that are seen can be used inside of the
         script as local variables.
 
+        Duplicate code to SimpleTools --> node --> eventHandler
         TODO: preflight for args...
             do I even need this?  You could do preflight in the script?
         """
@@ -1107,7 +1118,6 @@ class EventWidget(AbstractEventWidget):
             event_data = events_dict[key]
             event_type = event_data["name"]
             if event_type in self.eventsData():
-                print('disabling event...', event_type)
                 Utils.EventModule.RegisterCollapsedHandler(
                     self.eventHandler, event_type, enabled=False
                 )
@@ -1115,9 +1125,53 @@ class EventWidget(AbstractEventWidget):
         # update events?
         Utils.EventModule.ProcessAllEvents()
 
-    """ WIDGETS """
-    def updateEventsButton(self):
-        return self._update_events_button
+
+class SimpleToolEventWidget(EventWidget):
+    def __init__(self, parent=None, node=None, param="events_data"):
+        super(SimpleToolEventWidget, self).__init__(parent, node, param)
+
+    # todo FLAG
+    def installEvents(self, *args):
+        """
+        In charge of installing / uninstalling events.
+
+        This should be called everytime the user hits the update button
+        todo
+            * should this be a user input?  Or dynamically updating?
+            * uninstall event filters
+            * items need enabled / disabled flag to call
+        """
+        # save to param
+        self.saveEventsData()
+
+        self.node().installEvents()
+
+    def _installEvents(self, item, enabled):
+        """
+        Wrapper for installEvents so that it can be used when the user
+        disabled an event.
+        """
+        self.node().installEvents()
+
+    def removeItemEvent(self, item):
+        item.setIsEnabled(False)
+        self.installEvents()
+        # TODO disable item
+        # get item dict
+        # disable item
+        pass
+
+    def disableAllEvents(self, events_dict=None):
+        """
+        Disables all of the events associated with this EventsWidget.
+
+        If an events_dict is provided, it will disable all of the events in that
+        dict, if none is provided it will use the default call to eventsData()
+
+        Args:
+            events_dict (dict): associated with eventsData call.
+        """
+        self.node().disableAllEvents(events_dict)
 
 
 class EventListView(AbstractEventListView):

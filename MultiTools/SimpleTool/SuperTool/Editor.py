@@ -55,7 +55,7 @@ from cgwidgets.views import AbstractDragDropListView
 from cgwidgets.widgets import ShojiLayout
 
 from Katana import UI4, Utils
-from Widgets2 import (TwoFacedSuperToolWidget, EventWidget)
+from Widgets2 import (TwoFacedSuperToolWidget, SimpleToolEventWidget)
 
 from .GroupNodeEditor import GroupNodeEditorMainWidget
 
@@ -80,7 +80,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.getDesignWidget().setDelegateTitleIsShown(False)
         # create widgets
         self._group_node_editor_widget = GroupNodeEditorMainWidget(self, self.node, self.main_node)
-        self._events_widget = EventWidget(self, self.main_node)
+        self._events_widget = SimpleToolEventWidget(self, self.main_node)
 
         # setup tabs
         self.getDesignWidget().insertShojiWidget(
@@ -105,6 +105,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
     def groupNodeEditorWidget(self):
         return self._group_node_editor_widget
+
 
 class SimpleToolViewWidget(AbstractDragDropListView):
     def __init__(self, parent=None):

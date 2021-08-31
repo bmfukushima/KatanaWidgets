@@ -5,5 +5,7 @@ from .EventsWidget import (
     AbstractEventWidget,
     AbstractScriptInputWidget,
     EventWidget,
+    GlobalEventWidget,
+    SimpleToolEventWidget,
     PythonWidget
 )

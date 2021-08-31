@@ -52,9 +52,10 @@ class AbstractSuperToolEditor(QWidget):
         # I bet this is the issue with the resize
         # is that it can't get the ParamsScrollAreaWidget
         scroll_area_widget = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
-        scroll_area_widget.parent().parent().installEventFilter(self.__resizeEventFilter)
-        self.setFixedHeight(scroll_area_widget.height())
-        self.setScrollBarPolicy(Qt.Horizontal, Qt.ScrollBarAlwaysOff)
+        if scroll_area_widget:
+            scroll_area_widget.parent().parent().installEventFilter(self.__resizeEventFilter)
+            self.setFixedHeight(scroll_area_widget.height())
+            self.setScrollBarPolicy(Qt.Horizontal, Qt.ScrollBarAlwaysOff)
 
     """ GET KATANA WIDGETS """
     @staticmethod
@@ -63,11 +64,13 @@ class AbstractSuperToolEditor(QWidget):
         Returns the params widget that is central widget of the scroll area
         so that we can properly set width/height.
         """
-        if widget.objectName() == "qt_scrollarea_viewport":
-            return widget
+        if widget:
+            if widget.objectName() == "qt_scrollarea_viewport":
+                return widget
+            else:
+                return AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(widget.parent())
         else:
-            return AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(widget.parent())
-
+            return None
     @staticmethod
     def getKatanaWidgetByobjectName(widget, object_name):
         """

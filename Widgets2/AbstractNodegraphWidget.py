@@ -146,8 +146,9 @@ class AbstractNodegraphWidget(QWidget):
         )
 
         # additional widgets closed to destroy this...
-        self.parameters_panel = self.panel_scroll_area.parent()
-        self.parameters_panel.installEventFilter(self)
+        if self.panel_scroll_area:
+            self.parameters_panel = self.panel_scroll_area.parent()
+            self.parameters_panel.installEventFilter(self)
 
         if widget_list:
             for widget in widget_list:

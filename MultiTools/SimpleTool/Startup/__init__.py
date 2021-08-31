@@ -4,24 +4,21 @@ def loadLocalEvents(*args):
     """
     Loads all of the events for all SimpleTools in the scene.
     """
-    from Katana import NodegraphAPI, UI4
-    # get attrs
-    current_nodes = NodegraphAPI.GetAllEditedNodes()
-    node = None
-
+    from Katana import NodegraphAPI, UI4, Utils, FormMaster
     # view all Simple Tools to register their event handlers (kinda hacky, but w/e)
     event_nodes = NodegraphAPI.GetAllNodesByType("SimpleTool")
     for node in event_nodes:
-        NodegraphAPI.SetNodeEdited(node, True, exclusive=False)
+        node.installEvents()
 
-    # deselect last node
-    if node:
-        NodegraphAPI.SetNodeEdited(node, False, exclusive=False)
 
-    # reset view state on nodes
-    for node in current_nodes:
-        NodegraphAPI.SetNodeEdited(node, True, exclusive=False)
-
+def cleanupLocalEvents(*args, **kwargs):
+    from Katana import NodegraphAPI, UI4, Utils, FormMaster
+    event_nodes = NodegraphAPI.GetAllNodesByType("SimpleTool")
+    for node in event_nodes:
+        node.disableAllEvents()
 
 def installSimpleTools():
+    Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, cleanupLocalEvents)
     Utils.EventModule.RegisterCollapsedHandler(loadLocalEvents, 'nodegraph_loadEnd')
+
+
