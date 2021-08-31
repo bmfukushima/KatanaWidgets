@@ -212,8 +212,8 @@ class NodeTreeMainWidget(NodeViewWidget):
             # widget.hide()
 
             # TODO Set focus back on header?
-            header_view_widget = self.headerViewWidget()
-            header_view_widget.setFocus()
+            # header_view_widget = self.headerViewWidget()
+            # header_view_widget.setFocus()
         else:
             return
 
@@ -262,6 +262,7 @@ class NodeTreeMainWidget(NodeViewWidget):
     """ WIDGETS """
     def nodeCreateWidget(self):
         return self._node_create_widget
+
 
 class NodeTreeHeaderDelegate(NodeTypeListWidget):
     def __init__(self, parent=None):

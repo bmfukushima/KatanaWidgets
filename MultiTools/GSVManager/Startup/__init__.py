@@ -5,10 +5,10 @@ from Katana import NodegraphAPI, UI4, Callbacks
 
 from Utils2 import gsvutils, paramutils
 
-_PARAM_LOCATION = "KatanaBebop.GSVEventsData"
+PARAM_LOCATION = "KatanaBebop.GSVEventsData"
 
 def paramScriptsStatic():
-    return NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION + ".scripts")
+    return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION + ".scripts")
 
 
 def paramDataStatic():
@@ -16,7 +16,7 @@ def paramDataStatic():
 
     Returns (str): repr of JSON
     """
-    return NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION+".data").getValue(0)
+    return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".data").getValue(0)
 
 
 def gsvChangedEvent(args):
@@ -87,14 +87,15 @@ def updateGSVsOnSceneLoad(args):
         # update events view
         pass
 
+
 def createDataParamsOnSceneLoad(*args, **kwargs):
     """Creates the parameters that store the event data on scene load/new scene """
     node = NodegraphAPI.GetRootNode()
-    events_data = node.getParameter(_PARAM_LOCATION)
+    events_data = node.getParameter(PARAM_LOCATION)
     # create default parameter if needed
     if not events_data:
-        paramutils.createParamAtLocation(_PARAM_LOCATION + ".data", node, paramutils.STRING, initial_value="{}")
-        paramutils.createParamAtLocation(_PARAM_LOCATION + ".scripts", node, paramutils.GROUP)
+        paramutils.createParamAtLocation(PARAM_LOCATION + ".data", node, paramutils.STRING, initial_value="{}")
+        paramutils.createParamAtLocation(PARAM_LOCATION + ".scripts", node, paramutils.GROUP)
 
 
 def installGSVManagerEvents(*args, **kwargs):

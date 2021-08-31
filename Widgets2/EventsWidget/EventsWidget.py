@@ -1068,7 +1068,7 @@ class EventWidget(AbstractEventWidget):
 
                 # check params
                 if not self.__checkUserData(event_data, user_data): return
-
+                #event_data["self"] = self.node().parent()
                 # run script
                 if user_data["is_script"]:
                     script = self.paramScripts().getChild(user_data["script"]).getValue(0)
@@ -1100,13 +1100,14 @@ class EventWidget(AbstractEventWidget):
         """
         if events_dict:
             events_dict = json.loads(events_dict)
-        else:
-            events_dict = self.eventsData()
+        # else:
+        #     events_dict = self.eventsData()
 
         for key in events_dict:
             event_data = events_dict[key]
             event_type = event_data["name"]
             if event_type in self.eventsData():
+                print('disabling event...', event_type)
                 Utils.EventModule.RegisterCollapsedHandler(
                     self.eventHandler, event_type, enabled=False
                 )

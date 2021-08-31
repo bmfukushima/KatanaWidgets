@@ -107,7 +107,7 @@ from Widgets2 import (
 )
 from Utils2 import gsvutils, getFontSize
 
-_PARAM_LOCATION = "KatanaBebop.GSVEventsData"
+PARAM_LOCATION = "KatanaBebop.GSVEventsData"
 
 
 class GSVManager(UI4.Tabs.BaseTab):
@@ -166,13 +166,11 @@ class GSVManager(UI4.Tabs.BaseTab):
         """ Reload the View Widget when a new Katana scene is opened"""
         # preflight
         if not self.eventsWidget().paramData(): return
-
         # reload events data
         events_data = json.loads(self.eventsWidget().paramData().getValue(0))
         self.eventsWidget().setEventsData(events_data)
         # update variable text
         self.editWidget().setText("<variables>")
-
         # update all widgets
         self.viewWidget().update()
         self.editWidget().update()
@@ -847,7 +845,7 @@ class EventWidget(AbstractEventWidget):
                                 | -* DynamicArgsInputWidget
     """
 
-    def __init__(self, parent=None, node=None, param=_PARAM_LOCATION):
+    def __init__(self, parent=None, node=None, param=PARAM_LOCATION):
         super(EventWidget, self).__init__(
             delegate_widget_type=DisplayGSVEventWidget,
             events_list_view=GSVEventsListView,
@@ -899,14 +897,14 @@ class EventWidget(AbstractEventWidget):
 
         Returns (str): repr of JSON
         """
-        return NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION+".data").getValue(0)
+        return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".data").getValue(0)
 
     @staticmethod
     def paramScriptsStatic():
         """ Gets the scripts group parameter
 
         Returns (param)"""
-        return NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION+".scripts")
+        return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".scripts")
 
     """ EVENTS """
     def cacheScriptToParam(self, script):
@@ -980,13 +978,14 @@ class EventWidget(AbstractEventWidget):
         self.eventsWidget().clearModel()
 
         # get data
-        event_data = json.loads(NodegraphAPI.GetRootNode().getParameter(_PARAM_LOCATION+".data").getValue(0))
+        if NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION):
+            event_data = json.loads(NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".data").getValue(0))
 
-        # get GSVs
-        for gsv in list(event_data.keys()):
-            self.eventsWidget().insertShojiWidget(0, column_data={"name": str(gsv)})
+            # get GSVs
+            for gsv in list(event_data.keys()):
+                self.eventsWidget().insertShojiWidget(0, column_data={"name": str(gsv)})
 
-        self.setEventsData(event_data)
+            self.setEventsData(event_data)
 
 
 class GSVEventsListView(AbstractEventListView):

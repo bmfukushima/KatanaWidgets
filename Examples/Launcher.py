@@ -466,7 +466,7 @@ if __name__ == "__main__":
             '__ENABLED__': False},
         'Old Crap': {
             'KATANA_RESOURCES': '/media/ssd01/dev/katana/KatanaResources_old/',
-            '__ENABLED__': True}
+            '__ENABLED__': False}
     }
 
     # create main application

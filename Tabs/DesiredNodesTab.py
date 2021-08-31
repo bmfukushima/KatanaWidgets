@@ -22,11 +22,6 @@ Hierarchy:
         |- QVBoxLayout
             |- desired_nodes_tab_widget --> (ShojiModelViewWidget)
                 |-* DesiredNodesShojiPanel --> (NodeViewWidget --> ShojiModelViewWidget)
-
-ToDo
-    - Add group functionality?
-        gross.. then I have to store data or something
-            could potentially just save it on the actual param data?
 """
 from qtpy.QtWidgets import QVBoxLayout, QSizePolicy, QApplication
 from qtpy.QtCore import Qt
@@ -67,9 +62,7 @@ class DesiredNodesTab(UI4.Tabs.BaseTab):
 
 
 class DesiredNodesFrame(ShojiModelViewWidget):
-    """
-    Main frame for holding all of the individual desirable node panels
-    """
+    """Main frame for holding all of the individual desirable node panels"""
     def __init__(self, parent=None):
         super(DesiredNodesFrame, self).__init__(parent)
 
@@ -99,6 +92,7 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         self.addHeaderDelegateWidget([], self.create_desirable_group_widget, modifier=Qt.NoModifier, focus=True)
         self.create_desirable_group_widget.setUserFinishedEditingEvent(self.createNewDesirableGroup)
         self.create_desirable_group_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
+        self.create_desirable_group_widget.setFixedHeight(getFontSize() * 3)
         self.create_desirable_group_widget.show()
 
         # setup events
@@ -132,12 +126,6 @@ class DesiredNodesFrame(ShojiModelViewWidget):
 
         self.populate()
         return ShojiModelViewWidget.showEvent(self, event)
-    # def enterEvent(self, event):
-    #     """
-    #     On show, update the view
-    #     """
-    #     self.populate()
-    #     #return ShojiModelViewWidget.enterEvent(self, event)
 
     def populate(self):
         """
@@ -208,8 +196,7 @@ class DesiredNodesFrame(ShojiModelViewWidget):
 
 
 class DesiredNodesShojiPanel(NodeViewWidget):
-    """
-    A single panel in the Shoji.
+    """A single panel in the Shoji.
 
     This will display one group of desirable nodes to the user.
 
@@ -271,7 +258,7 @@ class DesiredNodesShojiPanel(NodeViewWidget):
 
     def _makeDesirableParam(self, node, enabled):
         """
-        Creates/Destroys the hidden reference to the "_is_desired" param
+        Creates/Destroys the hidden reference to the "__is_desired" param
 
         Args:
             node (Node): to make desirable
@@ -279,10 +266,11 @@ class DesiredNodesShojiPanel(NodeViewWidget):
 
         # todo make this reference hidden
         """
-        desirable_param = node.getParameter("_is_desired")
+        desirable_param = node.getParameter("__is_desired")
 
         if enabled:
-            node.getParameters().createChildString("_is_desired", self.name())
+            param = node.getParameters().createChildString("__is_desired", self.name())
+            param.setHintString({"widget": "null"})
         else:
             if desirable_param:
                 node.getParameters().deleteChild(desirable_param)
@@ -321,7 +309,7 @@ class DesiredNodesShojiPanel(NodeViewWidget):
         # force repopulate
         this.desired_nodes = []
         for node in NodegraphAPI.GetAllNodes():
-            is_desired = node.getParameter('_is_desired')
+            is_desired = node.getParameter('__is_desired')
             if is_desired:
                 if is_desired.getValue(0) == this.name():
                     this.createNewIndexFromNode(node)

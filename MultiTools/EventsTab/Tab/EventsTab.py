@@ -41,8 +41,8 @@ class EventsTab(UI4.Tabs.BaseTab):
         the same widget, and reparent that widget to the current Events Tab"""
         self.layout().addWidget(self.eventsWidget())
         node = NodegraphAPI.GetRootNode()
-        if not node.getParameter(self.paramLocation()):
-            node.getParameters().createChildString(self.paramLocation(), "")
+        # if not node.getParameter(self.paramLocation()):
+        #     node.getParameters().createChildString(self.paramLocation(), "")
 
         # update data
         self.eventsWidget().setNode(node)
