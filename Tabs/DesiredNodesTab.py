@@ -5,14 +5,23 @@ This tab has multiple groups inside of it so that the user may
 make subcategories of desirable nodes.
 
 How it works:
-This works by storing a parameter string on the project settings called "KatanaBebop.DesirableNodes.data".
-This parameter will essentially be a CSV list of all of the possible groups that the user
-has created for this Katana File.
+Create New Desirable Group:
+    Type text into field and hit enter.
+Add Desirable Objects:
+    After selecting a desirable group, drag/drop parameters into the list view
+    that is displayed in the bottom portion.
 
-When the user clicks on a specified group in the tab, Katana will look at all of the nodes
-and look for a parameter called "_is_desirable", it will then check that parameter
-to see if it fits into the current group that the user has selected, and if so, add
-a reference to this item for the user.
+This works by storing JSON metadata as a parameter under "KatanaBebop.DesirableNodes"
+Where each child will store a singular desirable groups metadata in the form of:
+    {data: [
+        {type: NODE/PARAM, node: node.getName(), param:param.getFullName()},
+        {type: NODE/PARAM, node: node.getName(), param:param.getFullName()}
+    ]}
+
+
+When the user clicks an item in the desirable stuff tab, this will look at the metadata
+on the item, which will correspond to what is stored under "KatanaBebop.DesirableNodes"
+to determine what should be displayed.
 
 Please note that at this point in time, sub groups of groups are not available.  This is something
 that may or may not be added in the future depending on how many shits I give.
@@ -20,11 +29,26 @@ that may or may not be added in the future depending on how many shits I give.
 Hierarchy:
     DesiredNodesTab --> (UI4.Tabs.BaseTab)
         |- QVBoxLayout
-            |- desired_nodes_tab_widget --> (ShojiModelViewWidget)
+            |- desired_nodes_frame --> (ShojiModelViewWidget)
                 |-* DesiredNodesShojiPanel --> (NodeViewWidget --> ShojiModelViewWidget)
+
+Data:
+KatanaBebop.DesirableNodes.DesirableGroupName
+    {data: [
+        {type: NODE/PARAM, node: node.getName(), param:param.getFullName()},
+        {type: NODE/PARAM, node: node.getName(), param:param.getFullName()}
+    ]}
 """
+"""
+TODO:
+    * Hold data as ns_attr instead of parameter? test this on load/reload
+    * delete items
+    * Change name to Desirable Stuff
+"""
+import json
+
 from qtpy.QtWidgets import QVBoxLayout, QSizePolicy, QApplication
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt, QModelIndex
 
 from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, LabelledInputWidget, OverlayInputWidget
 from cgwidgets.views import AbstractDragDropListView
@@ -33,7 +57,7 @@ from cgwidgets.settings import attrs
 
 from Katana import UI4 , NodegraphAPI, Utils
 from Widgets2 import NodeViewWidget
-from Utils2 import nodeutils, getFontSize, paramutils
+from Utils2 import nodeutils, getFontSize, paramutils, NODE, PARAM
 
 
 class DesiredNodesTab(UI4.Tabs.BaseTab):
@@ -41,24 +65,31 @@ class DesiredNodesTab(UI4.Tabs.BaseTab):
     NAME = 'Desired Nodes'
     def __init__(self, parent=None):
         super(DesiredNodesTab, self).__init__(parent)
-        # create default parameter
-        self.createDesirableNodesParam()
-
         # create main widget
-        self.desired_nodes_frame = DesiredNodesFrame(self)
+        self._desired_nodes_frame = DesiredNodesFrame(self)
 
         # setup main layout
         QVBoxLayout(self)
-        self.layout().addWidget(self.desired_nodes_frame)
+        self.layout().addWidget(self._desired_nodes_frame)
 
-    def createDesirableNodesParam(self):
-        """
-        Ensures that the parameter "KatanaBebop.DesirableNodes.data" exists in the project settings.
-        """
-        param_location = "KatanaBebop.DesirableNodes.data"
-        node = NodegraphAPI.GetRootNode()
-        param_type = paramutils.STRING
-        paramutils.createParamAtLocation(param_location, node, param_type, initial_value="")
+    @staticmethod
+    def desiredNodesParam():
+        """ Returns the Group parameter storing all of the desirable data
+
+        Returns (Param)"""
+        node = NodegraphAPI.GetNode('rootNode')
+        paramutils.createParamAtLocation("KatanaBebop.DesirableNodes", node, paramutils.GROUP)
+        return node.getParameter('KatanaBebop.DesirableNodes')
+
+    @staticmethod
+    def desirableGroups():
+        """ Returns a list of all the desirable groups
+
+        Returns (list): of strings """
+        return [child.getName() for child in DesiredNodesTab.desiredNodesParam().getChildren()]
+
+    def desiredNodesFrame(self):
+        return self._desired_nodes_frame
 
 
 class DesiredNodesFrame(ShojiModelViewWidget):
@@ -106,14 +137,10 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
 
     def purgeDesirableGroup(self, item):
-        """
-        Removes the currently selected desirable group item
-        """
+        """ Removes the currently selected desirable group item """
+        param = DesiredNodesTab.desiredNodesParam()
         name = item.columnData()['name']
-        current_groups = filter(None, self.getParam().getValue(0).split(','))
-        current_groups.remove(name)
-        new_groups = ','.join(current_groups)
-        self.getParam().setValue(new_groups, 0)
+        param.deleteChild(param.getChild(name))
 
     def itemSelected(self, item, enabled, column=0):
         if column == 0:
@@ -133,11 +160,12 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         """
         # store temp as will be overwritten
         _selected_items = [item for item in self._selected_items]
+
         # clear model
         self.clearModel()
 
         # repopulate
-        desirable_groups = filter(None, self.getParam().getValue(0).split(','))
+        desirable_groups = DesiredNodesTab.desirableGroups()
         for group in desirable_groups:
             self.addNewGroup(group)
 
@@ -146,28 +174,9 @@ class DesiredNodesFrame(ShojiModelViewWidget):
             for index in self.model().findItems(item):
                 self.setIndexSelected(index, True)
 
-    def getParam(self):
-        """
-        Returns (parameter): that stores the data for all of the desirable node groups
-        """
-        # create param if it doesnt exist
-        param_location = "KatanaBebop.DesirableNodes.data"
-        node = NodegraphAPI.GetRootNode()
-        param_type = paramutils.STRING
-        paramutils.createParamAtLocation(param_location, node, param_type, initial_value="")
-
-        # get param
-        desirable_groups_param = node.getParameter("KatanaBebop.DesirableNodes.data")
-        return desirable_groups_param
-
-    def desiredNodes(self):
-        selection = self.getAllSelectedIndexes()
-        if 0 < len(selection):
-            selected_index = selection[0]
-
     def addNewGroup(self, name):
-        """
-        Creates a new model index
+        """ Creates a new model index for the Group
+
         Args:
             name (str): the name...
         """
@@ -177,31 +186,37 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         return new_index
 
     def createNewDesirableGroup(self, widget, value):
+        """ Creates a new desirable Group
+
+        This is triggered when the user fills in the "Create New Tab" Widget
+        """
         name = self.create_desirable_group_input_widget.text()
         if name:
+            # add item
             self.addNewGroup(name)
 
-            # update katana settings
-            old_value = self.getParam().getValue(0)
-            new_value = ','.join(filter(None, [old_value, name]))
-            self.getParam().setValue(str(new_value), 0)
+            # setup katana params
+            param = DesiredNodesTab.desiredNodesParam()
+
+            param.createChildString(name, json.dumps({"data": []}))
 
             # reset widget
             widget.setText('')
-            # widget.hide()
-
-            # TODO Set focus back on header?
             header_view_widget = self.headerViewWidget()
             header_view_widget.setFocus()
 
 
 class DesiredNodesShojiPanel(NodeViewWidget):
-    """A single panel in the Shoji.
+    """A single panel in of desirable nodes/parameters.
 
     This will display one group of desirable nodes to the user.
 
     Attributes:
+        desired_data (list): of dicts of desirable data
+            {type: NODE/PARAM, node: node.getName(), param:param.getFullName()}
+
         name (str): name of the current group that is being shown.
+        param (param): the parameter on the Root Node which holds the data for this desirable group
     """
     def __init__(self, parent=None):
         super(DesiredNodesShojiPanel, self).__init__(parent)
@@ -213,7 +228,7 @@ class DesiredNodesShojiPanel(NodeViewWidget):
         # setup shoji style
         self.setMultiSelect(True)
 
-        self.desired_nodes = []
+        self._desired_data = []
         self._name = "Hello"
 
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
@@ -237,54 +252,92 @@ class DesiredNodesShojiPanel(NodeViewWidget):
     def setName(self, name):
         self._name = name
 
+    def param(self):
+        param = DesiredNodesTab.desiredNodesParam()
+        return param.getChild(self.name())
+
+    def desiredData(self):
+        return self._desired_data
+
+    def desiredNodes(self):
+        """ All of the nodes that this desirable group owns
+
+        Returns (list): of nodes"""
+        _desired_nodes = []
+        for item in self.desiredData():
+            if item["type"] == NODE:
+                _desired_nodes.append(NodegraphAPI.GetNode(item["node"]))
+        return _desired_nodes
+
+    def desiredParams(self):
+        """ All of the params] that this desirable group owns
+
+        Returns (list): of params"""
+        _desired_params = []
+        for item in self.desiredData():
+            if item["type"] == PARAM:
+                node = NodegraphAPI.getNode(item["node"])
+                param_path = ".".join(item["param"].split(".")[1:])
+                param = node.getParameter(param_path)
+                _desired_params.append(param)
+        return _desired_params
+
+    def addDesirableNodeData(self, node):
+        """ Adds a desirable node to the internal data structures"""
+        data = {"type": NODE, "node":node.getName()}
+        self.desiredData().append(data)
+
+        desirable_data = json.loads(self.param().getValue(0))
+        desirable_data["data"].append(data)
+
+        self.param().setValue(json.dumps(desirable_data), 0)
+        # update desirable data
+
+    def addDesirableParamData(self, param, node):
+        """ Adds a desirable param to the internal data structures"""
+        data = {"type": PARAM, "param":param.getFullName(), "node":node}
+        self.desiredData().append(data)
+
+        desirable_data = json.loads(self.param().getValue(0))
+        desirable_data["data"].append(data)
+
+        self.param().setValue(json.dumps(desirable_data), 0)
+
     """ DESIRABLE """
-    def setNodeDesirability(self, node, enabled):
-        """
-        Sets a nodes flag to be desirable
+    def setDesirability(self, obj, enabled, desirable_type):
+        """ Sets a objs flag to be desirable
 
         Args:
-            node (Node): to make desirable
-            enabled (bool): how $3xy this node is
+            obj (Node/Param): to make desirable
+            enabled (bool): how $3xy this obj is
+            desirable_type (DesiredNodesTab.TYPE): desirable_type to do
         """
         if enabled:
-            if node not in self.desired_nodes:
-                node_view_widget = getWidgetAncestor(self, NodeViewWidget)
-                node_view_widget.createNewIndexFromNode(node)
-                self.desired_nodes.append(node)
-                self._makeDesirableParam(node, enabled)
+            if desirable_type == NODE:
+                if obj not in self.desiredNodes():
+                    node_view_widget = getWidgetAncestor(self, NodeViewWidget)
+                    node_view_widget.createNewIndexFromNode(obj)
+                    self.addDesirableNodeData(obj)
+
+            if desirable_type == PARAM:
+                if obj not in self.desiredParams():
+                    node_view_widget = getWidgetAncestor(self, NodeViewWidget)
+                    node_view_widget.createNewIndexFromParam(obj)
+                    self.addDesirableParamData(obj, obj.getNode().getName())
 
         else:
-            self._makeDesirableParam(node, False)
-
-    def _makeDesirableParam(self, node, enabled):
-        """
-        Creates/Destroys the hidden reference to the "__is_desired" param
-
-        Args:
-            node (Node): to make desirable
-            enabled (bool): how $3xy this node is
-
-        # todo make this reference hidden
-        """
-        desirable_param = node.getParameter("__is_desired")
-
-        if enabled:
-            param = node.getParameters().createChildString("__is_desired", self.name())
-            param.setHintString(repr({"widget": "null"}))
-        else:
-            if desirable_param:
-                node.getParameters().deleteChild(desirable_param)
+            self._makeDesirableParam(obj, False)
 
     def makeUndesirable(self, item):
-        """
-        On Delete, this will remove the desirable reference to the node
+        """On Delete, this will remove the desirable reference to the node
+
         Args:
             item (ShojiModelItem): item currently selected
 
         """
         node = self.getNodeFromItem(item)
         self.setNodeDesirability(node, False)
-        self.desired_nodes.remove(node)
+        self.desiredNodes().remove(node)
 
     @staticmethod
     def populate(parent, widget, item):
@@ -306,21 +359,26 @@ class DesiredNodesShojiPanel(NodeViewWidget):
 
         # set attrs
         this.setName(item.columnData()['name'])
+
         # force repopulate
-        this.desired_nodes = []
-        for node in NodegraphAPI.GetAllNodes():
-            is_desired = node.getParameter('__is_desired')
-            if is_desired:
-                if is_desired.getValue(0) == this.name():
-                    this.createNewIndexFromNode(node)
-                    this.desired_nodes.append(node)
+        this._desired_data = []
+        desired_data = json.loads(this.param().getValue(0))["data"]
+        for obj in desired_data:
+            if obj["type"] == NODE:
+                obj = NodegraphAPI.GetNode(obj["node"])
+                this.createNewIndexFromNode(obj)
+
+            if obj["type"] == PARAM:
+                node = NodegraphAPI.GetNode(obj["node"])
+                param = ".".join(obj["param"].split(".")[1:])
+                obj = node.getParameter(param)
+                this.createNewIndexFromParam(obj)
 
 
 class DesiredNodesView(AbstractDragDropListView):
-    """
+    """ Displays the Desirable Nodes/Parameters for each group
 
-
-    """
+    This contains the drag/drop events from the Nodegraph/Parameters pane."""
     def __init__(self, parent=None):
         super(DesiredNodesView, self).__init__(parent)
 
@@ -329,6 +387,12 @@ class DesiredNodesView(AbstractDragDropListView):
         mimedata = event.mimeData()
         if mimedata.hasFormat('nodegraph/nodes'):
             event.accept()
+
+        if mimedata.hasFormat("parameter/path"):
+            event.accept()
+        #
+        # for format in mimedata.formats():
+        #     print(format, mimedata.data(format).data())
         return AbstractDragDropListView.dragEnterEvent(self, event)
 
     def dropEvent(self, event):
@@ -344,7 +408,12 @@ class DesiredNodesView(AbstractDragDropListView):
             for node_name in nodes_list:
                 # get node
                 node = NodegraphAPI.GetNode(node_name)
-                parent_widget.setNodeDesirability(node, True)
+                parent_widget.setDesirability(node, True, NODE)
+
+        if mimedata.hasFormat("parameter/path"):
+            param = eval(mimedata.data('python/text').data())
+            parent_widget = getWidgetAncestor(self, DesiredNodesShojiPanel)
+            parent_widget.setDesirability(param, True, PARAM)
 
         return AbstractDragDropListView.dropEvent(self, event)
 

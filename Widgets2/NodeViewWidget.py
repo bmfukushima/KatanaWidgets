@@ -1,9 +1,6 @@
 """
 - Needs to move to custom widget and supertool can inherit that
 - Need a node interface to connect nodes into it
-
-
-
 """
 from qtpy.QtWidgets import QVBoxLayout
 from qtpy.QtCore import QModelIndex
@@ -14,7 +11,7 @@ from cgwidgets.widgets import ShojiModelViewWidget
 from Katana import UI4, NodegraphAPI, Utils
 
 from Widgets2 import AbstractParametersDisplayWidget
-from Utils2 import nodeutils
+from Utils2 import nodeutils, NODE, PARAM
 
 class NodeViewWidget(ShojiModelViewWidget):
     def __init__(self, parent=None):
@@ -54,7 +51,26 @@ class NodeViewWidget(ShojiModelViewWidget):
         """
         name = node.getName()
         node_type = node.getType()
-        new_index = self.insertShojiWidget(0, column_data={'name': name, 'type': node_type}, parent=parent_index)
+        new_index = self.insertShojiWidget(0, column_data={'name': name, 'type': node_type, 'object_type':NODE}, parent=parent_index)
+
+        return new_index
+
+    def createNewIndexFromParam(self, param, parent_index=QModelIndex()):
+        """
+        Creates a new index in the model for the node specified.
+        Args:
+            node (Node): to create index for
+            parent_index (QModelIndex): index to create index as child of
+
+        Returns (QModelIndex): of newly created index
+
+        """
+        new_index = self.insertShojiWidget(0, column_data={
+            'name': param.getFullName(),
+            'type': param.getType(),
+            'node': param.getNode().getName(),
+            'object_type': PARAM,
+        }, parent=parent_index)
 
         return new_index
 
@@ -82,14 +98,21 @@ class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
 
     @staticmethod
     def displayNodeParameters(parent, widget, item):
-        """
-        parent (ShojiHeaderTreeView)
-        widget (ShojiModelDelegateWidget)
-        item (ShojiModelItem)
+        """ Displays the node/parameter to the user
+
+        Args:
+            parent (ShojiHeaderTreeView)
+            widget (ShojiModelDelegateWidget)
+            item (ShojiModelItem)
         """
         # ToDo Update node selected display
         #
         if item:
             this = widget.getMainWidget()
-            node_list = [NodegraphAPI.GetNode(item.columnData()['name'])]
+            if item.columnData()["object_type"] == NODE:
+                node_list = [NodegraphAPI.GetNode(item.columnData()['name'])]
+            if item.columnData()["object_type"] == PARAM:
+                node = item.columnData()["node"]
+                param = ".".join(item.columnData()["name"].split(".")[1:])
+                node_list = [NodegraphAPI.GetNode(node).getParameter(param)]
             this.populateParameters(node_list, hide_title=False)

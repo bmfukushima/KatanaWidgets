@@ -10,9 +10,7 @@ except ModuleNotFoundError:
 
 
 class AbstractParametersDisplayWidget(QScrollArea):
-    """
-    Abstract class for display parameters.
-    """
+    """Abstract class for display parameters."""
     def __init__(self, parent=None):
         super(AbstractParametersDisplayWidget, self).__init__(parent)
 
@@ -82,7 +80,14 @@ class AbstractParametersDisplayWidget(QScrollArea):
 
         # display nodes
         for node in node_list:
-            self.showParameter(node.getName(), hide_title)
+
+            # show parameter
+            try:
+                self.showParameter(node.getFullName(), hide_title)
+
+            # show node
+            except AttributeError:
+                self.showParameter(node.getName(), hide_title)
 
     def showParameter(self, node_name, hide_title=False):
         """

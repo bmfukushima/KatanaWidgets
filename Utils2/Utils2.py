@@ -5,6 +5,8 @@ try:
 except ModuleNotFoundError:
     pass
 
+NODE = 1
+PARAM = 0
 
 def createValueParam(self, name):
     """
