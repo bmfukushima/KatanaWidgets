@@ -1113,7 +1113,7 @@ class DisplayGSVEventWidgetHeader(OverlayInputWidget):
 
         # setup display mode
         self.setDisplayMode(OverlayInputWidget.ENTER)
-        self.setFixedHeight(getFontSize() * 2)
+        self.setFixedHeight(getFontSize() * 3)
 
     def createNewEvent(self, widget):
         """
@@ -1197,7 +1197,7 @@ class GSVEvent(AbstractScriptInputWidget):
         self._buttons_layout.setStretch(3, 0)
 
         # set sizes
-        self.setFixedHeight(getFontSize() * 2)
+        self.setFixedHeight(getFontSize() * 3)
         self.setHandleWidth(1)
         self.setDefaultLabelLength(100)
         self._buttons_layout.setContentsMargins(0, 0, 0, 0)
