@@ -1,5 +1,7 @@
 """
 TODO:
+    *   Publish Block
+            - Always publishes as not-live...
     *   When clicking between areas that have a popup, and when defocusing
             will cause an update, the popup will show over the boolean widget
     *   Clean up of everything...
@@ -1198,9 +1200,14 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
     Hitting Accept / Cancel will return the user back to the main GUI
     for the Variable Manager
 
+    Attributes:
+        publish_state (PublishDisplayWidget.LIVE): determines if the publish state is
+            set to live, or not live.
     TODO:
         Update doc strings...
     """
+    NOTLIVE = 0
+    LIVE = 1
     def __init__(self, parent=None):
         super(PublishDisplayWidget, self).__init__(parent)
 
@@ -1226,7 +1233,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         self.besterest_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         # set initial state
-        self.setPublishState(0)
+        self.setPublishState(PublishDisplayWidget.NOTLIVE)
 
         # create display label
         self.label = QLabel(self.name)
@@ -1296,8 +1303,7 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
 
     """ PUBLISH """
     def __setAsBesterest(self, publish_loc, node, note, version):
-        """
-        sets up this publish to be live
+        """Sets up this publish to be live
 
         Args:
             publish_loc (str): path to live directory of this
@@ -1308,9 +1314,9 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         if version == 'v000':
             live_directory = '/'.join(publish_loc.split('/')[:-1]) + '/live'
             mkdirRecursive(live_directory)
-            self.setPublishState(1)
+            self.setPublishState(PublishDisplayWidget.LIVE)
 
-        if self.getPublishState() == 1:
+        if self.publishState() == PublishDisplayWidget.LIVE:
             # get live dir
             live_dir = publish_loc[:publish_loc.rindex('/')] + '/live'
             live_file = live_dir + '/something.livegroup'
@@ -1331,8 +1337,6 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
             with open(publish_loc + '/live.csv', 'w') as filehandle:
                 filehandle.write('thecowlevel.slack.com')
 
-            # reset publish state
-            self.setPublishState(0)
             return
 
     def __convertToLiveGroup(self, publish_loc, node, version):
@@ -1408,31 +1412,23 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         note = self.text_edit.toPlainText()
 
         # publish all child groups
-        if item.getItemType() in [
-            BLOCK_ITEM,
-            MASTER_ITEM
-        ]:
+        if item.getItemType() in [BLOCK_ITEM, MASTER_ITEM]:
             num_children = item.childCount()
             for index in range(num_children):
                 child = item.child(index)
                 self.publishAllGroups(child, orig_item)
 
         # Below the recursion to inverse the winding order...
-        #self.main_widget.setWorkingItem(item)
-        #self.main_widget.variable_manager_widget.variable_browser.setCurrentItem(item)
         self.main_widget.setPattern(str(item.text(0)))
 
-        # Statement to check for original item, if it is, dont publish the pattern
+        """ Publish, if it is not the original pattern"""
         if item != orig_item:
             self.publishPattern(item)
             if item.getItemType() == BLOCK_ITEM:
                 self.publishGroup(publish_loc, item, version, note)
 
         # Publish the group
-        elif item.getItemType() in [
-            BLOCK_ITEM,
-            MASTER_ITEM
-        ]:
+        elif item.getItemType() in [BLOCK_ITEM, MASTER_ITEM]:
             self.publishGroup(publish_loc, item, version, note)
 
     def publishGroup(self, publish_loc, item, version, note):
@@ -1534,30 +1530,25 @@ class PublishDisplayWidget(AbstractUserBooleanWidget):
         # set display text
 
     def __setBesterestButtonStyle(self):
-        """
-        Sets the color / text of the besterest button based
-        on its current publish status
-        """
-        if self._publish_state % 2 == 0:
+        """Sets the color / text of the besterest button based on its current publish status"""
+        if self.publishState() == PublishDisplayWidget.NOTLIVE:
             self.besterest_button_color = repr(iColor["rgba_maybe"])
             self.besterest_button_hover_color = repr(iColor["rgba_maybe_hover"])
-            self.besterest_button.setText('Simply not the best... Not better than all the rest')
-        elif self._publish_state % 2 == 1:
+            self.besterest_button.setText("NOT BESTEREST")
+        elif self.publishState() == PublishDisplayWidget.LIVE:
             self.besterest_button_color = repr(iColor["rgba_accept"])
             self.besterest_button_hover_color = repr(iColor["rgba_accept_hover"])
-            self.besterest_button.setText("""
-BESTEREST
-* Tina Turner Voice *
-( Simply the best, better than all the rest )
-            """)
+            self.besterest_button.setText("BESTEREST")
         self.updateStyleSheet()
 
     def togglePublishState(self):
         """
         Toggles the publish state between boolean values.
         """
-        self._publish_state += 1
-        self.__setBesterestButtonStyle()
+        if self.publishState() == PublishDisplayWidget.NOTLIVE:
+            self.setPublishState(PublishDisplayWidget.LIVE)
+        elif self.publishState() == PublishDisplayWidget.LIVE:
+            self.setPublishState(PublishDisplayWidget.NOTLIVE)
 
     """ EVENTS """
     def __accepted(self):
@@ -1580,9 +1571,7 @@ BESTEREST
         self.main_widget.layout().setCurrentIndex(0)
 
     def goToNode(self):
-        """
-        Displays the current node in the mini nodegraph
-        """
+        """Displays the current node in the mini nodegraph"""
         item = self.main_widget.variable_manager_widget.variable_browser.currentItem()
         if item:
             nodegraph_panel = self.main_widget.variable_manager_widget.nodegraph_widget.getPanel()
@@ -1594,9 +1583,9 @@ BESTEREST
     def display(self):
         self.main_widget.layout().setCurrentIndex(2)
         self.text_edit.setPlainText("")
-        self.setPublishState(0)
+        self.setPublishState(PublishDisplayWidget.NOTLIVE)
 
-    """ PROPERTIES """
+        """ PROPERTIES """
     def getBesterestButtonHeight(self):
         return self.besterest_button_height
 
@@ -1608,8 +1597,8 @@ BESTEREST
         self._publish_state = publish_state
         self.__setBesterestButtonStyle()
 
-    def getPublishState(self):
-        return self._publish_state % 2
+    def publishState(self):
+        return self._publish_state
 
     @property
     def name(self):
@@ -1681,13 +1670,13 @@ class WarningWidget(AbstractUserBooleanWidget):
 
         Args:
             warning_text (str): The warning to be displayed to the user,
-                this should be roughly one sentence.
+                                                                   this should be roughly one sentence.
             accept_pressed (fun): The function to be run if the '=>' button is pressed
-            cancel_pressed (fun): The function to be run if the '<=" button is pressed
+        cancel_pressed (fun): The function to be run if the '<=" button is pressed
 
         Kwargs:
-            detailed_warning_text (str): the detailed warning message to
-                be display to the user.  This should be roughly a paragraph.
+        detailed_warning_text (str): the detailed warning message to
+        be display to the user.  This should be roughly a paragraph.
         """
         self.setAcceptEvent(accept_pressed)
         self.setCancelEvent(cancel_pressed)
