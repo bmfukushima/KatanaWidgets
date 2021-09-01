@@ -18,10 +18,8 @@ except ImportError:
     import NodegraphAPI, Utils, Nodes3DAPI, FnGeolib, NodeGraphView
     import UniqueName, FormMaster, Utils
 
-from cgwidgets.settings.colors import (
-    iColor
-)
-from cgwidgets.widgets import (LabelledInputWidget, ListInputWidget, FileBrowserInputWidget, ShojiLayout)
+from cgwidgets.settings.colors import iColor
+from cgwidgets.widgets import LabelledInputWidget, ListInputWidget, FileBrowserInputWidget, ShojiLayout
 from cgwidgets.utils import updateStyleSheet, getFontSize, getWidgetAncestorByName
 
 from .ItemTypes import (
@@ -489,7 +487,9 @@ class VariableManagerGSVMenu(ListInputWidget):
         node = self.main_widget.getNode()
 
         # create new pattern if it doesn't exist
-        gsvutils.createNewGSV(variable)
+        if variable not in gsvutils.getAllGSV(return_as=gsvutils.STRING):
+            gsvutils.createNewGSV(variable)
+            gsvutils.updateAllGSVTabs()
 
         # update variables
         self.main_widget.setVariable(variable)

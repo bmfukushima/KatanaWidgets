@@ -217,25 +217,6 @@ class VariableManagerEditor(AbstractSuperToolEditor):
         except ValueError:
             # TODO no idea why the workstation bug happens...
             # This is what happens when I switch work stations and get an error...
-            """
-            [ERROR python.root]: An AttributeError occurred in "Editor.py": 'VariableManagerEditor' object has no attribute 'main_widget'
-    Traceback (most recent call last):
-      File "/media/ssd01/dev/katana/KatanaWidgets/MultiTools/VariableManager/SuperTool/Editor.py", line 240, in hideEvent
-        current_index = self.main_widget.layout().currentIndex()
-    AttributeError: 'VariableManagerEditor' object has no attribute 'main_widget'
-[ERROR python.root]: A ValueError occurred in "EventModuleCommon.py": Collapsed handler __undoEventUpdate() of <MultiTools.VariableManager.SuperTool.Editor.VariableManagerEditor object at 0x7fef4a12d5a8> for event type "event_idle" and event ID None is already registered.
-    Traceback (most recent call last):
-      File "/media/ssd01/dev/katana/KatanaWidgets/MultiTools/VariableManager/SuperTool/Editor.py", line 251, in showEvent
-        self.main_widget.warning_display_widget.cancelPressed()
-      File "/media/ssd01/dev/katana/KatanaWidgets/Widgets2/AbstractSuperToolEditor.py", line 47, in showEvent
-        self.setupEventHandlers(True)
-      File "/media/ssd01/dev/katana/KatanaWidgets/MultiTools/VariableManager/SuperTool/Editor.py", line 217, in setupEventHandlers
-        Utils.EventModule.RegisterCollapsedHandler(
-      File "Utils/v5/EventModule.py", line 253, in RegisterCollapsedHandler
-      File "Utils/v5/EventModuleCommon.py", line 171, in RegisterCollapsedHandler
-      File "Utils/v5/EventModuleCommon.py", line 529, in _registerCollapsedHandler
-    ValueError: Collapsed handler __undoEventUpdate() of <MultiTools.VariableManager.SuperTool.Editor.VariableManagerEditor object at 0x7fef4a12d5a8> for event type "event_idle" and event ID None is already registered.
-            """
             pass
 
     def hideEvent(self, event):
@@ -285,16 +266,14 @@ class VariableManagerEditor(AbstractSuperToolEditor):
 
             if pattern_name not in options_list:
                 pattern_name = param.getValue(0)
-                makeUndoozable(
-                    self.__addGSVPattern,
-                    self.main_widget,
-                    pattern_name,
-                    "Create GSV",
-                    pattern_name
-                )
-
-                #options_list.append(pattern_name)
-
+                if pattern_name:
+                    makeUndoozable(
+                        self.__addGSVPattern,
+                        self.main_widget,
+                        pattern_name,
+                        "Create GSV",
+                        pattern_name
+                    )
 
     def __addGSVPattern(self, pattern_name):
         """
