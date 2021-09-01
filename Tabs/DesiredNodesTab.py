@@ -270,7 +270,7 @@ class DesiredNodesShojiPanel(NodeViewWidget):
 
         if enabled:
             param = node.getParameters().createChildString("__is_desired", self.name())
-            param.setHintString({"widget": "null"})
+            param.setHintString(repr({"widget": "null"}))
         else:
             if desirable_param:
                 node.getParameters().deleteChild(desirable_param)
