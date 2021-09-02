@@ -97,12 +97,16 @@ class NodeViewWidget(ShojiModelViewWidget):
         Returns (QModelIndex): of newly created index
 
         """
-        new_index = self.insertShojiWidget(0, column_data={
-            'name': param.getFullName(),
-            'type': param.getType(),
-            'node': param.getNode().getName(),
-            'object_type': PARAM,
-        }, parent=parent_index)
+        new_index = self.insertShojiWidget(
+            0,
+            column_data={
+                'name': param.getFullName(),
+                'type': param.getType(),
+                'node': param.getNode().getName(),
+                'object_type': PARAM,
+            },
+            parent=parent_index,
+            is_enableable=False)
 
         return new_index
 

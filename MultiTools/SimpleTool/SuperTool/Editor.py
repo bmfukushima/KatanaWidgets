@@ -89,8 +89,8 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
             1, column_data={'name':'Events'}, widget=self.eventsWidget())
 
         # setup flags
-        self.getDesignWidget().setHeaderItemIsDragEnabled(False)
-        self.getDesignWidget().setHeaderItemIsDropEnabled(False)
+        self.getDesignWidget().setHeaderItemIsDraggable(False)
+        self.getDesignWidget().setHeaderItemIsDroppable(False)
         self.getDesignWidget().setHeaderItemIsEditable(False)
 
         # setup events

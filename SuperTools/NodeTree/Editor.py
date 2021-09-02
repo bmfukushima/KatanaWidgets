@@ -19,7 +19,7 @@ from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI
 
 from Katana import UI4, NodegraphAPI, Utils
 from Widgets2 import AbstractSuperToolEditor, NodeViewWidget
-from Utils2 import nodeutils, getFontSize
+from Utils2 import nodeutils, getFontSize, NODE, PARAM
 
 
 class NodeTreeEditor(AbstractSuperToolEditor):
@@ -70,7 +70,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
         # setup shoji style
         self.setMultiSelect(True)
-        self.setHeaderItemIsDropEnabled(True)
+        self.setHeaderItemIsDroppable(True)
 
         # events
         self.setHeaderItemDropEvent(self.nodeMovedEvent)
@@ -98,7 +98,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
         # setup drop for new item
         if not hasattr(node, 'getChildren'):
-            new_item.setIsDropEnabled(False)
+            new_item.setIsDroppable(False)
 
         # recurse through children
         else:
@@ -180,11 +180,11 @@ class NodeTreeMainWidget(NodeViewWidget):
             # set up node
             # container
             if hasattr(new_node, 'getChildren'):
-                new_item.setIsDropEnabled(True)
+                new_item.setIsDroppable(True)
                 nodeutils.createIOPorts(new_node, force_create=False, connect=True)
             # standard
             else:
-                new_item.setIsDropEnabled(False)
+                new_item.setIsDroppable(False)
                 nodeutils.createIOPorts(new_node, force_create=False, connect=False)
 
             # get children / parent_node
@@ -301,12 +301,12 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
 
                 # create new model item
                 root_index = parent_widget.model().getIndexFromItem(parent_widget.rootItem())
-                new_index = parent_widget.insertShojiWidget(0, column_data={'name': node.getName(), 'type': node.getType()}, parent=root_index)
+                new_index = parent_widget.insertShojiWidget(0, column_data={'name': node.getName(), 'type': node.getType(), "object_type": NODE}, parent=root_index)
 
                 # setup drop handlers
                 if not hasattr(node, 'getChildren'):
                     new_item = new_index.internalPointer()
-                    new_item.setIsDropEnabled(False)
+                    new_item.setIsDroppable(False)
 
             # reconnect all nodes inside of the group
             node_list = parent_widget.getChildNodeListFromItem(parent_widget.rootItem())

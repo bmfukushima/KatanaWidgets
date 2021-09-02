@@ -188,9 +188,9 @@ class AbstractEventWidget(ShojiLayout):
         self.eventsWidget().setItemType(self.eventsModelItemType())
 
         # setup flags
-        self.eventsWidget().setHeaderItemIsDropEnabled(False)
+        self.eventsWidget().setHeaderItemIsDroppable(False)
         self.eventsWidget().setHeaderItemIsEnableable(True)
-        self.eventsWidget().setHeaderItemIsDeleteEnabled(True)
+        self.eventsWidget().setHeaderItemIsDeletable(True)
 
         # set type / position
         self.eventsWidget().setHeaderPosition(attrs.WEST, attrs.SOUTH)

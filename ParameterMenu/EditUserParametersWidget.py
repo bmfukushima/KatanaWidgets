@@ -395,7 +395,7 @@ class UserParametersWidget(ShojiModelViewWidget):
 
         # setup flags
         self.setHeaderItemIsEnableable(False)
-        #self.setHeaderItemIsRootDropEnabled(False)
+        #self.setHeaderItemIsRootDroppable(False)
         self.setHeaderItemIsEditable(True)
 
         # set custom delegate
@@ -433,7 +433,7 @@ class UserParametersWidget(ShojiModelViewWidget):
 
         # if group
         if parameter.getType() == 'group':
-            new_index.internalPointer().setIsDropEnabled(True)
+            new_index.internalPointer().setIsDroppable(True)
             children = parameter.getChildren()
             for row, child in enumerate(children):
                 self.__populateParameters(row, child, parent=new_index)
@@ -460,9 +460,9 @@ class UserParametersWidget(ShojiModelViewWidget):
 
         # setup drops
         if parameter.getType() == "group":
-            new_model_index.internalPointer().setIsDropEnabled(True)
+            new_model_index.internalPointer().setIsDroppable(True)
         else:
-            new_model_index.internalPointer().setIsDropEnabled(False)
+            new_model_index.internalPointer().setIsDroppable(False)
 
         return new_model_index
 

@@ -136,11 +136,11 @@ class GSVManager(UI4.Tabs.BaseTab):
         # setup layout
         QVBoxLayout(self)
         self.layout().addWidget(self._main_widget)
-        self.mainWidget().setHeaderItemIsDragEnabled(False)
+        self.mainWidget().setHeaderItemIsDraggable(False)
         self.mainWidget().setHeaderItemIsEditable(False)
-        self.mainWidget().setHeaderItemIsDeleteEnabled(False)
+        self.mainWidget().setHeaderItemIsDeletable(False)
         self.mainWidget().setHeaderItemIsEnableable(False)
-        self.mainWidget().setHeaderItemIsDropEnabled(False)
+        self.mainWidget().setHeaderItemIsDroppable(False)
 
         # setup Katana events
         Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
@@ -857,7 +857,7 @@ class EventWidget(AbstractEventWidget):
         # setup default attrs
         self.eventsWidget().setHeaderPosition(attrs.WEST, attrs.SOUTH)
         # self.eventsWidget().setHeaderItemIsEditable(False)
-        self.eventsWidget().setHeaderItemIsDragEnabled(False)
+        self.eventsWidget().setHeaderItemIsDraggable(False)
 
         self._events_data = {}
 

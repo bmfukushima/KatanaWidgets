@@ -43,8 +43,10 @@ KatanaBebop.DesirableStuff.DesirableGroupName
 TODO:
     * Hold data as ns_attr instead of parameter? test this on load/reload
     * Items
-        delete
+        delete 
+            handler not working?
         disable
+            handler not working?
         reorder
 """
 import json
@@ -75,7 +77,7 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         self.layout().addWidget(self._desired_stuff_frame)
 
     @staticmethod
-    def desiredNodesParam():
+    def desiredStuffParam():
         """ Returns the Group parameter storing all of the desirable data
 
         Returns (Param)"""
@@ -88,7 +90,7 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         """ Returns a list of all the desirable groups
 
         Returns (list): of strings """
-        return [child.getName() for child in DesiredStuffTab.desiredNodesParam().getChildren()]
+        return [child.getName() for child in DesiredStuffTab.desiredStuffParam().getChildren()]
 
     def desiredStuffFrame(self):
         return self._desired_stuff_frame
@@ -136,13 +138,13 @@ class DesirableStuffFrame(ShojiModelViewWidget):
         self.setHeaderItemDropEvent(self.rearrangeDesirableGroups)
 
         self.setHeaderItemIsEnableable(False)
-        self.setHeaderItemIsDropEnabled(False)
+        self.setHeaderItemIsDroppable(False)
 
         # setup style
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
 
     def rearrangeDesirableGroups(self, data, items_dropped, model, row, parent):
-        desirable_param = DesiredStuffTab.desiredNodesParam()
+        desirable_param = DesiredStuffTab.desiredStuffParam()
         child_param = desirable_param.getChild(items_dropped[0].name())
         desirable_param.reorderChild(child_param, row)
 
@@ -155,7 +157,7 @@ class DesirableStuffFrame(ShojiModelViewWidget):
             return
 
         # rename param
-        param = DesiredStuffTab.desiredNodesParam().getChild(old_value)
+        param = DesiredStuffTab.desiredStuffParam().getChild(old_value)
         param.setName(new_value)
 
         # update internal data
@@ -169,7 +171,7 @@ class DesirableStuffFrame(ShojiModelViewWidget):
 
     def purgeDesirableGroup(self, item):
         """ Removes the currently selected desirable group item """
-        param = DesiredStuffTab.desiredNodesParam()
+        param = DesiredStuffTab.desiredStuffParam()
         name = item.columnData()['name']
         param.deleteChild(param.getChild(name))
         self.updateHeaderItemSizes()
@@ -232,7 +234,7 @@ class DesirableStuffFrame(ShojiModelViewWidget):
             index = self.addNewGroup(name)
 
             # setup katana params
-            param = DesiredStuffTab.desiredNodesParam()
+            param = DesiredStuffTab.desiredStuffParam()
             new_param = param.createChildString(name, json.dumps({"data": []}))
             index.internalPointer().columnData()["name"] = new_param.getName()
 
@@ -256,18 +258,18 @@ class DesirableStuffShojiPanel(NodeViewWidget):
     """
     def __init__(self, parent=None):
         super(DesirableStuffShojiPanel, self).__init__(parent)
+
         # setup custom view
         view = DesirableStuffView(self)
         self.setHeaderViewWidget(view)
 
-        self.setHeaderItemIsEnableable(True)
-        self.setHeaderItemIsDeleteEnabled(True)
-
-        self.setHeaderItemDeleteEvent(self.makeUndesirable)
-        self.setHeaderItemEnabledEvent(self.test)
-
         # setup shoji style
-        self.setMultiSelect(True)
+        # self.setMultiSelect(True)
+
+        self.setHeaderItemIsEnableable(True)
+        self.setHeaderItemIsDeletable(True)
+
+        self.setHeaderItemDeleteEvent(self.purgeUndesirableObject)
 
         self._desired_data = []
         self._name = "Hello"
@@ -277,9 +279,6 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         # setup context menu
         # for some reason I have to add this here.. instead of in the base widget...
         self.addContextMenuEvent("Go To Node", self.goToNode)
-
-    def test(self, item, enabled):
-        print("test enabled", enabled)
 
     """ EVENTS """
     def goToNode(self, index, selected_indexes):
@@ -297,7 +296,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         self._name = name
 
     def param(self):
-        param = DesiredStuffTab.desiredNodesParam()
+        param = DesiredStuffTab.desiredStuffParam()
         return param.getChild(self.name())
 
     def desiredData(self):
@@ -372,17 +371,25 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         else:
             self._makeDesirableParam(obj, False)
 
-    def makeUndesirable(self, item):
+    def purgeUndesirableObject(self, item):
         """On Delete, this will remove the desirable reference to the node
 
         Args:
             item (ShojiModelItem): item currently selected
 
         """
-        print('test')
-        node = self.getNodeFromItem(item)
-        self.setNodeDesirability(node, False)
-        self.desiredNodes().remove(node)
+        param = DesiredStuffTab.desiredStuffParam().getChild(self.name())
+        data = json.loads(param.getValue(0))
+
+        for obj in data["data"]:
+            if item.objectType() == NODE:
+                if item.name() == obj["node"]:
+                    data["data"].remove(obj)
+            if item.objectType() == PARAM:
+                if item.name() == obj["param"]:
+                    data["data"].remove(obj)
+
+        param.setValue(json.dumps(data), 0)
 
     @staticmethod
     def populate(parent, widget, item):
