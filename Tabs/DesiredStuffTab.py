@@ -75,6 +75,7 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         # setup main layout
         QVBoxLayout(self)
         self.layout().addWidget(self._desired_stuff_frame)
+        Utils.EventModule.RegisterCollapsedHandler(self.desiredStuffFrame().populate, 'nodegraph_setRootNode')
 
     @staticmethod
     def desiredStuffParam():
@@ -84,6 +85,17 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         node = NodegraphAPI.GetNode('rootNode')
         paramutils.createParamAtLocation("KatanaBebop.DesirableStuff", node, paramutils.GROUP)
         return node.getParameter('KatanaBebop.DesirableStuff')
+
+    @staticmethod
+    def desiredData(child):
+        """ Returns a dictionary of the current scene data
+
+        Args:
+            child (str): name of Desirable Group's data to return"""
+        data_param = DesiredStuffTab.desiredStuffParam().getChild(child)
+        if data_param:
+            return json.loads(data_param.getValue(0))
+        return None
 
     @staticmethod
     def desirableGroups():
@@ -186,11 +198,7 @@ class DesirableStuffFrame(ShojiModelViewWidget):
                 if name in self._selected_items:
                     self._selected_items.remove(name)
 
-    def showEvent(self, event):
-        self.populate()
-        return ShojiModelViewWidget.showEvent(self, event)
-
-    def populate(self):
+    def populate(self, *args):
         """
         Loads all of the desirable groups from the root node
         """
