@@ -12,6 +12,7 @@ PARAMETER = 1
 VARIABLES = 0
 OPTIONS = 1
 
+# pretty sure I can delete this...
 def createNewPattern(pattern, variable, set=False):
     """
     Creates a new variable pattern.  If that pattern

@@ -1,4 +1,4 @@
-from DesiredNodesTab import DesiredNodesTab
+from DesiredStuffTab import DesiredStuffTab
 from MultiTools import EventsTab, GSVManager
 from PiPWidget import PiPOrganizerTab
 
@@ -7,7 +7,7 @@ from PiPWidget import PiPOrganizerTab
 #print(EventsTab.EventsTab)
 
 tabs_list = [
-    DesiredNodesTab,
+    DesiredStuffTab,
     EventsTab.Tab,
     GSVManager.Tab,
     PiPOrganizerTab,

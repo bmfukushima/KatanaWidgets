@@ -92,26 +92,6 @@ class AbstractEventListViewItem(ShojiModelItem):
         self.columnData()["name"] = name
         self._event_type = event_type
 
-    """ args """
-    def args(self):
-        return self.columnData()
-
-    def setArg(self, arg, value):
-        self.columnData()[arg] = value
-
-    def getArg(self, arg):
-        return self.columnData()[arg]
-
-    def getArgsList(self):
-        return list(self.columnData().keys())
-
-    def removeArg(self, arg):
-        self.columnData().pop(arg, None)
-
-    def clearArgsList(self):
-        for key in list(self.columnData().keys()):
-            self.columnData().pop(key, None)
-
 
 class AbstractEventWidget(ShojiLayout):
     """
@@ -205,7 +185,7 @@ class AbstractEventWidget(ShojiLayout):
         self.eventsWidget().setHeaderData(["name"])
 
         # setup custom item type
-        self.eventsWidget().model().setItemType(self.eventsModelItemType())
+        self.eventsWidget().setItemType(self.eventsModelItemType())
 
         # setup flags
         self.eventsWidget().setHeaderItemIsDropEnabled(False)

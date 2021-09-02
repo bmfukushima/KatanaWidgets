@@ -6,16 +6,48 @@ from qtpy.QtWidgets import QVBoxLayout
 from qtpy.QtCore import QModelIndex
 
 from cgwidgets.settings import attrs
-from cgwidgets.widgets import ShojiModelViewWidget
+from cgwidgets.widgets import ShojiModelViewWidget, ShojiModelItem
 
 from Katana import UI4, NodegraphAPI, Utils
 
 from Widgets2 import AbstractParametersDisplayWidget
 from Utils2 import nodeutils, NODE, PARAM
 
+
+class NodeViewWidgetItem(ShojiModelItem):
+    """
+    name (str): name given to this event by the user
+    event_type (str): katana event type
+    script (path): path on disk to .py file to run as script
+    args (dict): dictionary of all the args
+    index (int): current index that this item is holding in the model
+    enabled (bool): If this event should be enabledd/disabled
+    """
+
+    def __init__(self, name=None):
+        super(NodeViewWidgetItem, self).__init__(name)
+        self.setArg("name", name)
+
+    def node(self):
+        return NodegraphAPI.GetNode(self.getArg("node"))
+
+    def param(self):
+        if self.objectType() == PARAM:
+            node = NodegraphAPI.getNode(self.getArg("node"))
+            param_path = ".".join(self.getArg("param").split(".")[1:])
+            return node.getParameter(param_path)
+
+    def objectType(self):
+        return self.getArg("object_type")
+
+    def type(self):
+        return self.getArg("type")
+
+
 class NodeViewWidget(ShojiModelViewWidget):
     def __init__(self, parent=None):
         super(NodeViewWidget, self).__init__(parent)
+        self.setItemType(NodeViewWidgetItem)
         self.setHeaderPosition(attrs.WEST, attrs.SOUTH)
         self.setHeaderData(['name', 'type'])
 
@@ -26,8 +58,8 @@ class NodeViewWidget(ShojiModelViewWidget):
             dynamic_function=NodeTreeDynamicWidget.displayNodeParameters
         )
 
-        self.setHeaderItemTextChangedEvent(self.nodeNameChangedEvent)
-        self.setHeaderItemEnabledEvent(self.nodeDisableEvent)
+        self.setHeaderItemTextChangedEvent(self.objectNameChangedEvent)
+        self.setHeaderItemEnabledEvent(self.objectDisableEvent)
 
         # setup attrs
         self.setMultiSelect(True)
@@ -74,17 +106,30 @@ class NodeViewWidget(ShojiModelViewWidget):
 
         return new_index
 
-    def nodeDisableEvent(self, item, enabled):
+    def objectDisableEvent(self, item, enabled):
         """ enable/disable event """
-        node = self.getNodeFromItem(item)
-        node.setBypassed(not enabled)
+        print('object disable??')
+        if item.objectType() == NODE:
+            node = self.getNodeFromItem(item)
+            node.setBypassed(not enabled)
+        if item.objectType() == PARAM:
+            # todo param disable
+            pass
 
-    def nodeNameChangedEvent(self, item, old_value, new_value):
-        node = NodegraphAPI.GetNode(old_value)
-        node.setName(new_value)
-        Utils.EventModule.ProcessAllEvents()
-        new_name = node.getName()
-        item.columnData()['name'] = new_name
+    def objectNameChangedEvent(self, item, old_value, new_value):
+
+        if item.objectType() == NODE:
+            node = NodegraphAPI.GetNode(old_value)
+            node.setName(new_value)
+            Utils.EventModule.ProcessAllEvents()
+            new_name = node.getName()
+            item.columnData()['name'] = new_name
+
+        if item.objectType() == PARAM:
+            item.columnData()['name'] = old_value
+            # todo param name change
+            # could also just disable this in the item...
+            pass
 
 
 class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):

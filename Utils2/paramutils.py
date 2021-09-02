@@ -67,3 +67,30 @@ def createParamAtLocation(param_location, node, param_type, param=None, initial_
 
     except TypeError:
         print(current_param.getFullName(), "already exists")
+
+
+def createTeleparamWidget(node_name, hide_title=False):
+    """
+    Creates a teledrop parameter widget
+
+    Args:
+        *   node_name (str): name of node to be referenced
+        **  hide_title (bool): Determines if the title of the parameter will be hidden.
+                If there is more than one parameter, the title will not be hidden,
+                if there is only 1 then it will be hidden.
+
+    Returns:
+        teledropparam
+    """
+    from Katana import UI4, QT4FormWidgets
+    policyData = dict(displayNode="")
+    rootPolicy = QT4FormWidgets.PythonValuePolicy("cels", policyData)
+    params_policy = rootPolicy.getChildByName("displayNode")
+    params_policy.getWidgetHints().update(
+        widget='teleparam',
+        open="True",
+        hideTitle=repr(hide_title)
+    )
+    param_widget = UI4.FormMaster.KatanaWidgetFactory.buildWidget(None, params_policy)
+    params_policy.setValue(node_name, 0)
+    return param_widget
