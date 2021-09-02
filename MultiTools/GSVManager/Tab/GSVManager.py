@@ -459,6 +459,7 @@ class GSVSelectorWidget(LabelledInputWidget):
         main_widget = getWidgetAncestor(self, GSVManager)
 
         if main_widget:
+            # todo ensure GSV Names are legal
             gsv = str(self.delegateWidget().text())
             edit_widget = main_widget.editWidget()
             edit_widget.setDisplayMode(gsvutils.OPTIONS)
@@ -466,10 +467,14 @@ class GSVSelectorWidget(LabelledInputWidget):
             # create new GSV if it doesn't exist
             if gsv not in gsv_list:
                 # create new GSV in katana
-                gsvutils.createNewGSV(gsv)
+                param = gsvutils.createNewGSV(gsv)
+
+                # handle invalid user input
+                if param.getName() != gsv:
+                    self.delegateWidget().setText(param.getName())
 
                 # create new entry in the view widget
-                main_widget.viewWidget().addWidget(gsv)
+                main_widget.viewWidget().addWidget(param.getName())
 
             # Update options available to the user
             if hasattr(main_widget, '_edit_widget'):
