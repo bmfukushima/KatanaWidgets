@@ -76,6 +76,7 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         QVBoxLayout(self)
         self.layout().addWidget(self._desired_stuff_frame)
         Utils.EventModule.RegisterCollapsedHandler(self.desiredStuffFrame().populate, 'nodegraph_setRootNode')
+        Utils.EventModule.RegisterCollapsedHandler(self.updateDesiredNodeNames, 'node_setName')
 
     @staticmethod
     def desiredStuffParam():
@@ -103,6 +104,24 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
 
         Returns (list): of strings """
         return [child.getName() for child in DesiredStuffTab.desiredStuffParam().getChildren()]
+
+    def updateDesiredNodeNames(self, args):
+        """ Updates the desired objects names when a nodes name is changed """
+        for arg in args:
+            # get data
+            node = arg[2]["node"]
+            old_name = arg[2]["oldName"]
+            new_name = arg[2]["newName"]
+
+            for child in DesiredStuffTab.desiredStuffParam().getChildren():
+                data = json.loads(child.getValue(0))
+                for obj in data["data"]:
+                    if old_name == obj["node"]:
+                        obj["node"] = new_name
+
+                child.setValue(json.dumps(data), 0)
+
+            self.desiredStuffFrame().updateDelegateDisplay()
 
     def desiredStuffFrame(self):
         return self._desired_stuff_frame
