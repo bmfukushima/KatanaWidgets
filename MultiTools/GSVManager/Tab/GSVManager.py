@@ -459,7 +459,6 @@ class GSVSelectorWidget(LabelledInputWidget):
         main_widget = getWidgetAncestor(self, GSVManager)
 
         if main_widget:
-            # todo ensure GSV Names are legal
             gsv = str(self.delegateWidget().text())
             edit_widget = main_widget.editWidget()
             edit_widget.setDisplayMode(gsvutils.OPTIONS)
