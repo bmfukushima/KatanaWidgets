@@ -4,9 +4,11 @@ from Katana import NodegraphAPI, Utils
 
 try:
     from Widgets2 import TwoFaceSuperToolNode
+    from Utils2 import paramutils
 except:
     pass
 
+PARAM_LOCATION = "events_data"
 
 class SimpleToolNode(TwoFaceSuperToolNode):
     def __init__(self):
@@ -53,6 +55,8 @@ class SimpleToolNode(TwoFaceSuperToolNode):
 
         # set params
         group_node.setName(name)
+        paramutils.createParamAtLocation(PARAM_LOCATION+".data", group_node, paramutils.STRING, initial_value="{}")
+        paramutils.createParamAtLocation(PARAM_LOCATION+".scripts", group_node, paramutils.GROUP)
 
         # wire
         group_node.addOutputPort('out')

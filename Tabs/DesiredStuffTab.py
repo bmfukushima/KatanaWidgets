@@ -42,12 +42,12 @@ KatanaBebop.DesirableStuff.DesirableGroupName
 """
 TODO:
     * Hold data as ns_attr instead of parameter? test this on load/reload
-    * Items
-        delete 
-            handler not working?
-        disable
-            handler not working?
-        reorder
+    * Node/param name change...
+        update the metadata
+    * DesirableStuffShojiPanel --> desiredData()
+        --> updateDesiredDataFromParam
+        - make sure this stays in sync when doing the drag/drop/delete/etc
+        
 """
 import json
 
