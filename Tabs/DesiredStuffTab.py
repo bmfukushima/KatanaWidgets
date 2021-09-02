@@ -263,13 +263,16 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         view = DesirableStuffView(self)
         self.setHeaderViewWidget(view)
 
-        # setup shoji style
-        # self.setMultiSelect(True)
-
-        self.setHeaderItemIsEnableable(True)
+        # setup flags
+        self.setMultiSelect(True)
+        self.setHeaderItemIsEnableable(False)
         self.setHeaderItemIsDeletable(True)
+        self.setHeaderItemIsDroppable(False)
+        self.setHeaderItemIsRootDroppable(True)
+        self.setHeaderItemIsDraggable(True)
 
         self.setHeaderItemDeleteEvent(self.purgeUndesirableObject)
+        self.setHeaderItemDropEvent(self.reorganizeDesirableObjects)
 
         self._desired_data = []
         self._name = "Hello"
@@ -299,6 +302,9 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         param = DesiredStuffTab.desiredStuffParam()
         return param.getChild(self.name())
 
+    def paramData(self):
+        return json.loads(self.param().getValue(0))
+
     def desiredData(self):
         return self._desired_data
 
@@ -319,7 +325,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         _desired_params = []
         for item in self.desiredData():
             if item["type"] == PARAM:
-                node = NodegraphAPI.getNode(item["node"])
+                node = NodegraphAPI.GetNode(item["node"])
                 param_path = ".".join(item["param"].split(".")[1:])
                 param = node.getParameter(param_path)
                 _desired_params.append(param)
@@ -371,15 +377,16 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         else:
             self._makeDesirableParam(obj, False)
 
+    def updateDesiredDataFromParam(self):
+        pass
+
+    """ EVENTS """
     def purgeUndesirableObject(self, item):
         """On Delete, this will remove the desirable reference to the node
 
         Args:
-            item (ShojiModelItem): item currently selected
-
-        """
-        param = DesiredStuffTab.desiredStuffParam().getChild(self.name())
-        data = json.loads(param.getValue(0))
+            item (ShojiModelItem): item currently selected"""
+        data = self.paramData()
 
         for obj in data["data"]:
             if item.objectType() == NODE:
@@ -389,7 +396,31 @@ class DesirableStuffShojiPanel(NodeViewWidget):
                 if item.name() == obj["param"]:
                     data["data"].remove(obj)
 
-        param.setValue(json.dumps(data), 0)
+        self.param().setValue(json.dumps(data), 0)
+
+        self.updateDesiredDataFromParam()
+
+    def reorganizeDesirableObjects(self, data, items, model, row, parent):
+        data = self.paramData()
+        # remove data
+        for item in items:
+            if item.objectType() == NODE:
+                _temp_data = {"type": NODE, "node": item.name()}
+            if item.objectType() == PARAM:
+                _temp_data = {"type": PARAM, "param": item.name(), "node": item.getArg("node")}
+            data["data"].remove(_temp_data)
+
+        # reinsert data
+        for item in items:
+            if item.objectType() == NODE:
+                new_data = {"type": NODE, "node": item.name()}
+            if item.objectType() == PARAM:
+                new_data = {"type": PARAM, "param": item.name(), "node": item.getArg("node")}
+            data["data"].insert(row, new_data)
+
+        # save data
+        self.param().setValue(json.dumps(data), 0)
+        self.updateDesiredDataFromParam()
 
     @staticmethod
     def populate(parent, widget, item):
@@ -416,7 +447,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
 
         # force repopulate
         this._desired_data = []
-        desired_data = json.loads(this.param().getValue(0))["data"]
+        desired_data = reversed(json.loads(this.param().getValue(0))["data"])
         for obj_data in desired_data:
             if obj_data["type"] == NODE:
                 obj = NodegraphAPI.GetNode(obj_data["node"])
