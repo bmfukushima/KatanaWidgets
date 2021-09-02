@@ -5,8 +5,8 @@ try:
 except ModuleNotFoundError:
     pass
 
-NODE = 1
-PARAM = 0
+NODE = "node"
+PARAM = "param"
 
 def createValueParam(self, name):
     """

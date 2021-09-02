@@ -98,6 +98,7 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         super(DesiredNodesFrame, self).__init__(parent)
 
         self.setHeaderDefaultLength(getFontSize() * 6)
+
         self._selected_items = []
         self.setHeaderPosition(attrs.NORTH, attrs.SOUTH)
         self.setOrientation(Qt.Vertical)
@@ -112,19 +113,19 @@ class DesiredNodesFrame(ShojiModelViewWidget):
         )
 
         # tab create widget
-        self.create_desirable_group_input_widget = StringInputWidget()
-        self.create_desirable_group_widget = LabelledInputWidget(
+        self._create_desirable_group_input_widget = StringInputWidget()
+        self._create_desirable_group_widget = LabelledInputWidget(
             self,
             default_label_length=getFontSize() * 12,
-            delegate_widget=self.create_desirable_group_input_widget,
+            delegate_widget=self._create_desirable_group_input_widget,
             direction=Qt.Horizontal,
-            name="Create New Tab",
+            name="Create New Group",
             )
-        self.addHeaderDelegateWidget([], self.create_desirable_group_widget, modifier=Qt.NoModifier, focus=True)
-        self.create_desirable_group_widget.setUserFinishedEditingEvent(self.createNewDesirableGroup)
-        self.create_desirable_group_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
-        self.create_desirable_group_widget.setFixedHeight(getFontSize() * 3)
-        self.create_desirable_group_widget.show()
+        self.addHeaderDelegateWidget([], self._create_desirable_group_widget, modifier=Qt.NoModifier, focus=True)
+        self._create_desirable_group_widget.setUserFinishedEditingEvent(self.createNewDesirableGroup)
+        self._create_desirable_group_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
+        self._create_desirable_group_widget.setFixedHeight(getFontSize() * 3)
+        self._create_desirable_group_widget.show()
 
         # setup events
         self.setHeaderItemDeleteEvent(self.purgeDesirableGroup)
@@ -144,10 +145,13 @@ class DesiredNodesFrame(ShojiModelViewWidget):
 
     def itemSelected(self, item, enabled, column=0):
         if column == 0:
+            name = item.columnData()['name']
             if enabled:
-                self._selected_items.append(item.columnData()['name'])
+                if name not in self._selected_items:
+                    self._selected_items.append(name)
             else:
-                self._selected_items.remove(item.columnData()['name'])
+                if name in self._selected_items:
+                    self._selected_items.remove(name)
 
     def showEvent(self, event):
 
@@ -190,7 +194,7 @@ class DesiredNodesFrame(ShojiModelViewWidget):
 
         This is triggered when the user fills in the "Create New Tab" Widget
         """
-        name = self.create_desirable_group_input_widget.text()
+        name = self._create_desirable_group_input_widget.text()
         if name:
             # add item
             self.addNewGroup(name)
@@ -209,7 +213,7 @@ class DesiredNodesFrame(ShojiModelViewWidget):
 class DesiredNodesShojiPanel(NodeViewWidget):
     """A single panel in of desirable nodes/parameters.
 
-    This will display one group of desirable nodes to the user.
+    This will display one Desirable Groups nodes/parameters to the user.
 
     Attributes:
         desired_data (list): of dicts of desirable data
@@ -363,14 +367,14 @@ class DesiredNodesShojiPanel(NodeViewWidget):
         # force repopulate
         this._desired_data = []
         desired_data = json.loads(this.param().getValue(0))["data"]
-        for obj in desired_data:
-            if obj["type"] == NODE:
-                obj = NodegraphAPI.GetNode(obj["node"])
+        for obj_data in desired_data:
+            if obj_data["type"] == NODE:
+                obj = NodegraphAPI.GetNode(obj_data["node"])
                 this.createNewIndexFromNode(obj)
 
-            if obj["type"] == PARAM:
-                node = NodegraphAPI.GetNode(obj["node"])
-                param = ".".join(obj["param"].split(".")[1:])
+            if obj_data["type"] == PARAM:
+                node = NodegraphAPI.GetNode(obj_data["node"])
+                param = ".".join(obj_data["param"].split(".")[1:])
                 obj = node.getParameter(param)
                 this.createNewIndexFromParam(obj)
 
