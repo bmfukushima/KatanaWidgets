@@ -1,8 +1,11 @@
+import os
+
 from qtpy.QtWidgets import QVBoxLayout, QWidget
 
 from Katana import UI4
 
 from cgwidgets.widgets.AbstractWidgets.AbstractScriptEditor.AbstractScriptEditorWidget import ScriptEditorWidget
+
 
 class KatanaPythonEditorWidget(QWidget):
     def __init__(self, parent=None):
@@ -29,7 +32,7 @@ class ScriptEditorTab(UI4.Tabs.BaseTab):
     def __init__(self, parent=None):
         super(ScriptEditorTab, self).__init__(parent)
         QVBoxLayout(self)
-
+        os.environ["CGWscripts"] = '/media/ssd01/dev/katana/KatanaResources_old/Scripts'
         self._script_editor_widget = ScriptEditorWidget(self, python_editor=KatanaPythonEditorWidget)
 
         self.layout().addWidget(self._script_editor_widget)
