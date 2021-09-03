@@ -1,4 +1,4 @@
-from qtpy import QtWidgets, QtGui, QtCore, Qt
+from qtpy import QtWidgets, QtGui, QtCore
 from Katana import UI4, NodegraphAPI
 import sys 
 '''
