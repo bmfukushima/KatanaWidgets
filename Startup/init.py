@@ -20,6 +20,10 @@ installSimpleTools()
 from MultiTools.EventsTab import installGlobalEvents
 installGlobalEvents()
 
+# Popup Hotkeys
+from MultiTools.ScriptEditor import installPopupHotkeysEventFilter
+Callbacks.addCallback(Callbacks.Type.onStartupComplete, installPopupHotkeysEventFilter)
+
 
 # Variable Switch | Populate
 def contextMenu(**kwargs):

@@ -1,5 +1,5 @@
 from DesiredStuffTab import DesiredStuffTab
-from MultiTools import EventsTab, GSVManager
+from MultiTools import EventsTab, GSVManager, ScriptEditor
 from PiPWidget import PiPOrganizerTab
 
 # compile list of tabs
@@ -8,9 +8,10 @@ from PiPWidget import PiPOrganizerTab
 
 tabs_list = [
     DesiredStuffTab,
+    PiPOrganizerTab,
     EventsTab.Tab,
     GSVManager.Tab,
-    PiPOrganizerTab,
+    ScriptEditor.Tab
 ]
 # register all tabs
 PluginRegistry = []
