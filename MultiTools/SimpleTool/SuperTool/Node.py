@@ -24,6 +24,10 @@ class SimpleToolNode(TwoFaceSuperToolNode, EventInterface):
 
         # create main node
         self._main_node = self.createGroupNode(self, 'Basic')
+
+        # create params
+        paramutils.createParamAtLocation(PARAM_LOCATION+".data", self, paramutils.STRING, initial_value="{}")
+        paramutils.createParamAtLocation(PARAM_LOCATION+".scripts", self, paramutils.GROUP)
         param = self.getParameters().createChildString("node", "")
         param.setExpressionFlag(True)
         param.setExpression("@{node}".format(node=self._main_node.getName()))
@@ -33,11 +37,14 @@ class SimpleToolNode(TwoFaceSuperToolNode, EventInterface):
 
         self.installEvents()
 
+    def paramData(self):
+        return self.getParameter("events_data.data")
+
     def paramScripts(self):
-        return self.mainNode().getParameter("events_data.scripts")
+        return self.getParameter("events_data.scripts")
 
     def eventsData(self, **kwargs):
-        return json.loads(self.mainNode().getParameter("events_data.data").getValue(0))
+        return json.loads(self.getParameter("events_data.data").getValue(0))
 
     def mainNode(self):
         return NodegraphAPI.GetNode(self.getParameter("node").getValue(0))
@@ -59,7 +66,11 @@ class SimpleToolNode(TwoFaceSuperToolNode, EventInterface):
 
         # set params
         group_node.setName(name)
-        paramutils.createParamAtLocation(PARAM_LOCATION+".data", group_node, paramutils.STRING, initial_value="{}")
+
+        # _temp
+        temp = paramutils.createParamAtLocation(PARAM_LOCATION+".data", group_node, paramutils.STRING, initial_value="{}")
+        temp.setExpressionFlag(True)
+        temp.setExpression("=^/events_data.data")
         paramutils.createParamAtLocation(PARAM_LOCATION+".scripts", group_node, paramutils.GROUP)
 
         # wire
@@ -71,5 +82,6 @@ class SimpleToolNode(TwoFaceSuperToolNode, EventInterface):
 
     def saveEventsData(self):
         # dummy function to please the interface
+        #self.paramData().setValue(json.dumps(events_data), 0)
         pass
 
