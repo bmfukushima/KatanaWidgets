@@ -27,7 +27,7 @@ class eventFilter(QWidget):
             # get user hotkeys
             # needs to repopulate this every time to check...
             # todo hardcode
-            hotkeys_file_path = '/media/ssd01/dev/katana/KatanaResources_old/Scripts/hotkeys.json'
+            hotkeys_file_path = '/media/ssd01/dev/katana/KatanaResources_old/ScriptsTest/hotkeys.json'
             self.hotkey_dict = Locals().getFileDict(hotkeys_file_path)
 
             # get key input

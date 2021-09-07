@@ -30,29 +30,9 @@ EventWidget --> (ShojiLayout)
             |-- python_tab --> (PythonTab)
                     main widget to get can be gotten through pythonWidget()
 TODO:
-    *   Globals
-            - disable does not work
-                on simple tools auto toggles/updates
-                    - only node set edited...
-                    - only on node set true? enabled?
-    *   Load nodes init
-            on scene load, initialize all handlers
-                scene load event
-    *   Model
-            {
-                nodeid
-                eventid
-    *   EventsLabelWidget
-        --> Context Menu...
-                | -- enabled
-                        Set text styles...
-                | -- disable
-                        Set text styles...
-                | -- delete
-                        overlay red/green widet
-                            accept / cancel
-        --> editing finished
-                | -- update model
+    * SimpleTools
+        - delete handler, on node delete
+        - disable handler, on item disabled
 
 """
 
@@ -921,9 +901,7 @@ class EventWidget(AbstractEventWidget):
             # preflight
             arg = arg[0]
             node = arg[2]['node']
-            if (node == self.node().getParent()
-                or node == NodegraphAPI.GetRootNode()
-            ):
+            if node == self.node().getParent() or node == NodegraphAPI.GetRootNode():
                 # disable event handlers
                 event_type = arg[0]
                 if event_type == "node_setBypassed":
@@ -1109,8 +1087,15 @@ class GlobalEventWidget(EventWidget, EventInterface):
 
 
 class SimpleToolEventWidget(EventWidget):
-    def __init__(self, parent=None, node=None, param="events_data"):
+    """ SimpleTool Events Widget
+
+    Attributes:
+        node (Node): Internal group node that stores the data
+        simple_tool_node (Node): SimpleToolNode
+    """
+    def __init__(self, parent=None, node=None, simple_tool_node=None, param="events_data"):
         super(SimpleToolEventWidget, self).__init__(parent, node, param)
+        self._simple_tool_node = simple_tool_node
 
     # todo FLAG
     def installEvents(self, *args):
@@ -1126,14 +1111,14 @@ class SimpleToolEventWidget(EventWidget):
         # save to param
         self.saveEventsData()
 
-        self.node().installEvents()
+        self._simple_tool_node.installEvents()
 
     def _installEvents(self, item, enabled):
         """
         Wrapper for installEvents so that it can be used when the user
         disabled an event.
         """
-        self.node().installEvents()
+        self._simple_tool_node.installEvents()
 
     def removeItemEvent(self, item):
         item.setIsEnabled(False)
@@ -1153,7 +1138,7 @@ class SimpleToolEventWidget(EventWidget):
         Args:
             events_dict (dict): associated with eventsData call.
         """
-        self.node().disableAllEvents(events_dict)
+        self._simple_tool_node.disableAllEvents(events_dict)
 
 
 class EventListView(AbstractEventListView):

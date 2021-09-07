@@ -32,7 +32,7 @@ class ScriptEditorTab(UI4.Tabs.BaseTab):
     def __init__(self, parent=None):
         super(ScriptEditorTab, self).__init__(parent)
         QVBoxLayout(self)
-        os.environ["CGWscripts"] = '/media/ssd01/dev/katana/KatanaResources_old/Scripts'
+        os.environ["CGWscripts"] = '/media/ssd01/dev/katana/KatanaResources_old/ScriptsTest'
         self._script_editor_widget = ScriptEditorWidget(self, python_editor=KatanaPythonEditorWidget)
 
         self.layout().addWidget(self._script_editor_widget)
