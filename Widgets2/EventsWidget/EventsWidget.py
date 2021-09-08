@@ -238,7 +238,7 @@ class AbstractEventWidget(ShojiLayout):
 
             self.updateEventsData()
             self.saveEventsData()
-            # self.eventsWidget().updateDelegateDisplay()
+            self.eventsWidget().updateDelegateDisplay()
 
     """ EVENTS DATA """
     def eventsData(self, from_param=False):
@@ -1276,12 +1276,14 @@ class DynamicArgsInputWidget(LabelledInputWidget):
         return self.delegateWidget().text()
 
     def userInputEvent(self, widget, value):
-        """
-        When the user inputs something into the arg, this event is triggered
-        updating the model item
-        """
-        events_widget = getWidgetAncestor(self, EventDelegateWidget)
-        events_widget.item().setArg(self.arg, value)
+        """ When the user finishes editing, update the param/item data"""
+        # update item
+        events_delegate = getWidgetAncestor(self, EventDelegateWidget)
+        events_delegate.item().setArg(self.arg, value)
+
+        # update param
+        events_widget = getWidgetAncestor(self, AbstractEventWidget)
+        events_widget.saveEventsData()
 
     @property
     def arg(self):
