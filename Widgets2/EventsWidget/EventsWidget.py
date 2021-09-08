@@ -30,11 +30,6 @@ EventWidget --> (ShojiLayout)
             |-- python_tab --> (PythonTab)
                     main widget to get can be gotten through pythonWidget()
 TODO:
-    *   Remove "Update Events" button... and have this set to always live
-        run through "installEvents" for now...
-            - script toggle
-            - event creation/deletion
-            - node disable/enable
     *   EventsLabelWidget
         --> Context Menu...
                 | -- enabled
@@ -42,7 +37,7 @@ TODO:
                 | -- disable
                         Set text styles...
                 | -- delete
-                        overlay red/green widet
+                        overlay red/green widget
                             accept / cancel
         --> editing finished
                 | -- update model
@@ -53,19 +48,23 @@ import json
 import os
 
 from qtpy import API_NAME
-from qtpy.QtWidgets import (
-    QApplication, QWidget, QHBoxLayout, QVBoxLayout, QMenu, QSizePolicy, QCompleter)
+from qtpy.QtWidgets import (QWidget, QHBoxLayout, QVBoxLayout, QMenu, QSizePolicy)
 from qtpy.QtCore import Qt, QEvent
 from qtpy.QtGui import QKeySequence
 
 from Katana import Utils, NodegraphAPI, UI4
 
 from cgwidgets.widgets import (
-    ListInputWidget, LabelledInputWidget, BooleanInputWidget, ButtonInputWidget, FileBrowserInputWidget,
-    ShojiModelViewWidget, ShojiModelItem, OverlayInputWidget,
-    ShojiLayout)
+    ButtonInputWidget,
+    ListInputWidget,
+    LabelledInputWidget,
+    ShojiLayout,
+    ShojiModelViewWidget,
+    ShojiModelItem,
+    OverlayInputWidget,
+)
 from cgwidgets.views import AbstractDragDropListView, AbstractDragDropModelDelegate
-from cgwidgets.utils import getWidgetAncestor, convertScriptToString
+from cgwidgets.utils import getWidgetAncestor
 from cgwidgets.settings import attrs
 
 from Utils2 import paramutils, getFontSize
@@ -207,9 +206,7 @@ class AbstractEventWidget(ShojiLayout):
 
     """ EVENTS """
     def createNewEvent(self, widget, column_data=None):
-        """
-        Creates a new event item
-        """
+        """Creates a new event item"""
         # create default data
         if not column_data:
             column_data = {
@@ -891,11 +888,6 @@ class EventWidget(AbstractEventWidget):
             param=param)
 
         self.generateDefaultEventTypesDict()
-        # create update button
-        self._update_events_button = ButtonInputWidget(
-            self, title="Update Events", is_toggleable=False, user_clicked_event=self.installEvents)
-        self.mainWidget().layout().addWidget(self.updateEventsButton())
-        self.updateEventsButton().setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
 
         # load events
         self.loadEventsDataFromParam()
@@ -908,7 +900,8 @@ class EventWidget(AbstractEventWidget):
 
     """ Node Disabled / Deleted """
     def __nodeDeleteDisable(self, *args, **kwargs):
-        """
+        """ Delete/Disable the node (Root/SimpleTool)
+
         When this node is deleted or disabled, this function will check
         update all of the event handlers that have been registered by the
         node associated with this event widget.
@@ -960,14 +953,8 @@ class EventWidget(AbstractEventWidget):
         Creates a dictionary which has all of the default event data.
         """
         args_file = os.path.dirname(__file__) + '/args.json'
-        #args_file = '/media/ssd01/dev/katana/KatanaWidgets/SuperTools/SimpleTool/args.json'
         with open(args_file, 'r') as args:
             self._default_events_data = json.load(args)
-            # for event_type in self._events_data.keys():
-            #     for arg in self._events_data[event_type]['args']:
-            #         arg_name = arg['arg']
-            #         arg_note = arg['note']
-            #         print('-----|', arg_name, arg_note)
 
     def loadEventsDataFromParam(self):
         """ Loads all of the events data from the param and resets the current events data"""
@@ -989,8 +976,7 @@ class EventWidget(AbstractEventWidget):
         self.setEventsData(json_data)
 
     def updateEventsData(self):
-        """ Updates the internal _events_data attr with all of the options
-        add by the user..."""
+        """ Updates the internal _events_data attr with the user data"""
         root_item = self.eventsWidget().model().getRootItem()
         events_data = {}
         # get all children
@@ -1071,14 +1057,6 @@ class EventWidget(AbstractEventWidget):
             self.updateEventsData()
             self.eventsWidget().updateDelegateDisplay()
             self.installEvents()
-
-    @classmethod
-    def test(cls, instance, *args, **kwargs):
-        instance.eventHandler()
-
-    """ WIDGETS """
-    def updateEventsButton(self):
-        return self._update_events_button
 
 
 class GlobalEventWidget(EventWidget, EventInterface):
