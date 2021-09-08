@@ -28,6 +28,7 @@ CURRENT_DIR = (
     os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 )
 sys.path.append(CURRENT_DIR)
+os.environ["KATANABEBOP"] = CURRENT_DIR
 
 
 LOGO = {}
