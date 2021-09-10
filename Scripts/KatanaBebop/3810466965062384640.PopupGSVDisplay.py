@@ -1,22 +1,15 @@
 from qtpy.QtWidgets import QWidget, QComboBox, QHBoxLayout, QVBoxLayout, QMenu
 from qtpy.QtCore import Qt
+from qtpy.QtGui import QCursor
 
 from cgwidgets.utils import centerWidgetOnCursor
 
-from Katana import UI4, NodegraphAPI
-
-"""
-NAME: GSV Popup
-ICON: icon.png
-KEYBOARD_SHORTCUT: Alt+Shift+Q
-SCOPE:
-Opens a Graph State Variables editor
-
-"""
 
 class GsvComboBox(QComboBox):
     def __init__(self, parent, gsv_param):
-        super(GsvComboBox, self).__init__(parent)
+        #QComboBox.__init__(self, parent)
+        super().__init__(parent)
+        from Katana import NodegraphAPI
         self._param = gsv_param
         self._gsv = gsv_param.getName()
         self.populate()
@@ -34,13 +27,13 @@ class GsvComboBox(QComboBox):
     def populate(self):
         for child in self.param().getChild('options').getChildren():
             self.addItem( child.getValue(0))
-        
+
         value = self.param().getChild('value').getValue(0)
         index = self.findText(str(value), Qt.MatchFixedString)
 
         if index >= 0:
             self.setCurrentIndex(index)
-            
+
     def updateGSV(self):
         param = NodegraphAPI.GetRootNode().getParameter('variables.%s.value'%self.gsv())
         param.setValue(str(self.currentText()), 0)
@@ -71,15 +64,12 @@ for child_policy in variables_param_policy.getChildren():
     hbox.addWidget(blah)
     main_layout.addLayout(hbox)
 
-print("dodafff")
-
 main_widget.setAttribute(Qt.WA_NoSystemBackground)
 main_widget.setWindowFlags(main_widget.windowFlags() | Qt.FramelessWindowHint)
 main_widget.setAttribute(Qt.WA_TranslucentBackground)
 main_widget.setStyleSheet("background-color:rgba(50,50,50, 200);")
 
 main_widget.setLayout(main_layout)
-from qtpy.QtGui import QCursor
 main_widget.popup(QCursor.pos())
 #main_widget.show()
 #centerWidgetOnCursor(main_widget)

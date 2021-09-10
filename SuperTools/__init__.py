@@ -22,8 +22,8 @@ Register a new sooperdooper tool...
 import Katana
 
 # import super tools
-import NodeTree
-import SuperToolTemplate
+from . import NodeTree
+from . import SuperToolTemplate
 
 from MultiTools import VariableManager, SimpleTool
 

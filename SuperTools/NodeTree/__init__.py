@@ -8,7 +8,7 @@ ToDo:
 
 """
 
-from Node import NodeTreeNode as NODE
+from .Node import NodeTreeNode as NODE
 def EDITOR():
     from Editor import NodeTreeEditor
     return NodeTreeEditor

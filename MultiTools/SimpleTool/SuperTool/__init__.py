@@ -10,8 +10,8 @@ ToDo:
         - Input types?
 """
 
-from Node import SimpleToolNode as NODE
+from .Node import SimpleToolNode as NODE
 def EDITOR():
-    from Editor import SimpleToolEditor
+    from .Editor import SimpleToolEditor
     return SimpleToolEditor
 NAME = 'SimpleTool'

@@ -1,1 +1,1 @@
-import SuperTool
+from . import SuperTool

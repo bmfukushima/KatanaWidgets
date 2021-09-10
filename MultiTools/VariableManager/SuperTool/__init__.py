@@ -12,8 +12,8 @@
 # except:
 #     pass
 
-from Node import VariableManagerNode as NODE
+from .Node import VariableManagerNode as NODE
 def EDITOR():
-    from Editor import VariableManagerEditor
+    from .Editor import VariableManagerEditor
     return VariableManagerEditor
 NAME = 'VariableManager'

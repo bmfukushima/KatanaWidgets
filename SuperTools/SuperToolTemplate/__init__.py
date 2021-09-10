@@ -10,7 +10,7 @@ ToDo:
         - Input types?
 """
 
-from Node import SuperToolNode as NODE
+from .Node import SuperToolNode as NODE
 def EDITOR():
     from Editor import SuperToolEditor
     return SuperToolEditor

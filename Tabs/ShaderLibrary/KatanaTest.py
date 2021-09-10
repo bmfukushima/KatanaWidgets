@@ -17,7 +17,7 @@ from Katana import UI4, NodegraphAPI, KatanaFile #, self
 # Will need to figure out how these the self libraries will conflict...
 # if you load two in??
 
-from ImportLightRig import ImportRig
+from .ImportLightRig import ImportRig
 #from ImageLibrary import self
 #from ImageLibrary.Main import Library
 from cgwidgets.widgets import LibraryWidget

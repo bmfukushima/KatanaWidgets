@@ -1,2 +1,2 @@
 from .Startup import *
-import SuperTool
+from . import SuperTool
