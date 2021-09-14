@@ -4,12 +4,14 @@ from qtpy.QtGui import QCursor
 
 from cgwidgets.utils import centerWidgetOnCursor
 
+from Katana import UI4, NodegraphAPI
+
 
 class GsvComboBox(QComboBox):
     def __init__(self, parent, gsv_param):
         #QComboBox.__init__(self, parent)
         super().__init__(parent)
-        from Katana import NodegraphAPI
+
         self._param = gsv_param
         self._gsv = gsv_param.getName()
         self.populate()
@@ -25,6 +27,7 @@ class GsvComboBox(QComboBox):
         return self._gsv
 
     def populate(self):
+        from qtpy.QtCore import Qt
         for child in self.param().getChild('options').getChildren():
             self.addItem( child.getValue(0))
 
@@ -35,6 +38,8 @@ class GsvComboBox(QComboBox):
             self.setCurrentIndex(index)
 
     def updateGSV(self):
+        # import due to exec scoping issues
+        from Katana import NodegraphAPI
         param = NodegraphAPI.GetRootNode().getParameter('variables.%s.value'%self.gsv())
         param.setValue(str(self.currentText()), 0)
 

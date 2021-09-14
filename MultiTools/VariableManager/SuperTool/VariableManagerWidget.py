@@ -63,6 +63,31 @@ from Widgets2 import(
 
 from Widgets2 import iParameter
 
+class Test(QLineEdit, iParameter):
+    def __init__(self, parent=None):
+        super(Test, self).__init__(parent)
+        self.main_widget = getMainWidget(self)
+
+        # register as katana param
+        self.main_widget.parent().registerCustomParameter(
+            self, 'publish_dir', iParameter.STRING, self.text, self.editingFinished
+        )
+
+        # set default values
+        param = self.main_widget.node.getParameter(self.getLocation())
+        publish_dir = PUBLISH_DIR
+        if param:
+            value = param.getValue(0)
+            if value != '':
+                publish_dir = value
+
+        # setup signals
+        # self.editingFinished.connect(self.directoryChanged)
+
+        # set default value
+        self.main_widget.setRootPublishDir(publish_dir)
+        self.setText(publish_dir)
+        self.setValue(publish_dir)
 
 class VariableManagerWidget(QWidget):
     """
@@ -109,6 +134,8 @@ class VariableManagerWidget(QWidget):
         self.__setupRow1()
 
         self.publish_dir = PublishDirWidget(self)
+
+        # self.publish_dir = Test(self)
         # row 2
         self.r2_widget = QWidget()
 
@@ -563,6 +590,7 @@ class VariableManagerNodeMenu(NodeTypeListWidget):
     def __init__(self, parent=None):
         super(VariableManagerNodeMenu, self).__init__(parent)
         self.main_widget = getWidgetAncestorByName(self, "VariableManagerMainWidget")
+
 
     def checkUserInput(self):
         """

@@ -1,10 +1,12 @@
 """
 TODO:
-    *   Publish Block
-            - Always publishes as not-live...
     *   When clicking between areas that have a popup, and when defocusing
             will cause an update, the popup will show over the boolean widget
     *   Clean up of everything...
+    *   Case insensitive sorting unsupported in the posix collation implementation
+        Numeric mode unsupported in the posix collation implementation
+            - Being caused by the VariableManagerWidget --> PublishDirWidget --> FileBrowserInputWidget
+            When switching to a QLineEdit, the message dissappears...
     SUCKS =\
         *   Defocus events when changing between widgets loses
             ability to focus in on Line Edits?
@@ -99,14 +101,16 @@ MASTER: Top most group
 import os
 
 from qtpy.QtWidgets import (
-    QWidget, QPushButton, QLabel, QVBoxLayout, QPlainTextEdit,
-    QSizePolicy, QStackedLayout,QSpacerItem
+    QWidget,
+    QPushButton,
+    QLabel,
+    QVBoxLayout,
+    QPlainTextEdit,
+    QSizePolicy,
+    QStackedLayout,
+    QSpacerItem
 )
-from qtpy.QtCore import Qt, QEvent
-from qtpy.QtGui import (
-    QStandardItemModel, QStandardItem,
-    QBrush, QColor
-)
+from qtpy.QtCore import Qt
 
 
 try:
