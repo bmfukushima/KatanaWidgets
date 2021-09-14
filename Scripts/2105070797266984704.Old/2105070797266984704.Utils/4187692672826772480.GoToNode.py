@@ -1,0 +1,5 @@
+node = NodegraphAPI.GetNode('HUDCreate')
+NodegraphAPI.SetNodeSelected(node, True)
+nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
+nodegraph_tab._NodegraphPanel__navigationToolbarCallback(node.getParent().getName(),'useless')
+nodegraph_tab.frameSelection(node)

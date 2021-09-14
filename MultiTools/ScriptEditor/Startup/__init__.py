@@ -1,18 +1,12 @@
 import sys
 import os
 
-#from PyQt5 import QtGui, QtCore, QtWidgets
-from qtpy.QtWidgets import QWidget
-from qtpy.QtCore import QEvent
-from qtpy.QtGui import QKeySequence
+from Katana import UI4, Callbacks, KatanaResources
 
-from Katana import UI4, Callbacks
-
-from cgwidgets.widgets.AbstractWidgets.AbstractScriptEditor.AbstractScriptEditorWidgets import PopupHotkeyMenu, PopupGestureMenu
-from cgwidgets.widgets.AbstractWidgets.AbstractScriptEditor.AbstractScriptEditorUtils import Utils as Locals
 from cgwidgets.widgets.AbstractWidgets.AbstractScriptEditor.AbstractScriptEditorEventFilter import AbstractEventFilter
 
 SCRIPTS_VARIABLE = "KATANABEBOPSCRIPTS"
+
 
 class scriptEditorEventFilter(AbstractEventFilter):
     def __init__(self, parent=None):
@@ -22,16 +16,13 @@ class scriptEditorEventFilter(AbstractEventFilter):
 
 
 def installPopupHotkeysEventFilter(**kwargs):
-    from Katana import UI4
-    import sys
     # setup scripts directories
     katana_bebop_scripts_dir = os.environ["KATANABEBOP"] + "/Scripts"
-    old_scripts_dir = "/media/ssd01/dev/katana/KatanaResources_old/ScriptsTest"
-
+    sandbox_directory = KatanaResources.GetUserKatanaPath() + "/Sandbox"
     try:
-        script_directories = os.environ[SCRIPTS_VARIABLE].split(":") + [katana_bebop_scripts_dir, old_scripts_dir]
+        script_directories = os.environ[SCRIPTS_VARIABLE].split(":") + [katana_bebop_scripts_dir, sandbox_directory]
     except KeyError:
-        script_directories = [katana_bebop_scripts_dir, old_scripts_dir]
+        script_directories = [katana_bebop_scripts_dir, sandbox_directory]
 
     os.environ[SCRIPTS_VARIABLE] = ":".join(script_directories)
 
