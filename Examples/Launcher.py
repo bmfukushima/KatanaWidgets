@@ -47,7 +47,7 @@ class KatanaLauncher(QWidget):
             plugins = {}
         self._plugins = plugins
 
-        self.default_katana_version = '4.5v1a010005'
+        self.default_katana_version = '5.0v1a010005'
         self.default_render_engine = 'prman'
         self.default_render_engine_version = '24.1'
 

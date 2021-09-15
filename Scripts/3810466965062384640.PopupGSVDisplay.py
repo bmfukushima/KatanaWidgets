@@ -39,7 +39,7 @@ class GsvComboBox(QComboBox):
 
     def updateGSV(self):
         # import due to exec scoping issues
-        from Katana import NodegraphAPI
+        # from Katana import NodegraphAPI
         param = NodegraphAPI.GetRootNode().getParameter('variables.%s.value'%self.gsv())
         param.setValue(str(self.currentText()), 0)
 
