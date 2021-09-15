@@ -1,4 +1,15 @@
 """
+Hierarchy:
+    NodeColorModifierWidget --> (QWidget)
+        |- QVBoxLayout
+            |- nodeSearchBoxLayout() --> (QHBoxLayout)
+            |  |- nodeSearchBoxWidget() --> (NodeSearchBox)
+            |- color_grid_widget --> (QWidget)
+               |- color_grid_layout --> (QGridLayout)
+                   |- search_button --> (QPushButton)
+                   |- add_color_button --> (QPushButton)
+
+
 How to use...
 
 Double Click: Assign color to selected nodes
@@ -26,6 +37,19 @@ Search Bar ( ^ ):
         name{*Create} type{Group}
         would select all nodes that have *Create in the name, and all nodes that are of type group
 """
+"""
+TODO:
+    *   Clean... Everything...
+        - Populate
+            For some reason the search button/add color button are being added/removed
+            with every population.  Rather than one time, and only repopulating the colors.
+        - StyleSheets
+            Hard coded with horrid syntax
+        - Color seems to be stored as a string? Instead of a QColor?
+        - Docstrings...
+        - CSV --> JSON
+    
+"""
 
 import csv
 import os
@@ -46,21 +70,13 @@ from qtpy.QtWidgets import (
     QApplication,
     QColorDialog
 )
-from qtpy.QtCore import (
-    Qt,
-    QSortFilterProxyModel,
-    QEvent,
-    QMimeData,
-    QTimer
-)
-from qtpy.QtGui import (
-    QStandardItemModel,
-    QStandardItem,
-    QDrag,
-    QPixmap
-)
+from qtpy.QtCore import (Qt, QSortFilterProxyModel, QEvent, QTimer)
+from qtpy.QtGui import (QStandardItemModel, QStandardItem)
 
 from Katana import UI4, NodegraphAPI, KatanaResources, DrawingModule
+
+from cgwidgets.utils import centerWidgetOnCursor, getWidgetAncestor
+
 
 """
 param{param}
@@ -68,68 +84,94 @@ hasparam{param=value}
 type{nodeType}
 name{node_name}
 """
-class MainWidget(QWidget):
+class NodeColorModifierWidget(QWidget):
+    """ Main widget for modifying node colors.  This will be displayed at the top of the NodeGraph
+
+    Attributes:
+        color_label_widgets (list): of ColorLabel widgets
+        is_node_color_modifier_widget (bool): flag to search for when hiding/showing the widget
+        label_size (int): size of each label to be displayed to the user
+        label_spacing (int): space between each label
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.does_exist = True
-        self.size = 25
-        self.spacing_size = 5
-        self.addColorButton = QPushButton("+")
-        self.addColorButton.clicked.connect(self.addColor)
-        self.addColorButton.setFixedSize(self.size, self.size)
-        
-        self.addSearchButton = QPushButton("^")
-        self.addSearchButton.clicked.connect(self.addSearchBar)
-        self.addSearchButton.setFixedSize(self.size, self.size)
-        
-        self.search_bar = CreateSearchBox()
 
-        self.main_layout = QVBoxLayout()
-        self.search_bar_layout = QHBoxLayout()
-        
-        self.color_grid_widget = QWidget()
-        self.color_grid_layout = QGridLayout()
-        self.color_grid_widget.setLayout(self.color_grid_layout)
-        self.color_grid_layout.setSpacing(self.spacing_size)
+        # setup default attrs
+        self._color_label_widgets = []
+        self._is_node_color_modifier_widget = True
+        self._label_size = 35
+        self._label_spacing = 5
 
-        self.color_grid_layout.setSizeConstraint(QLayout.SetFixedSize)
+        # setup Add color button
+        self._add_color_widget = QPushButton("+")
+        self.addColorWidget().clicked.connect(self.showColorPickerWidget)
+        self.addColorWidget().setFixedSize(self.labelSize(), self.labelSize())
 
+        # setup node search box
+        self._node_search_display_toggle_widget = QPushButton("^")
+        self._node_search_display_toggle_widget.clicked.connect(self.toggleNodeSearchBarDisplay)
+        self._node_search_display_toggle_widget.setFixedSize(self.labelSize(), self.labelSize())
+
+        self._node_search_box_widget = NodeSearchBox()
+        self._node_search_box_layout = QHBoxLayout()
+        self.nodeSearchBoxLayout().addWidget(self.nodeSearchBoxWidget())
+        self._node_search_box_widget.hide()
+
+        # setup color grid
+        self._color_grid_widget = QWidget()
+        self._color_grid_layout = QGridLayout()
+        self._color_grid_widget.setLayout(self.colorGridLayout())
+        self.colorGridLayout().setSpacing(self.labelSpacing())
+        self.colorGridLayout().setSizeConstraint(QLayout.SetFixedSize)
+
+        # setup main layout
+        QVBoxLayout(self)
+        self.layout().setContentsMargins(0, 5, 0, 0)
+        self.layout().addLayout(self.nodeSearchBoxLayout())
+        self.layout().addWidget(self._color_grid_widget)
+
+        # setup style
+        self.setStyleSheet("""QPushButton{{border: {border_size}px dotted rgba(128,128,128,128);}}""".format(
+            border_size=int(self.labelSize()*0.2)))
+
+        # initialize widgets
         self.initDefaultColors()
-
-        self.main_layout.addLayout(self.search_bar_layout)
-        self.main_layout.addWidget(self.color_grid_widget)
-        self.setLayout(self.main_layout)
-        self.setDropLocation(False)
-        self.setAcceptDrops(True)
         self.populate()
-        
-    def addSearchBar(self):
-        if self.search_bar.getVisibility():
-            self.search_bar_layout.removeWidget(self.search_bar)
-            self.search_bar.hide()
-            self.search_bar.setVisibility(False)
-        if not self.search_bar.getVisibility():
-            self.search_bar.show()
-            self.search_bar_layout.addWidget(self.search_bar)
-            self.search_bar.setVisibility(True)
 
-    def resizeEvent(self, event, *args, **kwargs):
-        # to avoid recursion, checks for column count and compares to the previous column count
-        node_graph = UI4.App.Tabs.FindTopTab("Node Graph")
-        layout_width = node_graph.geometry().width()
-        init_size = self.spacing_size + self.size
-        num_columns = int ( layout_width/init_size )
-        if num_columns != self.num_columns:
-            self.num_columns = num_columns
-            self.populate()
-        self.main_layout.setSizeConstraint(QLayout.SetDefaultConstraint)
-        
+    """ WIDGETS """
+    def addColorWidget(self):
+        return self._add_color_widget
+
+    def colorGridWidget(self):
+        return self._color_grid_widget
+
+    def colorGridLayout(self):
+        return self._color_grid_layout
+
+    def nodeSearchBoxLayout(self):
+        return self._node_search_box_layout
+
+    def nodeSearchBoxWidget(self):
+        return self._node_search_box_widget
+
+    def nodeSearchDisplayToggleWidget(self):
+        return self._node_search_display_toggle_widget
+
+    """ UTILS """
+    def toggleNodeSearchBarDisplay(self):
+        """ Hides/Shows the Node search bar"""
+        if self.nodeSearchBoxWidget().isVisible():
+            self.nodeSearchBoxWidget().hide()
+        elif not self.nodeSearchBoxWidget().isVisible():
+            self.nodeSearchBoxWidget().show()
+
     def getGridSetup(self):
+        """ Gets the row/column count based off of the current labelSize() of the NodeGraph"""
         node_graph = UI4.App.Tabs.FindTopTab("Node Graph")
         layout_width = node_graph.geometry().width()
         widget_list = self.initDefaultColors()
-        margin_size = self.spacing_size
-        color_label_size = self.size
+        margin_size = self.labelSpacing()
+        color_label_size = self.labelSize()
         init_length = (margin_size + color_label_size) * len(widget_list)
         row_count = int(init_length / layout_width) + 1
         column_count = int(layout_width / (margin_size + color_label_size))
@@ -137,61 +179,57 @@ class MainWidget(QWidget):
         return row_count, column_count
     
     def populate(self):
-        for i in reversed(range(self.color_grid_layout.count())): 
-            self.color_grid_layout.itemAt(i).widget().setParent(None)
+        """ Adds all of the ColorLabels to the colorGridLayout """
 
+        # clear existing labels
+        for i in reversed(range(self.colorGridLayout().count())):
+            self.colorGridLayout().itemAt(i).widget().setParent(None)
+
+        # get attrs
         row_count, column_count = self.getGridSetup()
         widget_list = self.initDefaultColors()
 
+        # add widgets to the color grid
         for count, label in enumerate(widget_list):
             column = count % column_count
             row = int(count/column_count)
-            self.color_grid_layout.addWidget(label, row+1, column, 1, 1)
-            self.color_grid_layout.setColumnStretch(column, QSizePolicy.Minimum)
+            self.colorGridLayout().addWidget(label, row+1, column, 1, 1)
+            self.colorGridLayout().setColumnStretch(column, QSizePolicy.Minimum)
 
-        self.color_grid_layout.setSizeConstraint(QLayout.SetFixedSize)
+        self.colorGridLayout().setSizeConstraint(QLayout.SetFixedSize)
         
-    def initDefaultColors(self,widget=None):
-        widget_list = [self.addSearchButton , self.addColorButton]
+    def initDefaultColors(self):
+        """ Creates all of the Color Labels from the source file
+
+        Returns (list): of all widgets
+
+        """
+        widget_list = [self.nodeSearchDisplayToggleWidget(), self.addColorWidget()]
         publish_loc = KatanaResources.GetUserKatanaPath()
         file_loc = publish_loc + "/color.csv"
         if os.path.exists(file_loc):
-            with open(file_loc, "rb") as csvfile:
-                color_list = csvfile.readlines()[0].split("|")[:-1]
-            for color in color_list:
-                color = color.replace("\"", '')
-                color = [int(value) for value in color.split(",")]
-                widget_list.append(self.createLabel(color))
-        if widget:
-            widget_list.append(widget)
+            with open(file_loc, "r") as csvfile:
+                for line in csvfile.readlines():
+                    color_list = line.split("|")[:-1]
+                    for color in color_list:
+                        color = color.replace("\"", '')
+                        color = [int(value) for value in color.split(",")]
+                        widget_list.append(self.createColorLabel(color))
+
         return widget_list
-    
-    def getDropLocation(self):
-        return self.drop_location
-    
-    def setDropLocation(self,location):
-        self.drop_location = location
-    
-    def dragEnterEvent(self, event):
-        self.setDropLocation(True)
-        event.accept()
-        return QWidget.dragEnterEvent(self, event)
-    
-    def dragLeaveEvent(self, event):
-        self.setDropLocation(False)
-        event.accept()
-        return QWidget.dragLeaveEvent(self, event)
 
-    def addColor(self):
-        main_window = MainWindow(self)
-        main_window.show()
+    def createColorLabel(self, color):
+        """ Creates a color label.
 
-    def createLabel(self, color):
+        The color label's are the squares of color that show up in the main display
+
+        Args:
+            color (tuple): rgb string values 0-255"""
         label = ColorLabel(color=color)
         label.setStyleSheet("background-color: rgb(%s,%s,%s);" % (color[0], color[1], color[2]))
-        label.setFixedSize(self.size, self.size)
+        label.setFixedSize(self.labelSize(), self.labelSize())
         return label
-    
+
     def labelClicked(self, widget):
         label = widget
         selected = label.isSelected()
@@ -199,25 +237,57 @@ class MainWidget(QWidget):
             label.setStyleSheet("background-color: rgb(%s,%s,%s);" % (label.color[0], label.color[1], label.color[2]))
             label.selected = False
         else:
-            label.setStyleSheet("background-color: rgb(%s,%s,%s);       \
-                            border-style: inset;               \
-                            border-width: 2px;                  \
-                            border-radius: 1px;                \
-                            border-color: rgb(64,64,64);                \
-                            " % (label.color[0], label.color[1], label.color[2]))
+            label.setStyleSheet("""
+                background-color: rgb({r},{g},{b});
+                border: {border_size}px dotted rgba(128,128,128,255)""".format(
+                r=label.color[0], g=label.color[1], b=label.color[2], border_size=int(self.labelSize() * 0.2)))
             label.selected = True
 
-    def keyPressEvent(self, event, *args, **kwargs):
-        if event.key() in [16777219, 16777223]:
-            layout = self.color_grid_layout
-            for index in range(layout.childCount()):
-                label = layout.itemAt(index).widget()
+    """ PROPERTIES """
+    def colorLabelWidgets(self):
+        return self._color_label_widgets
+
+    def labelSize(self):
+        return self._label_size
+
+    def setLabelSize(self, label_size):
+        self._label_size = label_size
+
+    def labelSpacing(self):
+        return self._label_spacing
+
+    def setLabelSpacing(self, label_spacing):
+        self._label_spacing = label_spacing
+
+    """ EVENTS """
+    def showColorPickerWidget(self):
+        """ Shows the color picket widget to the user"""
+        color_picker_widget = ColorPickerWidget(self)
+        color_picker_widget.show()
+        centerWidgetOnCursor(color_picker_widget)
+
+    def resizeEvent(self, event):
+        """ On resize, layout all of the ColorLabels to fit in the active view """
+        # to avoid recursion, checks for column count and compares to the previous column count
+        node_graph = UI4.App.Tabs.FindTopTab("Node Graph")
+        layout_width = node_graph.geometry().width()
+        init_size = self.labelSpacing() + self.labelSize()
+        num_columns = int(layout_width/init_size)
+        if num_columns != self.num_columns:
+            self.num_columns = num_columns
+            self.populate()
+        self.layout().setSizeConstraint(QLayout.SetDefaultConstraint)
+
+    def keyPressEvent(self, event):
+        if event.key() in [Qt.Key_Delete, Qt.Key_Backspace]:
+            for index in range(self.colorGridLayout().childCount()):
+                label = self.colorGridLayout().itemAt(index).widget()
                 if hasattr(label, "selected"):
                     if label.isSelected():
                         label.deleteSelf()
 
 
-class CreateSearchBox(QComboBox):
+class NodeSearchBox(QComboBox):
     """a way to create new nodes inside of the widget itself"""
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -252,14 +322,14 @@ class CreateSearchBox(QComboBox):
         create_new_node_widget.setModelColumn(0)
 
     def setModel(self, model):
-        super(CreateSearchBox, self).setModel(model)
+        super(NodeSearchBox, self).setModel(model)
         self.pFilterModel.setSourceModel(model)
         self.completer.setModel(self.pFilterModel)
 
     def setModelColumn(self, column):
         self.completer.setCompletionColumn(column)
         self.pFilterModel.setFilterKeyColumn(column)
-        super(CreateSearchBox, self).setModelColumn(column)
+        super(NodeSearchBox, self).setModelColumn(column)
 
     def view( self ):
         return self.completer.popup()            
@@ -305,9 +375,22 @@ class CreateSearchBox(QComboBox):
         return QComboBox.event(self, event, *args, **kwargs)
 
 
-class MainWindow(QMainWindow):
+class ColorPickerWidget(QMainWindow):
+    """ Color picker widget for users to choose new colors for nodes.
+
+    When the user clicks on the "+" button, or double clicks a color this
+    widget is activated over the current cursors location.  This widget is
+    activated from NodeColorModifierWidget.showColorPickerWidget()
+
+    Args:
+        parent
+        label
+
+    Attributes:
+    """
     def __init__(self, parent=None, label=None):
-        super().__init__(parent=parent)
+        super(ColorPickerWidget, self).__init__(parent=parent)
+
         main_widget = QWidget()
         self.label = label
         self.color_picker = ColorDialog(parent=self)
@@ -330,7 +413,7 @@ class MainWindow(QMainWindow):
     def addColor(self):
         self.color = self.color_picker.currentColor().getRgb()
         if not self.label:
-            label = self.parent().createLabel(self.color)
+            label = self.parent().createColorLabel(self.color)
             # add to reloadable list...
             publish_loc = KatanaResources.GetUserKatanaPath()
             color = ",".join([str(self.color[0]), str(self.color[1]), str(self.color[2])])
@@ -342,11 +425,11 @@ class MainWindow(QMainWindow):
                 csv_writer.writerow([color])
 
             # append widget
-            num_children = self.parent().color_grid_layout.count()
+            num_children = self.parent().colorGridLayout().count()
             row_count, column_count = self.parent().getGridSetup()
             index = num_children % column_count
             row = int(num_children/column_count)
-            self.parent().color_grid_layout.addWidget(label, row+1, index, 1, 1)
+            self.parent().colorGridLayout().addWidget(label, row+1, index, 1, 1)
 
         elif self.label:
             label = self.label
@@ -382,6 +465,7 @@ class MainWindow(QMainWindow):
 
 
 class ColorLabel(QLabel):
+    """ Displays a solid color to the user """
     def __init__(self, parent=None, color=None):
         super().__init__(parent)
         self.selected = False
@@ -398,12 +482,20 @@ class ColorLabel(QLabel):
     def getColor(self):
         return self.color
 
+    """ UTILS """
+    def setNodeColor(self):
+        # set color to nodes
+        for node in NodegraphAPI.GetAllSelectedNodes():
+            self.node_list.append([node, DrawingModule.GetCustomNodeColor(node)])
+            DrawingModule.SetCustomNodeColor(node, self.color[0]/255, self.color[1]/255, self.color[2]/255)
+        UI4.App.Tabs.FindTopTab("Node Graph").update()
+
     def deleteSelf(self):
         # delete color from csv / label / layout
         publish_loc = KatanaResources.GetUserKatanaPath()
         file_loc = publish_loc + "/color.csv"
         if os.path.exists(file_loc):
-            with open(file_loc, "rb") as csvfile:
+            with open(file_loc, "r") as csvfile:
                 color_list = csvfile.readlines()[0].split("|")[:-1]
         new_color = ",".join([str(self.color[0]), str(self.color[1]), str(self.color[2])])
         color_list.remove("\"" + new_color + "\"")
@@ -421,74 +513,36 @@ class ColorLabel(QLabel):
             file.write(write_text)
             file.close()
 
-        # delete widget
-        self.parent().layout().removeWidget(self)
-        self.deleteLater()
-        self = None
-        
-    def mouseMoveEvent(self, event):
-        # preflight
-        if event.buttons() != Qt.LeftButton: return
-        # drag delete set up handlers
-        mimedata = QMimeData()
-        mimedata.setText("%d,%d" % (event.x(), event.y()))
+        node_modifier_widget = getWidgetAncestor(self, NodeColorModifierWidget)
+        node_modifier_widget.populate()
 
-        pixmap = QPixmap.grabWidget(self)
-
-        drag = QDrag(self)
-        drag.setMimeData(mimedata)
-        drag.setPixmap(pixmap)
-        drag.setHotSpot(event.pos())
-
-        if drag.exec_(Qt.CopyAction | Qt.MoveAction) == Qt.MoveAction:
-            self.checkMouse(event)
-        else:
-            self.checkMouse(event)
-        return QLabel.mouseMoveEvent(self, event)
-
-    def checkMouse(self):
-        if not self.parent().parent().getDropLocation():
-            self.deleteSelf()
-            self.parent().parent().populate()
-    
-    def mousePressEvent(self, event):
-        self.last = "Click"
-    
+    """ EVENTS """
     def mouseReleaseEvent(self, event):
-        if self.last == "Click":
+        if event.button() == Qt.MiddleButton:
+            self.deleteSelf()
+        if event.button() == Qt.LeftButton:
             QTimer.singleShot(
                 QApplication.instance().doubleClickInterval(),
-                self.singleClick)
+                self.setNodeColor)
         #return QLabel.mouseReleaseEvent(self, event,*args, **kwargs)
-        
-    def singleClick(self):
-        # set color to nodes
-        self.last = "Double Click"
-        for node in NodegraphAPI.GetAllSelectedNodes():
-            self.node_list.append([node, DrawingModule.GetCustomNodeColor(node)])
-            DrawingModule.SetCustomNodeColor(node, self.color[0]/255, self.color[1]/255, self.color[2]/255)
-        UI4.App.Tabs.FindTopTab("Node Graph").update()
 
     def mouseDoubleClickEvent(self, *args, **kwargs):
         # pop up window to change the label color
-        if self.last == "Click":
-            main_window = MainWindow(self.parent(), label=self)
-            main_window.show()
+        node_color_modifier_widget = getWidgetAncestor(self, NodeColorModifierWidget)
+        node_color_modifier_widget.showColorPickerWidget()
         
     def enterEvent(self, event):
-        # displaying the border around labels
-        # displaying node colors
+        """ Display border around color when hovering over it """
         self.node_list = []
         for node in NodegraphAPI.GetAllSelectedNodes():
-            self.node_list.append([node , DrawingModule.GetCustomNodeColor(node)])
+            self.node_list.append([node, DrawingModule.GetCustomNodeColor(node)])
             DrawingModule.SetCustomNodeColor(node, self.color[0]/255, self.color[1]/255, self.color[2]/255)
         UI4.App.Tabs.FindTopTab("Node Graph").update()
         self.parent().parent().labelClicked(self)
         return QLabel.enterEvent(self, event)
 
     def leaveEvent(self, event):
-        # removing borders around labels upon leaving label
-        # removing display node colors
+        """Remove borders around labels upon leaving label"""
         for item in self.node_list:
             node = item[0]
             color = item[1]
@@ -511,25 +565,23 @@ class ColorDialog(QColorDialog):
 
 # primary calling function used to open/close the gui.  This gui is embedded
 # into the Nodegraph Widget
-from Katana import UI4
 node_graph = UI4.App.Tabs.FindTopTab("Node Graph")
 layout = node_graph.layout()
-does_exist = None
+_is_node_color_modifier_widget = None
 for index in range(layout.count()):
     item = layout.itemAt(index)
-    widget = item.widget()
-    if hasattr(widget, "does_exist"):
-        widget.close()
-        widget.parent().layout().removeWidget(widget)
-        widget.deleteLater()
-        widget = None
-        does_exist = True
-if not does_exist:
-    widget = MainWidget()
+    if item:
+        widget = item.widget()
+        if hasattr(widget, "_is_node_color_modifier_widget"):
+            widget.close()
+            widget.parent().layout().removeWidget(widget)
+            widget.deleteLater()
+            widget = None
+            _is_node_color_modifier_widget = True
+if not _is_node_color_modifier_widget:
+    widget = NodeColorModifierWidget()
     node_graph.layout().insertWidget(2, widget)
 
-
-mainFunction()
 
 
 

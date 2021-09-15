@@ -76,7 +76,6 @@ main_widget.setStyleSheet("background-color:rgba(50,50,50, 200);")
 
 main_widget.setLayout(main_layout)
 main_widget.popup(QCursor.pos())
-#main_widget.show()
-#centerWidgetOnCursor(main_widget)
+centerWidgetOnCursor(main_widget)
 
 
