@@ -3,7 +3,7 @@ import os
 
 from Katana import UI4, Callbacks, KatanaResources
 
-from cgwidgets.widgets import ScriptEditorWidget, ScriptEditorPopupEventFilter
+from cgwidgets.widgets import ScriptEditorWidget, ScriptEditorPopupEventFilter, installScriptEditorEventFilter
 SCRIPTS_VARIABLE = "KATANABEBOPSCRIPTS"
 
 
@@ -19,6 +19,7 @@ def installPopupHotkeysEventFilter(**kwargs):
     katana_bebop_scripts_dir = os.environ["KATANABEBOP"] + "/Scripts"
     sandbox_directory = KatanaResources.GetUserKatanaPath() + "/Scripts"
     ScriptEditorWidget.createScriptDirectories(sandbox_directory, display_name="Sandbox")
+
     try:
         script_directories = os.environ[SCRIPTS_VARIABLE].split(":") + [katana_bebop_scripts_dir, sandbox_directory]
     except KeyError:
@@ -26,7 +27,9 @@ def installPopupHotkeysEventFilter(**kwargs):
 
     os.environ[SCRIPTS_VARIABLE] = ":".join(script_directories)
 
+
     katana_main = UI4.App.MainWindow.GetMainWindow()
-    katana_main.event_filter_widget = KatanaScriptEditorEventFilter(katana_main)
-    katana_main.installEventFilter(katana_main.event_filter_widget)
+    installScriptEditorEventFilter(katana_main, KatanaScriptEditorEventFilter)
+    # katana_main.event_filter_widget = KatanaScriptEditorEventFilter(katana_main)
+    # katana_main.installEventFilter(katana_main.event_filter_widget)
 

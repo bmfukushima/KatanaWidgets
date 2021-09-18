@@ -4,12 +4,12 @@ from qtpy.QtWidgets import QVBoxLayout, QWidget
 
 from Katana import UI4
 
-from cgwidgets.widgets import ScriptEditorWidget
+from cgwidgets.widgets import ScriptEditorWidget, AbstractPythonEditor
 
 
-class KatanaPythonEditorWidget(QWidget):
+class KatanaPythonIDE(QWidget):
     def __init__(self, parent=None):
-        super(KatanaPythonEditorWidget, self).__init__(parent)
+        super(KatanaPythonIDE, self).__init__(parent)
 
         layout = QVBoxLayout(self)
         python_tab = UI4.App.Tabs.CreateTab('Python', None)
@@ -21,8 +21,14 @@ class KatanaPythonEditorWidget(QWidget):
         script_widget = python_widget._FullInteractivePython__scriptWidget
         self._code_widget = script_widget.commandWidget()
 
-    def codeWidget(self):
-        return self._code_widget
+    def setScript(self, script):
+        self._code_widget.setPlainText(script)
+
+
+class KatanaPythonEditorWidget(AbstractPythonEditor):
+    def __init__(self, parent=None):
+        super(KatanaPythonEditorWidget, self).__init__(parent, python_ide=KatanaPythonIDE)
+
 
 
 class ScriptEditorTab(UI4.Tabs.BaseTab):
