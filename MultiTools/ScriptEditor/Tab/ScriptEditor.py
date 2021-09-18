@@ -19,10 +19,16 @@ class KatanaPythonIDE(QWidget):
         widget = python_tab.getWidget()
         python_widget = widget._pythonWidget
         script_widget = python_widget._FullInteractivePython__scriptWidget
-        self._code_widget = script_widget.commandWidget()
+        self._code_text_widget = script_widget.commandWidget()
+
+    def codeTextWidget(self):
+        return self._code_text_widget
+
+    def getScript(self):
+        return self.codeTextWidget().toPlainText()
 
     def setScript(self, script):
-        self._code_widget.setPlainText(script)
+        self.codeTextWidget().setPlainText(script)
 
 
 class KatanaPythonEditorWidget(AbstractPythonEditor):
