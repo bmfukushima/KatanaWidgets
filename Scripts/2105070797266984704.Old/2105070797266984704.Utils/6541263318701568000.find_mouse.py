@@ -11,10 +11,11 @@ b._NodegraphPanel__navigationToolbar._NavigationToolbar__forwardButtonClicked()
 class RegisterMouse(QtWidgets.QWidget):
     def __init__(self,parent=None):
         super(RegisterMouse,self).__init__(parent)
-    
+
     def mousePressEvent(self, event, *args, **kwargs):
-        print event.button()
+        print(event.button())
         return QtWidgets.QWidget.mousePressEvent(self, event, *args, **kwargs)
+
     def checkTab(self):
         tabs = UI4.App.Tabs.GetAllTabs()
         visible_tab_list = []
