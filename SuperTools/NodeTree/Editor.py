@@ -70,7 +70,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
         # setup shoji style
         self.setMultiSelect(True)
-        # self.setHeaderItemIsDroppable(True)
+        self.setHeaderItemIsDraggable(True)
 
         # events
         # self.setHeaderItemMimeDataFunction(self.setDragMimeData)
@@ -354,7 +354,11 @@ class NodeTreeMainWidget(NodeViewWidget):
                     NodegraphAPI.SetNodePosition(node, (0, count * 50))
 
                     # update GUI
-                    self.deleteItem(item)
+                    try:
+                        self.deleteItem(item)
+                    except ValueError:
+                        # item already deleted, ie was a child of a group
+                        pass
 
                 # float nodes
                 node_graph.floatNodes(node_list)
