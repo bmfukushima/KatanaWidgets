@@ -1,25 +1,20 @@
-"""
-- Needs to move to custom widget and supertool can inherit that
-- Need a node interface to connect nodes into it
-
-
 
 """
-from qtpy.QtWidgets import (
-    QLabel, QVBoxLayout, QWidget
-)
-
-from qtpy.QtCore import Qt, QEvent, QModelIndex
+ToDo:
+    *   Drag/Drop onto none group nodes?
+    *   Drag/Drop multiple nodes into nodegraph
+"""
+from qtpy.QtWidgets import QVBoxLayout
+from qtpy.QtCore import Qt, QEvent, QModelIndex, QByteArray
 
 from cgwidgets.utils import getWidgetAncestor
-from cgwidgets.settings import attrs
 from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, NodeTypeListWidget
 from cgwidgets.views import AbstractDragDropTreeView
 from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI
 
 from Katana import UI4, NodegraphAPI, Utils
 from Widgets2 import AbstractSuperToolEditor, NodeViewWidget
-from Utils2 import nodeutils, getFontSize, NODE, PARAM
+from Utils2 import nodeutils, getFontSize, NODE, PARAM, getCurrentTab
 
 
 class NodeTreeEditor(AbstractSuperToolEditor):
@@ -57,11 +52,16 @@ class NodeTreeEditor(AbstractSuperToolEditor):
 
 
 class NodeTreeMainWidget(NodeViewWidget):
+    """
+
+    Attributes:
+        node (NodeTreeNode): This node
+    """
     def __init__(self, parent=None, node=None):
         super(NodeTreeMainWidget, self).__init__(parent)
         # setup node
 
-        self.node = node
+        self._node = node
         # setup view
         view = NodeTreeViewWidget(self)
 
@@ -73,6 +73,8 @@ class NodeTreeMainWidget(NodeViewWidget):
         self.setHeaderItemIsDroppable(True)
 
         # events
+        # self.setHeaderItemMimeDataFunction(self.setDragMimeData)
+        self.setHeaderItemDragStartEvent(self.nodePickupEvent)
         self.setHeaderItemDropEvent(self.nodeMovedEvent)
         self.setHeaderItemDeleteEvent(self.nodeDeleteEvent)
 
@@ -86,7 +88,7 @@ class NodeTreeMainWidget(NodeViewWidget):
     def showEvent(self, event):
         """ refresh UI on show event """
         self.clearModel()
-        for node in self.node.getChildren():
+        for node in self.node().getChildren():
             self.populate(node)
         return NodeViewWidget.showEvent(self, event)
 
@@ -106,6 +108,13 @@ class NodeTreeMainWidget(NodeViewWidget):
             if 0 < len(children):
                 for grand_child in children:
                     self.populate(grand_child, parent_index=new_index)
+
+    """ UTILS """
+    def removeEventFilterFromNodeGraphs(self):
+        """ Removes the current event filter from all of the NodeGraphs"""
+        nodegraph_tabs = UI4.App.Tabs.GetTabsByType("Node Graph")
+        for nodegraph_tab in nodegraph_tabs:
+            nodegraph_tab.getNodeGraphWidget().removeEventFilter(self)
 
     """ GET ITEM DATA """
     def getSelectedIndex(self):
@@ -136,9 +145,9 @@ class NodeTreeMainWidget(NodeViewWidget):
                 node = NodegraphAPI.GetNode(node_name)
             # top level, NOT group
             else:
-                node = self.node
+                node = self.node()
         else:
-            node = self.node
+            node = self.node()
 
         return node
 
@@ -155,7 +164,48 @@ class NodeTreeMainWidget(NodeViewWidget):
 
         return node_list
 
+    """ PROPERTIES """
+    def node(self):
+        return self._node
+
+    def setNode(self, node):
+        self._node = node
+
     """ EVENTS """
+    # def setDragMimeData(self, mimedata, items):
+    #     """ Adds the mimedata to the drag event
+    #
+    #     Args:
+    #         mimedata (QMimedata): from dragEvent
+    #         items (list): of NodeViewWidgetItem
+    #     Note:
+    #         This only adds the data for nodes... not for parameters, how to handle?"""
+    #     nodes = []
+    #     python_text = []
+    #     for item in items:
+    #
+    #         if item.type() == NODE:
+    #             node_name = item.getName()
+    #             nodes.append(node_name)
+    #
+    #             python_text.append("NodegraphAPI.GetNode(\"{NODE_NAME}\")".format(NODE_NAME=node_name))
+    #
+    #     nodes_ba = QByteArray()
+    #     nodes_ba.append(", ".join(nodes))
+    #
+    #     python_text_ba = QByteArray()
+    #     python_text_ba.append(", ".join(python_text))
+    #
+    #     listbox_ba = QByteArray()
+    #     listbox_ba.append("0")
+    #
+    #     mimedata.setData("listbox/items", listbox_ba)
+    #     mimedata.setData("nodegraph/nodes", nodes_ba)
+    #     mimedata.setData("python/text", python_text_ba)
+    #     return mimedata
+        #nodegraph / nodes == FaceSetCreate, FaceSetCreate1
+        #python / text == NodegraphAPI.GetNode("FaceSetCreate"), NodegraphAPI.GetNode("FaceSetCreate1")
+
     def createNewNode(self, widget, value):
         """ User creating new node """
         # get node
@@ -201,7 +251,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
             else:
                 group_item = self.model().getRootItem()
-                parent_node = self.node
+                parent_node = self.node()
 
             # get node list
             node_list = self.getChildNodeListFromItem(group_item)
@@ -217,6 +267,12 @@ class NodeTreeMainWidget(NodeViewWidget):
         else:
             return
 
+    def nodePickupEvent(self, items, model):
+        # install all event filters
+        nodegraph_tabs = UI4.App.Tabs.GetTabsByType("Node Graph")
+        for nodegraph_tab in nodegraph_tabs:
+            nodegraph_tab.getNodeGraphWidget().installEventFilter(self)
+
     def nodeMovedEvent(self, data, items_dropped, model, row, parent):
         """
         Run when the user does a drop.  This is triggered on the dropMimeData funciton
@@ -227,13 +283,11 @@ class NodeTreeMainWidget(NodeViewWidget):
             parent (ShojiModelItem): parent item that was dropped on
 
         """
-        # disconnect... not working... input ports not reconnect to group send?
-
         # get parent node
         parent_node = NodegraphAPI.GetNode(parent.columnData()['name'])
         # if root
         if parent.columnData()["name"] == 'root':
-            parent_node = self.node
+            parent_node = self.node()
 
         # drop items
         for item in items_dropped:
@@ -253,11 +307,50 @@ class NodeTreeMainWidget(NodeViewWidget):
         node_list = self.getChildNodeListFromItem(parent)
         nodeutils.connectInsideGroup(node_list, parent_node)
 
+        # remove event filters
+        self.removeEventFilterFromNodeGraphs()
+
     def nodeDeleteEvent(self, item):
         """ delete event """
         node = self.getNodeFromItem(item)
         nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
         node.delete()
+
+    def eventFilter(self, obj, event):
+        if event.type() in (QEvent.DragEnter, QEvent.DragMove, QEvent.Drop):
+            if event.type() != QEvent.Drop:
+                event.acceptProposedAction()
+            else:
+                node_graph = getCurrentTab()
+                parent_node = node_graph.getEnteredGroupNode()
+                node_list = []
+                for count, index in enumerate(self.getAllSelectedIndexes()):
+                    item = index.internalPointer()
+                    #print(item)
+                    #node = NodegraphAPI.GetNode(item.columnData()['name'])
+                    node = item.node()
+                    node_list.append(node)
+
+                    # disconnect node
+                    nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
+
+                    # create ports
+                    nodeutils.createIOPorts(node, force_create=False, connect=True)
+
+                    # reparent
+                    node.setParent(parent_node)
+
+                    NodegraphAPI.SetNodePosition(node, (0, count * 50))
+
+                    # update GUI
+                    self.deleteItem(item)
+
+                # float nodes
+                node_graph.floatNodes(node_list)
+                self.removeEventFilterFromNodeGraphs()
+            return True
+
+        return False
 
     """ WIDGETS """
     def nodeCreateWidget(self):
@@ -287,9 +380,10 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
         """
         mimedata = event.mimeData()
         if mimedata.hasFormat('nodegraph/nodes'):
-            nodes_list = mimedata.data('nodegraph/nodes').data().split(',')
+            nodes_list_bytes = mimedata.data('nodegraph/nodes').data()
+            nodes_list = nodes_list_bytes.decode("utf-8").split(',')
             parent_widget = getWidgetAncestor(self, NodeTreeMainWidget)
-            parent_node = parent_widget.node
+            parent_node = parent_widget.node()
             for node_name in nodes_list:
                 # get node
                 node = NodegraphAPI.GetNode(node_name)
@@ -301,7 +395,8 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
 
                 # create new model item
                 root_index = parent_widget.model().getIndexFromItem(parent_widget.rootItem())
-                new_index = parent_widget.insertShojiWidget(0, column_data={'name': node.getName(), 'type': node.getType(), "object_type": NODE}, parent=root_index)
+                new_index = parent_widget.createNewIndexFromNode(node, root_index)
+                #new_index = parent_widget.insertShojiWidget(0, column_data={'name': node.getName(), 'type': node.getType(), "object_type": NODE}, parent=root_index)
 
                 # setup drop handlers
                 if not hasattr(node, 'getChildren'):
@@ -318,7 +413,7 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
 
 if __name__ == "__main__":
     import sys
-    from qtpy.QtWidgets import QApplication, QLabel, QVBoxLayout
+    from qtpy.QtWidgets import QApplication, QLabel
     from qtpy.QtGui import QCursor
     from cgwidgets.widgets import ShojiModelViewWidget
     app = QApplication(sys.argv)

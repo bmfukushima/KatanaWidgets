@@ -311,6 +311,7 @@ class MainWidget(LibraryWidget):
             return True
         return QLabel.eventFilter(self, obj, event, *args, **kwargs)
 
+
 class DropMenu(QDialog):
     '''
     Popup menu that is displayed when a user CTRL+Drag/Drops into
@@ -359,6 +360,7 @@ class DropMenu(QDialog):
 
     def setButtonPressed(self, button):
         self.button_pressed = button.text()
+
 
 class TestButton(QPushButton):
     def __init__(self, parent=None, text=''):

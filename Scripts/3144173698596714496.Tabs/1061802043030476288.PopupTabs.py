@@ -1,12 +1,18 @@
-from qtpy.QtWidgets import QPushButton, QWidget, QVBoxLayout, QHBoxLayout
-from qtpy.QtGui import QFont, QCursor, QPainter, QPen, QColor
-from qtpy.QtCore import QPoint, Qt
+""" Tab Switcher Widget
 
-from cgwidgets.utils import centerWidgetOnCursor, getWidgetAncestor
+Will popup a widget that shows all of the available tabs in the
+current panel that the cursor is hovered over.  Clicked a panel
+will raise it, while dragging into it, will raise that tab."""
+
+from qtpy.QtWidgets import QWidget, QVBoxLayout
+from qtpy.QtGui import QFont, QCursor, QPainter, QPen, QColor
+from qtpy.QtCore import Qt
+
+from cgwidgets.utils import getWidgetAncestor, centerWidgetOnCursor
 from cgwidgets.settings import iColor
 from cgwidgets.widgets import ButtonInputWidget
 
-from Utils2 import getFontSize
+from Utils2 import getFontSize, getCurrentTab
 
 from Katana import UI4
 
@@ -24,33 +30,24 @@ class TabDisplayLabelWidget(ButtonInputWidget):
         font.setPointSize(100)
         self.setFont(font)
         self.default_style_sheet = self.styleSheet()
+        self.setAcceptDrops(True)
 
     def getPanel(self):
         return self._panel
   
     def setPanel(self, panel):
         self._panel = panel
+
     """ UTILS """
-    def raiseTab(self, widget):
+    def raiseTab(self, *args):
         UI4.App.Tabs.RaiseTab(self.getPanel())
         getWidgetAncestor(self, TabSwitcherWidget).close()
         getWidgetAncestor(self, TabSwitcherWidget).deleteLater()
 
     """ EVENTS """
-    # def enterEvent(self, *args, **kwargs):
-    #     style_sheet = """
-    #         border-style: inset;
-    #         border-width: 2px;
-    #         border-radius: 1px;
-    #         border-color: rgba{RGBA_SELECTED}; """.format(
-    #         RGBA_SELECTED=iColor["rgba_selected_hover_2"]
-    #     )
-    #     self.setStyleSheet(style_sheet)
-    #     return QWidget.enterEvent(self, *args, **kwargs)
-    #
-    # def leaveEvent(self, *args, **kwargs):
-    #     self.setStyleSheet(self.default_style_sheet)
-    #     return QPushButton.leaveEvent(self, *args, **kwargs)
+    def dragEnterEvent(self, event):
+        self.raiseTab()
+        return QWidget.dragEnterEvent(self, event)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
@@ -61,7 +58,7 @@ class TabDisplayLabelWidget(ButtonInputWidget):
 class TabSwitcherWidget(QWidget):
     def __init__(self, parent=None):
         super(TabSwitcherWidget, self).__init__(parent)
-        self.setWindowFlags(Qt.Popup | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
+        self.setWindowFlags(Qt.Tool | Qt.WindowStaysOnTopHint | Qt.FramelessWindowHint)
         QVBoxLayout(self)
         self.current_tab = None
         self.setMouseTracking(True)
@@ -81,51 +78,55 @@ class TabSwitcherWidget(QWidget):
         panel_list = [x.getWidget() for x in topMostPanel.children() if hasattr(x, 'getWidget')]
         return panel_list
 
-    @staticmethod
-    def getAllVisibleTabs():
-        """ Gets all of the current top level tabs
-
-        Returns (list): of KatanaTabs """
-        tabs = UI4.App.Tabs.GetAllTabs()
-        visible_tab_list = []
-        for tab in tabs:
-            if hasattr(tab, 'isVisible'):
-                if tab.isVisible():
-                    visible_tab_list.append(tab)
-        return visible_tab_list
-
-    @staticmethod
-    def getTabUnderCursor():
-        """ Returns the current tab that is under the cursor
-
-        Note:
-            Doing a positional check, as when suing the ScriptEditor,
-            the PopupDisplay will block the underCursor from registering.
-        Returns (KatanaTab)"""
-        for tab in TabSwitcherWidget.getAllVisibleTabs():
-            tab_xpos = tab.parent().mapToGlobal(tab.pos()).x()
-            tab_ypos = tab.parent().mapToGlobal(tab.pos()).y()
-            tab_w = tab.width()
-            tab_h = tab.height()
-
-            cursor_pos = QCursor.pos()
-            cursor_xpos = cursor_pos.x()
-            cursor_ypos = cursor_pos.y()
-
-            # check ypos
-            if (tab_ypos < cursor_ypos < tab_ypos + tab_h
-                and tab_xpos < cursor_xpos < tab_xpos + tab_w
-            ):
-                return tab
-
-            # if tab.underMouse():
-            #     return tab
-
-        return None
+    # @staticmethod
+    # def getAllVisibleTabs():
+    #     """ Gets all of the current top level tabs
+    #
+    #     Returns (list): of KatanaTabs """
+    #     tabs = UI4.App.Tabs.GetAllTabs()
+    #     visible_tab_list = []
+    #     for tab in tabs:
+    #         if hasattr(tab, 'isVisible'):
+    #             try:
+    #                 if tab.isVisible():
+    #                     visible_tab_list.append(tab)
+    #             except RuntimeError:
+    #                 # tab deleted?
+    #                 pass
+    #     return visible_tab_list
+    #
+    # @staticmethod
+    # def currentTab():
+    #     """ Returns the current tab that is under the cursor
+    #
+    #     Note:
+    #         Doing a positional check, as when suing the ScriptEditor,
+    #         the PopupDisplay will block the underCursor from registering.
+    #     Returns (KatanaTab)"""
+    #     for tab in TabSwitcherWidget.getAllVisibleTabs():
+    #         tab_xpos = tab.parent().mapToGlobal(tab.pos()).x()
+    #         tab_ypos = tab.parent().mapToGlobal(tab.pos()).y()
+    #         tab_w = tab.width()
+    #         tab_h = tab.height()
+    #
+    #         cursor_pos = QCursor.pos()
+    #         cursor_xpos = cursor_pos.x()
+    #         cursor_ypos = cursor_pos.y()
+    #
+    #         # check ypos
+    #         if (tab_ypos < cursor_ypos < tab_ypos + tab_h
+    #             and tab_xpos < cursor_xpos < tab_xpos + tab_w
+    #         ):
+    #             return tab
+    #
+    #         # if tab.underMouse():
+    #         #     return tab
+    #
+    #     return None
 
     def createAllPanels(self):
         """ Creates buttons for each sibling Tab """
-        current_tab = TabSwitcherWidget.getTabUnderCursor()
+        current_tab = getCurrentTab()
         if current_tab:
             for panel in TabSwitcherWidget.getTabSiblings(current_tab):
                 if panel != current_tab:
@@ -151,13 +152,21 @@ class TabSwitcherWidget(QWidget):
 
         # ellipse
         painter.drawRect(self.rect())
+
+    def alignPopupToRightSide(self):
+        """ Aligns the panel to the right side of the tab"""
+        current_tab = TabSwitcherWidget.getCurrentTab()
+        tab_global_pos = current_tab.mapToGlobal(current_tab.rect().topLeft())
+        xpos = current_tab.width() + tab_global_pos.x() - self.width()
+        ypos = tab_global_pos.y()
+        self.move(xpos, ypos)
     # OLD just leaving this incase I want to revisit it sometime
     # def createAllBoxes(self):
     #     allVisibleTabs = TabSwitcherWidget.getAllVisibleTabs()
     #     widget_list = []
     #
     #     # get current tab position
-    #     current_tab = TabSwitcherWidget.getTabUnderCursor()
+    #     current_tab = TabSwitcherWidget.currentTab()
     #     current_pos = current_tab.mapToGlobal(current_tab.rect().topLeft())
     #     allVisibleTabs.remove(current_tab)
     #     for tab in allVisibleTabs:
@@ -218,6 +227,7 @@ class TabSwitcherWidget(QWidget):
 parent = UI4.App.MainWindow.CurrentMainWindow()
 main_widget = TabSwitcherWidget(parent)
 main_widget.show()
+#main_widget.alignPopupToRightSide()
 centerWidgetOnCursor(main_widget)
 
     

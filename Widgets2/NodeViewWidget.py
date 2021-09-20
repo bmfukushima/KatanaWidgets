@@ -3,7 +3,7 @@
 - Need a node interface to connect nodes into it
 """
 from qtpy.QtWidgets import QVBoxLayout
-from qtpy.QtCore import QModelIndex
+from qtpy.QtCore import QModelIndex, QByteArray
 
 from cgwidgets.settings import attrs
 from cgwidgets.widgets import ShojiModelViewWidget, ShojiModelItem
@@ -49,7 +49,7 @@ class NodeViewWidget(ShojiModelViewWidget):
         super(NodeViewWidget, self).__init__(parent)
         self.setItemType(NodeViewWidgetItem)
         self.setHeaderPosition(attrs.WEST, attrs.SOUTH)
-        self.setHeaderData(['name', 'type'])
+        self.setHeaderData(["name", "type"])
 
         # set dynamic
         self.setDelegateType(
@@ -67,7 +67,7 @@ class NodeViewWidget(ShojiModelViewWidget):
 
     """ GET ITEM DATA """
     def getNodeFromItem(self, item):
-        node_name = item.columnData()['name']
+        node_name = item.columnData()["name"]
         node = NodegraphAPI.GetNode(node_name)
         return node
 
@@ -83,7 +83,7 @@ class NodeViewWidget(ShojiModelViewWidget):
         """
         name = node.getName()
         node_type = node.getType()
-        new_index = self.insertShojiWidget(0, column_data={'name': name, 'type': node_type, 'object_type':NODE}, parent=parent_index)
+        new_index = self.insertShojiWidget(0, column_data={"name": name, "type": node_type, "object_type":NODE, "node": name}, parent=parent_index)
 
         return new_index
 
@@ -100,10 +100,10 @@ class NodeViewWidget(ShojiModelViewWidget):
         new_index = self.insertShojiWidget(
             0,
             column_data={
-                'name': param.getFullName(),
-                'type': param.getType(),
-                'node': param.getNode().getName(),
-                'object_type': PARAM,
+                "name": param.getFullName(),
+                "type": param.getType(),
+                "node": param.getNode().getName(),
+                "object_type": PARAM,
             },
             parent=parent_index,
             is_enableable=False)
@@ -112,7 +112,6 @@ class NodeViewWidget(ShojiModelViewWidget):
 
     def objectDisableEvent(self, item, enabled):
         """ enable/disable event """
-        print('object disable??')
         if item.objectType() == NODE:
             node = self.getNodeFromItem(item)
             node.setBypassed(not enabled)
@@ -127,10 +126,10 @@ class NodeViewWidget(ShojiModelViewWidget):
             node.setName(new_value)
             Utils.EventModule.ProcessAllEvents()
             new_name = node.getName()
-            item.columnData()['name'] = new_name
+            item.columnData()["name"] = new_name
 
         if item.objectType() == PARAM:
-            item.columnData()['name'] = old_value
+            item.columnData()["name"] = old_value
             # todo param name change
             # could also just disable this in the item...
             pass
@@ -159,7 +158,7 @@ class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
         if item:
             this = widget.getMainWidget()
             if item.columnData()["object_type"] == NODE:
-                node_list = [NodegraphAPI.GetNode(item.columnData()['name'])]
+                node_list = [NodegraphAPI.GetNode(item.columnData()["name"])]
             if item.columnData()["object_type"] == PARAM:
                 node = item.columnData()["node"]
                 param = ".".join(item.columnData()["name"].split(".")[1:])

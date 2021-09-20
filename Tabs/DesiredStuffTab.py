@@ -515,7 +515,7 @@ class DesirableStuffView(AbstractDragDropListView):
         """
         mimedata = event.mimeData()
         if mimedata.hasFormat('nodegraph/nodes'):
-            nodes_list = mimedata.data('nodegraph/nodes').data().split(',')
+            nodes_list = mimedata.data('nodegraph/nodes').data().decode("utf-8").split(',')
             parent_widget = getWidgetAncestor(self, DesirableStuffShojiPanel)
             for node_name in nodes_list:
                 # get node
@@ -523,7 +523,7 @@ class DesirableStuffView(AbstractDragDropListView):
                 parent_widget.setDesirability(node, True, NODE)
 
         if mimedata.hasFormat("parameter/path"):
-            param = eval(mimedata.data('python/text').data())
+            param = eval(mimedata.data('python/text').decode("utf-8").data())
             parent_widget = getWidgetAncestor(self, DesirableStuffShojiPanel)
             parent_widget.setDesirability(param, True, PARAM)
 

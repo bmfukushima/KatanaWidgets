@@ -149,3 +149,51 @@ def getFontSize():
 
     font_size = getFontSize(QApplication.instance())
     return font_size
+
+
+def getAllVisibleTabs():
+    """ Gets all of the current top level tabs
+
+    Returns (list): of KatanaTabs """
+    from Katana import UI4
+    tabs = UI4.App.Tabs.GetAllTabs()
+    visible_tab_list = []
+    for tab in tabs:
+        if hasattr(tab, 'isVisible'):
+            try:
+                if tab.isVisible():
+                    visible_tab_list.append(tab)
+            except RuntimeError:
+                # tab deleted?
+                pass
+    return visible_tab_list
+
+
+def getCurrentTab():
+    """ Returns the current tab that is under the cursor
+
+    Note:
+        Doing a positional check, as when suing the ScriptEditor,
+        the PopupDisplay will block the underCursor from registering.
+    Returns (KatanaTab)"""
+    from qtpy.QtGui import QCursor
+    for tab in getAllVisibleTabs():
+        tab_xpos = tab.parent().mapToGlobal(tab.pos()).x()
+        tab_ypos = tab.parent().mapToGlobal(tab.pos()).y()
+        tab_w = tab.width()
+        tab_h = tab.height()
+
+        cursor_pos = QCursor.pos()
+        cursor_xpos = cursor_pos.x()
+        cursor_ypos = cursor_pos.y()
+
+        # check ypos
+        if (tab_ypos < cursor_ypos < tab_ypos + tab_h
+            and tab_xpos < cursor_xpos < tab_xpos + tab_w
+        ):
+            return tab
+
+        # if tab.underMouse():
+        #     return tab
+
+    return None
