@@ -136,6 +136,7 @@ class GSVManager(UI4.Tabs.BaseTab):
         # setup layout
         QVBoxLayout(self)
         self.layout().addWidget(self._main_widget)
+        # self.mainWidget().setHeaderItemIsSelectable(False)
         self.mainWidget().setHeaderItemIsDraggable(False)
         self.mainWidget().setHeaderItemIsEditable(False)
         self.mainWidget().setHeaderItemIsDeletable(False)

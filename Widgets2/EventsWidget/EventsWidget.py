@@ -339,6 +339,7 @@ class AbstractEventListView(AbstractDragDropListView):
         if delegate:
             _delegate = delegate(self)
             self.setItemDelegate(_delegate)
+            self.setIsEditable(True)
         else:
             self.setIsEditable(False)
 

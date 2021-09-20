@@ -22,14 +22,18 @@ def disconnectNode(node, input=False, output=False, reconnect=False):
     """
     if reconnect is True:
         if input is True and output is True:
-            input_port = node.getInputPortByIndex(0)
-            upstream_port = input_port.getConnectedPorts()[0]
-            output_port = node.getOutputPortByIndex(0)
-            downstream_port = output_port.getConnectedPorts()[0]
+            try:
+                input_port = node.getInputPortByIndex(0)
+                upstream_port = input_port.getConnectedPorts()[0]
+                output_port = node.getOutputPortByIndex(0)
+                downstream_port = output_port.getConnectedPorts()[0]
 
-            if upstream_port and downstream_port:
-                # reconnect wire
-                upstream_port.connect(downstream_port)
+                if upstream_port and downstream_port:
+                    # reconnect wire
+                    upstream_port.connect(downstream_port)
+            except IndexError:
+                # can't find the .getConnectedPorts()
+                pass
 
     if input is True:
         for input_port in node.getInputPorts():

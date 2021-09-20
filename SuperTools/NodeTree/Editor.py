@@ -70,7 +70,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
         # setup shoji style
         self.setMultiSelect(True)
-        self.setHeaderItemIsDroppable(True)
+        # self.setHeaderItemIsDroppable(True)
 
         # events
         # self.setHeaderItemMimeDataFunction(self.setDragMimeData)
@@ -104,6 +104,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
         # recurse through children
         else:
+            new_item.setIsDroppable(True)
             children = node.getChildren()
             if 0 < len(children):
                 for grand_child in children:
@@ -163,6 +164,17 @@ class NodeTreeMainWidget(NodeViewWidget):
         node_list = [NodegraphAPI.GetNode(node) for node in node_name_list]
 
         return node_list
+
+    @staticmethod
+    def isNodeDescendantOf(child, ancenstor):
+        parent = child.parent()
+        if parent:
+            if parent == ancenstor:
+                return True
+            else:
+                return NodeTreeMainWidget.isNodeDescendantOf(child, ancenstor)
+        else:
+            return False
 
     """ PROPERTIES """
     def node(self):
@@ -324,10 +336,9 @@ class NodeTreeMainWidget(NodeViewWidget):
                 node_graph = getCurrentTab()
                 parent_node = node_graph.getEnteredGroupNode()
                 node_list = []
+
                 for count, index in enumerate(self.getAllSelectedIndexes()):
                     item = index.internalPointer()
-                    #print(item)
-                    #node = NodegraphAPI.GetNode(item.columnData()['name'])
                     node = item.node()
                     node_list.append(node)
 
@@ -402,7 +413,9 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
                 if not hasattr(node, 'getChildren'):
                     new_item = new_index.internalPointer()
                     new_item.setIsDroppable(False)
-
+                else:
+                    new_item = new_index.internalPointer()
+                    new_item.setIsDroppable(True)
             # reconnect all nodes inside of the group
             node_list = parent_widget.getChildNodeListFromItem(parent_widget.rootItem())
             nodeutils.connectInsideGroup(node_list, parent_node)
