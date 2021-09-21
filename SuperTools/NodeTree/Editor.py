@@ -1,18 +1,19 @@
 
 """
 ToDo:
-    *   Drag/Drop onto none group nodes?
-    *   Drag/Drop multiple nodes into nodegraph
+    *   Drag/Drop not in same group...
+    *   Groups auto collapse? Issue in populate?
 """
 from qtpy.QtWidgets import QVBoxLayout
 from qtpy.QtCore import Qt, QEvent, QModelIndex, QByteArray
+from qtpy.QtGui import QClipboard
 
 from cgwidgets.utils import getWidgetAncestor
 from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, NodeTypeListWidget
 from cgwidgets.views import AbstractDragDropTreeView
 from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI
 
-from Katana import UI4, NodegraphAPI, Utils
+from Katana import UI4, NodegraphAPI, Utils, KatanaFile
 from Widgets2 import AbstractSuperToolEditor, NodeViewWidget
 from Utils2 import nodeutils, getFontSize, NODE, PARAM, getCurrentTab
 
@@ -59,8 +60,10 @@ class NodeTreeMainWidget(NodeViewWidget):
     """
     def __init__(self, parent=None, node=None):
         super(NodeTreeMainWidget, self).__init__(parent)
-        # setup node
+        # setup attrs
+        self._node_text = ""
 
+        # setup node
         self._node = node
         # setup view
         view = NodeTreeViewWidget(self)
@@ -85,12 +88,19 @@ class NodeTreeMainWidget(NodeViewWidget):
         self._node_create_widget.setUserFinishedEditingEvent(self.createNewNode)
         self._node_create_widget.setFixedHeight(getFontSize() * 2)
 
-    def showEvent(self, event):
-        """ refresh UI on show event """
+        # populate items
         self.clearModel()
         for node in self.node().getChildren():
             self.populate(node)
-        return NodeViewWidget.showEvent(self, event)
+
+        self.addContextMenuEvent("Go To Node", self.goToNode)
+
+    # def showEvent(self, event):
+    #     """ refresh UI on show event """
+    #     self.clearModel()
+    #     for node in self.node().getChildren():
+    #         self.populate(node)
+    #     return NodeViewWidget.showEvent(self, event)
 
     def populate(self, node, parent_index=QModelIndex()):
         # create child item
@@ -99,18 +109,20 @@ class NodeTreeMainWidget(NodeViewWidget):
         new_item = new_index.internalPointer()
 
         # setup drop for new item
-        if not hasattr(node, 'getChildren'):
-            new_item.setIsDroppable(False)
-
-        # recurse through children
-        else:
+        if nodeutils.isContainerNode(node):
             new_item.setIsDroppable(True)
             children = node.getChildren()
             if 0 < len(children):
                 for grand_child in children:
                     self.populate(grand_child, parent_index=new_index)
+        else:
+            new_item.setIsDroppable(False)
 
     """ UTILS """
+    def goToNode(self, index, indexes):
+        node = index.internalPointer().node()
+        nodeutils.goToNode(node)
+
     def removeEventFilterFromNodeGraphs(self):
         """ Removes the current event filter from all of the NodeGraphs"""
         nodegraph_tabs = UI4.App.Tabs.GetTabsByType("Node Graph")
@@ -165,16 +177,11 @@ class NodeTreeMainWidget(NodeViewWidget):
 
         return node_list
 
-    @staticmethod
-    def isNodeDescendantOf(child, ancenstor):
-        parent = child.parent()
-        if parent:
-            if parent == ancenstor:
-                return True
-            else:
-                return NodeTreeMainWidget.isNodeDescendantOf(child, ancenstor)
-        else:
-            return False
+    def getAllSelectedNodes(self):
+        node_list = []
+        for index in self.getAllSelectedIndexes():
+            node_list.append(index.internalPointer().node())
+        return node_list
 
     """ PROPERTIES """
     def node(self):
@@ -182,6 +189,95 @@ class NodeTreeMainWidget(NodeViewWidget):
 
     def setNode(self, node):
         self._node = node
+
+    """ COPY / PASTE"""
+    def insertNode(self, node, parent_node, parent_index=None, row=0):
+        if not parent_index:
+            parent_index = self.getIndexFromItem(self.rootItem())
+        nodeutils.createIOPorts(node, in_port=True, out_port=True, connect=False, force_create=False)
+
+        # disconnect node and reparent
+        nodeutils.disconnectNode(node, input=True, output=True, reconnect=False)
+        node.setParent(parent_node)
+
+        # create new model item
+        new_index = self.createNewIndexFromNode(node, parent_index=parent_index, row=row)
+
+        # setup drop handlers
+        if nodeutils.isContainerNode(node):
+            new_item = new_index.internalPointer()
+            new_item.setIsDroppable(True)
+            # todo update group node dropping
+            """ Right now this is merely looking at all the children and dumping them into a group
+            - This should be smarter.  It does not preserve connection order.
+            - Could potentially search from the input port, down to the output port.
+            - Look for nodes with multiple connections, and flag them as broken
+            - Lock internal contents?"""
+            for child_node in node.getChildren():
+                self.insertNode(child_node, node, parent_index=new_index)
+        else:
+            new_item = new_index.internalPointer()
+            new_item.setIsDroppable(False)
+
+    def copyNodes(self):
+        """ Copies all of the selected nodes.
+
+        Note:
+            If items are in different groups, nodes, cannot be copied,
+            and the operation will be aborted.
+
+        Returns (bool): True if succesful in copy, False if failed
+            """
+        nodes = self.getAllSelectedNodes()
+        try:
+            element = NodegraphAPI.BuildNodesXmlIO(nodes, forcePersistant=True)
+            node_text = NodegraphAPI.WriteKatanaString(element, compress=False, archive=False)
+            self._nodes_to_be_copied = node_text
+            return True
+        except ValueError:
+            print("Nodes not in same group, copy aborted because I\'m to lazy to write the code for it")
+            return False
+
+    def cutNodes(self):
+        if self.copyNodes():
+            for item in self.getAllSelectedItems():
+                self.deleteItem(item, event_update=True)
+
+    def duplicateNodes(self):
+        # copy
+        if self.copyNodes():
+            self.pasteNodes()
+        # paste
+
+    def pasteNodes(self):
+        # Get parent node/item
+        if 0 < len(self.getAllSelectedItems()):
+            current_item = self.getAllSelectedItems()[-1]
+            current_node = current_item.node()
+            # paste on group
+            if nodeutils.isContainerNode(current_node):
+                parent_item = current_item
+                parent_node = current_node
+            # paste on non-group
+            else:
+                parent_item = current_item.parent()
+                parent_node = current_node.getParent()
+        # no objects selected
+        else:
+            parent_item = self.rootItem()
+            parent_node = self.node()
+
+        parent_index = self.getIndexFromItem(parent_item)
+
+        # paste node XML
+        text_nodes = KatanaFile.Paste(self._nodes_to_be_copied, parent_node)
+
+        for node in text_nodes:
+            node.setParent(parent_node)
+            self.insertNode(node, parent_node, parent_index=parent_index, row=parent_item.childCount())
+
+        node_list = self.getChildNodeListFromItem(parent_item)
+        nodeutils.connectInsideGroup(node_list, parent_node)
 
     """ EVENTS """
     # def setDragMimeData(self, mimedata, items):
@@ -241,7 +337,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
             # set up node
             # container
-            if hasattr(new_node, 'getChildren'):
+            if nodeutils.isContainerNode(new_node):
                 new_item.setIsDroppable(True)
                 nodeutils.createIOPorts(new_node, force_create=False, connect=True)
             # standard
@@ -328,7 +424,21 @@ class NodeTreeMainWidget(NodeViewWidget):
         nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
         node.delete()
 
+    def keyPressEvent(self, event):
+        modifiers = event.modifiers()
+        if modifiers in [Qt.ControlModifier]:
+            if event.key() == Qt.Key_C:
+                self.copyNodes()
+            if event.key() == Qt.Key_V:
+                self.pasteNodes()
+            if event.key() == Qt.Key_X:
+                self.cutNodes()
+            if event.key() == Qt.Key_D:
+                self.duplicateNodes()
+        return NodeViewWidget.keyPressEvent(self, event)
+
     def eventFilter(self, obj, event):
+        """ Drag/Drop Handler from NodeTree into NodeGraph"""
         if event.type() in (QEvent.DragEnter, QEvent.DragMove, QEvent.Drop):
             if event.type() != QEvent.Drop:
                 event.acceptProposedAction()
@@ -337,9 +447,9 @@ class NodeTreeMainWidget(NodeViewWidget):
                 parent_node = node_graph.getEnteredGroupNode()
                 node_list = []
 
-                for count, index in enumerate(self.getAllSelectedIndexes()):
-                    item = index.internalPointer()
-                    node = item.node()
+                for count, (node, item) in enumerate(
+                        zip(self.getAllSelectedNodes(), self.getAllSelectedItems())
+                ):
                     node_list.append(node)
 
                     # disconnect node
@@ -348,9 +458,8 @@ class NodeTreeMainWidget(NodeViewWidget):
                     # create ports
                     nodeutils.createIOPorts(node, force_create=False, connect=True)
 
-                    # reparent
+                    # reparent/position
                     node.setParent(parent_node)
-
                     NodegraphAPI.SetNodePosition(node, (0, count * 50))
 
                     # update GUI
@@ -397,31 +506,16 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
         if mimedata.hasFormat('nodegraph/nodes'):
             nodes_list_bytes = mimedata.data('nodegraph/nodes').data()
             nodes_list = nodes_list_bytes.decode("utf-8").split(',')
-            parent_widget = getWidgetAncestor(self, NodeTreeMainWidget)
-            parent_node = parent_widget.node()
+            node_tree_widget = getWidgetAncestor(self, NodeTreeMainWidget)
+            parent_node = node_tree_widget.node()
             for node_name in nodes_list:
                 # get node
                 node = NodegraphAPI.GetNode(node_name)
-                nodeutils.createIOPorts(node, in_port=True, out_port=True, connect=False, force_create=False)
 
-                # disconnect node and reparent
-                nodeutils.disconnectNode(node, input=True, output=True, reconnect=False)
-                node.setParent(parent_node)
+                node_tree_widget.insertNode(node, parent_node)
 
-                # create new model item
-                root_index = parent_widget.model().getIndexFromItem(parent_widget.rootItem())
-                new_index = parent_widget.createNewIndexFromNode(node, root_index)
-                #new_index = parent_widget.insertShojiWidget(0, column_data={'name': node.getName(), 'type': node.getType(), "object_type": NODE}, parent=root_index)
-
-                # setup drop handlers
-                if not hasattr(node, 'getChildren'):
-                    new_item = new_index.internalPointer()
-                    new_item.setIsDroppable(False)
-                else:
-                    new_item = new_index.internalPointer()
-                    new_item.setIsDroppable(True)
             # reconnect all nodes inside of the group
-            node_list = parent_widget.getChildNodeListFromItem(parent_widget.rootItem())
+            node_list = node_tree_widget.getChildNodeListFromItem(node_tree_widget.rootItem())
             nodeutils.connectInsideGroup(node_list, parent_node)
 
         return AbstractDragDropTreeView.dropEvent(self, event)

@@ -71,7 +71,7 @@ class NodeViewWidget(ShojiModelViewWidget):
         node = NodegraphAPI.GetNode(node_name)
         return node
 
-    def createNewIndexFromNode(self, node, parent_index=QModelIndex()):
+    def createNewIndexFromNode(self, node, parent_index=QModelIndex(), row=0):
         """
         Creates a new index in the model for the node specified.
         Args:
@@ -83,7 +83,7 @@ class NodeViewWidget(ShojiModelViewWidget):
         """
         name = node.getName()
         node_type = node.getType()
-        new_index = self.insertShojiWidget(0, column_data={"name": name, "type": node_type, "object_type":NODE, "node": name}, parent=parent_index)
+        new_index = self.insertShojiWidget(row, column_data={"name": name, "type": node_type, "object_type":NODE, "node": name}, parent=parent_index)
 
         return new_index
 

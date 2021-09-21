@@ -52,6 +52,7 @@ def connectInsideGroup(node_list, parent_node):
     """
     Connects all of the nodes inside of a specific node in a linear fashion
 
+    # todo update this so the connections actually work correctly... node positioning is boned
     Args:
         node_list (list): list of nodes to be connected together, the order
             of the nodes in this list, will be the order that they are connected in
@@ -85,6 +86,33 @@ def toggleTwoFacedNodeAppearance(node):
     display_mode = display_mode_param.getValue(0)
     display_mode_param.setValue(math.fabs(display_mode - 1))
 
+
+def isNodeDescendantOf(child, ancestor):
+    """ Determines if the node is a descendant of another node.
+
+    Args:
+        child (node): to check to see if it is a descendant of
+        ancestor (node): node to see if the child node is descended from"""
+    parent = child.parent()
+    if parent:
+        if parent == ancestor:
+            return True
+        else:
+            return isNodeDescendantOf(child, ancestor)
+    else:
+        return False
+
+
+def isContainerNode(node):
+    """ Determines if this node is a container node.  Such as a Group/GroupStack/etc
+
+    Args:
+        node (node)"""
+    if hasattr(node, 'getChildren'):
+        return True
+    else:
+        return False
+    return False
 
 def insertNode(node, parent_node):
     """
@@ -131,8 +159,7 @@ def insertNode(node, parent_node):
 
 
 def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=True):
-    """
-    Creates / connects the input ports
+    """ Creates / connects the input ports
     Args:
         node:
         in_port:
