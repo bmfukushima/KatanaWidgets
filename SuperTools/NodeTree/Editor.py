@@ -2,7 +2,6 @@
 """
 ToDo:
     *   Drag/Drop not in same group...
-    *   Groups auto collapse? Issue in populate?
 """
 from qtpy.QtWidgets import QVBoxLayout
 from qtpy.QtCore import Qt, QEvent, QModelIndex, QByteArray
@@ -61,25 +60,29 @@ class NodeTreeMainWidget(NodeViewWidget):
     def __init__(self, parent=None, node=None):
         super(NodeTreeMainWidget, self).__init__(parent)
         # setup attrs
-        self._node_text = ""
+        self._nodes_to_be_copied = ""
 
         # setup node
         self._node = node
+        self.rootItem().setArg("node", node.getName())
+
         # setup view
         view = NodeTreeViewWidget(self)
 
         # setup header
         self.setHeaderViewWidget(view)
 
-        # setup shoji style
+        # flags
         self.setMultiSelect(True)
         self.setHeaderItemIsDraggable(True)
+        self.setHeaderItemIsCopyable(True)
 
         # events
-        # self.setHeaderItemMimeDataFunction(self.setDragMimeData)
         self.setHeaderItemDragStartEvent(self.nodePickupEvent)
         self.setHeaderItemDropEvent(self.nodeMovedEvent)
         self.setHeaderItemDeleteEvent(self.nodeDeleteEvent)
+        self.setHeaderItemCopyEvent(self.copyNodes)
+        self.setHeaderItemPasteEvent(self.pasteNodes)
 
         # node create widget
         self._node_create_widget = NodeTreeHeaderDelegate(self)
@@ -219,7 +222,7 @@ class NodeTreeMainWidget(NodeViewWidget):
             new_item = new_index.internalPointer()
             new_item.setIsDroppable(False)
 
-    def copyNodes(self):
+    def copyNodes(self, items):
         """ Copies all of the selected nodes.
 
         Note:
@@ -228,7 +231,8 @@ class NodeTreeMainWidget(NodeViewWidget):
 
         Returns (bool): True if succesful in copy, False if failed
             """
-        nodes = self.getAllSelectedNodes()
+        # nodes = self.getAllSelectedNodes()
+        nodes = [item.node() for item in items]
         try:
             element = NodegraphAPI.BuildNodesXmlIO(nodes, forcePersistant=True)
             node_text = NodegraphAPI.WriteKatanaString(element, compress=False, archive=False)
@@ -238,82 +242,51 @@ class NodeTreeMainWidget(NodeViewWidget):
             print("Nodes not in same group, copy aborted because I\'m to lazy to write the code for it")
             return False
 
-    def cutNodes(self):
+    def cutNodes(self, items):
         if self.copyNodes():
-            for item in self.getAllSelectedItems():
+            for item in items:
                 self.deleteItem(item, event_update=True)
 
-    def duplicateNodes(self):
+    def duplicateNodes(self, items):
         # copy
         if self.copyNodes():
             self.pasteNodes()
         # paste
 
-    def pasteNodes(self):
+    def pasteNodes(self, items, parent_item):
         # Get parent node/item
-        if 0 < len(self.getAllSelectedItems()):
-            current_item = self.getAllSelectedItems()[-1]
-            current_node = current_item.node()
-            # paste on group
-            if nodeutils.isContainerNode(current_node):
-                parent_item = current_item
-                parent_node = current_node
-            # paste on non-group
-            else:
-                parent_item = current_item.parent()
-                parent_node = current_node.getParent()
-        # no objects selected
-        else:
-            parent_item = self.rootItem()
-            parent_node = self.node()
-
-        parent_index = self.getIndexFromItem(parent_item)
-
+        # if 0 < len(self.getAllSelectedItems()):
+        #     current_item = self.getAllSelectedItems()[-1]
+        #     current_node = current_item.node()
+        #     # paste on group
+        #     if nodeutils.isContainerNode(current_node):
+        #         parent_item = current_item
+        #         parent_node = current_node
+        #     # paste on non-group
+        #     else:
+        #         parent_item = current_item.parent()
+        #         parent_node = current_node.getParent()
+        # # no objects selected
+        # else:
+        #     parent_item = self.rootItem()
+        #     parent_node = self.node()
+        #
+        # parent_index = self.getIndexFromItem(parent_item)
+        #
         # paste node XML
+        parent_node = parent_item.node()
         text_nodes = KatanaFile.Paste(self._nodes_to_be_copied, parent_node)
 
-        for node in text_nodes:
+        # create new indexes / update nodes parent
+        for item, node in zip(items, text_nodes):
             node.setParent(parent_node)
-            self.insertNode(node, parent_node, parent_index=parent_index, row=parent_item.childCount())
+            item.setArg("node", node.getName())
+            item.setArg("name", node.getName())
 
         node_list = self.getChildNodeListFromItem(parent_item)
         nodeutils.connectInsideGroup(node_list, parent_node)
 
     """ EVENTS """
-    # def setDragMimeData(self, mimedata, items):
-    #     """ Adds the mimedata to the drag event
-    #
-    #     Args:
-    #         mimedata (QMimedata): from dragEvent
-    #         items (list): of NodeViewWidgetItem
-    #     Note:
-    #         This only adds the data for nodes... not for parameters, how to handle?"""
-    #     nodes = []
-    #     python_text = []
-    #     for item in items:
-    #
-    #         if item.type() == NODE:
-    #             node_name = item.getName()
-    #             nodes.append(node_name)
-    #
-    #             python_text.append("NodegraphAPI.GetNode(\"{NODE_NAME}\")".format(NODE_NAME=node_name))
-    #
-    #     nodes_ba = QByteArray()
-    #     nodes_ba.append(", ".join(nodes))
-    #
-    #     python_text_ba = QByteArray()
-    #     python_text_ba.append(", ".join(python_text))
-    #
-    #     listbox_ba = QByteArray()
-    #     listbox_ba.append("0")
-    #
-    #     mimedata.setData("listbox/items", listbox_ba)
-    #     mimedata.setData("nodegraph/nodes", nodes_ba)
-    #     mimedata.setData("python/text", python_text_ba)
-    #     return mimedata
-        #nodegraph / nodes == FaceSetCreate, FaceSetCreate1
-        #python / text == NodegraphAPI.GetNode("FaceSetCreate"), NodegraphAPI.GetNode("FaceSetCreate1")
-
     def createNewNode(self, widget, value):
         """ User creating new node """
         # get node
@@ -424,18 +397,18 @@ class NodeTreeMainWidget(NodeViewWidget):
         nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
         node.delete()
 
-    def keyPressEvent(self, event):
-        modifiers = event.modifiers()
-        if modifiers in [Qt.ControlModifier]:
-            if event.key() == Qt.Key_C:
-                self.copyNodes()
-            if event.key() == Qt.Key_V:
-                self.pasteNodes()
-            if event.key() == Qt.Key_X:
-                self.cutNodes()
-            if event.key() == Qt.Key_D:
-                self.duplicateNodes()
-        return NodeViewWidget.keyPressEvent(self, event)
+    # def keyPressEvent(self, event):
+    #     modifiers = event.modifiers()
+    #     if modifiers == Qt.ControlModifier:
+    #         if event.key() == Qt.Key_C:
+    #             self.copyNodes()
+    #         if event.key() == Qt.Key_V:
+    #             self.pasteNodes()
+    #         if event.key() == Qt.Key_X:
+    #             self.cutNodes()
+    #         if event.key() == Qt.Key_D:
+    #             self.duplicateNodes()
+    #     return NodeViewWidget.keyPressEvent(self, event)
 
     def eventFilter(self, obj, event):
         """ Drag/Drop Handler from NodeTree into NodeGraph"""

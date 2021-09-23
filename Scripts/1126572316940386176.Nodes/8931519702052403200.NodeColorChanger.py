@@ -463,6 +463,10 @@ class ColorPickerWidget(QMainWindow):
     def getColor(self):
         return self.color
 
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.close()
+        QMainWindow.keyPressEvent(self, event)
 
 class ColorLabel(QLabel):
     """ Displays a solid color to the user """
