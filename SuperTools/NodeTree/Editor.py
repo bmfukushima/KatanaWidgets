@@ -83,6 +83,8 @@ class NodeTreeMainWidget(NodeViewWidget):
         self.setHeaderItemDeleteEvent(self.nodeDeleteEvent)
         self.setHeaderItemCopyEvent(self.copyNodes)
         self.setHeaderItemPasteEvent(self.pasteNodes)
+        self.setHeaderItemDuplicateEvent(self.duplicateNodes)
+        self.setHeaderItemCutEvent(self.cutNodes)
 
         # node create widget
         self._node_create_widget = NodeTreeHeaderDelegate(self)
@@ -105,10 +107,10 @@ class NodeTreeMainWidget(NodeViewWidget):
     #         self.populate(node)
     #     return NodeViewWidget.showEvent(self, event)
 
-    def populate(self, node, parent_index=QModelIndex()):
+    def populate(self, node, parent_index=QModelIndex(), row=0):
         # create child item
         # create new item
-        new_index = self.createNewIndexFromNode(node, parent_index=parent_index)
+        new_index = self.createNewIndexFromNode(node, parent_index=parent_index, row=row)
         new_item = new_index.internalPointer()
 
         # setup drop for new item
@@ -116,8 +118,8 @@ class NodeTreeMainWidget(NodeViewWidget):
             new_item.setIsDroppable(True)
             children = node.getChildren()
             if 0 < len(children):
-                for grand_child in children:
-                    self.populate(grand_child, parent_index=new_index)
+                for row, grand_child in enumerate(children):
+                    self.populate(grand_child, parent_index=new_index, row=row)
         else:
             new_item.setIsDroppable(False)
 
@@ -243,17 +245,34 @@ class NodeTreeMainWidget(NodeViewWidget):
             return False
 
     def cutNodes(self, items):
-        if self.copyNodes():
+        if self.copyNodes(items):
             for item in items:
                 self.deleteItem(item, event_update=True)
 
-    def duplicateNodes(self, items):
-        # copy
-        if self.copyNodes():
-            self.pasteNodes()
-        # paste
+    def duplicateNodes(self, copied_items, duplicated_items):
+        self.copyNodes(copied_items)
 
-    def pasteNodes(self, items, parent_item):
+        text_nodes = KatanaFile.Paste(self._nodes_to_be_copied, NodegraphAPI.GetRootNode())
+
+        # create new indexes / update nodes parent
+        for item, node in zip(duplicated_items, text_nodes):
+            # get/update attrs
+            parent_node = item.parent().node()
+            node.setParent(parent_node)
+            item.setArg("node", node.getName())
+            item.setArg("name", node.getName())
+
+            # update group node
+            if nodeutils.isContainerNode(node):
+                parent_index = self.model().getIndexFromItem(item.parent())
+                self.populate(node, parent_index, row=item.row())
+                self.deleteItem(item, event_update=False)
+
+            # connect internals
+            node_list = self.getChildNodeListFromItem(item.parent())
+            nodeutils.connectInsideGroup(node_list, parent_node)
+
+    def pasteNodes(self, copied_items, pasted_items, parent_item):
         # Get parent node/item
         # if 0 < len(self.getAllSelectedItems()):
         #     current_item = self.getAllSelectedItems()[-1]
@@ -278,11 +297,19 @@ class NodeTreeMainWidget(NodeViewWidget):
         text_nodes = KatanaFile.Paste(self._nodes_to_be_copied, parent_node)
 
         # create new indexes / update nodes parent
-        for item, node in zip(items, text_nodes):
+        for item, node in zip(pasted_items, text_nodes):
+            # get/update attrs
             node.setParent(parent_node)
             item.setArg("node", node.getName())
             item.setArg("name", node.getName())
 
+            # update group
+            if nodeutils.isContainerNode(node):
+                parent_index = self.model().getIndexFromItem(item.parent())
+                self.populate(node, parent_index, row=item.row())
+                self.deleteItem(item, event_update=False)
+
+        # connect internals
         node_list = self.getChildNodeListFromItem(parent_item)
         nodeutils.connectInsideGroup(node_list, parent_node)
 
