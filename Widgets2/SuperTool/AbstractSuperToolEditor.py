@@ -71,6 +71,7 @@ class AbstractSuperToolEditor(QWidget):
                 return AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(widget.parent())
         else:
             return None
+
     @staticmethod
     def getKatanaWidgetByobjectName(widget, object_name):
         """
@@ -284,6 +285,12 @@ class AbstractSuperToolEditor(QWidget):
         return self._custom_param_dict
 
     """ PROPERTIES """
+    def node(self):
+        return self._node
+
+    def setNode(self, node):
+        self._node = node
+
     @property
     def is_frozen(self):
         return self._is_frozen

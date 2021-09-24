@@ -26,7 +26,7 @@ class NodeTreeEditor(AbstractSuperToolEditor):
             | --
         """
 
-        self._node_type = "<multi>"
+        # self._node_type = "<multi>"
         # setup layout
         QVBoxLayout(self)
 
@@ -37,18 +37,9 @@ class NodeTreeEditor(AbstractSuperToolEditor):
         self.layout().addWidget(self.nodeTree())
         self.insertResizeBar()
 
-    """ PROPERTIES """
+    """ WIDGETS """
     def nodeTree(self):
         return self._node_tree
-
-    def setNodeTree(self, _node_tree):
-        self._node_tree = _node_tree
-
-    def nodeType(self):
-        return self._node_type
-
-    def setNodeType(self, _node_type):
-        self._node_type = _node_type
 
 
 class NodeTreeMainWidget(NodeViewWidget):
@@ -273,25 +264,6 @@ class NodeTreeMainWidget(NodeViewWidget):
             nodeutils.connectInsideGroup(node_list, parent_node)
 
     def pasteNodes(self, copied_items, pasted_items, parent_item):
-        # Get parent node/item
-        # if 0 < len(self.getAllSelectedItems()):
-        #     current_item = self.getAllSelectedItems()[-1]
-        #     current_node = current_item.node()
-        #     # paste on group
-        #     if nodeutils.isContainerNode(current_node):
-        #         parent_item = current_item
-        #         parent_node = current_node
-        #     # paste on non-group
-        #     else:
-        #         parent_item = current_item.parent()
-        #         parent_node = current_node.getParent()
-        # # no objects selected
-        # else:
-        #     parent_item = self.rootItem()
-        #     parent_node = self.node()
-        #
-        # parent_index = self.getIndexFromItem(parent_item)
-        #
         # paste node XML
         parent_node = parent_item.node()
         text_nodes = KatanaFile.Paste(self._nodes_to_be_copied, parent_node)

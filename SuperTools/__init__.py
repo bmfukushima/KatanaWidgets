@@ -24,14 +24,17 @@ import Katana
 # import super tools
 from . import NodeTree
 from . import SuperToolTemplate
+from . import IsolateCEL
 
 from MultiTools import VariableManager, SimpleTool
 
 # compile list of super tools
 superdooper_tools_list = [
-    SimpleTool.SuperTool,
+    IsolateCEL,
     NodeTree,
+    SimpleTool.SuperTool,
     VariableManager.SuperTool,
+
     # SuperToolTemplate
 ]
 

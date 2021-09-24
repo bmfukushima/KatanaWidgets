@@ -12,6 +12,6 @@ ToDo:
 
 from .Node import SuperToolNode as NODE
 def EDITOR():
-    from Editor import SuperToolEditor
+    from .Editor import SuperToolEditor
     return SuperToolEditor
 NAME = 'SuperToolExample'
