@@ -74,7 +74,7 @@ class Test(QLineEdit, iParameter):
         )
 
         # set default values
-        param = self.main_widget.node.getParameter(self.getLocation())
+        param = self.main_widget.node().getParameter(self.getLocation())
         publish_dir = PUBLISH_DIR
         if param:
             value = param.getValue(0)
@@ -120,12 +120,15 @@ class VariableManagerWidget(QWidget):
         super(VariableManagerWidget, self).__init__(parent)
 
         self.main_widget = getMainWidget(self)
-        self.node = node
+        self._node = node
         self.initGUI()
         self.setObjectName("Variable Manager Widget")
 
     def __name__(self):
         return "Variable Manager Widget"
+
+    def node(self):
+        return self._node
 
     """ CREATE GUI"""
     def initGUI(self):
@@ -235,7 +238,7 @@ class VariableManagerWidget(QWidget):
 
         self.variable_browser_widget = createVariableManagerBrowserStack()
         self.variable_browser_widget.setObjectName("Variable Browser Widget")
-        self.nodegraph_widget = AbstractNodegraphWidget(self, node=self.node, display_menus=False)
+        self.nodegraph_widget = AbstractNodegraphWidget(self, node=self.node(), display_menus=False)
         self.nodegraph_widget.enableScrollWheel(False)
 
         # Setup Layouts
@@ -492,7 +495,7 @@ class VariableManagerGSVMenu(ListInputWidget):
         super(VariableManagerGSVMenu, self).__init__(parent)
         # setup attrs
         self.main_widget = getMainWidget(self)
-        self.previous_text = self.main_widget.node.getVariable()
+        self.previous_text = self.main_widget.node().getVariable()
         self.setUserFinishedEditingEvent(self.indexChanged)
         self.populate(self.getAllVariables())
         self.setCleanItemsFunction(self.getAllVariables)
@@ -600,7 +603,7 @@ class VariableManagerNodeMenu(NodeTypeListWidget):
         """
         does_node_variable_exist = self.isUserInputValid()
         if does_node_variable_exist is False:
-            node_type = self.main_widget.node.getParameter('node_type').getValue(0)
+            node_type = self.main_widget.node().getParameter('node_type').getValue(0)
             self.setText(node_type)
             return
 
@@ -617,7 +620,7 @@ class VariableManagerNodeMenu(NodeTypeListWidget):
 
     def cancelled(self):
         self.main_widget.layout().setCurrentIndex(0)
-        node_type = self.main_widget.node.getParameter('node_type').getValue(0)
+        node_type = self.main_widget.node().getParameter('node_type').getValue(0)
         self.setText(node_type)
 
     def changeNodeType(self):
@@ -663,7 +666,7 @@ continue from here, all unsaved work will be deleted...
 
 {old_node_type} ==> {new_node_type}
 """.format(
-                old_node_type=self.main_widget.node.getParameter('node_type').getValue(0),
+                old_node_type=self.main_widget.node().getParameter('node_type').getValue(0),
                 new_node_type=str(self.text())
             )
         self.main_widget.showWarningBox(
@@ -2383,7 +2386,7 @@ class PublishDirWidget(FileBrowserInputWidget, iParameter):
         )
 
         # set default values
-        param = self.main_widget.node.getParameter(self.getLocation())
+        param = self.main_widget.node().getParameter(self.getLocation())
         publish_dir = PUBLISH_DIR
         if param:
             value = param.getValue(0)

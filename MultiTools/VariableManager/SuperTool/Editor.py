@@ -322,7 +322,7 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             if arg[0] in 'parameter_setValue':
                 node = arg[2]['node']
                 param = arg[2]['param']
-                if node == self.node and param.getName() == 'undoozable':
+                if node == self.node() and param.getName() == 'undoozable':
                     self._should_update = True
 
     def __updateGUI(self, args, check_besterest=True):
@@ -344,17 +344,17 @@ class VariableManagerEditor(AbstractSuperToolEditor):
             item_hash = item.getHash()
 
         # update variable menu
-        variable = self.node.getParameter('variable').getValue(0)
+        variable = self.node().getParameter('variable').getValue(0)
         self.main_widget.setVariable(variable)
         variable_manager.variable_menu.setText(variable)
 
         # update node menu
-        node_type = self.node.getParameter('node_type').getValue(0)
+        node_type = self.node().getParameter('node_type').getValue(0)
         self.main_widget.node_type = node_type
         variable_manager.node_type_menu.setText(node_type)
 
         # update publish dir
-        publish_dir = self.node.getParameter('publish_dir').getValue(0)
+        publish_dir = self.node().getParameter('publish_dir').getValue(0)
         variable_manager.publish_dir.setText(publish_dir)
 
         # update variable browser
@@ -424,9 +424,9 @@ class VariableManagerMainWidget(QWidget):
         """
         self.setNode(node)
         self.suppress_updates = False
-        self.node.__init__(populate=False)
-        self.variable = self.node.getParameter('variable').getValue(0)
-        self.node_type = self.node.getParameter('node_type').getValue(0)
+        self.node().__init__(populate=False)
+        self.variable = self.node().getParameter('variable').getValue(0)
+        self.node_type = self.node().getParameter('node_type').getValue(0)
         self.root_publish_dir = ''
         self.pattern = None
         self._options_list = []
@@ -442,7 +442,7 @@ class VariableManagerMainWidget(QWidget):
         # create widgets
         self.versions_display_widget = VersionsDisplayWidget(self)
         self.publish_display_widget = PublishDisplayWidget(self)
-        self.variable_manager_widget = VariableManagerWidget(self, node=self.node)
+        self.variable_manager_widget = VariableManagerWidget(self, node=self.node())
         self.warning_display_widget = WarningWidget(self)
 
         # setup layouts
@@ -463,9 +463,9 @@ class VariableManagerMainWidget(QWidget):
             ( copy / paste  |  load file  |  etc )
         """
 
-        if self.node.getParameter('variable').getValue(0) != '':
+        if self.node().getParameter('variable').getValue(0) != '':
             # init GSV menu
-            variable = self.node.getParameter('variable').getValue(0)
+            variable = self.node().getParameter('variable').getValue(0)
             self.setVariable(variable)
 
             # setup gsv change
@@ -473,7 +473,7 @@ class VariableManagerMainWidget(QWidget):
             self.updateOptionsList()
 
             # initialize node type menu
-            node_type = self.node.getParameter('node_type').getValue(0)
+            node_type = self.node().getParameter('node_type').getValue(0)
             self.setNodeType(node_type)
             node_type_menu = self.variable_manager_widget.node_type_menu
             node_type_menu.setText(node_type)
@@ -656,10 +656,10 @@ class VariableManagerMainWidget(QWidget):
 
     """ PROPERTIES """
     def getNode(self):
-        return self.node
+        return self._node
 
     def setNode(self, node):
-        self.node = node
+        self._node = node
 
     def getOptionsList(self):
         return self._options_list
@@ -692,14 +692,14 @@ class VariableManagerMainWidget(QWidget):
         try:
             variable = self.variable
         except AttributeError:
-            variable = self.node.getParameter('variable').getValue(0)
+            variable = self.node().getParameter('variable').getValue(0)
             self.setVariable(variable)
         finally:
             return variable
 
     def setVariable(self, variable):
         self.variable = variable
-        self.node.getParameter('variable').setValue(variable, 0)
+        self.node().getParameter('variable').setValue(variable, 0)
         self.variable_manager_widget.variable_browser.headerItem().setText(0, variable)
 
     def setWorkingItem(self, item):
@@ -756,7 +756,7 @@ class VariableManagerMainWidget(QWidget):
 
     def setRootPublishDir(self, root_publish_dir):
         self.root_publish_dir = root_publish_dir
-        self.node.getParameter('publish_dir').setValue(root_publish_dir, 0)
+        self.node().getParameter('publish_dir').setValue(root_publish_dir, 0)
 
     @property
     def suppress_updates(self):
@@ -1051,7 +1051,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         resets all settings that were set up for display versions
         """
         root_publish_dir = self.main_widget.getRootPublishDir()
-        self.main_widget.node.getParameter('publish_dir').setValue(root_publish_dir, 0)
+        self.main_widget.node().getParameter('publish_dir').setValue(root_publish_dir, 0)
         self.main_widget.setVariable(self.previous_variable)
         self.main_widget.variable_manager_widget.variable_menu.setText(self.previous_variable)
         self.main_widget.variable_manager_widget.variable_browser.topLevelItem(0).setText(0, self.previous_variable)

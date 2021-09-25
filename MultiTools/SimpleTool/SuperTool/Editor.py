@@ -73,14 +73,13 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
     def __init__(self, parent, node):
         super(SimpleToolEditor, self).__init__(parent, node)
         # set up attrs
-        self.node = node
         self.main_node = node.getChildByIndex(0)
 
         # self.events_param = self.main_node.getParameters().createChildString("events_data", "")
         self.getDesignWidget().setDelegateTitleIsShown(False)
         # create widgets
-        self._group_node_editor_widget = GroupNodeEditorMainWidget(self, self.node, self.main_node)
-        self._events_widget = SimpleToolEventWidget(self, node=self.node)
+        self._group_node_editor_widget = GroupNodeEditorMainWidget(self, self.node(), self.main_node)
+        self._events_widget = SimpleToolEventWidget(self, node=self.node())
 
         # setup tabs
         self.getDesignWidget().insertShojiWidget(

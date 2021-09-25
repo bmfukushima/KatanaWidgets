@@ -38,7 +38,7 @@ class GroupNodeEditorMainWidget(QWidget):
     def __init__(self, parent, node, main_node):
         super(GroupNodeEditorMainWidget, self).__init__(parent)
         # setup attrs
-        self.node = node
+        self._node = node
         self.main_node = main_node
 
         # setup GUI
@@ -50,13 +50,15 @@ class GroupNodeEditorMainWidget(QWidget):
         self.layout().addWidget(self.node_editor_widget)
 
         # create gui
-        self.nodegraph_widget = NodegraphWidget(self, node=self.node)
+        self.nodegraph_widget = NodegraphWidget(self, node=self.node())
         self.nodegraph_widget.setupDestroyNodegraphEvent()
         self.parameters_widget = ParametersDisplayWidget(self, node=self.main_node)
 
         self.node_editor_widget.addWidget(self.nodegraph_widget)
         self.node_editor_widget.addWidget(self.parameters_widget)
 
+    def node(self):
+        return self._node
 
 class GroupNodeEditor(ShojiLayout):
     def __init__(self, parent):
@@ -84,9 +86,12 @@ class ParametersDisplayWidget(AbstractParametersDisplayWidget):
     """
     def __init__(self, parent=None, node=None):
         super(ParametersDisplayWidget, self).__init__(parent)
-        self.node = node
+        self._node = node
         self.setNodeFilter(self.nodeFilter)
         self.enableSelectionDisplay(True)
+
+    def node(self):
+        return self._node
 
     def nodeFilter(self, node):
         """
@@ -96,6 +101,6 @@ class ParametersDisplayWidget(AbstractParametersDisplayWidget):
             node (Node): The node that is being filtered
         """
         if not node: return False
-        if node.getParent() != self.node: return False
+        if node.getParent() != self.node(): return False
 
         return True

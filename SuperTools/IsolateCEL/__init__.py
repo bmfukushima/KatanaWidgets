@@ -1,4 +1,4 @@
-from .Node import SuperToolNode as NODE
+from .Node import IsolateCELNode as NODE
 def EDITOR():
     from .Editor import IsolateCELEditor
     return IsolateCELEditor

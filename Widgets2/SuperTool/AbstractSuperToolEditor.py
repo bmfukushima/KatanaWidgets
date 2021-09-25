@@ -43,7 +43,7 @@ class AbstractSuperToolEditor(QWidget):
     def __init__(self, parent, node):
         super(AbstractSuperToolEditor, self).__init__(parent)
         self._is_frozen = False
-        self.node = node
+        self._node = node
 
         # set up resizing events
         self.__resizeEventFilter = ResizeFilter(self)
@@ -202,10 +202,10 @@ class AbstractSuperToolEditor(QWidget):
         """
 
         # check to see if parameter exists
-        if self.node.getParameter(param_loc):
+        if self.node().getParameter(param_loc):
             widget.setLocation(param_loc)
             widget.setDataType(data_type)
-            widget.setParameter(self.node.getParameter(param_loc))
+            widget.setParameter(self.node().getParameter(param_loc))
             widget.setGetNewValueFunction(get_new_value_function)
             widget.setEditingFinishedFunction(editing_finished_function)
             return
@@ -266,15 +266,15 @@ class AbstractSuperToolEditor(QWidget):
 
         """
         if location:
-            param = self.node.getParameter(location)
+            param = self.node().getParameter(location)
         else:
-            param = self.node.getParameters()
+            param = self.node().getParameters()
         return param
 
     def __setParam(self, event_signal):
         # ????
         event_signal()
-        self.node.setParameter()
+        self.node().setParameter()
         pass
 
     def undoParam(self):

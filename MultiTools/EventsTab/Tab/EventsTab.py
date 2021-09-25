@@ -21,7 +21,7 @@ class EventsTab(UI4.Tabs.BaseTab):
         QVBoxLayout(self)
         # setup main widget
 
-        self.node = NodegraphAPI.GetRootNode()
+        self._node = NodegraphAPI.GetRootNode()
 
         node = NodegraphAPI.GetRootNode()
         if not hasattr(widgetutils.katanaMainWindow(), "global_events_widget"):
@@ -30,6 +30,9 @@ class EventsTab(UI4.Tabs.BaseTab):
 
         self._events_widget = widgetutils.katanaMainWindow().global_events_widget
         self.layout().addWidget(self.eventsWidget())
+
+    def node(self):
+        return self._node
 
     def paramLocation(self):
         return self._param_location
