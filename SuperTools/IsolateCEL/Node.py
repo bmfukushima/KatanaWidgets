@@ -1,13 +1,3 @@
-"""
-TODO:
-    *   Prioritize which order the isolation will work
-            - The safe locations/attribute set nodes order will determine
-                how the isolate works.
-                    IF the attribute set is first, this will prioritize stuff
-                        that is lower in the hierachy...
-                    IF th
-"""
-
 from Katana import NodegraphAPI, Widgets, PyXmlIO, Utils
 
 try:

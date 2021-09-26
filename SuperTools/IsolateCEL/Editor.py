@@ -1,7 +1,7 @@
-from qtpy.QtWidgets import (QVBoxLayout, QWidget)
+from qtpy.QtWidgets import QVBoxLayout
 from qtpy.QtCore import Qt
 
-from Katana import UI4, Widgets, NodegraphAPI, PyXmlIO
+from Katana import UI4
 from Widgets2 import AbstractSuperToolEditor
 
 
