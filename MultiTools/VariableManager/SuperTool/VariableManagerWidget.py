@@ -48,6 +48,7 @@ from Utils2 import (
     gsvutils,
     makeUndoozable,
     nodeutils,
+    paramutils
 )
 
 from Utils2.colors import(
@@ -69,7 +70,7 @@ class Test(QLineEdit, iParameter):
         self.main_widget = getMainWidget(self)
 
         # register as katana param
-        self.main_widget.parent().registerCustomParameter(
+        self.main_widget.parent().createCustomParam(
             self, 'publish_dir', iParameter.STRING, self.text, self.editingFinished
         )
 
@@ -514,7 +515,7 @@ class VariableManagerGSVMenu(ListInputWidget):
         # get attributes
         variable_browser = self.main_widget.variable_manager_widget.variable_browser
         variable = str(self.text())
-        node = self.main_widget.getNode()
+        node = self.main_widget.node()
 
         # create new pattern if it doesn't exist
         if variable not in gsvutils.getAllGSV(return_as=gsvutils.STRING):
@@ -631,7 +632,7 @@ class VariableManagerNodeMenu(NodeTypeListWidget):
         if hasattr(self.main_widget.variable_manager_widget, 'variable_browser'):
             # get attrs
             variable_browser = self.main_widget.variable_manager_widget.variable_browser
-            node = self.main_widget.getNode()
+            node = self.main_widget.node()
             node_type = str(self.text())
 
             # set attrs
@@ -934,7 +935,7 @@ class VariableManagerBrowser(QTreeWidget):
         self.clear()
         variable = self.main_widget.getVariable()
         node_type = self.main_widget.getNodeType()
-        node = self.main_widget.getNode()
+        node = self.main_widget.node()
         node._reset(variable=variable, node_type=node_type)
         self.populate(check_besterest=check_besterest)
         self.main_widget.updateOptionsList()
@@ -1185,7 +1186,7 @@ class VariableManagerBrowser(QTreeWidget):
             parent_node (node): the parent node to create this new group under
 
         """
-        node = self.main_widget.getNode()
+        node = self.main_widget.node()
 
         # Get Parent Node / Parent Item
         current_item = self.currentItem()
@@ -1234,7 +1235,7 @@ class VariableManagerBrowser(QTreeWidget):
         """
         # set up master item
         # get nodes
-        node = self.main_widget.getNode()
+        node = self.main_widget.node()
         variable = self.main_widget.getVariable()
         master_root_node = NodegraphAPI.GetNode(node.getParameter('variable_root_node').getValue(0))
         pattern_root_node = NodegraphAPI.GetNode(master_root_node.getParameter('nodeReference.pattern_node').getValue(0))
@@ -1292,7 +1293,7 @@ class VariableManagerBrowser(QTreeWidget):
         return (VariableManagerBrowserItem)
         """
         # gather variables for item creation
-        node = self.main_widget.getNode()
+        node = self.main_widget.node()
         parent_node = self.__getParentNode()
 
         # create node group
@@ -1425,7 +1426,7 @@ class VariableManagerBrowser(QTreeWidget):
         TODO
             Consider merging with __createNewBlockItem
         """
-        node = self.main_widget.getNode()
+        node = self.main_widget.node()
         parent_node = self.__getParentNode()
 
         # create node group
@@ -1783,7 +1784,7 @@ class VariableManagerBrowser(QTreeWidget):
             # Publish item
             elif 'Publish' in action.text():
                 # item = self.main_widget.currentItem()
-                node = self.main_widget.getNode()
+                node = self.main_widget.node()
                 current_text = self.currentItem().text(0)
                 variable = node.getParameter('variable').getValue(0)
 
@@ -2378,16 +2379,18 @@ class PublishDirWidget(FileBrowserInputWidget, iParameter):
     """
     def __init__(self, parent=None):
         super(PublishDirWidget, self).__init__(parent)
+
         self.main_widget = getMainWidget(self)
+        publish_dir = PUBLISH_DIR
 
         # register as katana param
-        self.main_widget.parent().registerCustomParameter(
-            self, 'publish_dir', iParameter.STRING, self.text, self.editingFinished
+        param = self.main_widget.parent().createCustomParam(
+            self, 'publish_dir', paramutils.STRING, self.text, self.editingFinished, initial_value=PUBLISH_DIR
         )
 
         # set default values
-        param = self.main_widget.node().getParameter(self.getLocation())
-        publish_dir = PUBLISH_DIR
+        #param = self.main_widget.node().getParameter(self.getLocation())
+
         if param:
             value = param.getValue(0)
             if value != '':

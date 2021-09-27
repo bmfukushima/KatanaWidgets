@@ -21,6 +21,8 @@ from qtpy.QtCore import QEvent, Qt
 
 from cgwidgets.utils import getWidgetAncestor
 
+from Utils2 import paramutils
+
 try:
     from Katana import UI4
     from UI4.Widgets import PanelScrollArea
@@ -36,7 +38,7 @@ class AbstractSuperToolEditor(QWidget):
         Forces all widgets to automatically constrain to the correct dimensions
         inside of the parameters pane.
     Attributes:
-        is_frozen (bool): determines if the event handlers are
+        isFrozen (bool): determines if the event handlers are
             frozen or not.
         node (node): the current node
     """
@@ -72,41 +74,22 @@ class AbstractSuperToolEditor(QWidget):
         else:
             return None
 
-    @staticmethod
-    def getKatanaWidgetByobjectName(widget, object_name):
-        """
-        Searchs up the Katana widget hierarchy to find the one with the given name
-
-        If no widget is found, returns None
-
-        Args:
-            widget (QWidget): to start searching from
-            object_name (str): string of widget.objectName() to search for
-        """
-        if not widget: return
-        if widget.objectName() == object_name:
-            return widget
-        else:
-            return AbstractSuperToolEditor.getKatanaWidgetByobjectName(widget.parent(), object_name)
-
-    def setupEventHandlers(self, bool):
-        """
-        Interface to determine where the event handlers will
-        be setup.
-        """
-        pass
-
-    def hideEvent(self, event):
-        self.setupEventHandlers(False)
-        self.is_frozen = True
-        return QWidget.hideEvent(self, event)
-
-    def showEvent(self, event):
-        self.setupEventHandlers(True)
-        self.is_frozen = False
-        self.updateSize()
-
-        return QWidget.showEvent(self, event)
+    # @staticmethod
+    # def getKatanaWidgetByObjectName(widget, object_name):
+    #     """
+    #     Searchs up the Katana widget hierarchy to find the one with the given name
+    #
+    #     If no widget is found, returns None
+    #
+    #     Args:
+    #         widget (QWidget): to start searching from
+    #         object_name (str): string of widget.objectName() to search for
+    #     """
+    #     if not widget: return
+    #     if widget.objectName() == object_name:
+    #         return widget
+    #     else:
+    #         return AbstractSuperToolEditor.getKatanaWidgetByObjectName(widget.parent(), object_name)
 
     """ UTILS """
     def getParametersPanel(self):
@@ -182,7 +165,7 @@ class AbstractSuperToolEditor(QWidget):
         layout.insertWidget(index, resize_widget)
 
     """ REGISTER CUSTOM PARM"""
-    def registerCustomParameter(self, widget, param_loc, data_type, get_new_value_function, editing_finished_function):
+    def createCustomParam(self, widget, param_loc, data_type, get_new_value_function, editing_finished_function, initial_value=0):
         """
         Creates a custom parameter based off of a custom PyQt widget.
 
@@ -198,88 +181,65 @@ class AbstractSuperToolEditor(QWidget):
                 value that the parameter should be set to.
             editing_finished_function (function): function that is run when the user
                 has finished editing the widget...
+            initial_value: initial value to set the param to
 
         """
 
         # check to see if parameter exists
         if self.node().getParameter(param_loc):
-            widget.setLocation(param_loc)
-            widget.setDataType(data_type)
-            widget.setParameter(self.node().getParameter(param_loc))
-            widget.setGetNewValueFunction(get_new_value_function)
-            widget.setEditingFinishedFunction(editing_finished_function)
-            return
-
-        # get attrs
-        param_group = '.'.join(param_loc.split('.')[:-1])
-        param_name = param_loc.split('.')[-1]
-
-        # create recursive groups
-        if param_group:
-            self.createParamHierarchy(param_group)
-
-        # initialize new parameter on node
-        parent_param = self.__getCurrentParentParamFromLoc(param_group)
-        if data_type == iParameter.INT:
-            new_param = parent_param.createChildNumber(param_name, 0)
-        elif data_type == iParameter.STRING:
-            new_param = parent_param.createChildString(param_name, '')
+            param = self.node().getParameter(param_loc)
+        else:
+            param = paramutils.createParamAtLocation(param_loc, self.node(), data_type, initial_value=initial_value)
 
         # set widget attrs
         widget.setLocation(param_loc)
         widget.setDataType(data_type)
-        widget.setParameter(new_param)
+        widget.setParameter(param)
         widget.setGetNewValueFunction(get_new_value_function)
         widget.setEditingFinishedFunction(editing_finished_function)
-        # widget will have the signalTrigger to send to this...
-        # so all custom parms need the new widget as an interface...
-        pass
 
-    def createParamHierarchy(self, param_loc):
-        """
-        Recursively create group params if they don't exist until
-        the param location is available?
-
-        Args:
-            param_loc (str): path to location of the parameter with . syntax
-                ie user.somegroup.param
-        """
-        param_group = param_loc.split('.')
-        for index, location in enumerate(param_group):
-            current_location = param_group[:index]
-            current_group = self.__getCurrentParentParamFromLoc(current_location)
-            current_group.createChildGroup(location)
-
-    def __getCurrentParentParamFromLoc(self, location):
-        """
-        Simple interface to get the current parent parameter group from the location.
-        If there is no parent, then it will use the getParameters() in Katana
-        to gather the invisible root...
-
-        This should not include the actual parameter path itself, and if the parameter
-        is at the top most level, then it should provide a blank string...
-
-        Args:
-            location (str): path to location of the parameter with . syntax
-                ie user.somegroup.param
-                    would run .getParameter('user.somegroup')
-
-        """
-        if location:
-            param = self.node().getParameter(location)
-        else:
-            param = self.node().getParameters()
         return param
 
-    def __setParam(self, event_signal):
-        # ????
-        event_signal()
-        self.node().setParameter()
-        pass
+    def createKatanaParam(self, name, parent=None):
+        if not parent:
+            parent = self.node().getParameters()
 
-    def undoParam(self):
-        # ????
-        pass
+        locationPolicy = UI4.FormMaster.CreateParameterPolicy(None, parent.getChild(name))
+        factory = UI4.FormMaster.KatanaFactory.ParameterWidgetFactory
+        w = factory.buildWidget(self, locationPolicy)
+
+        return w
+
+    # def __getCurrentParentParamFromLoc(self, location):
+    #     """
+    #     Simple interface to get the current parent parameter group from the location.
+    #     If there is no parent, then it will use the getParameters() in Katana
+    #     to gather the invisible root...
+    #
+    #     This should not include the actual parameter path itself, and if the parameter
+    #     is at the top most level, then it should provide a blank string...
+    #
+    #     Args:
+    #         location (str): path to location of the parameter with . syntax
+    #             ie user.somegroup.param
+    #                 would run .getParameter('user.somegroup')
+    #
+    #     """
+    #     if location:
+    #         param = self.node().getParameter(location)
+    #     else:
+    #         param = self.node().getParameters()
+    #     return param
+    #
+    # def __setParam(self, event_signal):
+    #     # ????
+    #     event_signal()
+    #     self.node().setParameter()
+    #     pass
+
+    # def undoParam(self):
+    #     # ????
+    #     pass
 
     def getCustomParamDict(self):
         return self._custom_param_dict
@@ -291,13 +251,28 @@ class AbstractSuperToolEditor(QWidget):
     def setNode(self, node):
         self._node = node
 
-    @property
-    def is_frozen(self):
+    def isFrozen(self):
         return self._is_frozen
 
-    @is_frozen.setter
-    def is_frozen(self, is_frozen):
+    def setIsFrozen(self, is_frozen):
         self._is_frozen = is_frozen
+
+    """ EVENTS """
+    def setupEventHandlers(self, bool):
+        """ Interface to determine where the event handlers will be setup. """
+        pass
+
+    def hideEvent(self, event):
+        self.setupEventHandlers(False)
+        self.setIsFrozen(True)
+        return QWidget.hideEvent(self, event)
+
+    def showEvent(self, event):
+        self.setupEventHandlers(True)
+        self.setIsFrozen(False)
+        self.updateSize()
+
+        return QWidget.showEvent(self, event)
 
 
 class ResizeFilter(QWidget):
@@ -319,6 +294,8 @@ class ResizeFilter(QWidget):
 
 class iParameter(object):
     """
+    Todo:
+        move this into param utils
     Parameter interface to register custom parameters.  The methods
     setEditingFinishedFunction() and setNewGetValueFunction() MUST
     be overloaded to make this work...
@@ -334,8 +311,12 @@ class iParameter(object):
         data_type (iParameter.TYPE): Data type from the iParameter
             class.
     """
-    INT = 0
-    STRING = 1
+    STRING = 0
+    NUMBER = 1
+    GROUP = 2
+    NUMBER_ARRAY = 3
+    STRING_ARRAY = 4
+
     def __init__(self):
         self._location = ''
 

@@ -188,7 +188,7 @@ class UserParametersMainWidget(QWidget):
     def __init__(self, parent=None, node=None):
         super(UserParametersMainWidget, self).__init__(parent)
 
-        self.node = node
+        self._node = node
         # create widgets
         QVBoxLayout(self)
         self.user_parameters_widget = UserParametersWidget(node=node)
@@ -200,6 +200,8 @@ class UserParametersMainWidget(QWidget):
 
         self.layout().addWidget(self.user_parameters_widget)
 
+    def node(self):
+        return self._node
 
     """ CREATE NEW PARAMETER"""
     def __createNewParameter(self, widget, value):
@@ -217,7 +219,7 @@ class UserParametersMainWidget(QWidget):
         # nothing selected
         if len(self.__getSelectedIndexes()) == 0:
             parent_index = QModelIndex()
-            parent_param = self.node.getParameters()
+            parent_param = self.node().getParameters()
         # something selected...
         else:
             # if not top level param selected
@@ -225,7 +227,7 @@ class UserParametersMainWidget(QWidget):
             if parent_index.internalPointer():
                 parent_param = parent_index.internalPointer().columnData()['parameter']
             else:
-                parent_param = self.node.getParameters()
+                parent_param = self.node().getParameters()
 
         # create child parameter
         param = self.__createChildParameter(param_type, parent_param)
@@ -381,7 +383,7 @@ class UserParametersWidget(ShojiModelViewWidget):
     """
     def __init__(self, parent=None, node=None):
         super(UserParametersWidget, self).__init__(parent)
-        self.node = node
+        self._node = node
 
         # create view
         header_widget = AbstractDragDropTreeView()
@@ -406,7 +408,7 @@ class UserParametersWidget(ShojiModelViewWidget):
         )
 
         # populate parameters
-        self.__populate(self.node)
+        self.__populate(self._node)
 
         # set up event
         self.setHeaderItemDropEvent(self.paramDropEvent)
@@ -466,6 +468,9 @@ class UserParametersWidget(ShojiModelViewWidget):
 
         return new_model_index
 
+    def node(self):
+        return self._node
+
     """ EVENTS """
     def paramDropEvent(self, data, items_dropped, model, row, parent):
         """
@@ -477,7 +482,7 @@ class UserParametersWidget(ShojiModelViewWidget):
             new_parent_param = parent.columnData()['parameter']
         except KeyError:
             #todo keep an eye on this...
-            new_parent_param = self.node.getParameters()
+            new_parent_param = self.node().getParameters()
 
         # move all selected parameters
         for item in items_dropped:

@@ -81,7 +81,7 @@ def makeUndoozable(func, main_widget, _action_string, _undo_type, *args, **kwarg
 
     """
     main_widget.suppress_updates = True
-    node = main_widget.node
+    node = main_widget.node()
 
     # start recording undo operation
     Utils.UndoStack.OpenGroup(

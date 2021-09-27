@@ -24,6 +24,7 @@ import Katana
 # import super tools
 from . import NodeTree
 from . import SuperToolTemplate
+from . import SuperToolBasicTemplate
 from . import IsolateCEL
 
 from MultiTools import VariableManager, SimpleTool
@@ -34,7 +35,7 @@ superdooper_tools_list = [
     NodeTree,
     SimpleTool.SuperTool,
     VariableManager.SuperTool,
-
+    SuperToolBasicTemplate
     # SuperToolTemplate
 ]
 

@@ -11,7 +11,7 @@ TODO:
         *   Defocus events when changing between widgets loses
             ability to focus in on Line Edits?
     CLEANUP:
-        *   getNode --> AbstractSuperTool
+        *   node --> AbstractSuperTool
         *   setCurrentIndex --> class variables
     Potential Bugs:
         *   Pattern Item Duplicates
@@ -400,10 +400,6 @@ class VariableManagerMainWidget(QWidget):
 
     """
 
-    def __name__(self):
-        return "VariableManagerMainWidget"
-
-    """ INIT """
     def __init__(self, parent, node):
         # initialize
         super(VariableManagerMainWidget, self).__init__(parent)
@@ -413,6 +409,9 @@ class VariableManagerMainWidget(QWidget):
         # Set up initial values if this node is not being instantiated
         # for the first time
         self.loadUserParameters()
+
+    def __name__(self):
+        return "VariableManagerMainWidget"
 
     def initDefaultAttributes(self, node):
         """
@@ -655,7 +654,7 @@ class VariableManagerMainWidget(QWidget):
         self.variable_manager_widget.params_widget.populateParameters(node_list=node_list)
 
     """ PROPERTIES """
-    def getNode(self):
+    def node(self):
         return self._node
 
     def setNode(self, node):

@@ -31,7 +31,7 @@ class NodeTreeEditor(AbstractSuperToolEditor):
         QVBoxLayout(self)
 
         # create node tree
-        self._node_tree = NodeTreeMainWidget(parent=self, node=self.node)
+        self._node_tree = NodeTreeMainWidget(parent=self, node=self.node())
 
         # add tree to layout
         self.layout().addWidget(self.nodeTree())

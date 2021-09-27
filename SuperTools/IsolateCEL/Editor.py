@@ -12,18 +12,11 @@ class IsolateCELEditor(AbstractSuperToolEditor):
         # setup layout
         QVBoxLayout(self)
 
-        cel_param = self.createValueParam("CEL")
-        isolate_from_param = self.createValueParam("isolateFrom")
+        cel_param = self.createKatanaParam("CEL")
+        isolate_from_param = self.createKatanaParam("isolateFrom")
 
         self.layout().addWidget(cel_param)
         self.layout().addWidget(isolate_from_param)
 
         self.layout().setAlignment(Qt.AlignTop)
 
-    def createValueParam(self, name):
-        locationPolicy = UI4.FormMaster.CreateParameterPolicy(None, self.node().getParameter(name))
-        factory = UI4.FormMaster.KatanaFactory.ParameterWidgetFactory
-
-        w = factory.buildWidget(self, locationPolicy)
-
-        return w

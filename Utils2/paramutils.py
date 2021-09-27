@@ -55,7 +55,7 @@ def createParamAtLocation(param_location, node, param_type, param=None, initial_
             if param_type == STRING:
                 param = current_param.createChildString(param_name, str(initial_value))
             if param_type == NUMBER:
-                param = current_param.createChildNumber(param_name, 0)
+                param = current_param.createChildNumber(param_name, float(initial_value))
             if param_type == GROUP:
                 param = current_param.createChildGroup(param_name)
             if param_type == NUMBER_ARRAY:
