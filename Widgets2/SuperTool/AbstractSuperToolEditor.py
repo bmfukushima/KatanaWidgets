@@ -174,13 +174,17 @@ class AbstractSuperToolEditor(QWidget):
                 ie user.some_group.param
             data_type (iParameter.TYPE): Data type from the iParameter
                 class.
-            widget (QWidget): The widget type to be converted into a "param"
+            widget (AbstractBaseInputWidget): The widget type to be converted into a "param"
                 This does not really support a lot right now... working on getting
                 the triggers working....
+                Note:
+                    This needs to be of the BaseInputType from CGWidgets
             get_new_value_function (function): function that should return the new
                 value that the parameter should be set to.
             editing_finished_function (function): function that is run when the user
                 has finished editing the widget...
+                Note:
+                    This function should take the args (widget, value)
             initial_value: initial value to set the param to
 
         """
@@ -196,7 +200,7 @@ class AbstractSuperToolEditor(QWidget):
         widget.setDataType(data_type)
         widget.setParameter(param)
         widget.setGetNewValueFunction(get_new_value_function)
-        widget.setEditingFinishedFunction(editing_finished_function)
+        widget.setUserFinishedEditingEvent(editing_finished_function)
 
         return param
 
@@ -328,23 +332,23 @@ class iParameter(object):
     def setGetNewValueFunction(self, function):
         self.__getNewValue = function
 
-    def finishedEditing(self):
-        """
-        Wrapper to set the parameter
-        """
-        self.__finished_editing()
-        new_value = self.__getNewValue
-        self.setValue(new_value)
-
-    def setEditingFinishedFunction(self, function):
-        self.__finished_editing = function
+    # def finishedEditing(self):
+    #     """
+    #     Wrapper to set the parameter
+    #     """
+    #     self.__finished_editing()
+    #     new_value = self.__getNewValue
+    #     self.setValue(new_value)
+    #
+    # def setEditingFinishedFunction(self, function):
+    #     self.__finished_editing = function
 
     """ PROPERTIES """
     def getValue(self):
         return self.getParameter().getValue(0)
 
-    def setValue(self, value):
-        self.getParameter().setValue(value, 0)
+    def setValue(self, value, frame=0):
+        self.getParameter().setValue(value, frame)
 
     def getDataType(self):
         return self._data_type

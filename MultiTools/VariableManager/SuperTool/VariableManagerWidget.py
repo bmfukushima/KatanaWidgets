@@ -2385,7 +2385,7 @@ class PublishDirWidget(FileBrowserInputWidget, iParameter):
 
         # register as katana param
         param = self.main_widget.parent().createCustomParam(
-            self, 'publish_dir', paramutils.STRING, self.text, self.editingFinished, initial_value=PUBLISH_DIR
+            self, 'publish_dir', paramutils.STRING, self.text, self.directoryChanged, initial_value=PUBLISH_DIR
         )
 
         # set default values
@@ -2397,14 +2397,14 @@ class PublishDirWidget(FileBrowserInputWidget, iParameter):
                 publish_dir = value
 
         # setup signals
-        self.editingFinished.connect(self.directoryChanged)
+        #self.editingFinished.connect(self.directoryChanged)
 
         # set default value
         self.main_widget.setRootPublishDir(publish_dir)
         self.setText(publish_dir)
         self.setValue(publish_dir)
 
-    def directoryChanged(self):
+    def directoryChanged(self, widget, value):
         """
         If publish_dir parameter is changed, this will ask the user if they
         are sure they'd like to continue if the user decides to continue,

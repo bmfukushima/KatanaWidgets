@@ -83,6 +83,7 @@ class AbstractEventListViewItem(ShojiModelItem):
     def __init__(self, name=None, event_type=None, script=None, args={}, index=0, enabled=True):
         super(AbstractEventListViewItem, self).__init__(name)
         self.columnData()["name"] = name
+        self.columnData()["previous_text"] = "<New Event>"
         self._event_type = event_type
 
 
@@ -214,7 +215,8 @@ class AbstractEventWidget(ShojiLayout):
                 "enabled": "True",
                 "is_script": "True",
                 "script": "",
-                "filepath": ""}
+                "filepath": "",
+                "previous_text": "<New Event>"}
 
         # create model item
         new_index = self.eventsWidget().insertShojiWidget(0, column_data=column_data)
@@ -1041,13 +1043,14 @@ class EventWidget(AbstractEventWidget):
         # invalid event type
         events_list = self.defaultEventsData()
         if new_value not in events_list:
-            item.setArg("name", '<New Event>')
+            item.setArg("name", item.getArg("previous_text"))
             return
 
         # update display
         else:
             item.clearArgsList()
             item.setArg("name", new_value)
+            item.setArg("previous_text", new_value)
             item.setArg("enabled", "")
             item.setArg("filepath", "")
             item.setArg("is_script", "")
