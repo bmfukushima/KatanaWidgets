@@ -1,7 +1,7 @@
 from qtpy.QtWidgets import (QVBoxLayout)
 from qtpy.QtCore import Qt
 
-from Katana import NodegraphAPI
+from Katana import NodegraphAPI, Utils
 
 
 from cgwidgets.widgets import ListInputWidget, LabelledInputWidget
@@ -16,7 +16,13 @@ class ConstraintEditor(AbstractSuperToolEditor):
         super(ConstraintEditor, self).__init__(parent, node)
 
         # create params
+        constraint_type = self.node().getParameter("ConstraintType").getValue(0)
+
         self._constraint_type_widget = ConstraintTypeWidget(self)
+        self._constraint_type_widget.setIsFrozen(True)
+        self._constraint_type_widget.setText(constraint_type)
+        self._constraint_type_widget.setIsFrozen(False)
+
         constraint_type_widget = LabelledInputWidget(
             name="Type", delegate_widget=self._constraint_type_widget, default_label_length=getFontSize()*6)
 
@@ -26,7 +32,7 @@ class ConstraintEditor(AbstractSuperToolEditor):
             paramutils.STRING,
             self._constraint_type_widget.text,
             self._constraint_type_widget.updateConstraintType,
-            initial_value=""
+            initial_value=constraint_type
         )
 
         # setup layout
@@ -37,6 +43,21 @@ class ConstraintEditor(AbstractSuperToolEditor):
         self.layout().addWidget(self.createKatanaParam("MaintainOffset"))
         self.layout().addWidget(self.createKatanaParam("ConstraintParams"))
 
+        Utils.EventModule.RegisterCollapsedHandler(self.constraintParamChanged, "parameter_finalizeValue")
+
+    def constraintParamChanged(self, args):
+        for arg in args:
+            param = arg[2]["param"]
+            node = arg[2]["node"]
+            if node == self and param == self.constraintTypeParam():
+                value = param.getValue(0)
+                if value in ConstraintTypeWidget.OPTIONS:
+                    self.constraintTypeWidget.setText(param.getValue(0), 0)
+                else:
+                    print(value, "is not a valid option, resetting to", self.constraintTypeWidget().text())
+
+    def constraintTypeWidget(self):
+        return self._constraint_type_widget
 
 class ConstraintTypeWidget(ListInputWidget, iParameter):
     OPTIONS = [
@@ -57,6 +78,13 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
     def __init__(self, parent):
         super(ConstraintTypeWidget, self).__init__(parent)
         self.setCleanItemsFunction(self.getConstraintTypes)
+        self._is_frozen = False
+
+    def isFrozen(self):
+        return self._is_frozen
+
+    def setIsFrozen(self, is_frozen):
+        self._is_frozen = is_frozen
 
     def getConstraintTypes(self):
         return [[option] for option in ConstraintTypeWidget.OPTIONS]
@@ -67,10 +95,13 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
         if self.text() not in ConstraintTypeWidget.OPTIONS:
             self.setText(self.previous_text)
             return
+        if self.isFrozen(): return
 
         # get attrs
         node_type = self.text()
         constraint_editor = getWidgetAncestor(self, ConstraintEditor)
+
+
         this_node = constraint_editor.node()
 
         # create / update node
@@ -93,18 +124,3 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
 
         self.previous_text = node_type
         self.setValue(node_type)
-        print("updating... ", node_type)
-
-
-
-
-
-
-
-
-
-
-
-
-
-

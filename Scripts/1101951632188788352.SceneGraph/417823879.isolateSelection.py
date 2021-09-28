@@ -105,7 +105,6 @@ class IsolateComboBox(QtWidgets.QComboBox):
                 self.lineEdit().setText(text)
 
             elif (event.type()==QtCore.QEvent.KeyPress) and (event.key() == QtCore.Qt.Key_Escape):
-                print 'escape?'
                 self.close()
             pass
         return QtWidgets.QComboBox.event(self, event,*args, **kwargs)

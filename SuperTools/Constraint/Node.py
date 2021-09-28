@@ -1,4 +1,4 @@
-from Katana import NodegraphAPI
+from Katana import NodegraphAPI, Utils
 
 try:
     from Widgets2 import AbstractSuperToolNode
@@ -99,6 +99,7 @@ Interface.DeleteAttr("xform2")
 
         # setup params
         self._constraint_type_param = self.getParameters().createChildString("ConstraintType", "")
+        print(self._constraint_type_param)
 
         self._maintain_offset_param = self.getParameters().createChildNumber("MaintainOffset", 0)
         self._maintain_offset_param.setHintString(repr({"widget": "checkBox"}))
