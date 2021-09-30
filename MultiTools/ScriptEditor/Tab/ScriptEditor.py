@@ -36,7 +36,6 @@ class KatanaPythonEditorWidget(AbstractPythonEditor):
         super(KatanaPythonEditorWidget, self).__init__(parent, python_ide=KatanaPythonIDE)
 
 
-
 class ScriptEditorTab(UI4.Tabs.BaseTab):
     """Main convenience widget for displaying GSV manipulators to the user."""
     NAME = "Script Editor"
@@ -50,3 +49,6 @@ class ScriptEditorTab(UI4.Tabs.BaseTab):
         self._script_editor_widget = ScriptEditorWidget(
             self, python_editor=KatanaPythonEditorWidget, scripts_variable=ScriptEditorTab.SCRIPTS_VARIABLE)
         self.layout().addWidget(self._script_editor_widget)
+
+    def scriptEditorWidget(self):
+        return self._script_editor_widget

@@ -48,23 +48,23 @@ class PythonWidget(QFrame):
 
 # create popup script editor
 main_window = UI4.App.MainWindow.CurrentMainWindow()
-if not hasattr(main_window, "_python_popup_editor"):
-    main_window._python_popup_editor = PythonWidget(main_window)
+if not hasattr(main_window, "_popup_python_editor"):
+    main_window._popup_python_editor = PythonWidget(main_window)
 
     # position on screen
     width = 1024
     height = 1024
     xpos = int((main_window.width() * 0.5) - (width * 0.5))
     ypos = int((main_window.height() * 0.5) - (height * 0.5))
-    main_window._python_popup_editor.setGeometry(xpos, ypos, width, height)
-    main_window._python_popup_editor.hide()
+    main_window._popup_python_editor.setGeometry(xpos, ypos, width, height)
+    main_window._popup_python_editor.hide()
 
 # show/hide
-if main_window._python_popup_editor.isVisible():
-    main_window._python_popup_editor.hide()
+if main_window._popup_python_editor.isVisible():
+    main_window._popup_python_editor.hide()
 else:
-    main_window._python_popup_editor.show()
-    main_window._python_popup_editor.getCommandWidget().setFocus()
+    main_window._popup_python_editor.show()
+    main_window._popup_python_editor.getCommandWidget().setFocus()
 
 
 
