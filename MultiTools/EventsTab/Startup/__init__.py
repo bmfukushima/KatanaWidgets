@@ -61,7 +61,6 @@ def loadGlobalEvents(*args):
         katanaMainWindow().global_events_widget.eventsWidget().clearModel()
         katanaMainWindow().global_events_widget.loadEventsDataFromParam()
 
-
 def installGlobalEvents():
     createDataParamsOnSceneLoad()
 

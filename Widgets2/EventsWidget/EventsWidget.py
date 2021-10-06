@@ -266,7 +266,8 @@ class AbstractEventWidget(ShojiLayout):
 
         # set data
         new_data = json.dumps(events_data)
-        self.paramData().setValue(new_data, 0)
+        if self.paramData():
+            self.paramData().setValue(new_data, 0)
 
     # virtual
     def updateEventsData(self):
@@ -968,6 +969,8 @@ class EventWidget(AbstractEventWidget):
         try:
             json_data = json.loads(self.paramData().getValue(0))
         except ValueError:
+            return
+        except AttributeError:
             return
 
         # create new events

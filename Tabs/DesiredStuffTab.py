@@ -257,12 +257,12 @@ class DesirableStuffFrame(ShojiModelViewWidget):
         """
         name = self._create_desirable_group_input_widget.text()
         if name:
-            # add item
-            index = self.addNewGroup(name)
-
             # setup katana params
             param = DesiredStuffTab.desiredStuffParam()
             new_param = param.createChildString(name, json.dumps({"data": []}))
+
+            # add item
+            index = self.addNewGroup(name)
             index.internalPointer().columnData()["name"] = new_param.getName()
 
             # reset widget
@@ -530,12 +530,12 @@ class DesirableStuffView(AbstractDragDropListView):
         return AbstractDragDropListView.dropEvent(self, event)
 
 
-class CreateDesirableGroupWidget(LabelledInputWidget):
-    def __init__(self, parent=None, delegate_widget=None):
-        super(CreateDesirableGroupWidget, self).__init__(
-            parent,
-            name="Create New Item",
-            default_label_length=100,
-            direction=Qt.Horizontal,
-            delegate_widget=delegate_widget
-        )
+# class CreateDesirableGroupWidget(LabelledInputWidget):
+#     def __init__(self, parent=None, delegate_widget=None):
+#         super(CreateDesirableGroupWidget, self).__init__(
+#             parent,
+#             name="Create New Item",
+#             default_label_length=100,
+#             direction=Qt.Horizontal,
+#             delegate_widget=delegate_widget
+#         )
