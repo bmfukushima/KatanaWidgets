@@ -8,8 +8,8 @@ from qtpy.QtCore import Qt, QEvent, QModelIndex, QByteArray
 from qtpy.QtGui import QClipboard
 
 from cgwidgets.utils import getWidgetAncestor
-from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, NodeTypeListWidget
-from cgwidgets.views import AbstractDragDropTreeView
+from cgwidgets.widgets import NodeTypeListWidget
+from cgwidgets.views import AbstractDragDropTreeView, AbstractDragDropModelDelegate
 from cgwidgets.interface import AbstractNodeInterfaceAPI as aniAPI
 
 from Katana import UI4, NodegraphAPI, Utils, KatanaFile
@@ -461,6 +461,9 @@ class NodeTreeHeaderDelegate(NodeTypeListWidget):
 class NodeTreeViewWidget(AbstractDragDropTreeView):
     def __init__(self, parent=None):
         super(NodeTreeViewWidget, self).__init__(parent)
+        delegate = NodeTreeViewItemDelegateWidget(self)
+        self.setItemDelegate(delegate)
+        #self.setupCustomDelegate()
 
     def dragEnterEvent(self, event):
         mimedata = event.mimeData()
@@ -492,6 +495,21 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
 
         return AbstractDragDropTreeView.dropEvent(self, event)
 
+
+class NodeTreeViewItemDelegateWidget(AbstractDragDropModelDelegate):
+    """ Delegate for the NodeTreeViewItem
+
+    This will suppress the "type" column, so that users can't inadvertently try to change
+    the type.  Which will actually do a name change.
+    """
+    def __init__(self, parent=None):
+        super(NodeTreeViewItemDelegateWidget, self).__init__(parent)
+
+    def createEditor(self, parent, option, index):
+        if index.column() == 0:
+            return AbstractDragDropModelDelegate.createEditor(self, parent, option, index)
+        else:
+            return
 
 
 if __name__ == "__main__":
