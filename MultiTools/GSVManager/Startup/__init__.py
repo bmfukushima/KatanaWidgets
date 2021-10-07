@@ -41,7 +41,8 @@ def gsvChangedEvent(args):
         gsv = param.getParent().getName()
         option = param.getValue(0)
         event_data = json.loads(paramDataStatic())
-
+        old_value = gsvutils.getGSVValue(gsv)
+        print("====", old_value, option)
         # preflight
         if gsv not in list(event_data.keys()): return
 
@@ -90,12 +91,18 @@ def updateGSVsOnSceneLoad(args):
 
 def createDataParamsOnSceneLoad(*args, **kwargs):
     """Creates the parameters that store the event data on scene load/new scene """
+    from Katana import Utils
+
     node = NodegraphAPI.GetRootNode()
     events_data = node.getParameter(PARAM_LOCATION)
+
     # create default parameter if needed
     if not events_data:
+        Utils.UndoStack.DisableCapture()
         paramutils.createParamAtLocation(PARAM_LOCATION + ".data", node, paramutils.STRING, initial_value="{}")
         paramutils.createParamAtLocation(PARAM_LOCATION + ".scripts", node, paramutils.GROUP)
+
+        Utils.UndoStack.EnableCapture()
 
 
 def installGSVManagerEvents(*args, **kwargs):

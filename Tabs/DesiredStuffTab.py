@@ -84,7 +84,9 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
 
         Returns (Param)"""
         node = NodegraphAPI.GetNode('rootNode')
+        Utils.UndoStack.DisableCapture()
         paramutils.createParamAtLocation("KatanaBebop.DesirableStuff", node, paramutils.GROUP)
+        Utils.UndoStack.EnableCapture()
         return node.getParameter('KatanaBebop.DesirableStuff')
 
     @staticmethod

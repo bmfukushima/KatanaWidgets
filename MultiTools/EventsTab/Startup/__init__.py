@@ -30,7 +30,7 @@ def cleanupGlobalEvents(**kwargs):
 
 def createDataParamsOnSceneLoad(*args, **kwargs):
     """Creates the parameters that store the event data on scene load/new scene """
-    from Katana import NodegraphAPI
+    from Katana import NodegraphAPI, Utils
 
     # get attrs
     node = NodegraphAPI.GetRootNode()
@@ -38,9 +38,12 @@ def createDataParamsOnSceneLoad(*args, **kwargs):
 
     # create default parameter if needed
     if not events_data:
+        Utils.UndoStack.DisableCapture()
+
         paramutils.createParamAtLocation(PARAM_LOCATION + ".data", node, paramutils.STRING, initial_value="{}")
         paramutils.createParamAtLocation(PARAM_LOCATION + ".scripts", node, paramutils.GROUP)
 
+        Utils.UndoStack.EnableCapture()
 
 def loadGlobalEvents(*args):
     """ Loads all global events"""
