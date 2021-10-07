@@ -406,6 +406,10 @@ class EditWidget(QWidget):
         # update list widget
         self.displayEditableOptionsWidget().update()
 
+        # check to see if current gsv exists
+        if self.text() not in gsvutils.getAllGSV(return_as=gsvutils.STRING):
+            self.setText("<variables>")
+
 
 class GSVSelectorWidget(LabelledInputWidget):
     """This will display the currently active GSV to the user
