@@ -525,7 +525,15 @@ class DesirableStuffView(AbstractDragDropListView):
                 parent_widget.setDesirability(node, True, NODE)
 
         if mimedata.hasFormat("parameter/path"):
-            param = eval(mimedata.data('python/text').decode("utf-8").data())
+            #param = eval(mimedata.data('python/text').decode("utf-8").data())
+            # print(type(mimedata.data("python/text")), mimedata.data("python/text"))
+
+            # param = eval(mimedata.data('python/text').decode("utf-8").data())
+            print(
+                type(str(mimedata.data('python/text').data(), encoding='utf-8')),
+                str(mimedata.data('python/text').data(), encoding='utf-8')
+            )
+            param = eval(str(mimedata.data('python/text').data(), encoding='utf-8'))
             parent_widget = getWidgetAncestor(self, DesirableStuffShojiPanel)
             parent_widget.setDesirability(param, True, PARAM)
 
