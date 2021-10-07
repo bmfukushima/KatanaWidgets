@@ -277,7 +277,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
             # update group
             if nodeutils.isContainerNode(node):
-                parent_index = self.model().getIndexFromItem(item.parent())
+                parent_index = self.model().getIndexFromItem(parent_item)
                 self.populate(node, parent_index, row=item.row())
                 self.deleteItem(item, event_update=False)
 
