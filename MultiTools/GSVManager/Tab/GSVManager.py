@@ -1304,9 +1304,11 @@ class GSVEvent(AbstractScriptInputWidget):
         for child in self.parent().widgets().values():
             child.setIsEditingActive(False)
             child.showScriptWidget().setTextColor(iColor["rgba_text"])
+            child.showScriptWidget().setIsSelected(False)
 
         # enable this script
         self.setIsEditingActive(True)
+        self.showScriptWidget().setIsSelected(True)
         self.showScriptWidget().setTextColor(iColor["rgba_selected"])
 
     def validateOptionInputEvent(self):
