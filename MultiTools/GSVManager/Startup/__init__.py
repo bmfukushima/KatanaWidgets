@@ -16,7 +16,10 @@ def paramDataStatic():
 
     Returns (str): repr of JSON
     """
-    return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".data").getValue(0)
+    return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".data")
+
+def paramOldValuesStatic():
+    return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".old_values")
 
 
 def gsvChangedEvent(args):
@@ -30,19 +33,32 @@ def gsvChangedEvent(args):
     for arg in args:
         # preflight
         if not gsvutils.isGSVEvent(arg): return
-        # get param
+
+        # get param/attrs
         param = arg[2]['param']
         param_name = param.getName()
+
 
         # check param type
         if param_name != "value": return
 
-        # get attrs
+        #
         gsv = param.getParent().getName()
         option = param.getValue(0)
-        event_data = json.loads(paramDataStatic())
-        old_value = gsvutils.getGSVValue(gsv)
-        print("====", old_value, option)
+
+        # check to see if this GSV is setting to its current value
+        old_values = json.loads(paramOldValuesStatic().getValue(0))
+        if gsv in old_values.keys():
+            if old_values[gsv] == param.getValue(0):
+                return
+        # update old values
+        """ This is needed to stop the script from running every time the user selects the same GSV twice"""
+        old_values[gsv] = option
+        paramOldValuesStatic().setValue(json.dumps(old_values), 0)
+
+        # load events data
+        event_data = json.loads(paramDataStatic().getValue(0))
+
         # preflight
         if gsv not in list(event_data.keys()): return
 
@@ -53,6 +69,7 @@ def gsvChangedEvent(args):
         # option does not exist
         if not event_data[gsv]["data"][option]["enabled"]: return
 
+        # PREFLIGHT/LOADING COMPLETE --- START RUN OF SCRIPT
         # user defined option disable
         # script does not exist
         # if "script" not in list(event_data[gsv]["data"][option].keys()): return
@@ -100,6 +117,7 @@ def createDataParamsOnSceneLoad(*args, **kwargs):
     if not events_data:
         Utils.UndoStack.DisableCapture()
         paramutils.createParamAtLocation(PARAM_LOCATION + ".data", node, paramutils.STRING, initial_value="{}")
+        paramutils.createParamAtLocation(PARAM_LOCATION + ".old_values", node, paramutils.STRING, initial_value="{}")
         paramutils.createParamAtLocation(PARAM_LOCATION + ".scripts", node, paramutils.GROUP)
 
         Utils.UndoStack.EnableCapture()

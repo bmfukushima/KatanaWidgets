@@ -105,7 +105,7 @@ from Widgets2 import (
     AbstractScriptInputWidget,
     PythonWidget
 )
-from Utils2 import gsvutils, getFontSize
+from Utils2 import gsvutils, getFontSize, paramutils
 
 PARAM_LOCATION = "KatanaBebop.GSVEventsData"
 
@@ -850,17 +850,20 @@ class EventWidget(AbstractEventWidget):
                                 | -* DynamicArgsInputWidget
     """
 
-    def __init__(self, parent=None, node=None, param=PARAM_LOCATION):
+    def __init__(self, parent=None, param=PARAM_LOCATION):
         super(EventWidget, self).__init__(
             delegate_widget_type=DisplayGSVEventWidget,
             events_list_view=GSVEventsListView,
             parent=parent,
-            node=node,
             param=param
         )
 
         # setup default attrs
         self.eventsWidget().setHeaderPosition(attrs.WEST, attrs.SOUTH)
+
+        paramutils.createParamAtLocation(
+            PARAM_LOCATION + ".old_values", NodegraphAPI.GetRootNode(), paramutils.STRING, initial_value="{}")
+
         # self.eventsWidget().setHeaderItemIsEditable(False)
         self.eventsWidget().setHeaderItemIsDraggable(False)
 

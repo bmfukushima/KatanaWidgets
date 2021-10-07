@@ -15,6 +15,8 @@ def createParamAtLocation(param_location, node, param_type, param=None, initial_
     This will create also create all additional groups/locations required
     to create the parameter.
 
+    This will not override an existing parameter.  Could potentially add this option.
+
     Args:
         initial_value (str/int): what the initial value should be, if the param type is
             set to an ARRAY, then this will be the length of the array
