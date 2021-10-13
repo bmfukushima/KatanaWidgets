@@ -698,8 +698,12 @@ class AbstractScriptInputWidget(LabelledInputWidget):
         elif self.mode() == PythonWidget.SCRIPT:
             self.setMode(PythonWidget.FILE)
 
+        # install events
+        """ Note: this will not install for the GSVManager, as the GSVManager
+        has all of its events controlled by a single handler"""
         events_widget = getWidgetAncestor(self, AbstractEventWidget)
-        events_widget.installEvents()
+        if hasattr(events_widget, "installEvents"):
+            events_widget.installEvents()
 
 
 """ GLOBAL EVENTS"""
