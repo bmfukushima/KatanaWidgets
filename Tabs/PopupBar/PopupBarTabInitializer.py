@@ -3,12 +3,12 @@ from qtpy.QtWidgets import QVBoxLayout
 from Katana import UI4
 
 from cgwidgets.utils import getJSONData
-from cgwidgets.widgets import PiPOrganizerWidget, PiPDisplayWidget
+from cgwidgets.widgets import PopupBarDisplayWidget
 
 from .utils import getConstructors, getSaveData
 
 
-def createConstructor(filepath, pip_widget_name):
+def createConstructor(filepath, popup_bar_widget_name):
     """
     Creates the Tab constructor for Katana.
     Args:
@@ -16,7 +16,7 @@ def createConstructor(filepath, pip_widget_name):
         widget_constructors (dict): JSON data of constructors for different widgets
             available in the PiPWidget
         filepath (str): name of file that this PiP Tab is stored in
-        pip_widget_name (str): name of PiP Widget
+        popup_bar_widget_name (str): name of PiP Widget
 
     Returns (QWidget): constructor to be used when Katana initializes a tab
 
@@ -24,17 +24,14 @@ def createConstructor(filepath, pip_widget_name):
 
     class PiPDisplayTab(UI4.Tabs.BaseTab):
         FILEPATH = filepath
-        PIP_WIDGET_NAME = pip_widget_name
+        PIP_WIDGET_NAME = popup_bar_widget_name
 
         def __init__(self, parent=None):
             super(PiPDisplayTab, self).__init__(parent)
 
             # create PiP Widget
-            self.main_widget = PiPDisplayWidget()
-            self.main_widget.loadPiPWidgetFromFile(PiPDisplayTab.FILEPATH, PiPDisplayTab.PIP_WIDGET_NAME)
-
-            #self.main_widget.setDisplayWidget(PiPDisplayTab.FILE_NAME, PiPDisplayTab.WIDGET_NAME)
-            #self.main_widget.setCreationMode(PiPOrganizerWidget.DISPLAY)
+            self.main_widget = PopupBarDisplayWidget()
+            self.main_widget.loadPopupDisplayFromFile(PiPDisplayTab.FILEPATH, PiPDisplayTab.PIP_WIDGET_NAME)
 
             # create main layout
             QVBoxLayout(self)
@@ -49,7 +46,7 @@ widget_constructors = getConstructors()
 # get save data
 save_data = getSaveData()
 
-pip_tabs = []
+popup_bar_tabs = []
 
 # for each PiP Save File
 for filename in save_data.keys():
@@ -57,13 +54,13 @@ for filename in save_data.keys():
     widget_data = getJSONData(filepath)
 
     # for each PiP Tab in the file
-    for pip_widget_name in widget_data.keys():
-        # setup pip tab data
-        pip_tab_data = {}
-        pip_tab_data["filepath"] = filepath
-        pip_tab_data["filename"] = filename
-        pip_tab_data["pip_widget_name"] = pip_widget_name
-        pip_tab_data["constructor"] = createConstructor(filepath, pip_widget_name)
+    for popup_bar_widget_name in widget_data.keys():
+        # setup popup_bar tab data
+        popup_bar_tab_data = {}
+        popup_bar_tab_data["filepath"] = filepath
+        popup_bar_tab_data["filename"] = filename
+        popup_bar_tab_data["popup_bar_widget_name"] = popup_bar_widget_name
+        popup_bar_tab_data["constructor"] = createConstructor(filepath, popup_bar_widget_name)
 
         # append data to global tabs list
-        pip_tabs.append(pip_tab_data)
+        popup_bar_tabs.append(popup_bar_tab_data)
