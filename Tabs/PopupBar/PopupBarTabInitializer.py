@@ -22,22 +22,22 @@ def createConstructor(filepath, popup_bar_widget_name):
 
     """
 
-    class PiPDisplayTab(UI4.Tabs.BaseTab):
+    class PopupBarDisplayTab(UI4.Tabs.BaseTab):
         FILEPATH = filepath
         PIP_WIDGET_NAME = popup_bar_widget_name
 
         def __init__(self, parent=None):
-            super(PiPDisplayTab, self).__init__(parent)
+            super(PopupBarDisplayTab, self).__init__(parent)
 
             # create PiP Widget
             self.main_widget = PopupBarDisplayWidget()
-            self.main_widget.loadPopupDisplayFromFile(PiPDisplayTab.FILEPATH, PiPDisplayTab.PIP_WIDGET_NAME)
+            self.main_widget.loadPopupDisplayFromFile(PopupBarDisplayTab.FILEPATH, PopupBarDisplayTab.PIP_WIDGET_NAME)
 
             # create main layout
             QVBoxLayout(self)
             self.layout().addWidget(self.main_widget)
 
-    return PiPDisplayTab
+    return PopupBarDisplayTab
 
 
 # get Katana PiP constructors
