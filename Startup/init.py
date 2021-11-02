@@ -80,8 +80,12 @@ def contextMenu(**kwargs):
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)
 
 # change full screen hotkey
-from MonkeyPatches import changeFullscreenHotkey#, installNodegraphHotkeyOverrides
+from MonkeyPatches import (
+    changeFullscreenHotkey,
+    changeMinTabSize)
+#, installNodegraphHotkeyOverrides)
 changeFullscreenHotkey(Qt.Key_B)
+changeMinTabSize(50)
 # installNodegraphHotkeyOverrides()
 
 from MultiTools.GSVManager import installGSVManagerEvents

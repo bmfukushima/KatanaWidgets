@@ -1,2 +1,3 @@
 from .changeFullscreenHotkey import changeFullscreenHotkey
+from .changeMinTabSize import changeMinTabSize
 # from nodegraphHotkeyOverrides import installNodegraphHotkeyOverrides

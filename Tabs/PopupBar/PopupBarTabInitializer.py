@@ -25,17 +25,33 @@ def createConstructor(filepath, popup_bar_widget_name):
     class PopupBarDisplayTab(UI4.Tabs.BaseTab):
         FILEPATH = filepath
         PIP_WIDGET_NAME = popup_bar_widget_name
+        _is_popup_widget = True
 
         def __init__(self, parent=None):
             super(PopupBarDisplayTab, self).__init__(parent)
 
             # create PiP Widget
-            self.main_widget = PopupBarDisplayWidget()
-            self.main_widget.loadPopupDisplayFromFile(PopupBarDisplayTab.FILEPATH, PopupBarDisplayTab.PIP_WIDGET_NAME)
+            self._popup_bar_display_widget = PopupBarDisplayWidget()
+            self._popup_bar_display_widget.loadPopupDisplayFromFile(PopupBarDisplayTab.FILEPATH, PopupBarDisplayTab.PIP_WIDGET_NAME)
 
             # create main layout
             QVBoxLayout(self)
-            self.layout().addWidget(self.main_widget)
+            self.layout().addWidget(self._popup_bar_display_widget)
+
+        def popupBarDisplayWidget(self):
+            return self._popup_bar_display_widget
+
+        def popupWidget(self):
+            return self.popupBarDisplayWidget().popupBarWidget()
+
+        def isEnlarged(self):
+            return self.popupWidget().isEnlarged()
+
+        def displayMode(self):
+            return self.popupWidget().displayMode()
+
+        def closeEnlargedView(self):
+            self.popupWidget().closeEnlargedView()
 
     return PopupBarDisplayTab
 
