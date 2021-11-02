@@ -33,4 +33,4 @@ for tab in tabs_list:
     if tab == PopupBarOrganizerTab:
         for popup_bar_tab in popup_bar_tabs:
             tab_name = "/".join([popup_bar_tab["filename"], popup_bar_tab["popup_bar_widget_name"]])
-            print("\t|\t\t|__  Loading...  {tab_name}".format(tab_name=tab_name))
+            print("\t|\t|\t|__  Loading...  {tab_name}".format(tab_name=tab_name))
