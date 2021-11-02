@@ -1,7 +1,10 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFrame
-from PyQt5.QtCore import Qt, QEvent
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QFrame, QApplication
+from qtpy.QtCore import Qt, QEvent
 
 from Katana import UI4
+
+from cgwidgets.utils import setAsTool
+
 
 class PythonWidget(QFrame):
     def __init__(self, parent=None):
@@ -13,8 +16,9 @@ class PythonWidget(QFrame):
 
         widget = python_tab.getWidget()
         python_widget = widget._pythonWidget
-        script_widget = python_widget._FullInteractivePython__scriptWidget
-        self._command_widget = script_widget.commandWidget()
+        #self._script_widget = python_widget._FullInteractivePython__scriptWidget
+        self._script_widget = python_widget.scriptWidget()
+        self._command_widget = self._script_widget.commandWidget()
 
         # setup layout
         QVBoxLayout(self)
@@ -26,6 +30,8 @@ class PythonWidget(QFrame):
 
         # setup style
         self.setStyleSheet("""QWidget#python_widget{border: 1px solid rgba(128,128,255,255)}""")
+        splitter = self._script_widget.layout().itemAt(0).widget()
+        splitter.setSizes([80, 200])
 
         # install events
         python_tab.installEventFilter(self)
@@ -43,20 +49,31 @@ class PythonWidget(QFrame):
 
         return False
 
+    def scriptWidget(self):
+        return self._script_widget
+
     def getCommandWidget(self):
         return self._command_widget
+
 
 # create popup script editor
 main_window = UI4.App.MainWindow.CurrentMainWindow()
 if not hasattr(main_window, "_popup_python_editor"):
+    # create editor
     main_window._popup_python_editor = PythonWidget(main_window)
+    setAsTool(main_window._popup_python_editor)
 
     # position on screen
-    width = 1024
-    height = 1024
-    xpos = int((main_window.width() * 0.5) - (width * 0.5))
-    ypos = int((main_window.height() * 0.5) - (height * 0.5))
+    """ Creates the window at the center of the screen with a 16/9 aspect ratio """
+    ratio = 0.75
+    desktop_width = QApplication.desktop().screenGeometry().width()
+    desktop_height = QApplication.desktop().screenGeometry().height()
+    height = int(desktop_height * ratio)
+    width = int(desktop_height * (15/10) * ratio)
+    xpos = int((desktop_width * 0.5) - (width * 0.5))
+    ypos = int((desktop_height * 0.5) - (height * 0.5))
     main_window._popup_python_editor.setGeometry(xpos, ypos, width, height)
+
     main_window._popup_python_editor.hide()
 
 # show/hide
