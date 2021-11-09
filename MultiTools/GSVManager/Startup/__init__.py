@@ -127,6 +127,7 @@ def installGSVManagerEvents(*args, **kwargs):
     from Katana import Utils
     # create default param
     # EventWidget.createGSVEventsParam()
+    Utils.UndoStack.DisableCapture()
 
     gsvutils.hideEngineersGSVUI()
     #Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, createDataParamsOnSceneLoad)
@@ -134,3 +135,5 @@ def installGSVManagerEvents(*args, **kwargs):
     Utils.EventModule.RegisterCollapsedHandler(updateGSVsOnSceneLoad, 'nodegraph_setRootNode')
     Utils.EventModule.RegisterCollapsedHandler(createDataParamsOnSceneLoad, 'nodegraph_loadEnd')
     Utils.EventModule.RegisterCollapsedHandler(gsvChangedEvent, 'parameter_finalizeValue', None)
+
+    Utils.UndoStack.EnableCapture()

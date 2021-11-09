@@ -27,6 +27,7 @@ Callbacks.addCallback(Callbacks.Type.onStartupComplete, installPopupHotkeysEvent
 
 # Node Color Registry
 from MultiTools.NodeColorRegistryTab import installDefaultNodeColorsEventFilter
+installDefaultNodeColorsEventFilter()
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, installDefaultNodeColorsEventFilter)
 
 # Variable Switch | Populate
