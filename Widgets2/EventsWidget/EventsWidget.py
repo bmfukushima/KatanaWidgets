@@ -987,7 +987,7 @@ class EventWidget(AbstractEventWidget):
 
     def updateEventsData(self):
         """ Updates the internal _events_data attr with the user data"""
-        root_item = self.eventsWidget().model().getRootItem()
+        root_item = self.eventsWidget().model().rootItem()
         events_data = {}
         # get all children
         for child in root_item.children():
@@ -1037,7 +1037,7 @@ class EventWidget(AbstractEventWidget):
         to avoid double event registry in Katana.
         """
         # preflight
-        root_item = self.eventsWidget().model().getRootItem()
+        root_item = self.eventsWidget().model().rootItem()
 
         # duplicate event type
         for child in root_item.children():

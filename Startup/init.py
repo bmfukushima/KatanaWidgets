@@ -25,6 +25,10 @@ from MultiTools.ScriptEditor import installPopupHotkeysEventFilter
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, installPopupHotkeysEventFilter)
 
 
+# Node Color Registry
+from MultiTools.NodeColorRegistryTab import installDefaultNodeColorsEventFilter
+Callbacks.addCallback(Callbacks.Type.onStartupComplete, installDefaultNodeColorsEventFilter)
+
 # Variable Switch | Populate
 def contextMenu(**kwargs):
     from Katana import NodegraphAPI

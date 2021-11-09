@@ -572,7 +572,7 @@ class CreateNewGSVOptionWidget(LabelledInputWidget):
                 return
         # create new list entry
         model = main_widget.editWidget().displayEditableOptionsWidget().model()
-        root_item = model.getRootItem()
+        root_item = model.rootItem()
         num_children = len(root_item.children())
         main_widget.editWidget().displayEditableOptionsWidget().createNewItem(new_entry_text, param, index=num_children)
 

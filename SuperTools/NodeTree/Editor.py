@@ -1,8 +1,3 @@
-
-"""
-ToDo:
-    *   Drag/Drop not in same group...
-"""
 from qtpy.QtWidgets import QVBoxLayout
 from qtpy.QtCore import Qt, QEvent, QModelIndex, QByteArray
 from qtpy.QtGui import QClipboard
@@ -327,10 +322,10 @@ class NodeTreeMainWidget(NodeViewWidget):
                 else:
                     group_item = parent_index.internalPointer()
                     if not group_item:
-                        group_item = self.model().getRootItem()
+                        group_item = self.model().rootItem()
 
             else:
-                group_item = self.model().getRootItem()
+                group_item = self.model().rootItem()
                 parent_node = self.node()
 
             # get node list

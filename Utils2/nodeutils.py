@@ -237,3 +237,14 @@ def goToNode(node, frame=False, nodegraph_panel=None, entered=False):
 
         # frame node provided
         nodegraph_panel.frameSelection(node)
+
+
+def setNodeColor(node, color):
+    """Sets the nodes color
+
+    Args:
+        node (node)
+        color (0-1rgb)"""
+    from Katana import DrawingModule, UI4
+    DrawingModule.SetCustomNodeColor(node, color[0], color[1], color[2])
+    UI4.App.Tabs.FindTopTab("Node Graph").update()
