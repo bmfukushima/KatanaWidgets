@@ -24,6 +24,10 @@ class NodeColorRegistryTab(UI4.Tabs.BaseTab):
         # create main widget
         self._node_color_registry_widget = NodeColorRegistryWidget(self, envar=CONFIGS)
 
+        #
+        if CONFIGS in os.environ.keys():
+            os.environ[CONFIGS] += ";{USER_RESOURCES}/ColorConfigs/User".format(USER_RESOURCES=KatanaResources.GetUserKatanaPath())
+
         # setup default color config
         self._node_color_registry_widget.setColorFile(self.defaultColorConfigFile())
 
