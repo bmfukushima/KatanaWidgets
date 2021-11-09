@@ -10,20 +10,6 @@ If you wish to use this library there are a few things to note:
   * If you are using this in a commercial setting, it would be nice if you let me know
     what company is using it to try and atleast track if people are using these tools in
     production, and might be nice to stick companies on here that are using it #marketing.
-  * The [cgwidgets](https://github.com/bmfukushima/cgwidgets) is not currently published,
-    however at this point in time it is not required, but will be for future releases.  Please
-    note that this library will not be released under as free of a license ( because reasons ).
-   
-	
-Final Note:
-The work in this library represents my learning path from scripting towards  Software Engineering.
-There will be many questionable choices made, and things that many of you find incredibly idiotic.
-Chances are, I just fucked up and plead ignorance, so please let me know if you find anything
-idiotic in here as it is a learning experience for myself.
-
-Cheers,
-
-Me
 
 # KatanaWidgets
 This repo contains a Katana Resources directory which can be added to the KATANA_RESOURCES environment variable.
@@ -32,40 +18,23 @@ This repo contains a small collection of my personal tools which have been creat
 ## Prerequisites
   * [qtpy](https://pypi.org/project/QtPy/) is a small abstraction layer that lets you write applications using a single API call to either PyQt or PySide.
   * [cgwidgets](https://github.com/bmfukushima/cgwidgets) small PyQt5/PySide agnostic widgets to be used between multiple DCCs
-<<<<<<< HEAD
 
-## Written in
-  * Python 3.7.7
-  * PyQt 5.15
 
-## Compatibility
-I can only test in what is currently available.  This is what's available, so I test in that...
-  * Python 2.7.12
-  * PyQt 5.6
-  * Katana 3.6v2
-  
 ## Written for
-This library is written for [VFX Reference Platform 2020](https://vfxplatform.com/)
-  * Python 3.7.x
-  * Qt for Python 5.15
-  * Katana 5.0
+This library is written for [VFX Reference Platform 2021](https://vfxplatform.com/)
+  * Ubuntu 20.04
+  * Python 3.7.7
+  * PyQt 5.15.0
+  * Katana 5.x+
     
 ## Note
-  * I am aiming for a first release of this library with Katana 5.0 which will have the upgrades to Python 3.7.x and Qt for Python (PySide2).
-  * The Utils2 / Widgets2 folders are named this way to avoid library conflicts with Katana's internal mechanisms.  I haven't really tested a worked around to much for this... But as of this time, this works and shouldn't conflict with anything...
+  * I am aiming for a first release of this library with Katana 5.0 which will have the upgrades to
+      Python 3.7.x and Qt for Python (PySide2).
+  * The Utils2 / Widgets2 folders are named this way to avoid library conflicts with
+        Katana's internal mechanisms.  I haven't really tested a worked around too much
+        for this... But as of this time, this works and shouldn't conflict with anything...
   * Load Order...
       * SuperTools
       * UIPlugins
       * Startup
       * Tabs
-=======
- 
-## Written In:
-  * Python 3.7.7
-  * PyQt 5.15.0
-
-## Tested In:
-This library is written for [VFX Reference Platform 2021](https://vfxplatform.com/), however I have intentionally left some things in the ancient Python 2.7.x so that you can still enjoy it... but seriously, fstrings... hurry up.
-  * Python 2.7.blah
-  * PyQt 5.12.1
->>>>>>> 2321ca5270951747b4808a3e5cef4c112415c7ae
