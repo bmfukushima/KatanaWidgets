@@ -1,8 +1,3 @@
-"""
-
-Default Config:
-    Can be set with the environment variable "KATANABEBOPDEFAULTCOLORCONFIG"
-"""
 import os
 
 from qtpy.QtWidgets import QVBoxLayout
