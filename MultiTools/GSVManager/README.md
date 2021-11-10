@@ -57,3 +57,12 @@ the script/file that you wish to manipulate.  This input is automatically update
 is pressed.  After changes are made to the script, the `save` needs to be pressed to push these changes
 to disk.
 
+# How to use
+- To create/modify/delete variables/options use the **Edit Tab**
+  - To delete an Option, select it, and press delete
+  - To delete a GSV, set the `GSV` to `<variables>`, then select the GSV and delete it
+  - To create a new GSV, either type a new name into the `GSV` options box, or set the
+    `GSV` options box to `<variables>` and then type a new name into the `Create Option` dialogue.
+  - To create a new Option, type a new name into the `Create Option` dialogue
+- To change a GSV use the **View Tab**
+- To setup a python event
