@@ -9,6 +9,7 @@ NUMBER = 1
 GROUP = 2
 NUMBER_ARRAY = 3
 STRING_ARRAY = 4
+TELEPARAM = 5
 def createParamAtLocation(param_location, node, param_type, param=None, initial_value=0):
     """Creates a parameter of the supplied type at the location provided.
 
@@ -64,7 +65,9 @@ def createParamAtLocation(param_location, node, param_type, param=None, initial_
                 param = current_param.createChildNumberArray(param_name, 0)
             if param_type == STRING_ARRAY:
                 param = current_param.createChildStringArray(param_name, 0)
-
+            if param_type == TELEPARAM:
+                param = current_param.createChildString(param_name, str(initial_value))
+                param.setHintString(repr({"widget": "teleparam"}))
             return param
 
     except TypeError:

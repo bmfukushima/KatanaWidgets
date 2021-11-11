@@ -68,10 +68,14 @@ class SimpleToolNode(TwoFaceSuperToolNode, EventInterface):
         group_node.setName(name)
 
         # _temp
-        temp = paramutils.createParamAtLocation(PARAM_LOCATION+".data", group_node, paramutils.STRING, initial_value="{}")
-        temp.setExpressionFlag(True)
-        temp.setExpression("=^/events_data.data")
-        paramutils.createParamAtLocation(PARAM_LOCATION+".scripts", group_node, paramutils.GROUP)
+        data_param = paramutils.createParamAtLocation(PARAM_LOCATION+".data", group_node, paramutils.STRING, initial_value="{}")
+        data_param.setExpressionFlag(True)
+        data_param.setExpression("=^/events_data.data")
+
+        #paramutils.createParamAtLocation(PARAM_LOCATION+".scripts", group_node, paramutils.GROUP)
+        scripts_param = paramutils.createParamAtLocation(PARAM_LOCATION+".scripts", group_node, paramutils.TELEPARAM)
+        scripts_param.setExpressionFlag(True)
+        scripts_param.setExpression("getParent().getNode().getName() + \".events_data.scripts\"")
 
         # wire
         group_node.addOutputPort('out')
