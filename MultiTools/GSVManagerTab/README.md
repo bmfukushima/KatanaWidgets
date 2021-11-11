@@ -38,7 +38,7 @@ Each script/files local scope will be given two variables `gsv` and `option`:
 
 
 ### Events Diagram
-![](GSVManager.png)
+![](GSVManagerDiagram.png)
 1. Button to create new event container for a specific GSV
 2. Displays which event/GSV is currently being displayed to the right (also displayed in `3`)
 3. Button to create new event for a specific GSVOption.  When you hover over this button, it
@@ -54,7 +54,7 @@ Each script/files local scope will be given two variables `gsv` and `option`:
 The python editor will look very similar to the normal Katana Python Editor with the exception
 that there are two inputs available at the bottom.  A List Input that will allow the user to select
 the script/file that you wish to manipulate.  This input is automatically updated when the `py` button
-is pressed.  After changes are made to the script, the `save` needs to be pressed to push these changes
+is pressed.  After changes are made to the script, the `save` button needs to be pressed to push these changes
 to disk.
 
 # How to use
