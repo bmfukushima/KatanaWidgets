@@ -1,14 +1,3 @@
-'''
-ToDo
-    *   Deleting item doesn't delete it, only disables?
-
-    - Drag/Drop move nodes via Node List
-    - option for syncing the state
-    - option for viewing super tool children
-    - sometimes super tool children not sorting correctly inside of supertools?
-    - rename nodes
-    - sort by node type
-'''
 from qtpy.QtWidgets import QVBoxLayout
 from Katana import UI4 , NodegraphAPI, Utils
 from Widgets2 import GlobalEventWidget
