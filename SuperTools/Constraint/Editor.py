@@ -13,7 +13,7 @@ from qtpy.QtCore import Qt
 from Katana import NodegraphAPI, Utils
 
 
-from cgwidgets.widgets import ListInputWidget, LabelledInputWidget
+from cgwidgets.widgets import ListInputWidget, LabelledInputWidget, BooleanInputWidget
 from cgwidgets.utils import getWidgetAncestor
 
 from Widgets2 import AbstractSuperToolEditor, iParameter
@@ -34,7 +34,7 @@ class ConstraintEditor(AbstractSuperToolEditor):
         self._constraint_type_widget.setIsFrozen(False)
 
         constraint_type_widget = LabelledInputWidget(
-            name="Type", delegate_widget=self._constraint_type_widget, default_label_length=getFontSize()*6)
+            name="Type", delegate_widget=self._constraint_type_widget, default_label_length=getFontSize()*8)
 
         self.createCustomParam(
             self._constraint_type_widget,
@@ -45,11 +45,10 @@ class ConstraintEditor(AbstractSuperToolEditor):
             initial_value=constraint_type
         )
 
-        # setup maintain offset
-
+        # setup stack order
         self._stack_order_widget = StackOrderWidget(self)
         _stack_order_widget = LabelledInputWidget(
-            name="Order", delegate_widget=self._stack_order_widget, default_label_length=getFontSize()*6)
+            name="Stack Order", delegate_widget=self._stack_order_widget, default_label_length=getFontSize()*8)
 
         self.createCustomParam(
             self._stack_order_widget,
@@ -59,33 +58,77 @@ class ConstraintEditor(AbstractSuperToolEditor):
             self._stack_order_widget.updateStackOrder
         )
 
+        self._maintain_offset_widget = MaintainOffsetWidget(self)
+        _maintain_offset_widget = LabelledInputWidget(
+            name="Maintain Offset", delegate_widget=self._maintain_offset_widget, default_label_length=getFontSize()*8)
+
+        self.createCustomParam(
+            self._maintain_offset_widget,
+            "MaintainOffset",
+            paramutils.NUMBER,
+            self._maintain_offset_widget.is_selected,
+            self._maintain_offset_widget.updateMaintainOffset
+        )
+
         # setup layout
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
 
         self.layout().addWidget(constraint_type_widget)
         self.layout().addWidget(_stack_order_widget)
-        #self.layout().addWidget(self.createKatanaParam("MaintainOffset"))
+        self.layout().addWidget(_maintain_offset_widget)
         self.layout().addWidget(self.createKatanaParam("ConstraintParams"))
 
-        Utils.EventModule.RegisterCollapsedHandler(self.constraintParamChanged, "parameter_finalizeValue")
-        #Utils.EventModule.RegisterCollapsedHandler(self.stackOrderChanged, "parameter_finalizeValue")
+        Utils.EventModule.RegisterCollapsedHandler(self.paramChanged, "parameter_finalizeValue")
 
-    def constraintParamChanged(self, args):
-        """ Event run when the user has updated the constraint type"""
+    """ EVENTS """
+    def paramChanged(self, args):
+        """ Event run when a param has changed.  This hopefully will update the text correctly
+        when a parameter is programmatically set"""
         for arg in args:
             param = arg[2]["param"]
             node = arg[2]["node"]
-            if node == self and param == self.constraintTypeParam():
-                value = param.getValue(0)
-                if value in ConstraintTypeWidget.OPTIONS:
-                    self.constraintTypeWidget().setText(param.getValue(0), 0)
-                else:
-                    print(value, "is not a valid option, resetting to", self.constraintTypeWidget().text())
+            if node == self:
+                if param in [self.constraintTypeParam(), self.maintainOffsetParam(), self.stackOrderParam()]:
+                    if param == self.constraintTypeParam():
+                        value = param.getValue(0)
+                        if value in ConstraintTypeWidget.OPTIONS:
+                            self.constraintTypeWidget().setText(param.getValue(0), 0)
+                        else:
+                            print(value, "is not a valid option, resetting to", self.constraintTypeWidget().text())
+                    elif param == self.stackOrderParam():
+                        value = param.getValue(0)
+                        if value in ["first", "last"]:
+                            self.stackOrderWidget().setText(param.getValue(0), 0)
+                        else:
+                            print(value, "is not a valid option, resetting to", self.stackOrderWidget().text())
+                    elif param == self.maintainOffsetParam():
+                        value = param.getValue(0)
+                        self.maintainOffsetWidget().is_selected = value
+                        print(value, type(value))
+
+
+    """ WIDGETS """
+    def maintainOffsetWidget(self):
+        return self._maintain_offset_widget
+
+    def stackOrderWidget(self):
+        return self._stack_order_widget
 
     def constraintTypeWidget(self):
         return self._constraint_type_widget
 
+
+class MaintainOffsetWidget(BooleanInputWidget, iParameter):
+    def __init__(self, parent=None):
+        super(MaintainOffsetWidget, self).__init__(parent)
+
+    def updateMaintainOffset(self, widget, value):
+        constraint_editor = getWidgetAncestor(self, ConstraintEditor)
+        constraint_editor.node().maintainOffsetParam().setValue(value, 0)
+
+        print("maintain offset", value, widget)
+        pass
 
 class StackOrderWidget(ListInputWidget, iParameter):
     def __init__(self, parent=None):
@@ -150,7 +193,7 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
         # connect node
         new_node.getInputPortByIndex(0).connect(this_node.getSendPort("in"))
         new_node.getOutputPortByIndex(0).connect(this_node.duplicateXFormNode().getInputPortByIndex(0))
-        new_node.getOutputPortByIndex(0).connect(this_node.stackOrderNode().getInputPortByIndex(0))
+        new_node.getOutputPortByIndex(0).connect(this_node.stackOrderSwitchNode().getInputPortByIndex(0))
 
         # delete old node
         old_node = constraint_editor.node().constraintNode()
