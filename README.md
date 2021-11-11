@@ -24,10 +24,10 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   
 # Tools
 ## Tabs
-- [Global Events Tab](MultiTools/GlobalEventsTab.README.md)
-- [GSV Manager Tab](MultiTools/GSVManagerTab.README.md)
-- [Script Editor Tab](MultiTools/ScriptEditorTab.README.md)
-- [Node Color Registry Tab](MultiTools/NodeColorRegistryTab.README.md)
+- [Global Events Tab](MultiTools/GlobalEventsTab/README.md)
+- [GSV Manager Tab](MultiTools/GSVManagerTab/README.md)
+- [Script Editor Tab](MultiTools/ScriptEditorTab/README.md)
+- [Node Color Registry Tab](MultiTools/NodeColorRegistryTab/README.md)
 - Popup Bar Tab
 - Desired Stuff Tab
 
