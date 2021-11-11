@@ -25,7 +25,7 @@ EventWidget --> (ShojiLayout)
     | -- python_widget --> (PythonWidget)
         |-- VBoxLayout
             |-- QHBoxLayout
-            |    |-- filepath_widget --> (FileBrowserInputWidget)
+            |    |-- filepath_widget --> (ListInputWidget)
             |    |-- save_widget --> (ButtonInputWidget)
             |-- python_tab --> (PythonTab)
                     main widget to get can be gotten through pythonWidget()
@@ -459,9 +459,11 @@ class PythonWidget(QWidget):
 
         # create filepath widget
         self._filepath_widget = ListInputWidget(self)
-        self._filepath_widget.setCleanItemsFunction(self.showPreviousFilepaths)
+        self._filepath_widget.setReadOnly(True)
+        # self._filepath_widget.setCleanItemsFunction(self.showPreviousFilepaths)
         self._filepath_widget.setUserFinishedEditingEvent(self.filepathChanged)
-        self._filepath_widget.filter_results = False
+        # self._filepath_widget.filter_results = False
+        # self._filepath_widget.setDi
         # create save widget
         self._save_widget = ButtonInputWidget(title="Save", user_clicked_event=self.saveEvent)
         self._save_widget.setFixedWidth(125)
