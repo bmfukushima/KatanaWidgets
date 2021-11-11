@@ -24,12 +24,12 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   
 # Tools
 ## Tabs
-- EventsTab
+- [Global Events Tab](MultiTools/GlobalEventsTab.README.md)
 - [GSV Manager Tab](MultiTools/GSVManagerTab.README.md)
 - [Script Editor Tab](MultiTools/ScriptEditorTab.README.md)
 - [Node Color Registry Tab](MultiTools/NodeColorRegistryTab.README.md)
-- PopupBar
-- DesiredStuff
+- Popup Bar Tab
+- Desired Stuff Tab
 
 ## SuperTools
 - Constraint
