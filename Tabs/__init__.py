@@ -1,5 +1,5 @@
 from .DesiredStuffTab import DesiredStuffTab
-from MultiTools import EventsTab, GSVManager, ScriptEditor, NodeColorRegistryTab
+from MultiTools import GlobalEventsTab, GSVManagerTab, ScriptEditorTab, NodeColorRegistryTab
 from .PopupBar import PopupBarOrganizerTab
 
 # compile list of tabs
@@ -7,9 +7,9 @@ tabs_list = [
     DesiredStuffTab,
     NodeColorRegistryTab.Tab,
     PopupBarOrganizerTab,
-    EventsTab.Tab,
-    GSVManager.Tab,
-    ScriptEditor.Tab
+    GlobalEventsTab.Tab,
+    GSVManagerTab.Tab,
+    ScriptEditorTab.Tab
 ]
 
 # register all tabs

@@ -112,7 +112,7 @@ PARAM_LOCATION = "KatanaBebop.GSVEventsData"
 
 class GSVManager(UI4.Tabs.BaseTab):
     """Main convenience widget for displaying GSV manipulators to the user."""
-    NAME = "GSVManager"
+    NAME = "GSV Manager"
 
     def __init__(self, parent=None):
         super(GSVManager, self).__init__(parent)

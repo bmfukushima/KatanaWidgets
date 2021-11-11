@@ -1,5 +1,5 @@
 
-# Summary
+# Node Color Registry Tab
 The NodeColorRegistryTab creates a new tab in Katana that will allow you to
 set up custom node color presets.  When a new node is created in Katana, it
 will check to see if this node type exists in the current presets file which

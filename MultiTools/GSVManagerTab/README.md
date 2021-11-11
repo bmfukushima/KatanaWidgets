@@ -1,4 +1,4 @@
-# Summary
+# GSV Manager Tab
 The GSVManager Tab is designed to be an all in one place to **modify, view,
 edit, and setup python events** for GSVs.  There will be four main sections
 of this tab, **view, edit, events**, and a **Python Editor**.

@@ -1,4 +1,4 @@
-# Summary
+# Script Editor Tab
 The script editor is an all in one place where users can
 - Create/Delete/Organize scripts
 - Setup hotkeys for scripts

@@ -4,7 +4,7 @@ All work done in this library represents my own personal designs, code, resource
 Please do not contact my employer with any questions/comments/concerns pertaining to this
 library, but rather please contact me directly if you have any questions/comments/concerns.
 
-# KatanaBebop
+# Katana Bebop
 This repo contains a Katana Resources directory which can be added to the `KATANA_RESOURCES `environment variable.
 This repo contains a small collection of my personal tools which have been created to sit as addons for Katana.
 
@@ -21,8 +21,28 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   * Python 3.7.7
   * PyQt 5.15.0
   * Katana 5.x+
-    
-## Note
+  
+# Tools
+## Tabs
+- EventsTab
+- [GSV Manager Tab](MultiTools/GSVManagerTab.README.md)
+- [Script Editor Tab](MultiTools/ScriptEditorTab.README.md)
+- [Node Color Registry Tab](MultiTools/NodeColorRegistryTab.README.md)
+- PopupBar
+- DesiredStuff
+
+## SuperTools
+- Constraint
+- IsolateCEL
+- NodeTree
+- SimpleTool
+- VariableManager
+
+## Macros
+- CleanupEmptyGroups
+- Frustum
+
+# Notes
   * I am aiming for a first release of this library with Katana 5.0 which will have the upgrades to
       Python 3.7.x and Qt for Python (PySide2).
   * The Utils2 / Widgets2 folders are named this way to avoid library conflicts with

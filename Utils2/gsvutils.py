@@ -359,7 +359,7 @@ def setGSVOption(gsv, option):
 
 def updateAllGSVTabs():
     from Katana import UI4
-    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSVManager")
+    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSVManagerTab")
 
     # # for each tab, update tab data
     for gsv_manager in gsv_manager_tabs:

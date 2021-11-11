@@ -17,11 +17,11 @@ from MultiTools.SimpleTool import installSimpleTools
 installSimpleTools()
 
 # Global Events
-from MultiTools.EventsTab import installGlobalEvents
+from MultiTools.GlobalEventsTab import installGlobalEvents
 installGlobalEvents()
 
 # Popup Hotkeys
-from MultiTools.ScriptEditor import installPopupHotkeysEventFilter
+from MultiTools.ScriptEditorTab import installPopupHotkeysEventFilter
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, installPopupHotkeysEventFilter)
 
 
@@ -93,7 +93,7 @@ changeFullscreenHotkey(Qt.Key_B)
 changeMinTabSize(50)
 # installNodegraphHotkeyOverrides()
 
-from MultiTools.GSVManager import installGSVManagerEvents
+from MultiTools.GSVManagerTab import installGSVManagerEvents
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGSVManagerEvents)
 
 # update NMC node
