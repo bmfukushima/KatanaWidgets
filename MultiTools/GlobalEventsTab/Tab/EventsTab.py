@@ -1,5 +1,7 @@
 '''
-To Do
+ToDo
+    *   Deleting item doesn't delete it, only disables?
+
     - Drag/Drop move nodes via Node List
     - option for syncing the state
     - option for viewing super tool children

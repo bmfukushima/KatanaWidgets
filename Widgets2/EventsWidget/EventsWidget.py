@@ -259,11 +259,20 @@ class AbstractEventWidget(ShojiLayout):
     def setEventsData(self, events_data):
         self._events_data = events_data
 
-    def saveEventsData(self, *args):
-        """ Saves the events data to the parameter """
+    def saveEventsData(self, delete_items=[]):
+        """ Saves the events data to the parameter
+
+        Args:
+            delete_items (list): of AbstractEventListViewItem that will be removed from the update
+                This is needed for updates during the deletion event
+        """
         # get data
         events_data = self.eventsData()
 
+        # remove indexes that are meant for deletion
+        for item in delete_items:
+            if item.name() in events_data.keys():
+                del events_data[item.name()]
         # set data
         new_data = json.dumps(events_data)
         if self.paramData():
@@ -1010,6 +1019,11 @@ class EventWidget(AbstractEventWidget):
         self._events_data = events_data
 
     """ EVENTS """
+    def removeItemEvent(self, item):
+        item.setIsEnabled(False)
+        self.installEvents()
+        self.saveEventsData(delete_items=[item])
+
     def cacheScriptToParam(self, script):
         """ This will cache the script to a local value
 
@@ -1076,13 +1090,10 @@ class GlobalEventWidget(EventWidget, EventInterface):
         if API_NAME == "PySide2":
             EventInterface.__init__(self)
 
-    def removeItemEvent(self, item):
-        item.setIsEnabled(False)
-        self.installEvents()
-        # TODO disable item
-        # get item dict
-        # disable item
-        pass
+    # def removeItemEvent(self, item):
+    #     item.setIsEnabled(False)
+    #     self.installEvents()
+    #     self.saveEventsData(delete_items=[item])
 
 
 class SimpleToolEventWidget(EventWidget):
@@ -1104,14 +1115,10 @@ class SimpleToolEventWidget(EventWidget):
         self.saveEventsData()
         self.node().installEvents()
 
-    def removeItemEvent(self, item):
-        self.updateEventsData()
-        item.setIsEnabled(False)
-        self.installEvents()
-        # TODO disable item
-        # get item dict
-        # disable item
-        pass
+    # def removeItemEvent(self, item):
+    #     item.setIsEnabled(False)
+    #     self.installEvents()
+    #     self.saveEventsData(delete_items=[item])
 
     def disableAllEvents(self, events_dict=None):
         """

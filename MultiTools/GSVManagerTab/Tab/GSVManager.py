@@ -66,11 +66,8 @@ EventWidget --> gsvChangedEvent
 """
 """ TODO:
 Katana 4.5
-    * OnStartupComplete
-        - Not registering events
-        - Should this even be on startup complete? Yes
     * Showing/hiding events before its saved can cause a disconnect
-        of the availbe events"""
+        of the available events"""
 
 import json
 
