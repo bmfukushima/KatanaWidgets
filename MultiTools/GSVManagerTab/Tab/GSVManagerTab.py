@@ -1,5 +1,5 @@
 """
-The GSVManager is a TAB that has three separate portions. View, Create/Edit, Events.
+The GSVManagerTab is a TAB that has three separate portions. View, Create/Edit, Events.
 
 View:
     The area that the user can use as a read only aspect to display/change
@@ -25,7 +25,7 @@ Events:
         on disk.
 
 Hierarchy:
-    GSVManager(UI4.Tabs.BaseTab)
+    GSVManagerTab(UI4.Tabs.BaseTab)
         |- QVBoxLayout
             |- mainWidget --> (ShojiModelViewWidget)
                 |- viewWidget --> (ViewWidget --> QWidget)
@@ -107,12 +107,12 @@ from Utils2 import gsvutils, getFontSize, paramutils
 PARAM_LOCATION = "KatanaBebop.GSVEventsData"
 
 
-class GSVManager(UI4.Tabs.BaseTab):
+class GSVManagerTab(UI4.Tabs.BaseTab):
     """Main convenience widget for displaying GSV manipulators to the user."""
     NAME = "GSV Manager"
 
     def __init__(self, parent=None):
-        super(GSVManager, self).__init__(parent)
+        super(GSVManagerTab, self).__init__(parent)
 
         # create widgets
         self._main_widget = ShojiModelViewWidget(parent=self)
@@ -458,7 +458,7 @@ class GSVSelectorWidget(LabelledInputWidget):
             gsv (str): name of GSV
         """
 
-        main_widget = getWidgetAncestor(self, GSVManager)
+        main_widget = getWidgetAncestor(self, GSVManagerTab)
 
         if main_widget:
             gsv = str(self.delegateWidget().text())
@@ -533,7 +533,7 @@ class CreateNewGSVOptionWidget(LabelledInputWidget):
             widget (QWidget): sending signal
             value (str): value being set
         """
-        main_widget = getWidgetAncestor(self, GSVManager)
+        main_widget = getWidgetAncestor(self, GSVManagerTab)
         edit_widget = main_widget.editWidget()
         current_gsv_text = str(edit_widget.text())
 
@@ -686,7 +686,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
 
     """ EVENTS """
     def enableItem(self, item, enabled):
-        main_widget = getWidgetAncestor(self, GSVManager)
+        main_widget = getWidgetAncestor(self, GSVManagerTab)
         view_widget = main_widget.viewWidget()
         edit_widget = main_widget.editWidget()
 
@@ -729,7 +729,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
                 gsvutils.moveGSVtoNewIndex(gsv, row)
 
                 # update view
-                main_widget = getWidgetAncestor(self, GSVManager)
+                main_widget = getWidgetAncestor(self, GSVManagerTab)
                 view_widget = main_widget.viewWidget()
                 view_widget.update()
 
@@ -739,7 +739,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         Args:
             item (DisplayEditableOptionsItem): currently selected
         """
-        main_widget = getWidgetAncestor(self, GSVManager)
+        main_widget = getWidgetAncestor(self, GSVManagerTab)
         edit_widget = main_widget.editWidget()
         events_widget = main_widget.eventsWidget()
 
@@ -775,7 +775,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         # Remove Variable
         if edit_widget.displayMode() == gsvutils.VARIABLES:
             # get attrs
-            main_widget = getWidgetAncestor(self, GSVManager)
+            main_widget = getWidgetAncestor(self, GSVManagerTab)
             view_widget = main_widget.viewWidget()
             gsv = item.columnData()['name']
 
@@ -818,7 +818,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
             gsvutils.renameGSV(old_value, new_value)
 
             # update view widget
-            main_widget = getWidgetAncestor(self, GSVManager)
+            main_widget = getWidgetAncestor(self, GSVManagerTab)
             view_widget = main_widget.viewWidget()
             view_widget.renameWidget(old_value, new_value)
 

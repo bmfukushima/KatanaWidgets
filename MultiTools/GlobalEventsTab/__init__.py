@@ -1,2 +1,2 @@
 from .Startup import *
-from .Tab.EventsTab import EventsTab as Tab
+from .Tab.GlobalEventsTab import GlobalEventsTab as Tab

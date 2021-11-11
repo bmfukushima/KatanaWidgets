@@ -1,2 +1,2 @@
 from .Startup import *
-from .Tab.GSVManager import GSVManager as Tab
+from .Tab.GSVManagerTab import GSVManagerTab as Tab

@@ -1,2 +1,2 @@
 from .Startup import *
-from .Tab.ScriptEditor import ScriptEditorTab as Tab
+from .Tab.ScriptEditorTab import ScriptEditorTab as Tab

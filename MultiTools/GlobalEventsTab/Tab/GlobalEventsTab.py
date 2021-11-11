@@ -3,10 +3,10 @@ from Katana import UI4 , NodegraphAPI, Utils
 from Widgets2 import GlobalEventWidget
 from Utils2 import widgetutils
 
-class EventsTab(UI4.Tabs.BaseTab):
+class GlobalEventsTab(UI4.Tabs.BaseTab):
     NAME = 'Global Events'
     def __init__(self, parent=None):
-        super(EventsTab, self).__init__(parent)
+        super(GlobalEventsTab, self).__init__(parent)
         self._param_location = "KatanaBebop.GlobalEventsData"
 
         QVBoxLayout(self)
@@ -52,4 +52,4 @@ class EventsTab(UI4.Tabs.BaseTab):
     def eventsWidget(self):
         return widgetutils.katanaMainWindow().global_events_widget
 
-#PluginRegistry = [("KatanaPanel", 2, "Events", EventsTab)]
+#PluginRegistry = [("KatanaPanel", 2, "Events", GlobalEventsTab)]
