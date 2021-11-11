@@ -57,12 +57,12 @@ class ConstraintNode(AbstractSuperToolNode):
         # connect nodes
         self.getSendPort("in").connect(self._constraint_node.getInputPortByIndex(0))
         self._constraint_node.getOutputPortByIndex(0).connect(self._constraint_dot_node.getInputPortByIndex(0))
+        self._constraint_dot_node.getOutputPortByIndex(0).connect(self._stack_order_switch_node.getInputPortByIndex(0))
 
         # connect nodes (stack order)
         self._constraint_dot_node.getOutputPortByIndex(0).connect(self._duplicate_xform_node.getInputPortByIndex(0))
         self._duplicate_xform_node.getOutputPortByIndex(0).connect(self._transfer_xform_node.getInputPortByIndex(0))
         self._transfer_xform_node.getOutputPortByIndex(0).connect(self._stack_order_switch_node.getInputPortByIndex(1))
-        self._constraint_node.getOutputPortByIndex(0).connect(self._stack_order_switch_node.getInputPortByIndex(0))
 
         # connect nodes (maintain offset)
         self._stack_order_switch_node.getOutputPortByIndex(0).connect(self._maintain_offset_script_node.getInputPortByIndex(0))

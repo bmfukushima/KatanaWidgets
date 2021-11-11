@@ -135,6 +135,7 @@ class StackOrderWidget(ListInputWidget, iParameter):
         super(StackOrderWidget, self).__init__(parent)
         self.populate([["first"], ["last"]])
         self.setText("first")
+        self.filter_results = False
 
     def updateStackOrder(self, widget, value):
         constraint_editor = getWidgetAncestor(self, ConstraintEditor)
@@ -192,8 +193,7 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
 
         # connect node
         new_node.getInputPortByIndex(0).connect(this_node.getSendPort("in"))
-        new_node.getOutputPortByIndex(0).connect(this_node.duplicateXFormNode().getInputPortByIndex(0))
-        new_node.getOutputPortByIndex(0).connect(this_node.stackOrderSwitchNode().getInputPortByIndex(0))
+        new_node.getOutputPortByIndex(0).connect(this_node.constraintDotNode().getInputPortByIndex(0))
 
         # delete old node
         old_node = constraint_editor.node().constraintNode()
