@@ -1,3 +1,12 @@
+"""
+TODO
+    *   Change names
+            "maintain offset --> stack order
+    *   Setup actual maintain offsets
+            Switch w/OpScript
+"""
+
+
 from qtpy.QtWidgets import (QVBoxLayout)
 from qtpy.QtCore import Qt
 
@@ -18,6 +27,7 @@ class ConstraintEditor(AbstractSuperToolEditor):
         # create params
         constraint_type = self.node().getParameter("ConstraintType").getValue(0)
 
+        # setup constraint type
         self._constraint_type_widget = ConstraintTypeWidget(self)
         self._constraint_type_widget.setIsFrozen(True)
         self._constraint_type_widget.setText(constraint_type)
@@ -35,29 +45,61 @@ class ConstraintEditor(AbstractSuperToolEditor):
             initial_value=constraint_type
         )
 
+        # setup maintain offset
+
+        self._stack_order_widget = StackOrderWidget(self)
+        _stack_order_widget = LabelledInputWidget(
+            name="Order", delegate_widget=self._stack_order_widget, default_label_length=getFontSize()*6)
+
+        self.createCustomParam(
+            self._stack_order_widget,
+            "StackOrder",
+            paramutils.NUMBER,
+            self._stack_order_widget.text,
+            self._stack_order_widget.updateStackOrder
+        )
+
         # setup layout
         QVBoxLayout(self)
         self.layout().setAlignment(Qt.AlignTop)
 
         self.layout().addWidget(constraint_type_widget)
-        self.layout().addWidget(self.createKatanaParam("MaintainOffset"))
+        self.layout().addWidget(_stack_order_widget)
+        #self.layout().addWidget(self.createKatanaParam("MaintainOffset"))
         self.layout().addWidget(self.createKatanaParam("ConstraintParams"))
 
         Utils.EventModule.RegisterCollapsedHandler(self.constraintParamChanged, "parameter_finalizeValue")
+        #Utils.EventModule.RegisterCollapsedHandler(self.stackOrderChanged, "parameter_finalizeValue")
 
     def constraintParamChanged(self, args):
+        """ Event run when the user has updated the constraint type"""
         for arg in args:
             param = arg[2]["param"]
             node = arg[2]["node"]
             if node == self and param == self.constraintTypeParam():
                 value = param.getValue(0)
                 if value in ConstraintTypeWidget.OPTIONS:
-                    self.constraintTypeWidget.setText(param.getValue(0), 0)
+                    self.constraintTypeWidget().setText(param.getValue(0), 0)
                 else:
                     print(value, "is not a valid option, resetting to", self.constraintTypeWidget().text())
 
     def constraintTypeWidget(self):
         return self._constraint_type_widget
+
+
+class StackOrderWidget(ListInputWidget, iParameter):
+    def __init__(self, parent=None):
+        super(StackOrderWidget, self).__init__(parent)
+        self.populate([["first"], ["last"]])
+        self.setText("first")
+
+    def updateStackOrder(self, widget, value):
+        constraint_editor = getWidgetAncestor(self, ConstraintEditor)
+        if value == "first":
+            constraint_editor.node().stackOrderParam().setValue(1, 0)
+        elif value == "last":
+            constraint_editor.node().stackOrderParam().setValue(0, 0)
+
 
 class ConstraintTypeWidget(ListInputWidget, iParameter):
     OPTIONS = [
@@ -96,11 +138,9 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
             self.setText(self.previous_text)
             return
         if self.isFrozen(): return
-
         # get attrs
         node_type = self.text()
         constraint_editor = getWidgetAncestor(self, ConstraintEditor)
-
 
         this_node = constraint_editor.node()
 
@@ -110,7 +150,7 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
         # connect node
         new_node.getInputPortByIndex(0).connect(this_node.getSendPort("in"))
         new_node.getOutputPortByIndex(0).connect(this_node.duplicateXFormNode().getInputPortByIndex(0))
-        new_node.getOutputPortByIndex(0).connect(this_node.maintainOffsetNode().getInputPortByIndex(0))
+        new_node.getOutputPortByIndex(0).connect(this_node.stackOrderNode().getInputPortByIndex(0))
 
         # delete old node
         old_node = constraint_editor.node().constraintNode()
@@ -124,3 +164,4 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
 
         self.previous_text = node_type
         self.setValue(node_type)
+

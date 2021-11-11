@@ -78,31 +78,30 @@ end
 Interface.DeleteAttr("xform2")
         """, 0)
 
-        self._maintain_offset_node = NodegraphAPI.CreateNode("Switch", self)
-        self._maintain_offset_node.addInputPort("original")
-        self._maintain_offset_node.addInputPort("maintain_offset")
-        self._maintain_offset_node.getParameter("in").setExpressionFlag(True)
-        self._maintain_offset_node.getParameter("in").setExpression("=^/MaintainOffset")
+        self._stack_order_switch_node = NodegraphAPI.CreateNode("Switch", self)
+        self._stack_order_switch_node.addInputPort("original")
+        self._stack_order_switch_node.addInputPort("maintain_offset")
+        self._stack_order_switch_node.getParameter("in").setExpressionFlag(True)
+        self._stack_order_switch_node.getParameter("in").setExpression("=^/StackOrder")
 
         # connect nodes
         self.getSendPort("in").connect(self._constraint_node.getInputPortByIndex(0))
         self._constraint_node.getOutputPortByIndex(0).connect(self._duplicate_xform_node.getInputPortByIndex(0))
         self._duplicate_xform_node.getOutputPortByIndex(0).connect(self._transfer_xform_node.getInputPortByIndex(0))
-        self._transfer_xform_node.getOutputPortByIndex(0).connect(self._maintain_offset_node.getInputPortByIndex(1))
-        self._constraint_node.getOutputPortByIndex(0).connect(self._maintain_offset_node.getInputPortByIndex(0))
-        self._maintain_offset_node.getOutputPortByIndex(0).connect(self.getReturnPort("out"))
+        self._transfer_xform_node.getOutputPortByIndex(0).connect(self._stack_order_switch_node.getInputPortByIndex(1))
+        self._constraint_node.getOutputPortByIndex(0).connect(self._stack_order_switch_node.getInputPortByIndex(0))
+        self._stack_order_switch_node.getOutputPortByIndex(0).connect(self.getReturnPort("out"))
 
         # place nodes
         NodegraphAPI.SetNodePosition(self._duplicate_xform_node, (0, -100))
         NodegraphAPI.SetNodePosition(self._transfer_xform_node, (0, -200))
-        NodegraphAPI.SetNodePosition(self._maintain_offset_node, (0, -300))
+        NodegraphAPI.SetNodePosition(self._stack_order_switch_node, (0, -300))
 
         # setup params
         self._constraint_type_param = self.getParameters().createChildString("ConstraintType", "")
-        print(self._constraint_type_param)
 
-        self._maintain_offset_param = self.getParameters().createChildNumber("MaintainOffset", 0)
-        self._maintain_offset_param.setHintString(repr({"widget": "checkBox"}))
+        self._stack_order_param = self.getParameters().createChildNumber("StackOrder", 0)
+        # self._stack_order_param.setHintString(repr({"widget": "checkBox"}))
 
         self._constraint_display_param = self.getParameters().createChildString("ConstraintParams", "")
         self._constraint_display_param.setHintString(repr({"widget": "teleparam", "hideTitle":True}))
@@ -121,8 +120,8 @@ Interface.DeleteAttr("xform2")
     def transferXFormNode(self):
         return self._transfer_xform_node
 
-    def maintainOffsetNode(self):
-        return self._maintain_offset_node
+    def stackOrderNode(self):
+        return self._stack_order_switch_node
 
     """ PARAMS """
     def constraintDisplayParam(self):
@@ -131,6 +130,6 @@ Interface.DeleteAttr("xform2")
     def constraintTypeParam(self):
         return self._constraint_type_param
 
-    def maintainOffsetParam(self):
-        return self._maintain_offset_param
+    def stackOrderParam(self):
+        return self._stack_order_param
 
