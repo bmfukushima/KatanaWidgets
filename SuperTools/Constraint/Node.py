@@ -1,15 +1,4 @@
-"""
-TODO:
-    *   Maintain offset
-            - Parent child constraint
-            - GUI Update
-            - Bypass switch for maintain offset?
-"""
-
-
 from Katana import NodegraphAPI, Utils
-
-
 
 try:
     from Widgets2 import AbstractSuperToolNode

@@ -1,10 +1,21 @@
+"""
+Todo:
+    *   ParentChildConstraint
+            override to flip the stack order.  As for some reason this stack order is coming in reversed...
+    *   Maintain offset
+            - Parent child constraint
+            - GUI Update
+                Hide/show the widget when the ConstraintType is set to a specific type
+            - Bypass switch for maintain offset?
+
+"""
 from qtpy.QtWidgets import (QVBoxLayout)
 from qtpy.QtCore import Qt
 
 from Katana import NodegraphAPI, Utils
 
 
-from cgwidgets.widgets import ListInputWidget, LabelledInputWidget, BooleanInputWidget
+from cgwidgets.widgets import ListInputWidget, LabelledInputWidget, BooleanInputWidget, OverlayInputWidget
 from cgwidgets.utils import getWidgetAncestor
 
 from Widgets2 import AbstractSuperToolEditor, iParameter
@@ -24,11 +35,12 @@ class ConstraintEditor(AbstractSuperToolEditor):
 
     def __setupWidgets(self):
         """ Creates all of the display widgets and adds them to the main layout"""
-        # setup constraint type
+        # Constraint Type
         self._constraint_type_widget = ConstraintTypeWidget(self)
 
         constraint_type_widget = LabelledInputWidget(
             name="Type", delegate_widget=self._constraint_type_widget, default_label_length=getFontSize()*8)
+        constraint_type_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
 
         self.createCustomParam(
             self._constraint_type_widget,
@@ -36,15 +48,14 @@ class ConstraintEditor(AbstractSuperToolEditor):
             paramutils.STRING,
             self._constraint_type_widget.text,
             self._constraint_type_widget.updateConstraintType,
-            #initial_value=constraint_type
         )
 
-        # setup stack order
+        # Stack Order
         self._stack_order_widget = StackOrderWidget(self)
 
         _stack_order_widget = LabelledInputWidget(
             name="Stack Order", delegate_widget=self._stack_order_widget, default_label_length=getFontSize()*8)
-
+        _stack_order_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
         self.createCustomParam(
             self._stack_order_widget,
             "StackOrder",
@@ -53,10 +64,12 @@ class ConstraintEditor(AbstractSuperToolEditor):
             self._stack_order_widget.updateStackOrder
         )
 
+        # Maintain Offset
         self._maintain_offset_widget = MaintainOffsetWidget(self)
 
         _maintain_offset_widget = LabelledInputWidget(
             name="Maintain Offset", delegate_widget=self._maintain_offset_widget, default_label_length=getFontSize()*8)
+        _maintain_offset_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
 
         self.createCustomParam(
             self._maintain_offset_widget,
