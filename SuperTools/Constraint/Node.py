@@ -191,6 +191,7 @@ class ConstraintNode(AbstractSuperToolNode):
         self._maintain_offset_script_node.getParameter("CEL").setExpression(
             "={constraint_node_name}/basePath".format(constraint_node_name=self._constraint_node.getName()))
 
+        # todo update lua script for ParentChildConstraint
         self._maintain_offset_script_node.getParameter("script.lua").setValue("""
 function getXFormMatrix(locationPath)
     local xformAttr = Interface.GetGlobalXFormGroup(locationPath)
@@ -247,7 +248,7 @@ elseif mode == "OrientConstraint" then
     rebuilt_offset_mat = shear_matrix * rotation_matrix * shear_matrix:inverse()
 
 elseif mode == "ParentChildConstraint" then
-    rebuilt_offset_mat = offset_mat:inverse()
+    rebuilt_offset_mat = Imath.M44d()
 end
 
 

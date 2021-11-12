@@ -4,8 +4,8 @@ Todo:
             override to flip the stack order.  As for some reason this stack order is coming in reversed...
     *   Maintain offset
             - Parent child constraint
-            - GUI Update
-                Hide/show the widget when the ConstraintType is set to a specific type
+                ConstraintNode.__setupMaintainOffsetNodes
+                ConstraintTypeWidget.updateConstraintType()
             - Bypass switch for maintain offset?
 
 """
@@ -65,18 +65,18 @@ class ConstraintEditor(AbstractSuperToolEditor):
         )
 
         # Maintain Offset
-        self._maintain_offset_widget = MaintainOffsetWidget(self)
+        self._maintain_offset_delegate_widget = MaintainOffsetWidget(self)
 
-        _maintain_offset_widget = LabelledInputWidget(
-            name="Maintain Offset", delegate_widget=self._maintain_offset_widget, default_label_length=getFontSize()*8)
-        _maintain_offset_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
+        self._maintain_offset_widget = LabelledInputWidget(
+            name="Maintain Offset", delegate_widget=self._maintain_offset_delegate_widget, default_label_length=getFontSize()*8)
+        self._maintain_offset_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
 
         self.createCustomParam(
-            self._maintain_offset_widget,
+            self._maintain_offset_delegate_widget,
             "MaintainOffset",
             paramutils.NUMBER,
-            self._maintain_offset_widget.is_selected,
-            self._maintain_offset_widget.updateMaintainOffset
+            self._maintain_offset_delegate_widget.is_selected,
+            self._maintain_offset_delegate_widget.updateMaintainOffset
         )
 
         # setup layout
@@ -85,9 +85,8 @@ class ConstraintEditor(AbstractSuperToolEditor):
 
         self.layout().addWidget(constraint_type_widget)
         self.layout().addWidget(_stack_order_widget)
-        self.layout().addWidget(_maintain_offset_widget)
+        self.layout().addWidget(self._maintain_offset_widget)
         self.layout().addWidget(self.createKatanaParam("ConstraintParams"))
-
 
     def __updateDefaultValues(self):
         """ Sets up all of the default values."""
@@ -109,10 +108,9 @@ class ConstraintEditor(AbstractSuperToolEditor):
         self._stack_order_widget.setIsFrozen(False)
 
         if maintain_offset:
-            self._maintain_offset_widget.is_selected = True
+            self.maintainOffsetDelegateWidget().is_selected = True
         else:
-            self._maintain_offset_widget.is_selected = False
-
+            self.maintainOffsetDelegateWidget().is_selected = False
 
     """ EVENTS """
     def paramChanged(self, args):
@@ -143,6 +141,9 @@ class ConstraintEditor(AbstractSuperToolEditor):
     """ WIDGETS """
     def maintainOffsetWidget(self):
         return self._maintain_offset_widget
+
+    def maintainOffsetDelegateWidget(self):
+        return self._maintain_offset_delegate_widget
 
     def stackOrderWidget(self):
         return self._stack_order_widget
@@ -240,10 +241,19 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
         this_node.maintainOffsetScriptNode().getParameter("user.targetXFormPath").setExpression("={name}/targetPath".format(name=constraint_node.getName()))
 
         # update attrs ( maintain offset )
-        if node_type in ["OrientConstraint", "PointConstraint", "ScaleConstraint", "ParentChildConstraint"]:
+        # todo update for ParentChildConstraint
+        # maintain offset available
+        if node_type in ["OrientConstraint", "PointConstraint", "ScaleConstraint"]:
             if node_type == "PointConstraint":
                 this_node.maintainOffsetScriptNode().getParameter("user.targetXFormPath").setExpression("={name}/targetPath.i0".format(name=constraint_node.getName()))
 
+            constraint_editor.maintainOffsetWidget().show()
+
+        # maintain offset not available
+        else:
+            constraint_editor.maintainOffsetWidget().hide()
+            constraint_editor.maintainOffsetDelegateWidget().setIsSelected(False)
+            constraint_editor.node().maintainOffsetParam().setValue(0, 0)
         this_node.modeParam().setValue(node_type, 0)
 
         #self.previous_text = node_type
