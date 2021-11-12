@@ -1,4 +1,15 @@
+"""
+TODO:
+    *   Maintain offset
+            - Parent child constraint
+            - GUI Update
+            - Bypass switch for maintain offset?
+"""
+
+
 from Katana import NodegraphAPI, Utils
+
+
 
 try:
     from Widgets2 import AbstractSuperToolNode
@@ -14,6 +25,8 @@ class ConstraintNode(AbstractSuperToolNode):
         constraint_type_param (String): What type of constraint the user wants to use
         constraint_display_param (Teleparam): The actual params of the constraint node
         stack_order_param (int): Whether or not the constraint should maintain the offsets
+        mode (str): mode to be set
+            ParentChildConstraint | OrientConstraint | PointConstraint | ScaleConstraint
 
     Nodes:
         constraint_node (ConstraintNode): Constraint node
@@ -38,16 +51,16 @@ class ConstraintNode(AbstractSuperToolNode):
 
     def __init__(self):
         super(ConstraintNode, self).__init__()
-
         # initialize base node
         self.setGroupDisplay(False)
         nodeutils.createIOPorts(self)
 
         # create nodes
-        self._constraint_node = None
 
+        # create temp constraint node
         self._constraint_node = NodegraphAPI.CreateNode("Dot", self)
         self._constraint_node.getParameters().createChildString("basePath", "")
+        self._constraint_node.getParameters().createChildString("targetPath", "")
 
         self._constraint_dot_node = NodegraphAPI.CreateNode("Dot", self)
 
@@ -78,6 +91,18 @@ class ConstraintNode(AbstractSuperToolNode):
         NodegraphAPI.SetNodePosition(self._maintain_offset_script_node, (0, -500))
         NodegraphAPI.SetNodePosition(self._maintain_offset_switch_node, (0, -600))
 
+        self.__setupParams()
+
+    def __setupParams(self):
+        node_reference_param = self.getParameters().createChildGroup("NodeReference")
+        paramutils.createNodeReference("ConstraintNode", self._constraint_node, node_reference_param)
+        paramutils.createNodeReference("ConstraintDotNode", self._constraint_dot_node, node_reference_param)
+        paramutils.createNodeReference("DuplicateXFormNode", self._duplicate_xform_node, node_reference_param)
+        paramutils.createNodeReference("TransferXFormNode", self._transfer_xform_node, node_reference_param)
+        paramutils.createNodeReference("StackOrderSwitchNode", self._stack_order_switch_node, node_reference_param)
+        paramutils.createNodeReference("MaintainOffsetSwitchNode", self._maintain_offset_switch_node, node_reference_param)
+        paramutils.createNodeReference("MaintainOffsetScriptNode", self._maintain_offset_script_node, node_reference_param)
+
         # setup params
         self._constraint_type_param = self.getParameters().createChildString("ConstraintType", "")
         self._stack_order_param = self.getParameters().createChildNumber("StackOrder", 0)
@@ -93,6 +118,7 @@ class ConstraintNode(AbstractSuperToolNode):
         """ Helper function to setup the stack order nodes"""
         # puts the new constraint xform at the top of the stack, and sets the attr as "xform2"
         self._duplicate_xform_node = NodegraphAPI.CreateNode("OpScript", self)
+        self._duplicate_xform_node.setName("DuplicateXFormScript")
         self._duplicate_xform_node.getParameter("CEL").setExpressionFlag(True)
         self._duplicate_xform_node.getParameter("CEL").setExpression(
             "={constraint_node_name}/basePath".format(constraint_node_name=self._constraint_node.getName()))
@@ -128,9 +154,11 @@ class ConstraintNode(AbstractSuperToolNode):
 
         # copies the "xform2" attr made in the "duplicate_xform_node" back to the "xform" attr
         self._transfer_xform_node = NodegraphAPI.CreateNode("OpScript", self)
+        self._transfer_xform_node.setName("TransferXFormScript")
         self._transfer_xform_node.getParameter("CEL").setExpressionFlag(True)
         self._transfer_xform_node.getParameter("CEL").setExpression(
             "={constraint_node_name}/basePath".format(constraint_node_name=self._constraint_node.getName()))
+
         self._transfer_xform_node.getParameter("script.lua").setValue("""
         -- Copies the temp xform attr back to the xform attr
 
@@ -147,26 +175,102 @@ class ConstraintNode(AbstractSuperToolNode):
 
         Interface.DeleteAttr("xform2")
                 """, 0)
-
+        # setup switch node
         self._stack_order_switch_node = NodegraphAPI.CreateNode("Switch", self)
+        self._stack_order_switch_node.setName("StackOrderSwitch")
         self._stack_order_switch_node.addInputPort("last")
         self._stack_order_switch_node.addInputPort("first")
         self._stack_order_switch_node.getParameter("in").setExpressionFlag(True)
         self._stack_order_switch_node.getParameter("in").setExpression("=^/StackOrder")
 
     def __setupMaintainOffsetNodes(self):
-        self._stack_order_switch_node
 
         self._maintain_offset_script_node = NodegraphAPI.CreateNode("OpScript", self)
+        self._maintain_offset_script_node.setName("MaintainOffsetScript")
+
+        # create params
+        target_xform_param = paramutils.createParamAtLocation("user.targetXFormPath", self._maintain_offset_script_node, paramutils.STRING)
+        target_xform_param.setExpressionFlag(True)
+        # todo set expression flag here might need to be a teleparam? Since this is going to reference a number
+        target_xform_param.setExpression("={constraint_node_name}/targetPath".format(constraint_node_name=self._constraint_node.getName()))
+
+        self._mode_param = paramutils.createParamAtLocation("user.mode", self._maintain_offset_script_node, paramutils.STRING)
+        # self._mode_param.setExpressionFlag(True)
+        # self._mode_param.setExpression("\'\'")
+
         self._maintain_offset_script_node.getParameter("CEL").setExpressionFlag(True)
         self._maintain_offset_script_node.getParameter("CEL").setExpression(
             "={constraint_node_name}/basePath".format(constraint_node_name=self._constraint_node.getName()))
 
         self._maintain_offset_script_node.getParameter("script.lua").setValue("""
--- Maintain offset code placeholder
+function getXFormMatrix(locationPath)
+    local xformAttr = Interface.GetGlobalXFormGroup(locationPath)
+    local matAttr = XFormUtils.CalcTransformMatrixAtTime(xformAttr, 0.0)
+    local matData = matAttr:getNearestSample(0.0)
+    local mat = Imath.M44d(matData)
+    return mat
+end
+
+target_xform_path = Interface.GetOpArg("user.targetXFormPath"):getValue()
+target_xform = getXFormMatrix(target_xform_path)
+
+base_xform_path = Interface.GetOutputLocationPath()
+base_xform = getXFormMatrix(base_xform_path)
+
+--offset = target_xform:inverse() * base_xform
+
+offset_mat = base_xform * target_xform:inverse()
+
+-- Rebuild offset matrix
+local rebuilt_offset_mat = Imath.M44d()
+local scale, shear, rotate, translate, result = offset_mat:extractSHRT()
+
+-- "translate", "scale", "rotate", "parent"
+local mode = Interface.GetOpArg("user.mode"):getValue()
+
+if mode == "PointConstraint" then
+    inverse_matrix = Imath.M44d()
+    inverse_matrix:rotate(rotate)
+    inverse_matrix:scale(scale)
+
+    -- inverse_scale = Imath.V3d(1/scale:toTable()[1], 1/scale:toTable()[2], 1/scale:toTable()[3])
+    translate = translate * inverse_matrix:inverse()
+
+    rebuilt_offset_mat:translate(translate)
+
+elseif mode == "ScaleConstraint" then
+    inverse_matrix = Imath.M44d()
+    -- inverse_matrix:translate(translate)
+    -- inverse_matrix:rotate(rotate)
+
+    scale = scale * inverse_matrix:inverse()
+
+    rebuilt_offset_mat:scale(scale)
+
+elseif mode == "OrientConstraint" then
+    shear_matrix = Imath.M44d()
+    rotation_matrix = Imath.M44d()
+    inverse_matrix = Imath.M44d()
+
+    shear_matrix:scale(scale)
+    rotation_matrix:rotate(rotate)
+
+    rebuilt_offset_mat = shear_matrix * rotation_matrix * shear_matrix:inverse()
+
+elseif mode == "ParentChildConstraint" then
+    rebuilt_offset_mat = offset_mat:inverse()
+end
+
+
+
+
+
+Interface.SetAttr("xform.group0.matrix", DoubleAttribute(rebuilt_offset_mat:toTable(),16))
                 """, 0)
 
+        # setup switch node
         self._maintain_offset_switch_node = NodegraphAPI.CreateNode("Switch", self)
+        self._maintain_offset_switch_node.setName("MaintainOffsetSwitch")
         self._maintain_offset_switch_node.addInputPort("last")
         self._maintain_offset_switch_node.addInputPort("first")
         self._maintain_offset_switch_node.getParameter("in").setExpressionFlag(True)
@@ -176,42 +280,55 @@ class ConstraintNode(AbstractSuperToolNode):
 
     """ NODES """
     def constraintNode(self):
-        return self._constraint_node
-
-    def constraintDotNode(self):
-        return self._constraint_dot_node
+        return NodegraphAPI.GetNode(self.getParameter("NodeReference.ConstraintNode").getValue(0))
 
     def setConstraintNode(self, constraint_node):
-        self._constraint_node = constraint_node
+        self.getParameter("NodeReference.ConstraintNode").setExpression("@{name}".format(name=constraint_node.getName()))
+        #self._constraint_node = constraint_node
+
+    def constraintDotNode(self):
+        return NodegraphAPI.GetNode(self.getParameter("NodeReference.ConstraintDotNode").getValue(0))
 
     """ NODES ( STACK ORDER ) """
     def duplicateXFormNode(self):
-        return self._duplicate_xform_node
+        return NodegraphAPI.GetNode(self.getParameter("NodeReference.DuplicateXFormNode").getValue(0))
 
     def transferXFormNode(self):
-        return self._transfer_xform_node
+        return NodegraphAPI.GetNode(self.getParameter("NodeReference.TransferXFormNode").getValue(0))
 
     def stackOrderSwitchNode(self):
-        return self._stack_order_switch_node
+        return NodegraphAPI.GetNode(self.getParameter("NodeReference.StackOrderSwitchNode").getValue(0))
 
     """ NODES ( MAINTAIN OFFSET )"""
     def maintainOffsetSwitchNode(self):
-        return self._maintain_offset_switch_node
+        return NodegraphAPI.GetNode(self.getParameter("NodeReference.MaintainOffsetSwitchNode").getValue(0))
 
     def maintainOffsetScriptNode(self):
-        return self._maintain_offset_script_node
+        return NodegraphAPI.GetNode(self.getParameter("NodeReference.MaintainOffsetScriptNode").getValue(0))
 
     """ PARAMS """
     def constraintDisplayParam(self):
-        return self._constraint_display_param
+        return self.getParameter("ConstraintParams")
+        #return self._constraint_display_param
+
+    def constraintNodeParam(self):
+        return self.getParameter("ConstraintNode")
 
     def constraintTypeParam(self):
-        return self._constraint_type_param
+        return self.getParameter("ConstraintType")
+        #return self._constraint_type_param
 
     def maintainOffsetParam(self):
-        return self._maintain_offset_param
+        return self.getParameter("MaintainOffset")
+        #return self._maintain_offset_param
 
     def stackOrderParam(self):
-        return self._stack_order_param
+        return self.getParameter("StackOrder")
+        # return self._stack_order_param
+
+    """ PARAMS ( MAINTAIN OFFSET )"""
+    def modeParam(self):
+        return self.maintainOffsetScriptNode().getParameter("user.mode")
+        #return self._mode_param
 
 

@@ -99,3 +99,17 @@ def createTeleparamWidget(node_name, hide_title=False):
     param_widget = UI4.FormMaster.KatanaWidgetFactory.buildWidget(None, params_policy)
     params_policy.setValue(node_name, 0)
     return param_widget
+
+def createNodeReference(name, node, parent):
+    """ Creates a parameter reference to the node provided
+
+    Args:
+        name (str): name of parameter
+        node (Node): node to reference
+        parent (param): Group param to parent children under
+
+    Returns (param): newly created String Parameter"""
+    param = parent.createChildString(name, "")
+    param.setExpressionFlag(True)
+    param.setExpression("@{node}".format(node=node.getName()))
+    return param
