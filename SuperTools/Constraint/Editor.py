@@ -6,8 +6,6 @@ Todo:
             - Parent child constraint
                 ConstraintNode.__setupMaintainOffsetNodes
                 ConstraintTypeWidget.updateConstraintType()
-            - Bypass switch for maintain offset?
-
 """
 from qtpy.QtWidgets import (QVBoxLayout)
 from qtpy.QtCore import Qt
@@ -36,32 +34,32 @@ class ConstraintEditor(AbstractSuperToolEditor):
     def __setupWidgets(self):
         """ Creates all of the display widgets and adds them to the main layout"""
         # Constraint Type
-        self._constraint_type_widget = ConstraintTypeWidget(self)
+        self._constraint_type_delegate_widget = ConstraintTypeWidget(self)
 
         constraint_type_widget = LabelledInputWidget(
-            name="Type", delegate_widget=self._constraint_type_widget, default_label_length=getFontSize()*8)
+            name="Type", delegate_widget=self._constraint_type_delegate_widget, default_label_length=getFontSize()*8)
         constraint_type_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
 
         self.createCustomParam(
-            self._constraint_type_widget,
+            self._constraint_type_delegate_widget,
             'ConstraintType',
             paramutils.STRING,
-            self._constraint_type_widget.text,
-            self._constraint_type_widget.updateConstraintType,
+            self._constraint_type_delegate_widget.text,
+            self._constraint_type_delegate_widget.updateConstraintType,
         )
 
         # Stack Order
-        self._stack_order_widget = StackOrderWidget(self)
+        self._stack_order_delegate_widget = StackOrderWidget(self)
 
         _stack_order_widget = LabelledInputWidget(
-            name="Stack Order", delegate_widget=self._stack_order_widget, default_label_length=getFontSize()*8)
+            name="Stack Order", delegate_widget=self._stack_order_delegate_widget, default_label_length=getFontSize()*8)
         _stack_order_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
         self.createCustomParam(
-            self._stack_order_widget,
+            self._stack_order_delegate_widget,
             "StackOrder",
             paramutils.NUMBER,
-            self._stack_order_widget.text,
-            self._stack_order_widget.updateStackOrder
+            self._stack_order_delegate_widget.text,
+            self._stack_order_delegate_widget.updateStackOrder
         )
 
         # Maintain Offset
@@ -96,16 +94,16 @@ class ConstraintEditor(AbstractSuperToolEditor):
         maintain_offset = self.node().getParameter("MaintainOffset").getValue(0)
 
         # update default display attrs
-        self._constraint_type_widget.setIsFrozen(True)
-        self._constraint_type_widget.setText(constraint_type)
-        self._constraint_type_widget.setIsFrozen(False)
+        self._constraint_type_delegate_widget.setIsFrozen(True)
+        self._constraint_type_delegate_widget.setText(constraint_type)
+        self._constraint_type_delegate_widget.setIsFrozen(False)
 
-        self._stack_order_widget.setIsFrozen(True)
+        self._stack_order_delegate_widget.setIsFrozen(True)
         if stack_order:
-            self._stack_order_widget.setText("first")
+            self._stack_order_delegate_widget.setText("first")
         else:
-            self._stack_order_widget.setText("last")
-        self._stack_order_widget.setIsFrozen(False)
+            self._stack_order_delegate_widget.setText("last")
+        self._stack_order_delegate_widget.setIsFrozen(False)
 
         if maintain_offset:
             self.maintainOffsetDelegateWidget().is_selected = True
@@ -130,13 +128,16 @@ class ConstraintEditor(AbstractSuperToolEditor):
                     elif param == self.stackOrderParam():
                         value = param.getValue(0)
                         if value in ["first", "last"]:
-                            self.stackOrderWidget().setText(param.getValue(0), 0)
+                            self.stackOrderDelegateWidget().setText(param.getValue(0), 0)
                         else:
-                            print(value, "is not a valid option, resetting to", self.stackOrderWidget().text())
+                            print(value, "is not a valid option, resetting to", self.stackOrderDelegateWidget().text())
                     elif param == self.maintainOffsetParam():
                         value = param.getValue(0)
                         self.maintainOffsetWidget().is_selected = value
                         print(value, type(value))
+
+    def constraintType(self):
+        return self.constraintTypeDelegateWidget().text()
 
     """ WIDGETS """
     def maintainOffsetWidget(self):
@@ -145,11 +146,11 @@ class ConstraintEditor(AbstractSuperToolEditor):
     def maintainOffsetDelegateWidget(self):
         return self._maintain_offset_delegate_widget
 
-    def stackOrderWidget(self):
-        return self._stack_order_widget
+    def stackOrderDelegateWidget(self):
+        return self._stack_order_delegate_widget
 
-    def constraintTypeWidget(self):
-        return self._constraint_type_widget
+    def constraintTypeDelegateWidget(self):
+        return self._constraint_type_delegate_widget
 
 
 class MaintainOffsetWidget(BooleanInputWidget, iParameter):
@@ -170,10 +171,20 @@ class StackOrderWidget(ListInputWidget, iParameter):
 
     def updateStackOrder(self, widget, value):
         constraint_editor = getWidgetAncestor(self, ConstraintEditor)
-        if value == "first":
-            constraint_editor.node().stackOrderParam().setValue(1, 0)
-        elif value == "last":
-            constraint_editor.node().stackOrderParam().setValue(0, 0)
+        constraint_type = constraint_editor.constraintType()
+
+        """ This is needed because ParentChildConstraints append to the stack first, instead
+        of the default of last"""
+        if constraint_type == "ParentChildConstraint":
+            if value == "first":
+                constraint_editor.node().stackOrderParam().setValue(0, 0)
+            elif value == "last":
+                constraint_editor.node().stackOrderParam().setValue(1, 0)
+        else:
+            if value == "first":
+                constraint_editor.node().stackOrderParam().setValue(1, 0)
+            elif value == "last":
+                constraint_editor.node().stackOrderParam().setValue(0, 0)
 
 
 class ConstraintTypeWidget(ListInputWidget, iParameter):
@@ -256,6 +267,13 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
             constraint_editor.node().maintainOffsetParam().setValue(0, 0)
         this_node.modeParam().setValue(node_type, 0)
 
-        #self.previous_text = node_type
+        # update attrs ( stack order )
+        """ This is needed because ParentChildConstraints append to the stack first, instead
+        of the default of last"""
+        if node_type == "ParentChildConstraint":
+            this_node.constraintLocationParam().setValue("last", 0)
+        else:
+            this_node.constraintLocationParam().setValue("first", 0)
+
         self.setValue(node_type)
 

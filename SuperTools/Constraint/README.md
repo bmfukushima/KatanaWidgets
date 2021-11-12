@@ -30,6 +30,3 @@ the **Constraint Type** is changed.
   * override to flip the stack order.  As for some reason this stack order is coming in reversed...
 * Maintain offset
   * Parent child constraint
-  * GUI Update 
-    * Hide/show the widget when the ConstraintType is set to a specific type
-  * Bypass switch for maintain offset?

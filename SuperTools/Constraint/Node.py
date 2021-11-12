@@ -9,10 +9,28 @@ except:
 
 class ConstraintNode(AbstractSuperToolNode):
     """ The node portion of the constraint Node
+    def constraintDisplayParam(self):
+        return self.getParameter("ConstraintParams")
+        #return self._constraint_display_param
+
+    def constraintLocation(self):
+        self.duplicateXFormNode().getParameter("user.constraint_location")
+
+    def constraintNodeParam(self):
+        return self.getParameter("ConstraintNode")
+
 
     Params:
         constraint_type_param (String): What type of constraint the user wants to use
         constraint_display_param (Teleparam): The actual params of the constraint node
+        constraint_location (str): Determines the default location of the constraint
+            This is needed as the default location for all constraints except for the
+            ParentChildConstraint is last.  While the ParentChildConstraint is placed
+            at the top of the stack.
+        constraint_node_param (str): Reference to name of the current constraint node
+        maintain_offset_param (int): Whether or not the offset should be maintained
+            0 = Disabled
+            1 = Enabled
         stack_order_param (int): Whether or not the constraint should maintain the offsets
         mode (str): mode to be set
             ParentChildConstraint | OrientConstraint | PointConstraint | ScaleConstraint
@@ -111,34 +129,64 @@ class ConstraintNode(AbstractSuperToolNode):
         self._duplicate_xform_node.getParameter("CEL").setExpressionFlag(True)
         self._duplicate_xform_node.getParameter("CEL").setExpression(
             "={constraint_node_name}/basePath".format(constraint_node_name=self._constraint_node.getName()))
+        paramutils.createParamAtLocation("user.constraint_location", self._duplicate_xform_node, param_type=paramutils.STRING)
 
         self._duplicate_xform_node.getParameter("script.lua").setValue("""
-        -- Rearranges all of the xform values so that the constraint is on the
-        -- top of the stack and stores this as a new attribute called "xform2"
-        local xform = Interface.GetAttr("xform")
-        local num_children = xform:getNumberOfChildren()
+--[[
+Rearranges all of the xform values so that the constraint is on the
+top of the stack and stores this as a new attribute called "xform2".
 
-        -- copy constraint
-        constraint = xform:getChildByIndex(num_children-1)
-        constraint_name = xform:getChildName(num_children-1)
+Note that this needs to be inverted for the ParentChildConstraint
+as it for some reason has inverted the stack order, and by default
+comes in as first, instead of the default of last.
+]]
+
+local xform = Interface.GetAttr("xform")
+local num_children = xform:getNumberOfChildren()
+local constraint_location = Interface.GetOpArg("user.constraint_location"):getValue()
+-- constraint_location = "first"
+-- copy constraint
+-- constraint = xform:getChildByIndex(num_children-1)
+
+if constraint_location == "last" then
+    constraint_name = xform:getChildName(num_children-1)
+
+    Interface.CopyAttr(
+        "xform2.".. constraint_name,
+        "xform.".. constraint_name
+    )
+
+    -- copy rest of xform stack
+    for var=0, num_children  - 2 do
+        local name = xform:getChildName(var)
+        local child = xform:getChildByIndex(var)
         Interface.CopyAttr(
-            "xform2.".. constraint_name,
-            "xform.".. constraint_name
+            "xform2.".. name,
+            "xform."..name
         )
+    end
+elseif constraint_location == "first" then
+    constraint_name = xform:getChildName(0)
 
-        -- copy rest of xform stack
-        for var=0, num_children  - 2 do
+    -- copy rest of xform stack
+    for var=1, num_children  - 1 do
+        local name = xform:getChildName(var)
+        local child = xform:getChildByIndex(var)
+        Interface.CopyAttr(
+            "xform2.".. name,
+            "xform."..name
+        )
+    end
 
-            local name = xform:getChildName(var)
-            local child = xform:getChildByIndex(var)
-            Interface.CopyAttr(
-                "xform2.".. name,
-                "xform."..name
-            )
-        end
+    Interface.CopyAttr(
+        "xform2.".. constraint_name,
+        "xform.".. constraint_name
+    )
 
-        Interface.DeleteAttr("xform")
-        -- Interface.CopyAttr("xform", "xform2")
+end
+
+Interface.DeleteAttr("xform")
+-- Interface.CopyAttr("xform", "xform2")
                 """, 0)
 
         # copies the "xform2" attr made in the "duplicate_xform_node" back to the "xform" attr
@@ -300,6 +348,9 @@ Interface.SetAttr("xform.group0.matrix", DoubleAttribute(rebuilt_offset_mat:toTa
     def constraintDisplayParam(self):
         return self.getParameter("ConstraintParams")
         #return self._constraint_display_param
+
+    def constraintLocationParam(self):
+        return self.duplicateXFormNode().getParameter("user.constraint_location")
 
     def constraintNodeParam(self):
         return self.getParameter("ConstraintNode")
