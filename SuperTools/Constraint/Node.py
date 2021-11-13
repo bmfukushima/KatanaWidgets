@@ -232,6 +232,9 @@ Interface.DeleteAttr("xform")
         target_xform_param.setExpression("={constraint_node_name}/targetPath".format(constraint_node_name=self._constraint_node.getName()))
 
         self._mode_param = paramutils.createParamAtLocation("user.mode", self._maintain_offset_script_node, paramutils.STRING)
+        self._maintain_offset_stack_order_param = paramutils.createParamAtLocation("user.stackOrder", self._maintain_offset_script_node, paramutils.NUMBER)
+        self._maintain_offset_stack_order_param.setExpressionFlag(True)
+        self._maintain_offset_stack_order_param.setExpression("=^/StackOrder")
         # self._mode_param.setExpressionFlag(True)
         # self._mode_param.setExpression("\'\'")
 
@@ -241,66 +244,114 @@ Interface.DeleteAttr("xform")
 
         # todo update lua script for ParentChildConstraint
         self._maintain_offset_script_node.getParameter("script.lua").setValue("""
-function getXFormMatrix(locationPath)
-    local xformAttr = Interface.GetGlobalXFormGroup(locationPath)
+function getXFormMatrix(locationPath, index)
+    local xformAttr = Interface.GetGlobalXFormGroup(locationPath, index)
     local matAttr = XFormUtils.CalcTransformMatrixAtTime(xformAttr, 0.0)
     local matData = matAttr:getNearestSample(0.0)
     local mat = Imath.M44d(matData)
     return mat
 end
 
+-- get xform matrices
 target_xform_path = Interface.GetOpArg("user.targetXFormPath"):getValue()
-target_xform = getXFormMatrix(target_xform_path)
+target_xform_mat = getXFormMatrix(target_xform_path, 0)
 
 base_xform_path = Interface.GetOutputLocationPath()
-base_xform = getXFormMatrix(base_xform_path)
+base_xform_mat = getXFormMatrix(base_xform_path, 0)
 
---offset = target_xform:inverse() * base_xform
-
-offset_mat = base_xform * target_xform:inverse()
+offset_mat = base_xform_mat * target_xform_mat:inverse()
 
 -- Rebuild offset matrix
+--[[
+    The xform matrix will need to be rebuilt depending on the type of constraint being used,
+    and the current stack order.
+]]
+local stack_order = Interface.GetOpArg("user.stackOrder"):getValue()
 local rebuilt_offset_mat = Imath.M44d()
 local scale, shear, rotate, translate, result = offset_mat:extractSHRT()
+
 
 -- "translate", "scale", "rotate", "parent"
 local mode = Interface.GetOpArg("user.mode"):getValue()
 
-if mode == "PointConstraint" then
-    inverse_matrix = Imath.M44d()
-    inverse_matrix:rotate(rotate)
-    inverse_matrix:scale(scale)
+-- stack order is last
+if stack_order == 0 then
+    -- Point Constraint
+    if mode == "PointConstraint" then
+        inverse_matrix = Imath.M44d()
+        inverse_matrix:rotate(rotate)
+        inverse_matrix:scale(scale)
 
-    -- inverse_scale = Imath.V3d(1/scale:toTable()[1], 1/scale:toTable()[2], 1/scale:toTable()[3])
-    translate = translate * inverse_matrix:inverse()
+        -- inverse_scale = Imath.V3d(1/scale:toTable()[1], 1/scale:toTable()[2], 1/scale:toTable()[3])
+        translate = translate * inverse_matrix:inverse()
 
-    rebuilt_offset_mat:translate(translate)
+        rebuilt_offset_mat:translate(translate)
 
-elseif mode == "ScaleConstraint" then
-    inverse_matrix = Imath.M44d()
-    -- inverse_matrix:translate(translate)
-    -- inverse_matrix:rotate(rotate)
+    -- Scale Constraint
+    elseif mode == "ScaleConstraint" then
+        rebuilt_offset_mat:scale(scale)
 
-    scale = scale * inverse_matrix:inverse()
+    -- Orient Constraint
+    elseif mode == "OrientConstraint" then
+        shear_matrix = Imath.M44d()
+        rotation_matrix = Imath.M44d()
+        inverse_matrix = Imath.M44d()
 
-    rebuilt_offset_mat:scale(scale)
+        shear_matrix:scale(scale)
+        rotation_matrix:rotate(rotate)
 
-elseif mode == "OrientConstraint" then
-    shear_matrix = Imath.M44d()
-    rotation_matrix = Imath.M44d()
-    inverse_matrix = Imath.M44d()
+        rebuilt_offset_mat = shear_matrix * rotation_matrix * shear_matrix:inverse()
 
-    shear_matrix:scale(scale)
-    rotation_matrix:rotate(rotate)
+    elseif mode == "ParentChildConstraint" then
+        -- rebuilt_offset_mat = offset_mat:inverse()
+    end
 
-    rebuilt_offset_mat = shear_matrix * rotation_matrix * shear_matrix:inverse()
+-- stack order is first
+elseif stack_order == 1 then
+    local xform_scale, xform_shear, xform_rotate, xform_translate, xform_result = target_xform_mat:extractSHRT()
+    local base_scale, base_shear, base_rotate, base_translate, base_result = base_xform_mat:extractSHRT()
+    local inverse_matrix = Imath.M44d()
 
-elseif mode == "ParentChildConstraint" then
-    rebuilt_offset_mat = Imath.M44d()
+    -- Point Constraint
+    if mode == "PointConstraint" then
+        inverse_matrix:rotate(base_rotate)
+        inverse_matrix:scale(base_scale)
+
+
+        xform_translate = xform_translate * inverse_matrix:inverse()
+
+        rebuilt_offset_mat:translate(xform_translate)
+        rebuilt_offset_mat = rebuilt_offset_mat:inverse()
+
+    -- Scale Constraint
+    elseif mode == "ScaleConstraint" then
+        -- get base original matrix, prior to moving updating the stack order
+        -- Need this for the final offset
+        local base_orig_mat = getXFormMatrix(base_xform_path, 1)
+        local orig_scale, orig_shear, orig_rotate, orig_translate, orig_result = base_orig_mat:extractSHRT()
+        local base_orig_translation_mat = Imath.M44d()
+
+        base_orig_translation_mat:translate(orig_translate)
+        inverse_matrix:translate(base_translate)
+        rebuilt_offset_mat:scale(xform_scale)
+
+        rebuilt_offset_mat = base_orig_translation_mat * rebuilt_offset_mat:inverse() * inverse_matrix:inverse() 
+
+    -- Orient Constraint
+    elseif mode == "OrientConstraint" then
+        shear_matrix = Imath.M44d()
+        rotation_matrix = Imath.M44d()
+        inverse_matrix = Imath.M44d()
+
+        shear_matrix:scale(scale)
+        rotation_matrix:rotate(xform_rotate)
+
+        rebuilt_offset_mat = shear_matrix * rotation_matrix * shear_matrix:inverse()
+
+
+    elseif mode == "ParentChildConstraint" then
+    end
 end
-
-
-
 
 
 Interface.SetAttr("xform.group0.matrix", DoubleAttribute(rebuilt_offset_mat:toTable(),16))

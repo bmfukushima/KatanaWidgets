@@ -1,11 +1,10 @@
 """
 Todo:
-    *   ParentChildConstraint
-            override to flip the stack order.  As for some reason this stack order is coming in reversed...
     *   Maintain offset
-            - Parent child constraint
-                ConstraintNode.__setupMaintainOffsetNodes
-                ConstraintTypeWidget.updateConstraintType()
+        - Parent child constraint
+            ConstraintNode.__setupMaintainOffsetNodes
+            ConstraintTypeWidget.updateConstraintType()
+        - OpScript needs to get the correct group name to display
 """
 from qtpy.QtWidgets import (QVBoxLayout)
 from qtpy.QtCore import Qt
