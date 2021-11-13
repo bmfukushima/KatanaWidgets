@@ -235,8 +235,6 @@ Interface.DeleteAttr("xform")
         self._maintain_offset_stack_order_param = paramutils.createParamAtLocation("user.stackOrder", self._maintain_offset_script_node, paramutils.NUMBER)
         self._maintain_offset_stack_order_param.setExpressionFlag(True)
         self._maintain_offset_stack_order_param.setExpression("=^/StackOrder")
-        # self._mode_param.setExpressionFlag(True)
-        # self._mode_param.setExpression("\'\'")
 
         self._maintain_offset_script_node.getParameter("CEL").setExpressionFlag(True)
         self._maintain_offset_script_node.getParameter("CEL").setExpression(
@@ -365,15 +363,12 @@ Interface.SetAttr("xform.group0.matrix", DoubleAttribute(rebuilt_offset_mat:toTa
         self._maintain_offset_switch_node.getParameter("in").setExpressionFlag(True)
         self._maintain_offset_switch_node.getParameter("in").setExpression("=^/MaintainOffset")
 
-        pass
-
     """ NODES """
     def constraintNode(self):
         return NodegraphAPI.GetNode(self.getParameter("NodeReference.ConstraintNode").getValue(0))
 
     def setConstraintNode(self, constraint_node):
         self.getParameter("NodeReference.ConstraintNode").setExpression("@{name}".format(name=constraint_node.getName()))
-        #self._constraint_node = constraint_node
 
     def constraintDotNode(self):
         return NodegraphAPI.GetNode(self.getParameter("NodeReference.ConstraintDotNode").getValue(0))
@@ -398,7 +393,6 @@ Interface.SetAttr("xform.group0.matrix", DoubleAttribute(rebuilt_offset_mat:toTa
     """ PARAMS """
     def constraintDisplayParam(self):
         return self.getParameter("ConstraintParams")
-        #return self._constraint_display_param
 
     def constraintLocationParam(self):
         return self.duplicateXFormNode().getParameter("user.constraint_location")
@@ -408,19 +402,15 @@ Interface.SetAttr("xform.group0.matrix", DoubleAttribute(rebuilt_offset_mat:toTa
 
     def constraintTypeParam(self):
         return self.getParameter("ConstraintType")
-        #return self._constraint_type_param
 
     def maintainOffsetParam(self):
         return self.getParameter("MaintainOffset")
-        #return self._maintain_offset_param
 
     def stackOrderParam(self):
         return self.getParameter("StackOrder")
-        # return self._stack_order_param
 
     """ PARAMS ( MAINTAIN OFFSET )"""
     def modeParam(self):
         return self.maintainOffsetScriptNode().getParameter("user.mode")
-        #return self._mode_param
 
 
