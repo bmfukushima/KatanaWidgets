@@ -5,6 +5,8 @@ Todo:
             ConstraintNode.__setupMaintainOffsetNodes
             ConstraintTypeWidget.updateConstraintType()
         - OpScript needs to get the correct group name to display
+    *   ParentChildConstraint
+            When setting type, need to update the stack order
 """
 from qtpy.QtWidgets import (QVBoxLayout)
 from qtpy.QtCore import Qt
@@ -270,9 +272,19 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
         """ This is needed because ParentChildConstraints append to the stack first, instead
         of the default of last"""
         if node_type == "ParentChildConstraint":
-            this_node.constraintLocationParam().setValue("last", 0)
+            # update stack order
+            """ Need to run this here to force update the param.  As this event is normally done
+            when the Stack Order type is changed."""
+            value = constraint_editor.stackOrderDelegateWidget().text()
+            if value == "first":
+                constraint_editor.node().stackOrderParam().setValue(0, 0)
+            elif value == "last":
+                constraint_editor.node().stackOrderParam().setValue(1, 0)
+
+            # update xform node param
+            this_node.isParentChildConstraint().setValue(1, 0)
         else:
-            this_node.constraintLocationParam().setValue("first", 0)
+            this_node.isParentChildConstraint().setValue(0, 0)
 
         self.setValue(node_type)
 

@@ -14,7 +14,7 @@ class ConstraintNode(AbstractSuperToolNode):
         #return self._constraint_display_param
 
     def constraintLocation(self):
-        self.duplicateXFormNode().getParameter("user.constraint_location")
+        self.duplicateXFormNode().getParameter("user.is_parent_child_constraint")
 
     def constraintNodeParam(self):
         return self.getParameter("ConstraintNode")
@@ -23,7 +23,7 @@ class ConstraintNode(AbstractSuperToolNode):
     Params:
         constraint_type_param (String): What type of constraint the user wants to use
         constraint_display_param (Teleparam): The actual params of the constraint node
-        constraint_location (str): Determines the default location of the constraint
+        is_parent_child_constraint (str): Determines the default location of the constraint
             This is needed as the default location for all constraints except for the
             ParentChildConstraint is last.  While the ParentChildConstraint is placed
             at the top of the stack.
@@ -44,9 +44,11 @@ class ConstraintNode(AbstractSuperToolNode):
             back to the "xform" attr
         stack_order_switch_node (Switch): Switch node that will control the stack order.
             This is controlled by the stackOrderParam()
-            0 = last
-            1 = first
-
+                0 = last
+                1 = first
+            This order is reveresed if it is a ParentChildConstraint
+                0 = first
+                1 = last
         maintain_offset_script_node (OpScript): Creates an inverse matrix of the offset between
             the base/target items.
 
@@ -85,6 +87,7 @@ class ConstraintNode(AbstractSuperToolNode):
         self._transfer_xform_node.getOutputPortByIndex(0).connect(self._stack_order_switch_node.getInputPortByIndex(1))
 
         # connect nodes (maintain offset)
+        self._maintain_offset_script_node.getInputPortByIndex(1).connect(self.getSendPort("in"))
         self._stack_order_switch_node.getOutputPortByIndex(0).connect(self._maintain_offset_script_node.getInputPortByIndex(0))
         self._stack_order_switch_node.getOutputPortByIndex(0).connect(self._maintain_offset_switch_node.getInputPortByIndex(0))
         self._maintain_offset_script_node.getOutputPortByIndex(0).connect(self._maintain_offset_switch_node.getInputPortByIndex(1))
@@ -129,7 +132,8 @@ class ConstraintNode(AbstractSuperToolNode):
         self._duplicate_xform_node.getParameter("CEL").setExpressionFlag(True)
         self._duplicate_xform_node.getParameter("CEL").setExpression(
             "={constraint_node_name}/basePath".format(constraint_node_name=self._constraint_node.getName()))
-        paramutils.createParamAtLocation("user.constraint_location", self._duplicate_xform_node, param_type=paramutils.STRING)
+        paramutils.createParamAtLocation(
+            "user.is_parent_child_constraint", self._duplicate_xform_node, param_type=paramutils.NUMBER)
 
         self._duplicate_xform_node.getParameter("script.lua").setValue("""
 --[[
@@ -143,12 +147,10 @@ comes in as first, instead of the default of last.
 
 local xform = Interface.GetAttr("xform")
 local num_children = xform:getNumberOfChildren()
-local constraint_location = Interface.GetOpArg("user.constraint_location"):getValue()
--- constraint_location = "first"
--- copy constraint
--- constraint = xform:getChildByIndex(num_children-1)
+local is_parent_child_constraint = Interface.GetOpArg("user.is_parent_child_constraint"):getValue()
 
-if constraint_location == "last" then
+-- Not parent child constraint
+if is_parent_child_constraint == 0 then
     constraint_name = xform:getChildName(num_children-1)
 
     Interface.CopyAttr(
@@ -165,7 +167,9 @@ if constraint_location == "last" then
             "xform."..name
         )
     end
-elseif constraint_location == "first" then
+
+-- Is ParentChildConstraint
+elseif is_parent_child_constraint == 1 then
     constraint_name = xform:getChildName(0)
 
     -- copy rest of xform stack
@@ -224,7 +228,7 @@ Interface.DeleteAttr("xform")
 
         self._maintain_offset_script_node = NodegraphAPI.CreateNode("OpScript", self)
         self._maintain_offset_script_node.setName("MaintainOffsetScript")
-
+        self._maintain_offset_script_node.addInputPort("i1")
         # create params
         target_xform_param = paramutils.createParamAtLocation("user.targetXFormPath", self._maintain_offset_script_node, paramutils.STRING)
         target_xform_param.setExpressionFlag(True)
@@ -394,8 +398,8 @@ Interface.SetAttr("xform.group0.matrix", DoubleAttribute(rebuilt_offset_mat:toTa
     def constraintDisplayParam(self):
         return self.getParameter("ConstraintParams")
 
-    def constraintLocationParam(self):
-        return self.duplicateXFormNode().getParameter("user.constraint_location")
+    def isParentChildConstraint(self):
+        return self.duplicateXFormNode().getParameter("user.is_parent_child_constraint")
 
     def constraintNodeParam(self):
         return self.getParameter("ConstraintNode")
