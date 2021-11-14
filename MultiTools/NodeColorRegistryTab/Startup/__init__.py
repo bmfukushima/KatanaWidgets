@@ -54,7 +54,10 @@ def setupDefaultColorConfigs(*args, **kwargs):
 
 
 def setNodeColor(args):
-    from Katana import NodegraphAPI
+    """ On node create, this will set the custom node color from the config file
+
+    If the node already has a custom color, then this will bypass"""
+    from Katana import NodegraphAPI, DrawingModule
     #[('node_create', 2935610080, {'node': < ImageMerge Nodes2DAPI_cmodule.Node2D 'ImageMerge' >, 'nodeName': 'ImageMerge', 'nodeType': 'ImageMerge'})]
     for arg in args:
         if arg[0] == "node_create":
@@ -63,6 +66,7 @@ def setNodeColor(args):
             node_type = arg[2]["nodeType"]
             param = NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION)
             if not param: return
+            if DrawingModule.GetCustomNodeColor(node): return
 
             filepath = NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION).getValue(0)
             if NodeColorRegistryWidget.isColorConfigFile(filepath):
