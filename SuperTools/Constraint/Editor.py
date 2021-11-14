@@ -1,13 +1,4 @@
-"""
-Todo:
-    *   Maintain offset
-        - Parent child constraint
-            ConstraintNode.__setupMaintainOffsetNodes
-            ConstraintTypeWidget.updateConstraintType()
-        - OpScript needs to get the correct group name to display
-    *   ParentChildConstraint
-            When setting type, need to update the stack order
-"""
+
 from qtpy.QtWidgets import (QVBoxLayout)
 from qtpy.QtCore import Qt
 
@@ -253,12 +244,15 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
         this_node.maintainOffsetScriptNode().getParameter("user.targetXFormPath").setExpression("={name}/targetPath".format(name=constraint_node.getName()))
 
         # update attrs ( maintain offset )
-        # todo update for ParentChildConstraint
-        # maintain offset available
-        if node_type in ["OrientConstraint", "PointConstraint", "ScaleConstraint"]:
-            if node_type == "PointConstraint":
-                this_node.maintainOffsetScriptNode().getParameter("user.targetXFormPath").setExpression("={name}/targetPath.i0".format(name=constraint_node.getName()))
 
+        # maintain offset available
+        if node_type in ["OrientConstraint", "PointConstraint", "ScaleConstraint", "ParentChildConstraint"]:
+            # special overwrite for PointConstraint's since they have multiple target paths
+            if node_type == "PointConstraint":
+                this_node.maintainOffsetScriptNode().getParameter("user.targetXFormPath").setExpression(
+                    "={name}/targetPath.i0".format(name=constraint_node.getName()))
+
+            # toggle maintain offsets display
             constraint_editor.maintainOffsetWidget().show()
 
         # maintain offset not available

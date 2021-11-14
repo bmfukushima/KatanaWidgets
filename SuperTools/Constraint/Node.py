@@ -233,7 +233,8 @@ Interface.DeleteAttr("xform")
         target_xform_param = paramutils.createParamAtLocation("user.targetXFormPath", self._maintain_offset_script_node, paramutils.STRING)
         target_xform_param.setExpressionFlag(True)
         # todo set expression flag here might need to be a teleparam? Since this is going to reference a number
-        target_xform_param.setExpression("={constraint_node_name}/targetPath".format(constraint_node_name=self._constraint_node.getName()))
+        target_xform_param.setExpression(
+            "={constraint_node_name}/targetPath".format(constraint_node_name=self._constraint_node.getName()))
 
         self._mode_param = paramutils.createParamAtLocation("user.mode", self._maintain_offset_script_node, paramutils.STRING)
         self._maintain_offset_stack_order_param = paramutils.createParamAtLocation("user.stackOrder", self._maintain_offset_script_node, paramutils.NUMBER)
@@ -244,7 +245,6 @@ Interface.DeleteAttr("xform")
         self._maintain_offset_script_node.getParameter("CEL").setExpression(
             "={constraint_node_name}/basePath".format(constraint_node_name=self._constraint_node.getName()))
 
-        # todo update lua script for ParentChildConstraint
         self._maintain_offset_script_node.getParameter("script.lua").setValue("""
 function getXFormMatrix(locationPath, index)
     local xformAttr = Interface.GetGlobalXFormGroup(locationPath, index)
@@ -276,7 +276,16 @@ local scale, shear, rotate, translate, result = offset_mat:extractSHRT()
 -- "translate", "scale", "rotate", "parent"
 local mode = Interface.GetOpArg("user.mode"):getValue()
 
--- stack order is last
+--[[
+Stack order is reveresd if this is a parent child constraint normally it is
+    0 = last
+    1 = first
+ParentChildConstraint:
+    0 = first
+    1 = last
+]]
+
+-- stack order is last (normal) | first (parent/child)
 if stack_order == 0 then
     -- Point Constraint
     if mode == "PointConstraint" then
@@ -305,10 +314,13 @@ if stack_order == 0 then
         rebuilt_offset_mat = shear_matrix * rotation_matrix * shear_matrix:inverse()
 
     elseif mode == "ParentChildConstraint" then
+        local base_orig_mat = getXFormMatrix(base_xform_path, 1)
+        rebuilt_offset_mat =  base_orig_mat * target_xform_mat:inverse() * base_xform_mat:inverse()
         -- rebuilt_offset_mat = offset_mat:inverse()
     end
 
--- stack order is first
+
+-- stack order is first (normal) | last (parent/child)
 elseif stack_order == 1 then
     local xform_scale, xform_shear, xform_rotate, xform_translate, xform_result = target_xform_mat:extractSHRT()
     local base_scale, base_shear, base_rotate, base_translate, base_result = base_xform_mat:extractSHRT()
@@ -352,6 +364,8 @@ elseif stack_order == 1 then
 
 
     elseif mode == "ParentChildConstraint" then
+        local base_orig_mat = getXFormMatrix(base_xform_path, 1)
+        rebuilt_offset_mat = (base_orig_mat * target_xform_mat:inverse())
     end
 end
 
