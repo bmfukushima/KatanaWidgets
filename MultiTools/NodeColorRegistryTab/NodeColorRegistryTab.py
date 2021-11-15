@@ -44,18 +44,12 @@ class NodeColorRegistryTab(UI4.Tabs.BaseTab):
         self._node_color_registry_widget.addCommand("clearAllNodeColors", self.clearAllNodeColors)
         self._node_color_registry_widget.addCommand("clearColorsFromSelectedTypes", self.clearColorsFromSelectedTypes)
         self._node_color_registry_widget.addCommand("clearColorsFromSelection", self.clearColorsFromSelection)
-        #
         self._node_color_registry_widget.addCommand("clearColorsFromSelectedNodesAndDescendants", self.clearColorsFromSelectedNodesAndDescendants)
         self._node_color_registry_widget.addCommand("updateAllNodeColors", self.updateAllNodeColors)
         self._node_color_registry_widget.addCommand("updateColorsFromSelection", self.updateColorsFromSelection)
         self._node_color_registry_widget.addCommand("updateColorsFromSelectedNodesAndDescendants", self.updateColorsFromSelectedNodesAndDescendants)
         self._node_color_registry_widget.addCommand("updateColorsFromSelectedTypes", self.updateColorsFromSelectedTypes)
 
-
-        # todo add color commands
-        """
-        clearAllColorsFromSelection
-        clearAllColorsFromSelectionAndDescendants"""
         # setup layout
         QVBoxLayout(self)
         self.layout().addWidget(self._node_color_registry_widget)
