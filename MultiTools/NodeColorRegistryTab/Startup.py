@@ -5,9 +5,7 @@ from cgwidgets.widgets import NodeColorRegistryWidget
 
 from Utils2 import paramutils, nodeutils
 
-PARAM_LOCATION = "KatanaBebop.NodeColorRegistry"
-DEFAULT_CONFIG_ENVAR = "KATANABEBOPDEFAULTCOLORCONFIG"
-DEFAULT_CONFIG_LOCATION = os.environ["KATANABEBOP"] + "/Settings/nodeColorConfig.json"
+from .NodeColorRegistryTab import NodeColorRegistryTab, PARAM_LOCATION, DEFAULT_CONFIG_ENVAR, DEFAULT_CONFIG_LOCATION
 
 
 def defaultColorConfigFile():
@@ -35,22 +33,19 @@ def setupDefaultColorConfigs(*args, **kwargs):
     """ Sets up the default color config file
 
     This event occurs when Katana opens, or a new file is created."""
-    default_config_file = defaultColorConfigFile()
-
     from Katana import NodegraphAPI, Utils
 
+    default_config_file = defaultColorConfigFile()
     # get attrs
     node = NodegraphAPI.GetRootNode()
     config_file_param = node.getParameter(PARAM_LOCATION)
+
     # create default parameter if needed
     if not config_file_param:
         Utils.UndoStack.DisableCapture()
         paramutils.createParamAtLocation(
             PARAM_LOCATION, node, paramutils.STRING, initial_value=default_config_file)
-
         Utils.UndoStack.EnableCapture()
-    # create parameter
-    pass
 
 
 def setNodeColor(args):
@@ -63,21 +58,9 @@ def setNodeColor(args):
         if arg[0] == "node_create":
             # preflight
             node = arg[2]["node"]
-            node_type = arg[2]["nodeType"]
-            param = NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION)
-            if not param: return
-            if DrawingModule.GetCustomNodeColor(node): return
+            # node_type = arg[2]["nodeType"]
+            NodeColorRegistryTab.updateNodeColorFromConfig(node)
 
-            filepath = NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION).getValue(0)
-            if NodeColorRegistryWidget.isColorConfigFile(filepath):
-                # open file
-                with open(filepath, "r") as f:
-                    data = json.load(f)["colors"]
-                    # set node color
-                    if node_type in data.keys():
-                        color = data[node_type]
-                        if color:
-                            nodeutils.setNodeColor(node, [x/255 for x in color[:3]])
 
 def installDefaultNodeColorsEventFilter(**kwargs):
     # test

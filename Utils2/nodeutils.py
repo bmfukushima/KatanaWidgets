@@ -5,6 +5,20 @@ try:
 except ModuleNotFoundError:
     pass
 
+def getNodeAndAllDescendants(node, node_list=None):
+    """ Gets the node and all of the descendants inside of it
+
+    Args:
+        node (Node): to start searching from"""
+    if not node_list:
+        node_list = []
+
+    node_list.append(node)
+    if hasattr(node, "getChildren"):
+        for child in node.getChildren():
+            node_list += getNodeAndAllDescendants(child, node_list)
+    return list(set(node_list))
+
 
 def disconnectNode(node, input=False, output=False, reconnect=False):
     """
@@ -113,6 +127,7 @@ def isContainerNode(node):
     else:
         return False
     return False
+
 
 def insertNode(node, parent_node):
     """
@@ -247,4 +262,9 @@ def setNodeColor(node, color):
         color (0-1rgb)"""
     from Katana import DrawingModule, UI4
     DrawingModule.SetCustomNodeColor(node, color[0], color[1], color[2])
+    UI4.App.Tabs.FindTopTab("Node Graph").update()
+
+def removeNodeColor(node):
+    from Katana import DrawingModule, UI4
+    DrawingModule.RemoveCustomNodeColor(node)
     UI4.App.Tabs.FindTopTab("Node Graph").update()
