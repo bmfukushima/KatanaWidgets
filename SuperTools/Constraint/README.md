@@ -21,6 +21,8 @@ times a user wants to constraint a location to another location, however they do
 to override their current transforms.  This will keep the object in the same position in space,
 rotation, scale, etc, while constraining any further manipulations to the target object.
 
+Maintain offset is only available for point, orient, scale, and parent/child constraints.
+
 ### Constraint Parameters
 This is a teledrop parameters, that will automatically update to the constraint node when
 the **Constraint Type** is changed.

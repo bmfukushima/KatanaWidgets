@@ -1,6 +1,6 @@
 """
 KatanaMainWindow --> (QMainWindow)
-    |- topToolBar --> (QToolBar
+    |- topToolBar --> (QToolBar)
         |- topWidget --> (QWidget)
                 |- self.__topLayout -->  (QHBoxLayout)
                     |- mainMenuLayout -->  (QVBoxLayout)

@@ -8,14 +8,14 @@ library, but rather please contact me directly if you have any questions/comment
 This repo contains a Katana Resources directory which can be added to the `KATANA_RESOURCES `environment variable.
 This repo contains a small collection of my personal tools which have been created to sit as addons for Katana.
 
-## Prerequisites
+### Prerequisites
   * [qtpy](https://pypi.org/project/QtPy/)
         is a small abstraction layer that lets you write applications using a single API call to either PyQt or PySide.
   * [cgwidgets](https://github.com/bmfukushima/cgwidgets)
         PyQt5/PySide agnostic widgets to be used between multiple DCCs
 
 
-## Written for
+### Written for
 This library is written for [VFX Reference Platform 2021](https://vfxplatform.com/)
   * Ubuntu 20.04
   * Python 3.7.7
@@ -23,22 +23,22 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   * Katana 5.x+
   
 # Tools
-## Tabs
+### Tabs
 - [Global Events Tab](MultiTools/GlobalEventsTab/README.md)
 - [GSV Manager Tab](MultiTools/GSVManagerTab/README.md)
 - [Script Editor Tab](MultiTools/ScriptEditorTab/README.md)
 - [Node Color Registry Tab](MultiTools/NodeColorRegistryTab/README.md)
-- Popup Bar Tab
-- Desired Stuff Tab
+- [Popup Bar Tab](Tabs/PopupBar/README.md) +
+- [Desired Stuff Tab](Tabs/DesiredStuffTab/README.md) +
 
-## SuperTools
-- Constraint
-- IsolateCEL
-- NodeTree
-- SimpleTool
-- VariableManager
+### SuperTools
+- [Constraint](SuperTools/Constraint/README.md)
+- [Isolate CEL](SuperTools/IsolateCEL/README.md) +
+- [Node Tree](SuperTools/NodeTree/README.md) +
+- [Simple Tool](MultiTools/SimpleTool/README.md) +
+- [Variable Manager](MultiTools/VariableManager/README.md) +
 
-## Macros
+### [Macros](Macros/README.md) +
 - CleanupEmptyGroups
 - Frustum
 

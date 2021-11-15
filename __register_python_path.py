@@ -1,4 +1,8 @@
-"""
+""" This file registers the KatanaBebop path to the system path and log that to the console.
+This is needed for import purposes of the library.  This file will also store that directory
+under the environment variable $KATANA_BEBOP for future use.
+
+Notes:
 Logo from:
 https://patorjk.com/software/taag/#p=testall&c=c%2B%2B&f=Fire%20Font-s&t=KATANA%20BEBOP
 
