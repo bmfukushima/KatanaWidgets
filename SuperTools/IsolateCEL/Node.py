@@ -17,10 +17,13 @@ class IsolateCELNode(AbstractSuperToolNode):
     and remove all the locations that don't have this attribute.
 
     Nodes:
-        attribute_set_node (AttributeSet):
-        safe_locations_node (AttributeSet):
-        opscript_node (OpScript):
-        cleanup_attrs_node (AttributeSet):"""
+        attribute_set_node (AttributeSet): Sets the Isolate Attr on the found Scenegraph Locations
+        safe_locations_node (AttributeSet): Sets an attribute on locations that are safe, and should not be removed.
+            These locations are not found by the CEL, but are parent locations of the CEL locations found, and thus
+            should not be pruned in the next step
+        opscript_node (OpScript): Isolates the locations
+        cleanup_attrs_node (AttributeSet): Deletes all of the attrs that were created
+        _inverted_output_node (Prune): Prune node to collect the inverted options"""
     def __init__(self):
         super(IsolateCELNode, self).__init__()
 
@@ -29,6 +32,8 @@ class IsolateCELNode(AbstractSuperToolNode):
         nodeutils.createIOPorts(self)
         self.__initParams()
         self.__initNodes()
+        self.__initInvertedOutputNodes()
+
         Utils.EventModule.RegisterCollapsedHandler(self.celChanged, "parameter_finalizeValue", enabled=True)
 
     def __initParams(self):
@@ -42,6 +47,10 @@ class IsolateCELNode(AbstractSuperToolNode):
         node_name = self.getParameters().createChildString("nodeName", "")
         node_name.setExpressionFlag(True)
         node_name.setExpression("@{name}".format(name=self.getName()))
+
+        self._enabled_inverted_output_param = self.getParameters().createChildNumber("invertedOutput", 0)
+        self._enabled_inverted_output_param.setHintString(repr(
+            {"label": "Enable secondary (inverse) output", "widget": "checkBox"}))
 
     def __initNodes(self):
         # create nodes
@@ -90,6 +99,20 @@ class IsolateCELNode(AbstractSuperToolNode):
         name_param.setExpression("@{name}".format(name=self.getName()))
         self._safe_locations_node.getParameter('attributeType').setValue("integer", 0)
         self._safe_locations_node.getParameter('numberValue.i0').setValue(1, 0)
+
+    def __initInvertedOutputNodes(self):
+        """ Creates all of the nodes associated with the inverted output node
+
+        todo: Update inverted output
+            will need to create the correct nodes/params"""
+        self._inverted_output_node = NodegraphAPI.CreateNode("Prune", self)
+        NodegraphAPI.SetNodePosition(self._inverted_output_node, (200, 0))
+
+        cel_param = self._inverted_output_node.getParameter("cel")
+        cel_param.setExpressionFlag(True)
+        cel_param.setExpression("=^/CEL")
+
+        self._inverted_output_node.getInputPortByIndex(0).connect(self.getSendPort("in"))
 
     def __createOpScriptNode(self):
         """ Helper function to create the OpScript node."""
@@ -216,6 +239,17 @@ end
                 ancestors_list.append(current_location)
 
         return list(set(ancestors_list))
+
+    """ PROPERTIES """
+    def invertedOutput(self):
+        return self.enableInvertedOutputParam().getValue(0)
+
+    def setInvertedOutput(self, value):
+        self.enableInvertedOutputParam().setValue(value, 0)
+
+    """ PARAMS """
+    def enableInvertedOutputParam(self):
+        return self.getParameter("invertedOutput")
 
     """ NODES """
     def cleanupAttrsNode(self):

@@ -33,7 +33,7 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 
 ### SuperTools
 - [Constraint](SuperTools/Constraint/README.md)
-- [Isolate CEL](SuperTools/IsolateCEL/README.md) +
+- [Isolate CEL](SuperTools/IsolateCEL/README.md)
 - [Node Tree](SuperTools/NodeTree/README.md) +
 - [Simple Tool](MultiTools/SimpleTool/README.md) +
 - [Variable Manager](MultiTools/VariableManager/README.md) +
