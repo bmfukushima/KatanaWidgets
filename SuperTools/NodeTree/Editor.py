@@ -111,8 +111,9 @@ class NodeTreeMainWidget(NodeViewWidget):
 
     """ UTILS """
     def goToNode(self, index, indexes):
-        node = index.internalPointer().node()
-        nodeutils.goToNode(node)
+        if index.internalPointer():
+            node = index.internalPointer().node()
+            nodeutils.goToNode(node)
 
     def removeEventFilterFromNodeGraphs(self):
         """ Removes the current event filter from all of the NodeGraphs"""

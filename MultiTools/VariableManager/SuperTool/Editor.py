@@ -1,5 +1,7 @@
 """
 TODO:
+    *   When creating a new pattern, if the directory already exists, it will fail
+            After loading... need to update
     *   When clicking between areas that have a popup, and when defocusing
             will cause an update, the popup will show over the boolean widget
     *   Clean up of everything...
@@ -839,7 +841,6 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
 
         """
         version_list = sorted(os.listdir(publish_dir))
-
         # remove live
         "Issue with live version being last object... if live version does not exist..."
         if 'live' in version_list:
@@ -902,11 +903,12 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         nodeutils.connectInsideGroup(node_list, publish_node)
 
         # delete proxy node
-        temp_live_group.delete()
+        # temp_live_group.delete()
 
     def loadLiveGroup(
         self,
-        version=None
+        version=None,
+        publish_dir=None,
     ):
         """
         Loads a live group.  These live groups are used as the
@@ -937,15 +939,26 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         if not version:
             version = str(self.version_combobox.text())
 
-        publish_dir = '{publish_dir}/{version}/something.livegroup'.format(
-            publish_dir=self.main_widget.getItemPublishDir(include_publish_type=publish_type),
-            version=version
-        )
+        # todo issue is publish dir is going to selected item
+        # on creation, this is not valid
+        if not publish_dir:
+            publish_dir = '{publish_dir}/{version}/something.livegroup'.format(
+                publish_dir=self.main_widget.getItemPublishDir(include_publish_type=publish_type),
+                version=version
+            )
 
         # massive hack... commented out lines below show
         # the kinda sorta realish code
         # those lines disappeared..
-        self.__loadLiveGroupHack(publish_node, publish_dir)
+        # todo get correct pattern version number on creation
+        """ This path checking is required, as this function uses the getItemPublishDir() function
+        which uses the current items dir.  However, when creating a new item, it will get the wrong
+        path.  Thus this is only valid for selected items.
+        
+        However, selecting an item in the VariableManagerBrowser.createNewBrowserItem will cause a segfault
+        which I'm tired of debugging, and I hate this code so much that it's really not worth it.  """
+        if os.path.exists(publish_dir):
+            self.__loadLiveGroupHack(publish_node, publish_dir)
 
         # update item attributes
         if item.getItemType() == PATTERN_ITEM:
@@ -970,6 +983,9 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         self.main_widget.updateAllVariableSwitches(root_node)
         self.main_widget.updateOptionsList()
 
+        self.main_widget.variable_manager_widget.updatePatterns()
+
+
     def loadBesterestVersion(self, item, item_type=BLOCK_ITEM):
         """
         Loads the current besterest version available.  If no besterest
@@ -983,6 +999,13 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
 
         publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=item_type)
         version = self.getBesterestVersion(publish_dir)
+
+        # getting the wrong publish dir and passing that to the loadLive Group
+        # if item_type == PATTERN_ITEM:
+        #     publish_dir = '{publish_dir}/{version}/something.livegroup'.format(
+        #         publish_dir=publish_dir,
+        #         version=version
+        #     )
         previous_variable = self.main_widget.getVariable()
         # update versions display widget
         self.update(
@@ -990,6 +1013,7 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         )
 
         # load latest version
+        #self.loadLiveGroup(version=version, publish_dir=publish_dir)
         self.loadLiveGroup(version=version)
 
     """ EVENTS """
@@ -1152,8 +1176,9 @@ class VersionsDisplayMenu(ListInputWidget):
 
         # Write Notes
         notes_dir = '%s/%s/notes.csv' % (self.publish_dir, self.text())
+
         if os.path.exists(notes_dir):
-            with open(notes_dir, 'rb') as csvfile:
+            with open(notes_dir, 'r') as csvfile:
                 note = csvfile.readlines()
                 note_text = ''.join(note)
                 self.label.setText(str(note_text))

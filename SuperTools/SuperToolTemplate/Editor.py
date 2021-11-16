@@ -31,7 +31,7 @@ class SuperToolEditor(AbstractSuperToolEditor):
         #         super(SuperToolEditor, self).__init__(parent)
         # set up attrs
         self.__node = node
-        self._node_type = "<multi>"
+        self._node_type = ""
         # setup layout
         QVBoxLayout(self)
         # TODO BUG for some reason setting the layout alignment breaks

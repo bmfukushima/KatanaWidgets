@@ -283,6 +283,8 @@ class VariableManagerNode(AbstractSuperToolNode):
         child_node = NodegraphAPI.CreateNode(node_type, parent_node)
         if len(child_node.getInputPorts()) == 0:
             child_node.addInputPort('i0')
+        if len(child_node.getOutputPorts()) == 0:
+            child_node.addOutputPort('i0')
         child_node.getInputPortByIndex(0).connect(parent_node.getSendPort('in'))
         child_node.getOutputPortByIndex(0).connect(parent_node.getReturnPort('out'))
 

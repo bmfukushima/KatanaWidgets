@@ -6,7 +6,7 @@ from .ItemTypes import (
     MASTER_ITEM
 )
 
-from Utils2 import mkdirRecursive
+#from Utils2 import mkdirRecursive
 
 
 def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOCK_ITEM], should_load=True):
@@ -23,14 +23,13 @@ def checkBesterestVersion(main_widget, item=None, item_types=[PATTERN_ITEM, BLOC
         should_load (bool): If the publish loc is found, this determines if this should load or bypass.  The default
             value is true, which will enable loading.
     """
-
     publish_dir = main_widget.getBasePublishDir(include_node_type=True)
     if not item:
         item = main_widget.currentItem()
 
     for item_type in item_types:
 
-        # TODO publish dir hack...
+        # publish dir hack...
         if item_type == MASTER_ITEM:
             item_type = BLOCK_ITEM
 

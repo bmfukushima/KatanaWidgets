@@ -45,6 +45,8 @@ class NodeViewWidgetItem(ShojiModelItem):
 
 
 class NodeViewWidget(ShojiModelViewWidget):
+    """ The node view widget allows users to view nodes/parameters
+    Each item in the view represents one node or parameter."""
     def __init__(self, parent=None):
         super(NodeViewWidget, self).__init__(parent)
         self.setItemType(NodeViewWidgetItem)

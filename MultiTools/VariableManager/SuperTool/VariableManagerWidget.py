@@ -19,8 +19,15 @@ except ImportError:
     import UniqueName, FormMaster, Utils
 
 from cgwidgets.settings.colors import iColor
-from cgwidgets.widgets import LabelledInputWidget, ListInputWidget, FileBrowserInputWidget, ShojiLayout
-from cgwidgets.utils import updateStyleSheet, getFontSize, getWidgetAncestorByName
+from cgwidgets.widgets import (
+    LabelledInputWidget,
+    ListInputWidget,
+    FileBrowserInputWidget,
+    ShojiLayout,
+    NodeTypeListWidget
+)
+from cgwidgets.utils import updateStyleSheet, getFontSize, getWidgetAncestorByName, getWidgetAncestor
+from cgwidgets.interface import AbstractNodeInterfaceAPI
 
 from .ItemTypes import (
     MASTER_ITEM,
@@ -56,14 +63,17 @@ from Utils2.colors import(
     RGBA_KATANA_LOCAL_YELLOW,
 )
 
-from Widgets2 import(
+from Widgets2 import (
     AbstractNodegraphWidget,
-    AbstractParametersDisplayWidget,
-    NodeTypeListWidget
+    AbstractParametersDisplayWidget
 )
 
 from Widgets2 import iParameter
 
+# Test for publish dir
+""" This is a place holder for working with the file_dir widget's warning
+Case insensitive sorting unsupported in the posix collation implementation
+Numeric mode unsupported in the posix collation implementation"""
 class Test(QLineEdit, iParameter):
     def __init__(self, parent=None):
         super(Test, self).__init__(parent)
@@ -89,6 +99,7 @@ class Test(QLineEdit, iParameter):
         self.main_widget.setRootPublishDir(publish_dir)
         self.setText(publish_dir)
         self.setValue(publish_dir)
+
 
 class VariableManagerWidget(QWidget):
     """
@@ -130,6 +141,9 @@ class VariableManagerWidget(QWidget):
 
     def node(self):
         return self._node
+
+    def updatePatterns(self):
+        self.variable_browser.updatePatterns()
 
     """ CREATE GUI"""
     def initGUI(self):
@@ -223,9 +237,9 @@ class VariableManagerWidget(QWidget):
             self.variable_browser = VariableManagerBrowser(self, variable=self.parent().getVariable())
 
             # item creation widget
-            item_create_widget = VariableManagerCreateNewItemWidget(self)
+            self.item_create_widget = VariableManagerCreateNewItemWidget(self)
             variable_browser_vbox.addWidget(self.variable_browser)
-            variable_browser_vbox.addWidget(item_create_widget)
+            variable_browser_vbox.addWidget(self.item_create_widget)
 
             return variable_browser_widget
 
@@ -278,6 +292,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
         self.initGUI()
         self.item_type = PATTERN_ITEM
         self.main_widget = getMainWidget(self)
+        self._patterns = []
 
     def initGUI(self):
         # create widgets
@@ -348,18 +363,21 @@ class VariableManagerCreateNewItemWidget(QWidget):
         item = self.main_widget.currentItem()
         current_text = str(self.item_text_field.text())
 
-        if item:
-            if current_text:
-                if self.main_widget.variable:
-                    item_type = self.item_type.TYPE
-                    makeUndoozable(
-                        self.createNewItem,
-                        self.main_widget,
-                        str(self.item_text_field.text()),
-                        'Create New {item_type}'.format(item_type=item_type)
-                    )
+        if not item: return
+        if not current_text: return
+        if not self.main_widget.variable: return
 
-                    self.main_widget.updateOptionsList()
+        #
+
+        item_type = self.item_type.TYPE
+        makeUndoozable(
+            self.createNewItem,
+            self.main_widget,
+            str(self.item_text_field.text()),
+            'Create New {item_type}'.format(item_type=item_type)
+        )
+
+        self.main_widget.updateOptionsList()
 
     def createNewItem(self):
         """
@@ -370,6 +388,15 @@ class VariableManagerCreateNewItemWidget(QWidget):
         # create item
         current_text = str(self.item_text_field.text())
         browser_widget = self.main_widget.variable_manager_widget.variable_browser
+
+        # check to see if pattern already exists.  If so, then do not add.
+        # disable duplicate patterns
+        if self.item_type == PATTERN_ITEM:
+            pattern = str(self.item_text_field.text())
+            if pattern in self._patterns:
+                print("Cannot create pattern \"{pattern}\" as it already exists.".format(pattern=pattern))
+                return
+
         browser_widget.createNewBrowserItem(self.item_type, item_text=current_text)
 
         # check parameters if pattern
@@ -377,6 +404,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
             variable = self.main_widget.variable
             pattern = str(self.item_text_field.text())
             gsvutils.createNewPattern(pattern, variable)
+            self._patterns.append(pattern)
 
         # reset text
         self.item_text_field.setText('')
@@ -533,7 +561,7 @@ class VariableManagerGSVMenu(ListInputWidget):
         # update
         variable_browser.reset()
 
-        # TODO do I need this?
+        # show mini nodegraph if group
         if self.main_widget.getNodeType() == 'Group':
             variable_browser.showMiniNodeGraph()
 
@@ -570,7 +598,6 @@ class VariableManagerGSVMenu(ListInputWidget):
         if self.previous_text == self.text(): return
         if not hasattr(self.main_widget.variable_manager_widget, 'variable_browser'): return
 
-
         # pop up warning box to ask user if they wish to change the variable
         warning_text = "Changing the GSV will delete all of your unsaved work..."
         detailed_warning_text = """
@@ -594,7 +621,13 @@ class VariableManagerNodeMenu(NodeTypeListWidget):
     def __init__(self, parent=None):
         super(VariableManagerNodeMenu, self).__init__(parent)
         self.main_widget = getWidgetAncestorByName(self, "VariableManagerMainWidget")
+        self.setCleanItemsFunction(self.getAllNodes)
+        self.setUserFinishedEditingEvent(self.indexChanged)
+        self.main_widget = getMainWidget(self)
+        self.previous_text = self.main_widget.node().getNodeType()
 
+    def getAllNodes(self):
+        return sorted([[node] for node in AbstractNodeInterfaceAPI.getAllNodeTypes()])
 
     def checkUserInput(self):
         """
@@ -656,6 +689,7 @@ class VariableManagerNodeMenu(NodeTypeListWidget):
         """
         # preflight checks
         # return if this node type does not exist
+        if self.text() == self.previous_text: return
         if self.text() not in NodegraphAPI.GetNodeTypes(): return
 
         # show warning box
@@ -673,6 +707,42 @@ continue from here, all unsaved work will be deleted...
         self.main_widget.showWarningBox(
             warning_text, self.accepted, self.cancelled, detailed_warning_text
         )
+
+    """ COPY PASTE DUMP"""
+    def checkUserInput(self):
+        """
+        Checks the user input to determine if it is a valid option
+        in the current model.  If it is not this will reset the menu
+        back to the previous option
+        """
+        does_node_variable_exist = self.isUserInputValid()
+        if does_node_variable_exist is False:
+            self.setText(self.previous_text)
+            return
+
+    """ VIRTUAL FUNCTIONS """
+
+    def setNodeTypeChangedEvent(self, function):
+        self.nodeTypeChanged = function
+
+    """ EVENTS """
+    def mousePressEvent(self, *args, **kwargs):
+        self.update()
+        return ListInputWidget.mousePressEvent(self, *args, **kwargs)
+
+    def indexChanged(self, widget, value):
+        """
+        When the user changes the value in the GSV dropdown menu,
+        this event is run.  It will first ask the user if they wish to proceed,
+        as doing so will essentially reinstated this node back to an initial setting.
+        """
+        # preflight
+
+        if self.previous_text == self.text(): return
+        if self.text() not in NodegraphAPI.GetNodeTypes(): return
+
+        # run user defined signal
+        self.nodeTypeChanged(widget, value)
 
 
 class VariableManagerBrowser(QTreeWidget):
@@ -882,6 +952,16 @@ class VariableManagerBrowser(QTreeWidget):
             for child in block_node.getParameter('nodeReference').getChildren():
                 self.populateBlock(new_item, child, check_besterest)
 
+    def updatePatterns(self):
+        """ Updates all of the patterns for the item create widget"""
+        all_items = VariableManagerBrowser.getAllChildItems(self.invisibleRootItem())
+        main_widget = getWidgetAncestor(self, VariableManagerWidget)
+        main_widget.item_create_widget._patterns = []
+
+        for item in all_items:
+            if item.getItemType() == PATTERN_ITEM:
+                main_widget.item_create_widget._patterns.append(item.text(0))
+
     """ UTILS """
     @staticmethod
     def getAllChildItems(item, item_list=None):
@@ -1023,6 +1103,11 @@ class VariableManagerBrowser(QTreeWidget):
 
         # delete node
         item.getRootNode().delete()
+
+        # remove from patterns list
+        if item.getItemType() == PATTERN_ITEM:
+            main_widget = getWidgetAncestor(self, VariableManagerWidget)
+            main_widget.item_create_widget._patterns.remove(item.text(0))
 
         # remove item
         child_index = item.parent().indexOfChild(item)
@@ -1207,7 +1292,7 @@ class VariableManagerBrowser(QTreeWidget):
 
         return parent_node
 
-    def __getPublishDir(self, item_type, unique_hash):
+    def getPublishDir(self, item_type, unique_hash):
         """
         Gets the full publish dir for an item that is being created
         """
@@ -1250,7 +1335,7 @@ class VariableManagerBrowser(QTreeWidget):
         block_version = block_root_node.getParameter('version').getValue(0)
 
         # get publish dir
-        publish_dir = self.__getPublishDir(MASTER_ITEM, 'master')
+        publish_dir = self.getPublishDir(MASTER_ITEM, 'master')
 
         # setup master item
         master_item = VariableManagerBrowserItem(
@@ -1315,7 +1400,7 @@ class VariableManagerBrowser(QTreeWidget):
         block_version = block_node.getParameter('version').getValue(0)
 
         # get publish dir
-        publish_dir = self.__getPublishDir(BLOCK_ITEM, block_node_hash)
+        publish_dir = self.getPublishDir(BLOCK_ITEM, block_node_hash)
         # Create Item
         block_item = VariableManagerBrowserItem(
             parent_item,
@@ -1441,7 +1526,7 @@ class VariableManagerBrowser(QTreeWidget):
         pattern = pattern_node.getParameter('pattern').getValue(0)
 
         # get publish dir
-        publish_dir = self.__getPublishDir(PATTERN_ITEM, unique_hash)
+        publish_dir = self.getPublishDir(PATTERN_ITEM, unique_hash)
 
         # Create Item
 
@@ -1488,6 +1573,7 @@ class VariableManagerBrowser(QTreeWidget):
             The newly created item.
 
         """
+
         # handle non existent scenerio
         if not parent_item:
             parent_item = self.main_widget.currentItem()
@@ -1509,6 +1595,9 @@ class VariableManagerBrowser(QTreeWidget):
             new_item = self.__createNewMasterItem()
 
         # check to see if item should be published or not
+        # new_item.setSelected(True)
+        # self.setCurrentItem(new_item)
+
         if check_besterest is True:
             checkBesterestVersion(self.main_widget, item=new_item, item_types=[item_type], should_load=should_load)
         else:
@@ -1752,6 +1841,9 @@ class VariableManagerBrowser(QTreeWidget):
         except AttributeError:
             # On init of the node, pass because the
             # variable_manager_widget doest not exist yet
+            # variable_manager_widget = self.main_widget.variable_manager_widget
+            # variable_manager_widget.nodegraph_widget.show()
+            # variable_manager_widget.variable_splitter.moveSplitter(self.width() * 0.7, 1)
             pass
 
     """ RMB EVENTS """
@@ -1952,9 +2044,9 @@ class VariableManagerBrowser(QTreeWidget):
                 'Disable'
             )
 
-        elif event.key() == 96:
-            # ~ Tilda pressed
-            self.main_widget.variable_manager_widget.splitter.toggleSoloViewView()
+        # elif event.key() == 96:
+        #     # ~ Tilda pressed
+        #     self.main_widget.variable_manager_widget.splitter.toggleSoloViewView()
 
         return QTreeWidget.keyPressEvent(self, event, *args, **kwargs)
 

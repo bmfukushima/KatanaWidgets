@@ -14,7 +14,6 @@ from .SuperTool import *
 
 from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
 
-from .NodeTypeListWidget import NodeTypeListWidget
 from .NodeViewWidget import NodeViewWidget
 from .EventsWidget import *
 
