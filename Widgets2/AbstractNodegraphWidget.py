@@ -48,11 +48,15 @@ class AbstractNodegraphWidget(QWidget):
 
         if self.panel_scroll_area:
             self.panel_scroll_area = self.panel_scroll_area.parent()
-            # install event filters
-            panel.installEventFilter(self)
-            self.panel_scroll_area.viewport().installEventFilter(self)
 
-        self.getWidget().installEventFilter(self)
+        # Todo Nodegraph destruction handlers
+        """ These were originally setup to remove the really annoying warning.  However... it appears that
+        it causes a segfault when using the NMC.  Also I haven't seen those bugs since I've moved to 5.x"""
+        #     # install event filters
+        #     panel.installEventFilter(self)
+        #     self.panel_scroll_area.viewport().installEventFilter(self)
+        #
+        # self.getWidget().installEventFilter(self)
 
         # display menus
         self.displayMenus(display_menus, panel)

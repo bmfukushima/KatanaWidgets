@@ -1,26 +1,6 @@
 """
 TODO: BUGS
-    QBasicTimer::start: QBasicTimer can only be used with threads started with QThread
-        Seems to be associated with the shoji model view widget???
-        https://stackoverflow.com/questions/27131294/error-qobjectstarttimer-qtimer-can-only-be-used-with-threads-started-with-qt
-            Bascially... delete on close has an unpredictable order... so pooooooooooooooooooooo
-    AbstractParametersDisplayWidget --> populateParameters
-        - Certain image nodes (ImageIn) give this error
-        - HideTitle Error
-        - See below for error log
-    Shoji... you mean SLOWJI!! =\
-
-TODO: WISHLIST
-    Shoji
-        - Hotkeys | Don't seem to register correctly with Katana...
-            might need wrapper for delegates?
-    GSV / IRFs
-        - GSV Utils
-    Variable Manager New?
-        Move this over to Shoji API
-    Popup Hotkey Editor
-        Move this over to Shoji API
-        Beginning of TansuAPI
+    NetworkMaterialCreate segfault after closing a custom Nodegraph
 
 """
 

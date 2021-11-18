@@ -11,6 +11,7 @@ from .utils import getConstructors, getSaveData
 def createConstructor(filepath, popup_bar_widget_name):
     """
     Creates the Tab constructor for Katana.
+
     Args:
         save_data (dict): JSON data of Save Directories
         widget_constructors (dict): JSON data of constructors for different widgets

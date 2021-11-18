@@ -972,8 +972,8 @@ class EventWidget(AbstractEventWidget):
         Creates a dictionary which has all of the default event data.
         """
         args_file = os.path.dirname(__file__) + '/args.json'
-        with open(args_file, 'r') as args:
-            self._default_events_data = json.load(args)
+        with open(args_file, 'rb') as file:
+            self._default_events_data = json.loads(file.read())
 
     def loadEventsDataFromParam(self):
         """ Loads all of the events data from the param and resets the current events data"""

@@ -985,7 +985,6 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
 
         self.main_widget.variable_manager_widget.updatePatterns()
 
-
     def loadBesterestVersion(self, item, item_type=BLOCK_ITEM):
         """
         Loads the current besterest version available.  If no besterest
@@ -1000,12 +999,6 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         publish_dir = self.main_widget.getItemPublishDir(item=item, include_publish_type=item_type)
         version = self.getBesterestVersion(publish_dir)
 
-        # getting the wrong publish dir and passing that to the loadLive Group
-        # if item_type == PATTERN_ITEM:
-        #     publish_dir = '{publish_dir}/{version}/something.livegroup'.format(
-        #         publish_dir=publish_dir,
-        #         version=version
-        #     )
         previous_variable = self.main_widget.getVariable()
         # update versions display widget
         self.update(
@@ -1013,7 +1006,6 @@ class VersionsDisplayWidget(AbstractUserBooleanWidget):
         )
 
         # load latest version
-        #self.loadLiveGroup(version=version, publish_dir=publish_dir)
         self.loadLiveGroup(version=version)
 
     """ EVENTS """

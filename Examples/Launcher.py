@@ -312,14 +312,25 @@ class KatanaLauncher(QWidget):
             return envars
 
         def redshift():
+            """
+            export LD_LIBRARY_PATH="/usr/redshift/bin:${LD_LIBRARY_PATH}"
+            export KATANA_RESOURCES=/usr/redshift/redshift4katana/katana2.5v4
+            export DEFAULT_RENDERER=Redshift
+            Returns:
+
+            """
+            LD_LIBRARY_PATH = "%s/bin" % resources
             envars = {
-                'KATANA_HOME': '%s/Katana3.0v1' % self.katana_dir,
-                'REDSHIFT_HOME': '%s/bin' % resources,
-                'DEFAULT_RENDERER': 'Redshift',
-                'KATANA_VERSION': '3.0v1',
-                'REDSHIFT4KATANA_HOME': '%s/Plugins/Katana/3.0v1' % resources,
-                'path': '%s/bin' % resources,
+                "LD_LIBRARY_PATH":LD_LIBRARY_PATH
             }
+            # envars = {
+            #     'KATANA_HOME': '%s/Katana3.0v1' % self.katana_dir,
+            #     'REDSHIFT_HOME': '%s/bin' % resources,
+            #     'DEFAULT_RENDERER': 'Redshift',
+            #     'KATANA_VERSION': '3.0v1',
+            #     'REDSHIFT4KATANA_HOME': '%s/Plugins/Katana/3.0v1' % resources,
+            #     'path': '%s/bin' % resources,
+            # }
             return envars
 
         def vray():
@@ -344,7 +355,7 @@ class KatanaLauncher(QWidget):
             katana_resources = ['%s/RFK/plugins/Resources/PRMan' % resources]
             envars = prman()
         elif self.renderEngine() == 'redshift':
-            katana_resources = ['%s/Plugins/Katana/3.0v1' % resources]
+            katana_resources = ['%s/redshift4katana/katana4.0v1' % resources]
             envars = redshift()
 
         # return dicts
