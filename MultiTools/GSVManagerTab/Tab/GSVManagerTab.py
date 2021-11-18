@@ -269,6 +269,10 @@ class ViewWidget(FrameInputWidgetContainer):
     def widgets(self):
         return self._widget_list
 
+    def showEvent(self, event):
+        self.update()
+        FrameInputWidgetContainer.showEvent(self, event)
+
 
 class ViewGSVWidget(LabelledInputWidget):
     """
