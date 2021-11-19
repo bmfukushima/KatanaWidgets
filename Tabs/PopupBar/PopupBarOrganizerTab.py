@@ -14,12 +14,12 @@ class PopupBarOrganizerTab(UI4.Tabs.BaseTab):
         super(PopupBarOrganizerTab, self).__init__(parent)
         # EXAMPLE: Add additional constructors/save locations
         """
-        # get Katana constructors
-        test_file_path = os.path.dirname(__file__) + "/ExampleConstructors.json"
+        # get additional constructors (widgets to be created)
+        test_file_path = os.path.dirname(__file__) + "/etc/ExampleConstructors.json"
         katana_constructors = getConstructors(test_file_path)
 
-        # get save data
-        test_save_path = os.path.dirname(__file__) + '/.test.json'
+        # create save location
+        test_save_path = os.path.dirname(__file__) + '/etc/ExampleSaveLocation.json'
         test_save_data = {"Test": {
             "file_path": test_save_path,
             "locked": False}

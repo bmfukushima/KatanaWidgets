@@ -1,3 +1,6 @@
+import os
+import json
+
 from qtpy.QtWidgets import QVBoxLayout
 
 from Katana import UI4
@@ -68,6 +71,9 @@ popup_bar_tabs = []
 # for each PiP Save File
 for filename in save_data.keys():
     filepath = save_data[filename]["file_path"]
+    if not os.path.exists(filepath):
+        with open(filepath, 'w') as f:
+            json.dump({}, f)
     widget_data = getJSONData(filepath)
 
     # for each PiP Tab in the file

@@ -108,10 +108,10 @@ def getSaveData(*args):
 
     """
     # built ins
-    built_ins_file_path = os.path.dirname(__file__) + '/.PiPWidgets.json'
+    built_ins_file_path = os.path.dirname(__file__) + '/KatanaBebopPopupBarTabs.json'
 
     # user
-    user_save_path = os.environ["HOME"] + '/.katana/.PiPWidgets.json'
+    user_save_path = os.environ["HOME"] + '/.katana/.PopupBarTabs.json'
 
     # default save data
     save_data = {
