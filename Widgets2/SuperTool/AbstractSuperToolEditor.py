@@ -31,33 +31,26 @@ except ModuleNotFoundError:
 
 
 class AbstractSuperToolEditor(QWidget):
-    """
-    Custom Super Tool widget that will hold all of the base functionality
+    """ Custom Super Tool widget that will hold all of the base functionality
     for the rest of the supertools to inherit from.  This includes the
+
     * Auto Resizing
         Forces all widgets to automatically constrain to the correct dimensions
         inside of the parameters pane.
     Attributes:
-        isFrozen (bool): determines if the event handlers are
-            frozen or not.
+        isFrozen (bool): determines if the event handlers are frozen or not.
+        is_auto_resize_enabled (bool): determines if auto resize will occur on show/resize/etc
         node (node): the current node
     """
     def __init__(self, parent, node):
         super(AbstractSuperToolEditor, self).__init__(parent)
         self._is_frozen = False
         self._node = node
+        self._is_auto_resize_enabled = True
 
         # set up resizing events
         self.__resizeEventFilter = ResizeFilter(self)
-
-        # todo issue getting params scroll area?
-        # I bet this is the issue with the resize
-        # is that it can't get the ParamsScrollAreaWidget
-        scroll_area_widget = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
-        if scroll_area_widget:
-            scroll_area_widget.parent().parent().installEventFilter(self.__resizeEventFilter)
-            self.setFixedHeight(scroll_area_widget.height())
-            self.setScrollBarPolicy(Qt.Horizontal, Qt.ScrollBarAlwaysOff)
+        self.installResizeEventFilter()
 
     """ GET KATANA WIDGETS """
     @staticmethod
@@ -92,6 +85,22 @@ class AbstractSuperToolEditor(QWidget):
     #         return AbstractSuperToolEditor.getKatanaWidgetByObjectName(widget.parent(), object_name)
 
     """ UTILS """
+    def installResizeEventFilter(self):
+        """ Installs the event filter in charge of handling the resize events"""
+        scroll_area_widget = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
+        self.setIsAutoResizeEnabled(True)
+        if scroll_area_widget:
+            scroll_area_widget.parent().parent().installEventFilter(self.__resizeEventFilter)
+            self.setFixedHeight(scroll_area_widget.height())
+            self.setScrollBarPolicy(Qt.Horizontal, Qt.ScrollBarAlwaysOff)
+
+    def removeResizeEventFilter(self):
+        """ Removes the event filter in charge of the resize events"""
+        self.setIsAutoResizeEnabled(False)
+        scroll_area_widget = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
+        if scroll_area_widget:
+            scroll_area_widget.parent().parent().removeEventFilter(self.__resizeEventFilter)
+
     def getParametersPanel(self):
         panel_scroll_area = getWidgetAncestor(self, PanelScrollArea)
         return panel_scroll_area.parent()
@@ -114,6 +123,8 @@ class AbstractSuperToolEditor(QWidget):
                 + margins.left()
                 + margins.right()
         """
+        if not self.isAutoResizeEnabled(): return
+
         # get attrs
         viewport = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
         scrollarea = viewport.parent()
@@ -260,6 +271,12 @@ class AbstractSuperToolEditor(QWidget):
 
     def setIsFrozen(self, is_frozen):
         self._is_frozen = is_frozen
+
+    def isAutoResizeEnabled(self):
+        return self._is_auto_resize_enabled
+
+    def setIsAutoResizeEnabled(self, enabled):
+        self._is_auto_resize_enabled = enabled
 
     def resizeBarWidget(self):
         return self._resize_bar_widget

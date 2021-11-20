@@ -42,25 +42,19 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
     def __init__(self, parent, node):
         super(TwoFacedSuperToolWidget, self).__init__(parent, node)
-        print('init')
         # create main layout
-        QStackedLayout(self)
-        self.layout().setStackingMode(QStackedLayout.StackOne)
-        # create stacked widget
+        QVBoxLayout(self)
         self._design_widget = ShojiModelViewWidget()
         self._design_widget.setObjectName('design widget')
-        self._view_widget = TwoFacedViewWidget(self)
         self.layout().addWidget(self._design_widget)
-        self.layout().addWidget(self._view_widget)
 
-        # setup main layout
+        # setup resize handlers
         self.insertResizeBar()
-        print('init')
+        self.removeResizeEventFilter()
 
     def showEvent(self, event):
-        return_val = AbstractSuperToolEditor.showEvent(self, event)
         self.setDisplayMode(self.displayMode())
-        return return_val
+        return AbstractSuperToolEditor.showEvent(self, event)
 
     """ PROPERTIES """
     def displayMode(self):
@@ -71,24 +65,21 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
         Note:
             Doing some really janky stuff here with the hide/show due to widgets
-            overlapping during the show event.  
+            overlapping during the show event.
 
         Args:
             display_mode (TwoFacedSuperToolWidget.DISPLAYMODE): int value
                 DESIGN | VIEW
         """
         self.node().getParameter("display_mode").setValue(display_mode, 0)
-        self.layout().setCurrentIndex(display_mode)
         if display_mode == TwoFacedSuperToolWidget.DESIGN:
-            self.resizeBarWidget().show()
-            self.getViewWidget().hide()
             self.getDesignWidget().show()
+            self.installResizeEventFilter()
+            self.resizeBarWidget().show()
+            self.getDesignWidget().setHeaderWidgetToDefaultSize()
         elif display_mode == TwoFacedSuperToolWidget.VIEW:
-            self.getViewWidget().show()
-            self.getDesignWidget().hide()
-            self.resizeBarWidget().hide()
-        else:
-            self.getViewWidget().show()
+            self.setFixedHeight(1)
+            self.removeResizeEventFilter()
             self.getDesignWidget().hide()
             self.resizeBarWidget().hide()
 
@@ -103,15 +94,3 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
     def setHeaderViewWidget(self, view_widget):
         self._view_widget = view_widget
-
-
-class TwoFacedViewWidget(QWidget):
-    """
-    This is the main display for the user.  This should be dynamically populated
-    from the UI created in the Design Widget
-    """
-    def __init__(self, parent=None):
-        super(TwoFacedViewWidget, self).__init__(parent)
-        QVBoxLayout(self)
-        self.layout().addWidget(QLabel('View Widget'))
-
