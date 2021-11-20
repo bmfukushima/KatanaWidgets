@@ -1,12 +1,12 @@
 """
 Hierarchy
-KatanaLauncher --> (QWidget):
+KatanaLauncherWidget --> (QWidget):
     |- layout (QVBoxLayout)
-        |- launcher_args_view --> (ShojiLayout)
+        |- _launcher_args_main_widget --> (ShojiLayout)
             |- katana_version --> LabelledInputWidget
             |- render_engine --> LabelledInputWidget
             |- render_version --> LabelledInputWidget
-        |- plugins_view --> (MultiButtonInputWidget)
+        |- pluginsWidget() --> (MultiButtonInputWidget)
             |* buttons --> (ButtonInputWidget)
 """
 
@@ -25,7 +25,7 @@ from cgwidgets.settings.colors import iColor
 from cgwidgets.utils import centerWidgetOnCursor
 
 
-class KatanaLauncher(QWidget):
+class KatanaLauncherWidget(QWidget):
     '''
     Main Widget container the different options for launching Katana
 
@@ -41,7 +41,7 @@ class KatanaLauncher(QWidget):
             {envar:[value1, value2, value3]}
     '''
     def __init__(self, plugins=None):
-        super(KatanaLauncher, self).__init__()
+        super(KatanaLauncherWidget, self).__init__()
         # set defaults
         if not plugins:
             plugins = {}
@@ -57,15 +57,18 @@ class KatanaLauncher(QWidget):
         # create GUI
         self.__setupGUI()
 
+        # setup defaults
+        self.launcher_args_widgets['Katana'].setText(self.default_katana_version)
+        self.launcher_args_widgets['Render Engine'].setText(self.default_render_engine)
+        self.launcher_args_widgets['Render Version'].setText(self.default_render_engine_version)
+
         # setup style
         self.setStyleSheet(iColor.createDefaultStyleSheet(self))
 
     def __setupGUI(self):
-        """
-        Creates all of the widgets for the GUI
-        """
+        """Creates all of the widgets for the GUI"""
         # setup basic args
-        self.launcher_args_view = self.__setupBasicArgs()
+        self._launcher_args_main_widget = self.__setupBasicArgs()
         self.__populateBasicArgs()
 
         # create launcher button
@@ -74,18 +77,13 @@ class KatanaLauncher(QWidget):
         self.launch_katana_button.setMinimumWidth(200)
 
         # setup plugins
-        self.plugins_view = KatanaResourcesWidget(self)
+        self._plugins_widget = KatanaResourcesWidget(self)
         self.__setupPlugins(self._plugins)
-
-        # setup defaults
-        self.launcher_args_widgets['Katana'].setText(self.default_katana_version)
-        self.launcher_args_widgets['Render Engine'].setText(self.default_render_engine)
-        self.launcher_args_widgets['Render Version'].setText(self.default_render_engine_version)
 
         # setup args layout
         main_layout = QVBoxLayout()
-        main_layout.addWidget(self.launcher_args_view)
-        main_layout.addWidget(self.plugins_view)
+        main_layout.addWidget(self._launcher_args_main_widget)
+        main_layout.addWidget(self.pluginsWidget())
 
         # setup main layout
         QHBoxLayout(self)
@@ -102,8 +100,8 @@ class KatanaLauncher(QWidget):
 
         """
         # create layout
-        launcher_args_view = ShojiLayout(self)
-        launcher_args_view.setOrientation(Qt.Horizontal)
+        _launcher_args_main_widget = ShojiLayout(self)
+        _launcher_args_main_widget.setOrientation(Qt.Horizontal)
 
         # create basic args widgets
         self.launcher_args_widgets = {}
@@ -113,29 +111,20 @@ class KatanaLauncher(QWidget):
             input_widget.delegateWidget().filter_results = False
             self.launcher_args_widgets[option] = input_widget.delegateWidget()
             self.launcher_args_widgets[option].setAlignment(Qt.AlignCenter)
-            launcher_args_view.addWidget(input_widget)
+            _launcher_args_main_widget.addWidget(input_widget)
 
             # set widget orientation
             input_widget.setDirection(Qt.Vertical)
 
         # create launcher button
 
-        return launcher_args_view
+        return _launcher_args_main_widget
 
     def __populateBasicArgs(self):
         """
         After the basic args widgets have been created.  This will setup
         all of the items available in each field, and connect the signals
         between the render versions.
-
-        # connect user input
-        input_widget.setUserFinishedEditingEvent(test)
-
-        # list override
-        if arg == "list":
-            input_widget.delegateWidget().populate(list_of_crap)
-            input_widget.delegateWidget().display_item_colors = True
-
         """
         # katana
         katana_versions = [[v] for v in sorted(os.listdir(self.katana_dir))]
@@ -146,6 +135,22 @@ class KatanaLauncher(QWidget):
             versions_dir = self.render_engine_dir + '/' + render_engine
             versions = [[v] for v in sorted(os.listdir(versions_dir))]
             self.launcher_args_widgets['Render Version'].populate(versions)
+
+            # set to latest version of engine
+            if 0 < len(versions):
+                latest_version = ""
+                for version in reversed(sorted(os.listdir(versions_dir))):
+
+                    is_valid = True
+                    for char in version:
+                        if char not in "01234567890.":
+                            is_valid = False
+
+                    if is_valid:
+                        latest_version = version
+                        break
+
+                self.launcher_args_widgets['Render Version'].setText(str(latest_version))
 
         render_engines = [[renderer] for renderer in sorted(os.listdir(self.render_engine_dir))]
         self.launcher_args_widgets['Render Engine'].populate(render_engines)
@@ -159,7 +164,7 @@ class KatanaLauncher(QWidget):
         # Add Button
         for plugin in plugins:
             enabled = plugins[plugin]['__ENABLED__']
-            self.plugins_view.addButton(plugin, plugin, enabled=enabled)
+            self.pluginsWidget().addButton(plugin, plugin, enabled=enabled)
 
     """ SETUP PLUGINS """
     def installPlugins(self, katana_resources, envars):
@@ -212,9 +217,9 @@ class KatanaLauncher(QWidget):
         resources.append('$HOME/.katana')
 
         # user selected resources from launcher
-        for plugin in self.plugins_view.flags():
+        for plugin in self.pluginsWidget().flags():
             resources.append(self.plugins()[plugin]['KATANA_RESOURCES'])
-        #resources += (self.plugins_view.flags())
+        #resources += (self.pluginsWidget().flags())
 
         # global resources
         if 'KATANA_RESOURCES' in os.environ:
@@ -243,7 +248,7 @@ class KatanaLauncher(QWidget):
             envars = {}
 
         # setup envar values from flags selected
-        for plugin in self.plugins_view.flags():
+        for plugin in self.pluginsWidget().flags():
             for envar in self.plugins()[plugin].keys():
                 if envar != "KATANA_RESOURCES":
                     if (not envar.startswith("__") and not envar.endswith("__")):
@@ -254,6 +259,22 @@ class KatanaLauncher(QWidget):
                             envars[envar] = value
 
         return envars
+
+    """ WIDGETS """
+    def launcherArgsWidget(self):
+        return self._launcher_args_main_widget
+
+    def pluginsWidget(self):
+        return self._plugins_widget
+
+    def renderEngineVersionWidget(self):
+        return self.launcher_args_widgets['Render Version']
+
+    def katanaVersionWidget(self):
+        return self.launcher_args_widgets['Katana']
+
+    def renderEngineWidget(self):
+        return self.launcher_args_widgets['Render Engine']
 
     """ UTILS """
     def katanaVersion(self):
@@ -312,16 +333,11 @@ class KatanaLauncher(QWidget):
             return envars
 
         def redshift():
-            """
-            export LD_LIBRARY_PATH="/usr/redshift/bin:${LD_LIBRARY_PATH}"
-            export KATANA_RESOURCES=/usr/redshift/redshift4katana/katana2.5v4
-            export DEFAULT_RENDERER=Redshift
-            Returns:
-
-            """
-            LD_LIBRARY_PATH = "%s/bin" % resources
             envars = {
-                "LD_LIBRARY_PATH":LD_LIBRARY_PATH
+                "LD_LIBRARY_PATH":"%s/bin" % resources,
+                "REDSHIFT_HOME": "{resources}/bin".format(resources=resources),
+                "REDSHIFT4KATANA_HOME":"{resources}/redshift4katana/katana4.0v1".format(resources=resources),
+                'DEFAULT_RENDERER': 'Redshift',
             }
             # envars = {
             #     'KATANA_HOME': '%s/Katana3.0v1' % self.katana_dir,
@@ -382,10 +398,11 @@ class KatanaLauncher(QWidget):
 
         # TODO Move this to a dynamic module
         # image library directory
-        os.environ['LIBRARY_DIR'] = '/media/ssd01/library/library'
+        # os.environ['LIBRARY_DIR'] = '/media/ssd01/library/library'
 
         # additional 2.7 libs
-        os.environ["PYTHONPATH"] += ":/usr/local/lib/python2.7/dist-packages"
+        # os.environ["PYTHONPATH"] += ":/usr/local/lib/python2.7/dist-packages"
+
         # # launch katana instance
         subprocess.Popen([self.katana_bin])
         self.close()
@@ -430,10 +447,13 @@ class KatanaLauncher(QWidget):
         return QWidget.keyPressEvent(self, event, *args, **kwargs)
 
 
+class RenderEngineWidget(LabelledInputWidget):
+    def __init__(self, parent=None):
+        super(RenderEngineWidget, self).__init__(parent)
+
+
 class KatanaResourcesWidget(ButtonInputWidgetContainer):
-    """
-    Widget that contains flags for enabling/disabling 3rd party plugins.
-    """
+    """Widget that contains flags for enabling/disabling 3rd party plugins."""
     def __init__(self, parent=None):
         super(KatanaResourcesWidget, self).__init__(parent)
 
@@ -480,7 +500,7 @@ if __name__ == "__main__":
     }
 
     # create main application
-    launcher = KatanaLauncher(plugins=plugins)
+    launcher = KatanaLauncherWidget(plugins=plugins)
 
     # force widget on top
     launcher.setWindowFlag(Qt.WindowStaysOnTopHint)

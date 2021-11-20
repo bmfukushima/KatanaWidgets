@@ -1,5 +1,5 @@
 # Popup Bar Tabs
-PopupBarTabs are designed to display multiple tabs to the user simultaneously.
+Popup Bar Tabs are designed to display multiple tabs to the user simultaneously.
 Similar to the function that was provided to TV's in the mid 1970's.  This widget is
 designed to allow the user to create multiple hot swappable widgets inside of the same
 tab. There are three different modes of display for these tabs, `PiP`, `PiPTaskbar`,

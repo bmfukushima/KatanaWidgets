@@ -1,6 +1,6 @@
 # Disclaimer
-This is my own personal work (Brian Fukushima), and does not represent that of my employer.  
-All work done in this library represents my own personal designs, code, resources spent, etc.
+This is my own personal work (Brian Fukushima), and does not represent that of my employer.  All
+work done in this library represents my own personal designs, code, resources spent, etc.
 Please do not contact my employer with any questions/comments/concerns pertaining to this
 library, but rather please contact me directly if you have any questions/comments/concerns.
 
@@ -28,7 +28,7 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 - [GSV Manager Tab](MultiTools/GSVManagerTab/README.md)
 - [Script Editor Tab](MultiTools/ScriptEditorTab/README.md)
 - [Node Color Registry Tab](MultiTools/NodeColorRegistryTab/README.md)
-- [Popup Bar Tabs](Tabs/PopupBar/README.md) +
+- [Popup Bar Tabs](Tabs/PopupBar/README.md)
 - [Desired Stuff Tab](Tabs/DesiredStuffTab/README.md) +
 
 ### SuperTools
@@ -39,14 +39,14 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 - [Variable Manager](MultiTools/VariableManager/README.md)
 
 ### [Macros](Macros/README.md) +
-- CleanupEmptyGroups
+- Cleanup Empty Groups
 - Frustum
 
 # Notes
   * I am aiming for a first release of this library with Katana 5.0 which will have the upgrades to
       Python 3.7.x and Qt for Python (PySide2).
   * The Utils2 / Widgets2 folders are named this way to avoid library conflicts with
-        Katana's internal mechanisms.  I haven't really tested a worked around too much
+        Katana's internal mechanisms.  I haven't really tested a work around too much
         for this... But as of this time, this works and shouldn't conflict with anything...
   * Load Order...
       * SuperTools
