@@ -15,7 +15,7 @@ Which GSV should be used.  If the user selects a GSV that doesn't exist, it will
 automagically be created.
 
 ### 2. Node Type
-
+What type of node should be used.
 
 ### 3. Save location
 This is the location that the user can publish/load `blocks` and `patterns` to.

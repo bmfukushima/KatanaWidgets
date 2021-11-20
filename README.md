@@ -29,7 +29,7 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 - [Script Editor Tab](MultiTools/ScriptEditorTab/README.md)
 - [Node Color Registry Tab](MultiTools/NodeColorRegistryTab/README.md)
 - [Popup Bar Tabs](Tabs/PopupBar/README.md)
-- [Desired Stuff Tab](Tabs/DesiredStuffTab/README.md) +
+- [Desired Stuff Tab](Tabs/DesiredStuffTab/README.md)
 
 ### SuperTools
 - [Constraint](SuperTools/Constraint/README.md)

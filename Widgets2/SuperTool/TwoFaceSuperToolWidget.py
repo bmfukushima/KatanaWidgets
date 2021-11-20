@@ -1,4 +1,4 @@
-from qtpy.QtWidgets import (QWidget, QStackedWidget, QVBoxLayout, QLabel)
+from qtpy.QtWidgets import (QWidget, QStackedWidget, QVBoxLayout, QLabel, QStackedLayout)
 
 try:
     from Katana import UI4
@@ -37,27 +37,61 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
         *   Wrench Icon | Publish/Edit modes?
                 NodeActionDelegate.UpdateWrenchMenuWithDelegates(menu, node, hints)
     """
+    DESIGN = 0
+    VIEW = 1
+
     def __init__(self, parent, node):
         super(TwoFacedSuperToolWidget, self).__init__(parent, node)
-
+        print('init')
         # create main layout
-        QVBoxLayout(self)
-
+        QStackedLayout(self)
+        self.layout().setStackingMode(QStackedLayout.StackOne)
         # create stacked widget
-        self.main_widget = QStackedWidget(self)
         self._design_widget = ShojiModelViewWidget()
         self._design_widget.setObjectName('design widget')
         self._view_widget = TwoFacedViewWidget(self)
-        self.main_widget.addWidget(self._design_widget)
-        self.main_widget.addWidget(self._view_widget)
+        self.layout().addWidget(self._design_widget)
+        self.layout().addWidget(self._view_widget)
 
         # setup main layout
-        self.layout().addWidget(self.main_widget)
         self.insertResizeBar()
-        # resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
-        # self.layout().addWidget(resize_widget)installResizeBar
+        print('init')
 
-    """ PROPERTIES ( WIDGET )"""
+    def showEvent(self, event):
+        return_val = AbstractSuperToolEditor.showEvent(self, event)
+        self.setDisplayMode(self.displayMode())
+        return return_val
+
+    """ PROPERTIES """
+    def displayMode(self):
+        return self.node().getParameter("display_mode").getValue(0)
+
+    def setDisplayMode(self, display_mode):
+        """ Sets how this widget should be displayed
+
+        Note:
+            Doing some really janky stuff here with the hide/show due to widgets
+            overlapping during the show event.  
+
+        Args:
+            display_mode (TwoFacedSuperToolWidget.DISPLAYMODE): int value
+                DESIGN | VIEW
+        """
+        self.node().getParameter("display_mode").setValue(display_mode, 0)
+        self.layout().setCurrentIndex(display_mode)
+        if display_mode == TwoFacedSuperToolWidget.DESIGN:
+            self.resizeBarWidget().show()
+            self.getViewWidget().hide()
+            self.getDesignWidget().show()
+        elif display_mode == TwoFacedSuperToolWidget.VIEW:
+            self.getViewWidget().show()
+            self.getDesignWidget().hide()
+            self.resizeBarWidget().hide()
+        else:
+            self.getViewWidget().show()
+            self.getDesignWidget().hide()
+            self.resizeBarWidget().hide()
+
     def getDesignWidget(self):
         return self._design_widget
 

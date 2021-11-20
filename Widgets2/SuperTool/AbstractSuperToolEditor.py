@@ -161,8 +161,8 @@ class AbstractSuperToolEditor(QWidget):
             index = self.layout().count()
 
         # insert resize bar
-        resize_widget = UI4.Widgets.VBoxLayoutResizer(self)
-        layout.insertWidget(index, resize_widget)
+        self._resize_bar_widget = UI4.Widgets.VBoxLayoutResizer(self)
+        layout.insertWidget(index, self._resize_bar_widget)
 
     """ REGISTER CUSTOM PARM"""
     def createCustomParam(self, widget, param_loc, data_type, get_new_value_function, editing_finished_function, initial_value=0):
@@ -260,6 +260,9 @@ class AbstractSuperToolEditor(QWidget):
 
     def setIsFrozen(self, is_frozen):
         self._is_frozen = is_frozen
+
+    def resizeBarWidget(self):
+        return self._resize_bar_widget
 
     """ EVENTS """
     def setupEventHandlers(self, bool):

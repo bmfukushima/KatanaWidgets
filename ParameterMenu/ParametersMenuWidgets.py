@@ -119,7 +119,7 @@ class ParametersMenu(QMenu):
 
         # install two faced widget toggle
         two_face_widget_list = ['SimpleTool']
-        if self.__getNode().getName() in two_face_widget_list:
+        if self.__getNode().getType() in two_face_widget_list:
             self.addAction('Toggle Two Faced Node Appearance', self.toggleTwoFacedNodeAppearance)
 
     """ UTILS """
@@ -138,6 +138,7 @@ class ParametersMenu(QMenu):
 
     """ ACTIONS"""
     def toggleTwoFacedNodeAppearance(self):
+        """ Toggles the display of the two faced node."""
         # get attrs
         node = self.__getNode()
         editor = self.__getSuperToolEditor()
@@ -149,7 +150,8 @@ class ParametersMenu(QMenu):
         display_mode_param.setValue(index, 0)
 
         # update display
-        editor.main_widget.setCurrentIndex(index)
+
+        editor.setDisplayMode(index)
         # get editor here...
         pass
 
