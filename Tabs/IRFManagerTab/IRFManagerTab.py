@@ -41,6 +41,8 @@ from cgwidgets.widgets import (
     ModelViewItem,
     ShojiLayout
 )
+from cgwidgets.views import AbstractDragDropModelDelegate
+
 from cgwidgets.utils import getWidgetAncestor
 
 from Utils2 import widgetutils, paramutils, nodeutils
@@ -274,6 +276,11 @@ class IRFCreateOrganizerWidget(ModelViewWidget):
         self.addContextMenuEvent("Create New Category", self.__createNewCategory)
         self.addContextMenuEvent("Create New Filter", self.__createNewFilter)
 
+        #
+        self.view().header().resizeSection(0, 300)
+        delegate = IRFCreateOrganizerItemDelegate(self)
+        self.view().setItemDelegate(delegate)
+
     """ PROPERTIES """
     def categories(self):
         return self._categories
@@ -322,7 +329,6 @@ class IRFCreateOrganizerWidget(ModelViewWidget):
         index = self.insertNewIndex(0, name=name, column_data=data, parent=parent_index, is_dropable=False)
 
         return index
-
 
     """ EVENTS """
     def __itemParentChanged(self, data, items, model, row, parent):
@@ -373,6 +379,19 @@ class IRFCreateOrganizerWidget(ModelViewWidget):
         self.populateIRFOrganizer()
         return QWidget.showEvent(self, event)
 
+
+class IRFCreateOrganizerItemDelegate(AbstractDragDropModelDelegate):
+    def __init__(self, parent=None):
+        super(IRFCreateOrganizerItemDelegate, self).__init__(parent)
+
+    def createEditor(self, parent, option, index):
+        """ Creates the editor widget.
+
+        This is needed to set a different delegate for different columns"""
+        if index.column() == 0:
+            return AbstractDragDropModelDelegate.createEditor(self, parent, option, index)
+        else:
+            return None
 
 
 if __name__ == "__main__":
