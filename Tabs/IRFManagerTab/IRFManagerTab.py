@@ -4,6 +4,7 @@
                 - Currently this just automagically works...
                 - should do a check to make sure that there are no conflicting names
     *   Activation
+            Population, not enabling/destroying filters correctly?
     *   View
 """
 """
@@ -20,15 +21,24 @@ Hierarchy:
         |- QVBoxLayout
             |- main_widget --> (ShojiModelViewWidget)
                 |- view_widget --> (QWidget)
-                |- activation_widget --> (QWidget)
+                |- activation_widget --> (ShojiLayout)
+                |    |- QWidget
+                |    |    |- QVBoxLayout
+                |    |        |- QLabel
+                |    |        |- _available_filters_organizer_widget --> (AbstractIRFOrganizerViewWidget)
+                |    |- QWidget
+                |        |- QVBoxLayout
+                |            |- QLabel
+                |            |- _activated_filters_organizer_widget --> (IRFActivationOrganizerWidget)
                 |- create_widget --> (ShojiLayout)
                     |- irf_node_widget (ListInputWidget)
                     |- irf_organizer_widget (ModelViewWidget)
                     |- nodegraph_widget (GroupNodeEditorWidget)
 """
+import json
 
-
-from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget
+from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget, QHBoxLayout, QSizePolicy
+from qtpy.QtCore import Qt
 
 from Katana import UI4, NodegraphAPI, RenderManager, Utils
 
@@ -48,6 +58,9 @@ from cgwidgets.utils import getWidgetAncestor
 from Utils2 import widgetutils, paramutils, nodeutils
 from Widgets2 import GroupNodeEditorWidget
 
+from .IRFOrganizerWidget import AbstractIRFOrganizerViewWidget, AbstractIRFOrganizerWidget
+from .IRFUtils import IRFUtils
+
 
 class IRFManagerTab(UI4.Tabs.BaseTab):
     """A tab for users to manager their IRFs with
@@ -60,8 +73,7 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         view_widget
     """
     NAME = 'IRF Manager'
-    FILTER = "filter"
-    CATEGORY = "category"
+
     def __init__(self, parent=None):
         super(IRFManagerTab, self).__init__(parent)
         # setup default attrs
@@ -98,35 +110,6 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         if not irf_node:
             irf_node = NodegraphAPI.CreateNode("InteractiveRenderFilters", NodegraphAPI.GetRootNode())
             self.setDefaultIRFNode(irf_node)
-
-    def renderFiltersDelegate(self):
-        return RenderManager.InteractiveRenderDelegateManager.GetRenderFiltersDelegate()
-
-    @staticmethod
-    def getAllRenderFilterContainers():
-        return NodegraphAPI.GetAllNodesByType("InteractiveRenderFilters")
-
-    @staticmethod
-    def getAllRenderFilterNodes():
-        """ Returns a list of all the Render Filter nodes in the scene"""
-        return NodegraphAPI.GetAllNodesByType("RenderFilter")
-
-    def getAllActiveRenderFilters(self):
-        """ Returns a list of all active render filter nodes"""
-        return self.renderFiltersDelegate().getActiveRenderFilterNodes()
-
-    def enableRenderFilter(self, render_filter, enabled):
-        """ Enables or disables a render filter """
-        if enabled:
-            if render_filter not in self.getAllActiveRenderFilters():
-                new_filters = self.getAllActiveRenderFilters()
-                new_filters.append(render_filter)
-                self.renderFiltersDelegate().setActiveRenderFilterNodes(new_filters)
-        else:
-            if render_filter in self.getAllActiveRenderFilters():
-                new_filters = self.getAllActiveRenderFilters()
-                new_filters.remove(render_filter)
-                self.renderFiltersDelegate().setActiveRenderFilterNodes(new_filters)
 
     """ PROPERTIES """
     @staticmethod
@@ -196,76 +179,72 @@ class IRFViewWidget(QWidget):
         self.layout().addWidget(QLabel("VIEW"))
 
 
-class IRFActivationWidget(QWidget):
+class IRFActivationOrganizerWidget(AbstractIRFOrganizerWidget):
+    """ Holds all of the currently activate filters """
+    def __init__(self, parent=None):
+        super(IRFActivationOrganizerWidget, self).__init__(parent)
+        self.setAcceptDrops(True)
+        self.setIsRootDroppable(True)
+        self.setItemDeleteEvent(self.disableFilter)
+
+    def showEvent(self, event):
+        self._categories = {}
+        self.clearModel()
+        active_filters = IRFUtils.getAllActiveFilters()
+        for render_filter_node in active_filters:
+            self.createFilterItem(render_filter_node)
+        return AbstractIRFOrganizerWidget.showEvent(self, event)
+
+    def disableFilter(self, item):
+        IRFUtils.enableRenderFilter(item.getArg("node"), False)
+
+    def dropEvent(self, event):
+        node_name = event.mimeData().data(IRFUtils.IS_IRF).data()
+        node = NodegraphAPI.GetNode(node_name)
+        self.createFilterItem(node)
+        IRFUtils.enableRenderFilter(node, True)
+
+        return AbstractIRFOrganizerWidget.dropEvent(self, event)
+
+    def dragEnterEvent(self, event):
+        if IRFUtils.IS_IRF in event.mimeData().formats():
+            event.accept()
+        return AbstractIRFOrganizerWidget.dragEnterEvent(self, event)
+
+
+class IRFActivationWidget(ShojiLayout):
+    """ Widget that will allow the user to enable/disable IRFs"""
+
     def __init__(self, parent=None):
         super(IRFActivationWidget, self).__init__(parent)
-        QVBoxLayout(self)
-        self.layout().addWidget(QLabel("EDIT"))
+
+        # setup available filters widget
+        self._available_filters_widget = QWidget()
+        self._available_filters_layout = QVBoxLayout(self._available_filters_widget)
+        self._available_filters_organizer_widget = AbstractIRFOrganizerViewWidget(self)
+        self._available_filters_layout.addWidget(QLabel("Available Filters"))
+        self._available_filters_layout.addWidget(self._available_filters_organizer_widget)
+
+        # setup active filters widget
+        self._activated_filters_widget = QWidget()
+        self._activated_filters_layout = QVBoxLayout(self._activated_filters_widget)
+        self._activated_filters_organizer_widget = IRFActivationOrganizerWidget(self)
+        self._activated_filters_layout.addWidget(QLabel("Active Filters"))
+        self._activated_filters_layout.addWidget(self._activated_filters_organizer_widget)
+
+        # setup style
+        self.setOrientation(Qt.Horizontal)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        # setup main layout
+        self.addWidget(self._available_filters_widget)
+        self.addWidget(self._activated_filters_widget)
 
 
-class IRFCreateWidget(ShojiLayout):
-    """ Widget responsible for creating/modifying IRFs
-
-    Widgets:
-        irf_node_widget (ListInputWidget): The current InteractiveRenderFilters node that will be used
-            when creating new filters
-        irf_organizer_widget (ModelViewWidget): An organizational view of all of the IRF's in the scene.
-            The user can rename, delete, edit the name/category, etc, of IRF's here.
-        nodegraph_widget (GroupNodeEditorWidget): The area that the user can add nodes to the internal
-            structure of the IRF.  Previously, this only had a list view, now it's a nodegraph.
-    """
-    def __init__(self, parent=None):
-        super(IRFCreateWidget, self).__init__(parent)
-        # setup gui
-
-        QVBoxLayout(self)
-        self._irf_node_widget = IRFNodeWidget(parent=self)
-        self._irf_node_labelled_widget = LabelledInputWidget(
-            name="Node", delegate_widget=self._irf_node_widget, default_label_length=100)
-
-        self._irf_organizer_widget = IRFCreateOrganizerWidget(self)
-        self._nodegraph_widget = GroupNodeEditorWidget(self, node=NodegraphAPI.GetRootNode())
-
-        self.addWidget(self._irf_node_labelled_widget)
-        self.addWidget(self._irf_organizer_widget)
-        self.addWidget(self._nodegraph_widget)
-
-        # set default irf node
-        self._irf_node_widget.setText(IRFManagerTab.defaultIRFNode().getName())
-
-    def defaultIRFNode(self):
-        return NodegraphAPI.GetNode(self.irfNodeWidget().text())
-
-    """ WIDGETS """
-    def irfNodeWidget(self):
-        return self._irf_node_widget
-
-    def irfOrganizerWidget(self):
-        return self._irf_organizer_widget
-
-    def nodegraphWidget(self):
-        return self._nodegraph_widget
-
-
-class IRFCreateOrganizerWidget(ModelViewWidget):
-    """ This widget is in charge of organizing the different IRF widgets.
-
-    - Inside of here, the user can change IRF names/categories.
-    - Batch update category names
-    - Create new categories/filters
-
-    Attributes:
-        categories (dict): of all of the categories and their coresponding items
-            {"categoryName": ModelViewItem}
-        """
+""" CREATE """
+class IRFCreateOrganizerWidget(AbstractIRFOrganizerViewWidget):
     def __init__(self, parent=None):
         super(IRFCreateOrganizerWidget, self).__init__(parent)
-
-        # setup default attrs
-        self._categories = {}
-        self.setPresetViewType(ModelViewWidget.TREE_VIEW)
-        self.setIsEnableable(False)
-        self.setHeaderData(["name", "type"])
 
         # setup events
         self.setIndexSelectedEvent(self.__irfSelectionChanged)
@@ -276,61 +255,6 @@ class IRFCreateOrganizerWidget(ModelViewWidget):
         self.addContextMenuEvent("Create New Category", self.__createNewCategory)
         self.addContextMenuEvent("Create New Filter", self.__createNewFilter)
 
-        #
-        self.view().header().resizeSection(0, 300)
-        delegate = IRFCreateOrganizerItemDelegate(self)
-        self.view().setItemDelegate(delegate)
-
-    """ PROPERTIES """
-    def categories(self):
-        return self._categories
-
-    def defaultIRFNode(self):
-        create_widget = getWidgetAncestor(self, IRFCreateWidget)
-        return create_widget.defaultIRFNode()
-
-    """ UTILS """
-    def populateIRFOrganizer(self):
-        """ Creates all of the IRF items/category items"""
-        render_filter_nodes = IRFManagerTab.getAllRenderFilterNodes()
-        for render_filter_node in render_filter_nodes:
-            self.__createFilterItem(render_filter_node)
-
-    def __createCategoryItem(self, category):
-        """ Creates a new category item
-
-        Args:
-            category (str): name of category to create"""
-        data = {"name": category, "type": IRFManagerTab.CATEGORY}
-        category_index = self.insertNewIndex(
-            0, name=category, column_data=data, is_dropable=True, is_dragable=False)
-        category_item = category_index.internalPointer()
-        self.categories()[category] = category_item
-
-        return category_item
-
-    def __createFilterItem(self, render_filter_node):
-        """ Creates a new item from the node provided"""
-        name = render_filter_node.getParameter('name').getValue(0)
-        category = render_filter_node.getParameter('category').getValue(0)
-
-        # get parent index
-        parent_item = self.rootItem()
-        if category:
-            # get category item
-            if category not in self.categories().keys():
-                parent_item = self.__createCategoryItem(category)
-            else:
-                parent_item = self.categories()[category]
-
-        parent_index = self.getIndexFromItem(parent_item)
-
-        data = {"name": name, "type": IRFManagerTab.FILTER, "node": render_filter_node}
-        index = self.insertNewIndex(0, name=name, column_data=data, parent=parent_index, is_dropable=False)
-
-        return index
-
-    """ EVENTS """
     def __itemParentChanged(self, data, items, model, row, parent):
         """ On drop update the item drops category to the new parents"""
         for item in items:
@@ -373,25 +297,51 @@ class IRFCreateOrganizerWidget(ModelViewWidget):
                 irf_create_wiget = getWidgetAncestor(self, IRFCreateWidget)
                 irf_create_wiget.nodegraphWidget().setNode(item.getArg("node"))
 
-    def showEvent(self, event):
-        self.clearModel()
-        self._categories = {}
-        self.populateIRFOrganizer()
-        return QWidget.showEvent(self, event)
 
+class IRFCreateWidget(ShojiLayout):
+    """ Widget responsible for creating/modifying IRFs
 
-class IRFCreateOrganizerItemDelegate(AbstractDragDropModelDelegate):
+    Widgets:
+        irf_node_widget (ListInputWidget): The current InteractiveRenderFilters node that will be used
+            when creating new filters
+        irf_organizer_widget (ModelViewWidget): An organizational view of all of the IRF's in the scene.
+            The user can rename, delete, edit the name/category, etc, of IRF's here.
+        nodegraph_widget (GroupNodeEditorWidget): The area that the user can add nodes to the internal
+            structure of the IRF.  Previously, this only had a list view, now it's a nodegraph.
+    """
     def __init__(self, parent=None):
-        super(IRFCreateOrganizerItemDelegate, self).__init__(parent)
+        super(IRFCreateWidget, self).__init__(parent)
+        self.setObjectName("Create Widget")
 
-    def createEditor(self, parent, option, index):
-        """ Creates the editor widget.
+        # setup gui
+        QVBoxLayout(self)
+        self._irf_node_widget = IRFNodeWidget(parent=self)
+        self._irf_node_labelled_widget = LabelledInputWidget(
+            name="Node", delegate_widget=self._irf_node_widget, default_label_length=100)
 
-        This is needed to set a different delegate for different columns"""
-        if index.column() == 0:
-            return AbstractDragDropModelDelegate.createEditor(self, parent, option, index)
-        else:
-            return None
+        self._irf_organizer_widget = IRFCreateOrganizerWidget(self)
+        self._nodegraph_widget = GroupNodeEditorWidget(self, node=NodegraphAPI.GetRootNode())
+
+        self.addWidget(self._irf_node_labelled_widget)
+        self.addWidget(self._irf_organizer_widget)
+        self.addWidget(self._nodegraph_widget)
+
+        # set default irf node
+        self._irf_node_widget.setText(IRFManagerTab.defaultIRFNode().getName())
+
+    def defaultIRFNode(self):
+        return NodegraphAPI.GetNode(self.irfNodeWidget().text())
+
+    """ WIDGETS """
+    def irfNodeWidget(self):
+        return self._irf_node_widget
+
+    def irfOrganizerWidget(self):
+        return self._irf_organizer_widget
+
+    def nodegraphWidget(self):
+        return self._nodegraph_widget
+
 
 
 if __name__ == "__main__":
