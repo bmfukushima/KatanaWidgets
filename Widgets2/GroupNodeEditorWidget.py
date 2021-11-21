@@ -1,4 +1,4 @@
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QLabel
+from qtpy.QtWidgets import QWidget, QVBoxLayout
 from qtpy.QtCore import Qt
 
 from Widgets2 import (
@@ -7,10 +7,8 @@ from Widgets2 import (
 
 from cgwidgets.widgets import ShojiLayout
 
-from Katana import UI4
 
-
-class GroupNodeEditorMainWidget(QWidget):
+class GroupNodeEditorWidget(ShojiLayout):
     """
     The tab that will display the default parameters adjustment pane to the user.
     This is a new way of adjusting group nodes where it will essentially have three
@@ -35,38 +33,43 @@ class GroupNodeEditorMainWidget(QWidget):
                             | -- nodegraph_widget (NodegraphWidget)
                             | -- parameters_widget (ParametersDisplayWidget)
     """
-    def __init__(self, parent, node, main_node):
-        super(GroupNodeEditorMainWidget, self).__init__(parent)
+    def __init__(self, parent, node):
+        super(GroupNodeEditorWidget, self).__init__(parent)
         # setup attrs
         self._node = node
-        self.main_node = main_node
 
         # setup GUI
         QVBoxLayout(self)
-        self.live_group_widget = QLabel("Live Group")
-        self.node_editor_widget = GroupNodeEditor(self)
-
-        self.layout().addWidget(self.live_group_widget)
-        self.layout().addWidget(self.node_editor_widget)
+        self.setOrientation(Qt.Vertical)
+        self.setFocusPolicy(Qt.WheelFocus)
 
         # create gui
-        self.nodegraph_widget = NodegraphWidget(self, node=self.node())
-        self.nodegraph_widget.setupDestroyNodegraphEvent()
-        self.parameters_widget = ParametersDisplayWidget(self, node=self.main_node)
+        self._nodegraph_widget = NodegraphWidget(self, node=self.node())
+        self._nodegraph_widget.setupDestroyNodegraphEvent()
+        self._parameters_widget = ParametersDisplayWidget(self, node=self.node())
 
-        self.node_editor_widget.addWidget(self.nodegraph_widget)
-        self.node_editor_widget.addWidget(self.parameters_widget)
+        self.addWidget(self._nodegraph_widget)
+        self.addWidget(self._parameters_widget)
+
+        self.setSizes([100, 100])
+
+    def parametersWidget(self):
+        return self._parameters_widget
+
+    def nodegraphWidget(self):
+        return self._nodegraph_widget
+
+    def goToNode(self, node):
+        self.nodegraphWidget().goToNode(node)
 
     def node(self):
         return self._node
 
-
-class GroupNodeEditor(ShojiLayout):
-    def __init__(self, parent):
-        super(GroupNodeEditor, self).__init__(parent)
-
-        self.setOrientation(Qt.Vertical)
-        self.setFocusPolicy(Qt.WheelFocus)
+    def setNode(self, node):
+        self._node = node
+        self.nodegraphWidget().setNode(node)
+        self.nodegraphWidget().goToNode(node)
+        self.parametersWidget().setNode(node)
 
 
 class NodegraphWidget(AbstractNodegraphWidget):
@@ -77,7 +80,9 @@ class NodegraphWidget(AbstractNodegraphWidget):
 
         AbstractNodegraphWidget.displayMenus(False, self.getPanel())
         self.enableScrollWheel(False)
-        self.goToNode(node.getChildByIndex(0))
+        # todo
+        # self.goToNode(node.getChildByIndex(0))
+        self.goToNode(node)
         #self.setupDestroyNodegraphEvent()
 
 
@@ -93,6 +98,9 @@ class ParametersDisplayWidget(AbstractParametersDisplayWidget):
 
     def node(self):
         return self._node
+
+    def setNode(self, node):
+        self._node = node
 
     def nodeFilter(self, node):
         """

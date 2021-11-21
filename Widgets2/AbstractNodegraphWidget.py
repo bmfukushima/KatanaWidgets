@@ -1,3 +1,9 @@
+""" TODO
+    *   Nodegraph destruction handlers
+            - Massive warnings, however, NMC crashes when it is cleaned up.
+            - destroyNodegraph --> cleanup()
+"""
+
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QApplication
 from qtpy.QtCore import QEvent, Qt
 
@@ -46,17 +52,16 @@ class AbstractNodegraphWidget(QWidget):
 
         self.panel_scroll_area = getWidgetAncestorByObjectName(self, "qt_scrollarea_viewport")
 
+        # todo nodegraph destruction handlers
+        # causes crash on NMC
         if self.panel_scroll_area:
             self.panel_scroll_area = self.panel_scroll_area.parent()
 
-        # Todo Nodegraph destruction handlers
-        """ These were originally setup to remove the really annoying warning.  However... it appears that
-        it causes a segfault when using the NMC.  Also I haven't seen those bugs since I've moved to 5.x"""
-        #     # install event filters
-        #     panel.installEventFilter(self)
-        #     self.panel_scroll_area.viewport().installEventFilter(self)
-        #
-        # self.getWidget().installEventFilter(self)
+            # install event filters
+            panel.installEventFilter(self)
+            self.panel_scroll_area.viewport().installEventFilter(self)
+
+        self.getWidget().installEventFilter(self)
 
         # display menus
         self.displayMenus(display_menus, panel)
@@ -100,10 +105,11 @@ class AbstractNodegraphWidget(QWidget):
             if event.type() == QEvent.Wheel:
                 modifiers = event.modifiers()
                 # block double scroll ( params panel event )
-                if obj == self.panel_scroll_area.viewport():
-                    if modifiers == Qt.ControlModifier:
-                        return False
-                    return True
+                if self.panel_scroll_area:
+                    if obj == self.panel_scroll_area.viewport():
+                        if modifiers == Qt.ControlModifier:
+                            return False
+                        return True
 
                 # do scrolling ( Nodegraph event )
                 if modifiers == Qt.ControlModifier:
@@ -210,7 +216,10 @@ class AbstractNodegraphWidget(QWidget):
         # ToDo Somehow this line of code breaks the NMC Context...
         """ For some reason calling this class method calls it NO MATTER WHAT...
         and apparently I don't need it... so fuck it"""
-        nodegraph_widget.cleanup()
+        try:
+            nodegraph_widget.cleanup()
+        except:
+            pass
 
     def closeEvent(self, event):
         self.destroyNodegraph()

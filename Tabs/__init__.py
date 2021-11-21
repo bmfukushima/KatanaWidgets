@@ -1,10 +1,12 @@
 from .DesiredStuffTab import DesiredStuffTab
-from MultiTools import GlobalEventsTab, GSVManagerTab, ScriptEditorTab, NodeColorRegistryTab
 from .PopupBar import PopupBarOrganizerTab
+from .IRFManagerTab import IRFManagerTab
+from MultiTools import GlobalEventsTab, GSVManagerTab, ScriptEditorTab, NodeColorRegistryTab
 
 # compile list of tabs
 tabs_list = [
     DesiredStuffTab,
+    IRFManagerTab,
     NodeColorRegistryTab.Tab,
     PopupBarOrganizerTab,
     GlobalEventsTab.Tab,

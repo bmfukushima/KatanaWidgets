@@ -49,15 +49,15 @@ TODO:
                     iParameter interface...
 """
 
+from qtpy.QtWidgets import QWidget, QLabel, QVBoxLayout
 from qtpy.QtCore import Qt, QEvent
 
 from cgwidgets.views import AbstractDragDropListView
-from cgwidgets.widgets import ShojiLayout
 
 from Katana import UI4, Utils
-from Widgets2 import (TwoFacedSuperToolWidget, SimpleToolEventWidget)
+from Widgets2 import (TwoFacedSuperToolWidget, SimpleToolEventWidget, GroupNodeEditorWidget)
 
-from .GroupNodeEditor import GroupNodeEditorMainWidget
+# from .GroupNodeEditor import GroupNodeEditorMainWidget
 
 
 class SimpleToolEditor(TwoFacedSuperToolWidget):
@@ -77,13 +77,14 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
         # self.events_param = self.main_node.getParameters().createChildString("events_data", "")
         self.getDesignWidget().setDelegateTitleIsShown(False)
+
         # create widgets
-        self._group_node_editor_widget = GroupNodeEditorMainWidget(self, self.node(), self.main_node)
+        self._params_widget = SimpleToolParamViewWidget(self, node=self.main_node)
         self._events_widget = SimpleToolEventWidget(self, node=self.node())
 
         # setup tabs
         self.getDesignWidget().insertShojiWidget(
-            0, column_data={'name':"Params"}, widget=self.groupNodeEditorWidget())
+            0, column_data={'name':"Params"}, widget=self.paramsWidget())
         self.getDesignWidget().insertShojiWidget(
             1, column_data={'name':'Events'}, widget=self.eventsWidget())
 
@@ -93,8 +94,6 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.getDesignWidget().setHeaderItemIsEditable(False)
 
         # setup events
-
-
     def showEvent(self, event):
         self.getDesignWidget().show()
         return TwoFacedSuperToolWidget.showEvent(self, event)
@@ -103,8 +102,8 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
     def eventsWidget(self):
         return self._events_widget
 
-    def groupNodeEditorWidget(self):
-        return self._group_node_editor_widget
+    def paramsWidget(self):
+        return self._params_widget
 
 
 class SimpleToolViewWidget(AbstractDragDropListView):
@@ -112,9 +111,22 @@ class SimpleToolViewWidget(AbstractDragDropListView):
         super(SimpleToolViewWidget, self).__init__(parent)
 
 
+class SimpleToolParamViewWidget(QWidget):
+    def __init__(self, parent=None, node=None):
+        super(SimpleToolParamViewWidget, self).__init__(parent)
+        QVBoxLayout(self)
+
+        self._node = node
+        self._live_group_widget = QLabel("Live Group (Place holder)")
+        self._group_node_editor_widget = GroupNodeEditorWidget(self, node=self._node)
+
+        self.layout().addWidget(self._live_group_widget)
+        self.layout().addWidget(self._group_node_editor_widget)
+
+
 if __name__ == "__main__":
     import sys
-    from qtpy.QtWidgets import QApplication, QLabel, QVBoxLayout
+    from qtpy.QtWidgets import QApplication, QVBoxLayout
     from qtpy.QtGui import QCursor
     from cgwidgets.widgets import ShojiModelViewWidget
     app = QApplication(sys.argv)
