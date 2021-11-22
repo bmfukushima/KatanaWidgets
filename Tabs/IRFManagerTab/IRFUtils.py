@@ -46,3 +46,8 @@ class IRFUtils(object):
             if node in active_filters:
                 active_filters.remove(node)
                 irf_delegate.setActiveRenderFilterNodes(active_filters)
+
+    @staticmethod
+    def irfNodeParam():
+        """ Returns the parameter which stores the default IRF Nodes name"""
+        return NodegraphAPI.GetRootNode().getParameter("KatanaBebop.IRFNode")
