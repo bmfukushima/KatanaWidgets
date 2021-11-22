@@ -18,19 +18,19 @@ Hierarchy:
     IRFManagerTab --> UI4.Tabs.BaseTab
         |- QVBoxLayout
             |- main_widget --> (ShojiModelViewWidget)
-                |- view_widget --> (QWidget)
+                |- view_widget --> (ViewActiveFiltersOrganizerWidget)
                 |- activation_widget --> (ShojiLayout)
                 |    |- QWidget
                 |    |    |- QVBoxLayout
                 |    |        |- QLabel
-                |    |        |- _available_filters_organizer_widget --> (AbstractIRFOrganizerViewWidget)
+                |    |        |- _available_filters_organizer_widget --> (ActivateAvailableFiltersOrganizerWidget)
                 |    |- QWidget
                 |        |- QVBoxLayout
                 |            |- QLabel
-                |            |- _activated_filters_organizer_widget --> (IRFActivationOrganizerWidget)
+                |            |- _activated_filters_organizer_widget --> (ActivateActiveFiltersOrganizerWidget)
                 |- create_widget --> (ShojiLayout)
                     |- irf_node_widget (ListInputWidget)
-                    |- irf_organizer_widget (ModelViewWidget)
+                    |- irf_organizer_widget (CreateAvailableFiltersOrganizerWidget)
                     |- nodegraph_widget (GroupNodeEditorWidget)
 """
 import json
@@ -206,9 +206,6 @@ class IRFActivationWidget(ShojiLayout):
 
 
 """ CREATE """
-
-
-
 class IRFCreateWidget(ShojiLayout):
     """ Widget responsible for creating/modifying IRFs
 
