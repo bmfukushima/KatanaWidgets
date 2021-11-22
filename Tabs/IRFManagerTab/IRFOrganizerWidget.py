@@ -43,11 +43,20 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
         self.setIsEnableable(False)
         self.setHeaderData(["name", "type"])
 
-
         #
         self.view().header().resizeSection(0, 300)
         delegate = AbstractIRFOrganizerWidgetDelegate(self)
         self.view().setItemDelegate(delegate)
+
+        # context menu
+        self.addContextMenuEvent("Expand All", self.expandAll)
+        self.addContextMenuEvent("Collapse All", self.collapseAll)
+
+    def expandAll(self, item, indexes):
+        self.view().expandAll()
+
+    def collapseAll(self,  item, indexes):
+        self.view().collapseAll()
 
     """ PROPERTIES """
     def categories(self):
@@ -67,6 +76,7 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
         data = {"name": category, "type": IRFUtils.CATEGORY}
         category_index = self.insertNewIndex(
             0, name=category, column_data=data, is_deletable=False, is_dropable=True, is_dragable=False)
+        # self.view().setExpanded(category_index, True)
         category_item = category_index.internalPointer()
         self.categories()[category] = category_item
 
@@ -101,14 +111,12 @@ class AbstractIRFOrganizerViewWidget(AbstractIRFOrganizerWidget):
         self.setAddMimeDataFunction(self.addMimedata)
 
     def addMimedata(self, mimedata, items):
-        """ Adds the mimedata to the drag event
+        """ Adds the node name to the mimedata
 
         Args:
             mimedata (QMimedata): from dragEvent
             items (list): of ModelViewItems"""
 
-        # for index in indexes:
-        #data = {"node":}
         ba = QByteArray()
         ba.append(items[0].getArg("node").getName())
 

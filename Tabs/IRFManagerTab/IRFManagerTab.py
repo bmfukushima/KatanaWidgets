@@ -3,8 +3,6 @@
             - Conflicting names
                 - Currently this just automagically works...
                 - should do a check to make sure that there are no conflicting names
-    *   Activation
-            Population, not enabling/destroying filters correctly?
     *   View
 """
 """
@@ -162,7 +160,7 @@ class IRFNodeWidget(ListInputWidget):
         self.setUserFinishedEditingEvent(self.updateDefaultIRFNode)
 
     def updateDefaultIRFNode(self, widget, value):
-        if value in [node.getName() for node in IRFManagerTab.getAllRenderFilterContainers()]:
+        if value in [node.getName() for node in IRFUtils.getAllRenderFilterContainers()]:
             node = NodegraphAPI.GetNode(value)
             IRFManagerTab.setDefaultIRFNode(node)
         else:
@@ -170,13 +168,6 @@ class IRFNodeWidget(ListInputWidget):
 
     def populateIRFNodes(self):
         return [[node.getName()] for node in IRFManagerTab.getAllRenderFilterContainers()]
-
-
-class IRFViewWidget(QWidget):
-    def __init__(self, parent=None):
-        super(IRFViewWidget, self).__init__(parent)
-        QVBoxLayout(self)
-        self.layout().addWidget(QLabel("VIEW"))
 
 
 class IRFActivationOrganizerWidget(AbstractIRFOrganizerWidget):
@@ -192,7 +183,10 @@ class IRFActivationOrganizerWidget(AbstractIRFOrganizerWidget):
         self.clearModel()
         active_filters = IRFUtils.getAllActiveFilters()
         for render_filter_node in active_filters:
-            self.createFilterItem(render_filter_node)
+            index = self.createFilterItem(render_filter_node)
+            self.view().setExpanded(index.parent(), True)
+            # self.view().expand(index.parent())
+
         return AbstractIRFOrganizerWidget.showEvent(self, event)
 
     def disableFilter(self, item):
@@ -210,6 +204,11 @@ class IRFActivationOrganizerWidget(AbstractIRFOrganizerWidget):
         if IRFUtils.IS_IRF in event.mimeData().formats():
             event.accept()
         return AbstractIRFOrganizerWidget.dragEnterEvent(self, event)
+
+
+class IRFViewWidget(IRFActivationOrganizerWidget):
+    def __init__(self, parent=None):
+        super(IRFViewWidget, self).__init__(parent)
 
 
 class IRFActivationWidget(ShojiLayout):
@@ -293,7 +292,7 @@ class IRFCreateOrganizerWidget(AbstractIRFOrganizerViewWidget):
 
     def __irfSelectionChanged(self, item, enabled):
         if enabled:
-            if item.getArg("type") == IRFManagerTab.FILTER:
+            if item.getArg("type") == IRFUtils.FILTER:
                 irf_create_wiget = getWidgetAncestor(self, IRFCreateWidget)
                 irf_create_wiget.nodegraphWidget().setNode(item.getArg("node"))
 
