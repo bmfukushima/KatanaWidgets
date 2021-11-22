@@ -39,6 +39,8 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
 
         # setup default attrs
         self._categories = {}
+        self._is_category_item_deletable = False
+        self._is_category_item_dragable = False
         self.setPresetViewType(ModelViewWidget.TREE_VIEW)
         self.setIsEnableable(False)
         self.setHeaderData(["name", "type"])
@@ -57,6 +59,18 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
         create_widget = getWidgetAncestorByObjectName(self, "Create Widget")
         return create_widget.defaultIRFNode()
 
+    def isCategoryItemDeletable(self):
+        return self._is_category_item_deletable
+
+    def setIsCategoryItemDeletable(self, is_deletable):
+        self._is_category_item_deletable = is_deletable
+
+    def isCategoryItemDragable(self):
+        return self._is_category_item_dragable
+
+    def setIsCategoryItemDragable(self, is_dragable):
+        self._is_category_item_dragable = is_dragable
+
     """ UTILS """
     def createCategoryItem(self, category):
         """ Creates a new category item
@@ -65,7 +79,7 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
             category (str): name of category to create"""
         data = {"name": category, "type": IRFUtils.CATEGORY}
         category_index = self.insertNewIndex(
-            0, name=category, column_data=data, is_deletable=False, is_dropable=True, is_dragable=False)
+            0, name=category, column_data=data, is_deletable=self.isCategoryItemDeletable(), is_dropable=True, is_dragable=self.isCategoryItemDragable())
         category_item = category_index.internalPointer()
         self.categories()[category] = category_item
 
@@ -100,14 +114,22 @@ class AbstractIRFAvailableOrganizerWidget(AbstractIRFOrganizerWidget):
         self.setAddMimeDataFunction(self.addMimedata)
 
     def addMimedata(self, mimedata, items):
-        """ Adds the node name to the mimedata
+        """ Creates a CSV List of the names of the Render Filter nodes to be activated
 
         Args:
             mimedata (QMimedata): from dragEvent
             items (list): of ModelViewItems"""
 
         ba = QByteArray()
-        ba.append(items[0].getArg("node").getName())
+        nodes = []
+        for item in items:
+            if item.getArg("type") == IRFUtils.FILTER:
+                nodes.append(item.getArg("node").getName())
+            elif item.getArg("type") == IRFUtils.CATEGORY:
+                for child in item.children():
+                    nodes.append(child.getArg("node").getName())
+
+        ba.append(",".join(nodes))
 
         mimedata.setData(IRFUtils.IS_IRF, ba)
 
@@ -139,7 +161,6 @@ class AbstractIRFActiveFiltersOrganizerWidget(AbstractIRFOrganizerWidget):
         for render_filter_node in active_filters:
             index = self.createFilterItem(render_filter_node)
             self.view().setExpanded(index.parent(), True)
-            # self.view().expand(index.parent())
 
         return AbstractIRFOrganizerWidget.showEvent(self, event)
 
@@ -170,9 +191,11 @@ class DefaultOrganizerDelegate(AbstractDragDropModelDelegate):
 
 """ ORGANIZERS"""
 class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget):
-    """ Available filters in the Create widget"""
+    """ Available filters in the CREATE widget"""
     def __init__(self, parent=None):
         super(CreateAvailableFiltersOrganizerWidget, self).__init__(parent)
+
+        self.setIsCategoryItemDeletable(True)
 
         # setup events
         self.setIndexSelectedEvent(self.__irfSelectionChanged)
@@ -244,28 +267,41 @@ class ViewActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidget):
 
 
 class ActivateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget):
+    """ Available filters for the ACTIVATE widget"""
     def __init__(self, parent=None):
         super(ActivateAvailableFiltersOrganizerWidget, self).__init__(parent)
         self.setIsDeletable(False)
+        self.setMultiSelect(True)
+        self.setIsCategoryItemDragable(True)
 
 
 class ActivateActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidget):
-    """ Available filters to be displayed in the Activation Widget"""
+    """ Available filters to be displayed in the ACTIVATE Widget"""
     def __init__(self, parent=None):
         super(ActivateActiveFiltersOrganizerWidget, self).__init__(parent)
         self.setAcceptDrops(True)
         self.setIsRootDroppable(True)
         self.setItemDeleteEvent(self.disableFilter)
         self.setIsDraggable(False)
+        self.setIsCategoryItemDeletable(True)
 
     def disableFilter(self, item):
-        IRFUtils.enableRenderFilter(item.getArg("node"), False)
+        """ On delete, disable filters"""
+        if item.getArg("type") == IRFUtils.CATEGORY:
+            for child in item.children():
+                self.disableFilter(child)
+            del self.categories()[item.getArg("name")]
+        if item.getArg("type") == IRFUtils.FILTER:
+            IRFUtils.enableRenderFilter(item.getArg("node"), False)
 
     def dropEvent(self, event):
-        node_name = event.mimeData().data(IRFUtils.IS_IRF).data()
-        node = NodegraphAPI.GetNode(node_name)
-        self.createFilterItem(node)
-        IRFUtils.enableRenderFilter(node, True)
+        """ On drop, activate filters"""
+        nodes = event.mimeData().data(IRFUtils.IS_IRF).data().decode("utf-8").split(",")
+        for node_name in nodes:
+            node = NodegraphAPI.GetNode(node_name)
+            if node not in IRFUtils.getAllActiveFilters():
+                self.createFilterItem(node)
+                IRFUtils.enableRenderFilter(node, True)
 
         return AbstractIRFOrganizerWidget.dropEvent(self, event)
 
