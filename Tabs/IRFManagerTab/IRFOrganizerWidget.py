@@ -48,16 +48,6 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
         delegate = AbstractIRFOrganizerWidgetDelegate(self)
         self.view().setItemDelegate(delegate)
 
-        # context menu
-        self.addContextMenuEvent("Expand All", self.expandAll)
-        self.addContextMenuEvent("Collapse All", self.collapseAll)
-
-    def expandAll(self, item, indexes):
-        self.view().expandAll()
-
-    def collapseAll(self,  item, indexes):
-        self.view().collapseAll()
-
     """ PROPERTIES """
     def categories(self):
         return self._categories
