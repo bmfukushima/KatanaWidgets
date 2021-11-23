@@ -28,15 +28,15 @@ Hierarchy:
     GSVManagerTab(UI4.Tabs.BaseTab)
         |- QVBoxLayout
             |- mainWidget --> (ShojiModelViewWidget)
-                |- viewWidget --> (ViewWidget --> QWidget)
+                |- viewWidget --> (GSVViewWidget --> QWidget)
                 |    |* ViewGSVWidget --> (LabelledInputWidget)
-                |- editWidget --> (EditWidget --> QWidget)
+                |- editWidget --> (GSVEditWidget --> QWidget)
                 |   |> VBoxLayout:
                 |       |> HBoxLayout
                 |       |   |- GSVSelectorWidget --> (LabelledInputWidget --> ListInputWidget)
                 |       |   |- CreateNewGSVOptionWidget --> (LabelledInputWidget --> StringInputWidget)
                 |       |- displayEditableOptionsWidget --> (ModelViewWidget)
-                |- eventsWidget (EventWidget --> ShojiMVW)
+                |- eventsWidget (GSVEventWidget --> ShojiMVW)
                     |- DisplayGSVEventWidget (FrameInputWidgetContainer)
                         |- DisplayGSVEventWidgetHeader (OverlayInputWidget --> ButtonInputWidget)
                         |* GSVEvent
@@ -62,7 +62,7 @@ Data:
             enabled: boolean}
         }
 
-EventWidget --> gsvChangedEvent
+GSVEventWidget --> gsvChangedEvent
 """
 """ TODO:
 Katana 4.5
@@ -117,13 +117,13 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
         # create widgets
         self._main_widget = ShojiModelViewWidget(parent=self)
 
-        self._view_widget = ViewWidget(parent=self)
+        self._view_widget = GSVViewWidget(parent=self)
         self._view_scroll_area = QScrollArea(self)
         self._view_scroll_area.setWidget(self._view_widget)
         self._view_scroll_area.setWidgetResizable(True)
 
-        self._edit_widget = EditWidget(parent=self)
-        self._events_widget = EventWidget(parent=self)
+        self._edit_widget = GSVEditWidget(parent=self)
+        self._events_widget = GSVEventWidget(parent=self)
 
         # insert widgets
         self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self._view_scroll_area)
@@ -181,7 +181,7 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
 
 
 """ VIEW WIDGET """
-class ViewWidget(FrameInputWidgetContainer):
+class GSVViewWidget(FrameInputWidgetContainer):
     """
     Main wigdet for viewing GSV's.
 
@@ -189,7 +189,7 @@ class ViewWidget(FrameInputWidgetContainer):
         widgets (dict): key pair values to map the GSV name to the LabelledInputWidget
     """
     def __init__(self, parent=None):
-        super(ViewWidget, self).__init__(parent)
+        super(GSVViewWidget, self).__init__(parent)
         self.setIsHeaderShown(False)
         self.setDirection(Qt.Vertical)
         #QVBoxLayout(self)
@@ -276,7 +276,7 @@ class ViewWidget(FrameInputWidgetContainer):
 
 class ViewGSVWidget(LabelledInputWidget):
     """
-    One singular GSV view that is displayed in the ViewWidget.
+    One singular GSV view that is displayed in the GSVViewWidget.
 
     This will consist of one label showing which GSV it is, and one
     ListInputWidget that will have all of the GSV's
@@ -331,7 +331,7 @@ class ViewGSVWidget(LabelledInputWidget):
 
 
 """ EDIT WIDGET """
-class EditWidget(QWidget):
+class GSVEditWidget(QWidget):
     """
     Widget to hold the view where the users can edit GSVs
 
@@ -343,7 +343,7 @@ class EditWidget(QWidget):
             |- displayEditableOptionsWidget --> (ModelViewWidget)
     """
     def __init__(self, parent=None):
-        super(EditWidget, self).__init__(parent)
+        super(GSVEditWidget, self).__init__(parent)
 
         # Set attrs
         self._display_mode = gsvutils.VARIABLES
@@ -491,9 +491,9 @@ class GSVSelectorWidget(LabelledInputWidget):
         Args:
             gsv (str): name of GSV
         """
-        edit_widget = getWidgetAncestor(self, EditWidget)
+        edit_widget = getWidgetAncestor(self, GSVEditWidget)
         if hasattr(edit_widget, '_display_editable_options_widget'):
-            # edit_widget = getWidgetAncestor(self, EditWidget)
+            # edit_widget = getWidgetAncestor(self, GSVEditWidget)
             edit_widget.setDisplayMode(gsvutils.VARIABLES)
             # update edit widget
             edit_widget.displayEditableOptionsWidget().update()
@@ -626,7 +626,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         """
         #
 
-        edit_widget = getWidgetAncestor(self, EditWidget)
+        edit_widget = getWidgetAncestor(self, GSVEditWidget)
 
         # populate editable options
         if edit_widget:
@@ -659,7 +659,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         Creates the items for all of the options available in the current GSV
         """
         # get edit widget
-        edit_widget = getWidgetAncestor(self, EditWidget)
+        edit_widget = getWidgetAncestor(self, GSVEditWidget)
 
         # get all GSVs
         gsv_keys = gsvutils.getAllGSV(return_as=gsvutils.STRING)
@@ -718,7 +718,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
             When the user Drag/Drops items in the display
 
         """
-        edit_widget = getWidgetAncestor(self, EditWidget)
+        edit_widget = getWidgetAncestor(self, GSVEditWidget)
 
         for item in items:
             # Rename Option
@@ -808,7 +808,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
             When the user Double Clicks to enter the item's text field.
 
         """
-        edit_widget = getWidgetAncestor(self, EditWidget)
+        edit_widget = getWidgetAncestor(self, GSVEditWidget)
 
         # Rename Option
         if edit_widget.displayMode() == gsvutils.OPTIONS:
@@ -828,7 +828,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
 
 
 """ EVENTS WIDGET (INHERIT)"""
-class EventWidget(AbstractEventWidget):
+class GSVEventWidget(AbstractEventWidget):
     """
     The main widget for setting up the events triggers on the node.
 
@@ -856,7 +856,7 @@ class EventWidget(AbstractEventWidget):
     """
 
     def __init__(self, parent=None, param=PARAM_LOCATION):
-        super(EventWidget, self).__init__(
+        super(GSVEventWidget, self).__init__(
             delegate_widget_type=DisplayGSVEventWidget,
             events_list_view=GSVEventsListView,
             parent=parent,
@@ -1020,7 +1020,7 @@ class GSVPopupSelector(AbstractEventListViewItemDelegate):
 
 """ EVENTS WIDGET """
 class DisplayGSVEventWidget(FrameInputWidgetContainer):
-    """Widget that is shown when the user clicks on a GSV item in the EventWidget"""
+    """Widget that is shown when the user clicks on a GSV item in the GSVEventWidget"""
     def __init__(self, parent=None):
         super(DisplayGSVEventWidget, self).__init__(parent)
         self.setDirection(Qt.Vertical)
@@ -1061,7 +1061,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         if not item: return
 
         # get attrs
-        events_widget = getWidgetAncestor(parent, EventWidget)
+        events_widget = getWidgetAncestor(parent, GSVEventWidget)
         display_widget = widget.getMainWidget()
         gsv = item.columnData()['name']
         param_data = events_widget.paramData().getValue(0)
@@ -1264,14 +1264,14 @@ class GSVEvent(AbstractScriptInputWidget):
         """ Returns a list of options for the current GSV
 
         These will be displayed to the user in the GSV popup"""
-        events_widget = getWidgetAncestor(self, EventWidget)
+        events_widget = getWidgetAncestor(self, GSVEventWidget)
         gsv = events_widget.currentGSV()
         return [[option] for option in gsvutils.getGSVOptions(gsv, return_as=gsvutils.STRING)]
 
     def deleteOptionEvent(self, widget):
         """Deletes the user event created for this GSV/Option pairing"""
         # get events widget
-        event_widget = getWidgetAncestor(self, EventWidget)
+        event_widget = getWidgetAncestor(self, GSVEventWidget)
         display_widget = event_widget.eventsWidget().delegateWidget().widget(1).getMainWidget()
 
         # remove data
@@ -1294,7 +1294,7 @@ class GSVEvent(AbstractScriptInputWidget):
 
     def showScript(self, *args):
         """ Show the current script in the Python tab."""
-        events_widget = getWidgetAncestor(self, EventWidget)
+        events_widget = getWidgetAncestor(self, GSVEventWidget)
 
         # update Python Widget
         events_widget.pythonWidget().setMode(self.mode())
@@ -1327,7 +1327,7 @@ class GSVEvent(AbstractScriptInputWidget):
         Returns (bool):
         """
         # get attrs
-        events_widget = getWidgetAncestor(self, EventWidget)
+        events_widget = getWidgetAncestor(self, GSVEventWidget)
         option = self.gsvWidget().text()
 
         #check if already exists
@@ -1349,7 +1349,7 @@ class GSVEvent(AbstractScriptInputWidget):
         https://stackoverflow.com/questions/16475384/rename-a-dictionary-key
         """
 
-        events_widget = getWidgetAncestor(self, EventWidget)
+        events_widget = getWidgetAncestor(self, GSVEventWidget)
         display_widget = events_widget.eventsWidget().delegateWidget().widget(1).getMainWidget()
 
         # preflight
@@ -1423,7 +1423,7 @@ class GSVEvent(AbstractScriptInputWidget):
         self._filepath = filepath
 
         #
-        event_widget = getWidgetAncestor(self, EventWidget)
+        event_widget = getWidgetAncestor(self, GSVEventWidget)
         event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["filepath"] = filepath
         # save
         event_widget.saveEventsData()
@@ -1438,7 +1438,7 @@ class GSVEvent(AbstractScriptInputWidget):
         if not self.currentOption(): return
         self._script = script
         #
-        event_widget = getWidgetAncestor(self, EventWidget)
+        event_widget = getWidgetAncestor(self, GSVEventWidget)
         event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["script"] = script
 
         # save
@@ -1471,7 +1471,7 @@ class GSVEvent(AbstractScriptInputWidget):
 
         # update data
         self.setIsEnabled(enabled)
-        events_widget = getWidgetAncestor(widget, EventWidget)
+        events_widget = getWidgetAncestor(widget, GSVEventWidget)
         events_widget.eventsData()[events_widget.currentGSV()]["data"][self.currentOption()]["enabled"] = enabled
         events_widget.saveEventsData()
 
