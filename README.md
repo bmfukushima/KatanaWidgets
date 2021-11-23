@@ -24,18 +24,19 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   
 # Tools
 ### Tabs
+- [Desired Stuff Tab](Tabs/DesiredStuffTab/README.md)
 - [Global Events Tab](MultiTools/GlobalEventsTab/README.md)
 - [GSV Manager Tab](MultiTools/GSVManagerTab/README.md)
-- [Script Editor Tab](MultiTools/ScriptEditorTab/README.md)
+- [IRF Manager Tab](Tabs/IRFManagerTab/README.md)
 - [Node Color Registry Tab](MultiTools/NodeColorRegistryTab/README.md)
 - [Popup Bar Tabs](Tabs/PopupBar/README.md)
-- [Desired Stuff Tab](Tabs/DesiredStuffTab/README.md)
+- [Script Editor Tab](MultiTools/ScriptEditorTab/README.md)
 
 ### SuperTools
 - [Constraint](SuperTools/Constraint/README.md)
 - [Isolate CEL](SuperTools/IsolateCEL/README.md)
 - [Node Tree](SuperTools/NodeTree/README.md) +
-- [Simple Tool](MultiTools/SimpleTool/README.md) +
+- [Simple Tool](MultiTools/SimpleTool/README.md)
 - [Variable Manager](MultiTools/VariableManager/README.md)
 
 ### [Macros](Macros/README.md) +
