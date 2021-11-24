@@ -7,6 +7,7 @@ For example, to print the full names of all available bookmarks:
 for bookmark in ScenegraphBookmarkManager.GetScenegraphBookmarks():
     print(bookmark['fullName'])
 
+
 The ScenegraphBookmarkManager module provides a function named LoadBookmark() that takes such a bookmark dictionary and activates the bookmark represented by it. Unfortunately, the name of that particular function was not included in the module's __all__ variable (this looks like a bug). That's why it appears that the function doesn't exist in the ScenegraphBookmarkManager module, as that module is made available as a "virtual" Katana module which only considers names that are exposed via __all__.
 
 As a workaround, you can call the LoadBookmark() function by accessing the module directly from where it actually lives, which is  PyUtilModule.ScenegraphBookmarkManager, for example in a custom utility function like the following:
@@ -45,9 +46,12 @@ Bookmarks are actually parameters...
 root_node = NodegraphAPI.GetRootNode()
 param = root_node.getParameter("scenegraphBookmarks")
 for child in param.getChildren():
-    print("|-", child)
+    print("|-", child, child.getChild("name").getValue(0))
+    
     for grandchild in child.getChildren():
         print("|\t|-", grandchild)
+
+        
 
 /bin/python/PyUtilModule/ScenegraphBookmarkManager.py
 
@@ -62,15 +66,17 @@ for child in param.getChildren():
 TODO
     *   Delete Bookmarks (delete event <>)
             <> don't work for some reason... have to manually delete
-    *   Rename
-            - Need a better system for getting the parameter
-                This will break after a drag/drop or a lot of other things, as it has a hard time finding the right param
-            
+    *   Check Save/Load
+    *   Flush Caches...
+            attach something to this?
+            F5 refresh? Event Filter?
+
 """
 
 from qtpy.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout
+from qtpy.QtCore import Qt
 
-from Katana import UI4, ScenegraphBookmarkManager, NodegraphAPI
+from Katana import UI4, ScenegraphBookmarkManager, NodegraphAPI, Utils
 
 from cgwidgets.widgets import ModelViewWidget, ButtonInputWidget, StringInputWidget, LabelledInputWidget
 from cgwidgets.views import AbstractDragDropModelDelegate
@@ -102,13 +108,12 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
 
         # create main organizer
         self._bookmark_organizer_widget = BookmarkOrganizerWidget(self)
-        self._bookmark_organizer_widget.setPresetViewType(ModelViewWidget.TREE_VIEW)
 
         # create input buttons
         self._create_new_bookmark_widget = ButtonInputWidget(
-            title="Create New Bookmark", user_clicked_event=self.createNewBookmark)
+            title="New Bookmark", user_clicked_event=self.createNewBookmark)
         self._create_new_folder_widget = ButtonInputWidget(
-            title="Create New Category", user_clicked_event=self.createNewFolder)
+            title="New Category", user_clicked_event=self.createNewFolder)
         self._create_bookmarks_layout = QHBoxLayout()
         self._create_bookmarks_layout.addWidget(self._create_new_bookmark_widget)
         self._create_bookmarks_layout.addWidget(self._create_new_folder_widget)
@@ -116,20 +121,67 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
         self._active_bookmark_widget = StringInputWidget(self)
         self._active_bookmark_widget.setReadOnly(True)
         self._active_bookmark_labelled_widget = LabelledInputWidget(
-            self, name="Active Bookmark", delegate_widget=self._active_bookmark_widget)
+            self, name="Active Bookmark", delegate_widget=self._active_bookmark_widget, default_label_length=150)
+
+        # additional buttons
+        #self._save_layout = QHBoxLayout()
+        self._load_button_widget = ButtonInputWidget(
+            self, title="Load", user_clicked_event=self.loadEvent)
+
+        self._update_button = ButtonInputWidget(
+            self, title="Update", user_clicked_event=self.updateEvent)
+
+        self._create_bookmarks_layout.addWidget(self._load_button_widget)
+        self._create_bookmarks_layout.addWidget(self._update_button)
 
         # setup layout
         QVBoxLayout(self)
         self.layout().addWidget(self._active_bookmark_labelled_widget)
         self.layout().addLayout(self._create_bookmarks_layout)
+        # self.layout().addLayout(self._save_layout)
         self.layout().addWidget(self._bookmark_organizer_widget)
 
         self.layout().setStretch(0, 0)
         self.layout().setStretch(1, 0)
         self.layout().setStretch(2, 1)
+        #self.layout().setStretch(3, 1)
+
+    """ EVENTS """
+    def updateEvent(self, widget):
+        """ Saves the currently selected bookmark"""
+        items = self.bookmarkOrganizerWidget().getAllSelectedItems()
+        if 0 < len(items):
+            if items[0].getArg("type") == BOOKMARK:
+
+                folder = items[0].getArg("folder")
+                name = items[0].getArg("name")
+
+                # remove old bookmark
+                BookmarkManagerTab.deleteBookmark(name, folder)
+
+                Utils.EventModule.ProcessAllEvents()
+
+                # create new bookmark
+                self.bookmarkOrganizerWidget().createNewBookmark(name, folder, create_item=False)
+
+    def loadEvent(self, widget):
+        """ Loads the currently selected bookmark """
+        items = self.bookmarkOrganizerWidget().getAllSelectedItems()
+        if 0 < len(items):
+            if items[0].getArg("type") == BOOKMARK:
+                folder = items[0].getArg("folder")
+                name = items[0].getArg("name")
+                full_name = BookmarkManagerTab.getBookmarkFullName(name, folder)
+
+                for bookmark in BookmarkManagerTab.bookmarks():
+                    if bookmark["fullName"] == full_name:
+                        ScenegraphBookmarkManager.LoadBookmark(bookmark)
+                        return
+
+        print("No bookmark found to load...")
 
     def createNewBookmark(self, widget):
-        """ Creates a new category item
+        """ Creates a new bookmark category item
 
         Args:
             category (str): name of category to create"""
@@ -140,6 +192,10 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
         pass
 
     """ PROPERTIES """
+    @staticmethod
+    def getBookmarkMasterParam():
+        return NodegraphAPI.GetRootNode().getParameter("scenegraphBookmarks")
+
     @staticmethod
     def bookmarks():
         """ Returns a list of all of the scenegraph bookmarks.
@@ -163,8 +219,14 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
             folder (str):
 
         Returns (Param):"""
-        param_name = BookmarkManagerTab.getBookmarkFullName(bookmark, folder)
-        return NodegraphAPI.GetRootNode().getParameter("scenegraphBookmarks.{bookmark_name}".format(bookmark_name=param_name))
+        bookmarks_param = BookmarkManagerTab.getBookmarkMasterParam()
+        for bookmark in bookmarks_param.getChildren():
+            if bookmark.getChild("name").getValue(0) == BookmarkManagerTab.getBookmarkFullName(bookmark, folder):
+                return bookmark
+
+        return None
+        # param_name = BookmarkManagerTab.getBookmarkFullName(bookmark, folder)
+        # return NodegraphAPI.GetRootNode().getParameter("scenegraphBookmarks.{bookmark_name}".format(bookmark_name=param_name))
 
     @staticmethod
     def getBookmarkParamFromFullName(full_name):
@@ -174,19 +236,45 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
             full_name (str): full name of bookmark
                 ie folder_bookmarket
         Returns (Param):"""
-        return NodegraphAPI.GetRootNode().getParameter("scenegraphBookmarks.{bookmark_name}".format(bookmark_name=full_name))
+        bookmarks_param = BookmarkManagerTab.getBookmarkMasterParam()
+        for bookmark in bookmarks_param.getChildren():
+            if bookmark.getChild("name").getValue(0) == full_name:
+                return bookmark
+
+        return None
 
     """ UTILS """
     @staticmethod
-    def getKatanaParamNameFromString(name):
-        """ Converts a string to a Katana param name
+    def deleteBookmark(bookmark, folder=None):
+        full_name = BookmarkManagerTab.getBookmarkFullName(bookmark, folder)
+        BookmarkManagerTab.deleteBookmarkFromFullName(full_name)
 
-        # todo convert string to katana param name
-                Need to map out all illegal characters"""
-        bad_chars = [" "]
-        for char in bad_chars:
-            name = name.replace(char, "_")
-        return name
+    @staticmethod
+    def deleteBookmarkFromFullName(full_name):
+        """ Deletes the bookmark parameter.  This is needed as the default delete
+        handler relies on the actual name of the parameter group.
+
+        Args:
+            full_name (str): full path to bookmark"""
+        param = BookmarkManagerTab.getBookmarkParamFromFullName(full_name)
+        BookmarkManagerTab.getBookmarkMasterParam().deleteChild(param)
+
+    @staticmethod
+    def getBookmarkFullName(bookmark, folder=None):
+        """ Returns the full name of the bookmark folderName/bookmarkName"""
+        return "/".join(filter(None, [folder, bookmark]))
+
+    @staticmethod
+    def getBookmarkFolderFromFullName(full_name):
+        """ Gets the bookmarks name from a full name.
+
+        Args:
+            full_name (str): full name of bookmark"""
+        separators = ["/", "_"]
+        for separator in separators:
+            if separator in full_name:
+                return full_name.split(separator)[0]
+        return None
 
     @staticmethod
     def getBookmarkNameFromFullName(full_name):
@@ -197,21 +285,8 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
         separators = ["/", "_"]
         for separator in separators:
             if separator in full_name:
-                return full_name.split(separator)[0]
+                return full_name.split(separator)[1]
         return full_name
-
-    @staticmethod
-    def updateBookmarkName(old_full_name, new_full_name):
-        """ Updates the bookmarks name
-
-        Args:
-            old_full_name (str):
-            new_full_name (str):"""
-        old_full_name = BookmarkManagerTab.getKatanaParamNameFromString(old_full_name)
-
-        bookmark_param = BookmarkManagerTab.getBookmarkParamFromFullName(BookmarkManagerTab.getKatanaParamNameFromString(old_full_name))
-        bookmark_param.setName(BookmarkManagerTab.getKatanaParamNameFromString(new_full_name))
-        bookmark_param.getChild("name").setValue(new_full_name, 0)
 
     @staticmethod
     def updateBookmarkFolder(bookmark_name, folder_old_name, folder_new_name):
@@ -220,9 +295,15 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
         BookmarkManagerTab.updateBookmarkName(old_full_name, new_full_name)
 
     @staticmethod
-    def getBookmarkFullName(bookmark, folder=None):
-        """ Returns the full name of the bookmark folderName/bookmarkName"""
-        return "/".join(filter(None, [folder, bookmark]))
+    def updateBookmarkName(old_full_name, new_full_name):
+        """ Updates the bookmarks name
+
+        Args:
+            old_full_name (str):
+            new_full_name (str):"""
+
+        bookmark_param = BookmarkManagerTab.getBookmarkParamFromFullName(old_full_name)
+        bookmark_param.getChild("name").setValue(new_full_name, 0)
 
     """ WIDGETS """
     def activeBookmarkWidget(self):
@@ -236,11 +317,16 @@ class BookmarkOrganizerWidget(ModelViewWidget):
     """ Organizer widget where users can create/delete/modify bookmarks
 
     Attributes:
-        bookmark_folders (list): of names of the currently available bookmark folders"""
+        bookmark_folders (dict): of bookmark folders
+            ie {"folder_name": item}"""
+
     def __init__(self, parent=None):
         super(BookmarkOrganizerWidget, self).__init__(parent)
-        self._bookmark_folders = ScenegraphBookmarkManager.GetScenegraphFolders()
+        self.setPresetViewType(ModelViewWidget.TREE_VIEW)
+        self._bookmark_folders = {}
         self.setHeaderData(["name", "type"])
+        self.view().header().resizeSection(0, 300)
+
         # setup flags
         self.setIsEnableable(False)
 
@@ -249,16 +335,45 @@ class BookmarkOrganizerWidget(ModelViewWidget):
         self.setTextChangedEvent(self.__bookmarkRenameEvent)
         self.setDropEvent(self.__bookmarkReparentEvent)
 
+        self.addContextMenuEvent("print data", self.printData)
+
+        self.populate()
+
+    def printData(self, index, indexes):
+        print("folder == ", index.internalPointer().getArg("folder"))
+        print("name == ", index.internalPointer().getArg("name"))
+
     """ CREATE """
-    def createBookmarkItem(self, bookmark, folder=None):
-        data = {"name": bookmark, "folder": folder, "type": BOOKMARK}
+    def createBookmarkItem(self, bookmark, folder_name=None):
+        """ Creates a new bookmark item.
+
+        If a folder name is specified and it does not exist, the item will be created
+
+        Args:
+            bookmark (str): name of bookmark
+            folder_name (str): name of folder"""
+        # get folder
+        folder_item = self.rootItem()
+        if folder_name:
+            if folder_name not in self.bookmarkFolders().keys():
+                folder_item = self.createNewFolderItem(folder_name)
+                self.addBookmarkFolder(folder_name, folder_item)
+            else:
+                folder_item = self.bookmarkFolders()[folder_name]
+        parent_index = self.getIndexFromItem(folder_item)
+
+        # setup data
+        data = {"name": bookmark, "folder": folder_name, "type": BOOKMARK}
+
+        # create item
         bookmark_index = self.insertNewIndex(
             0,
             name=bookmark,
             column_data=data,
             is_deletable=True,
             is_dropable=False,
-            is_dragable=True
+            is_dragable=True,
+            parent=parent_index
         )
         bookmark_item = bookmark_index.internalPointer()
         return bookmark_item
@@ -276,11 +391,24 @@ class BookmarkOrganizerWidget(ModelViewWidget):
         bookmark_item = bookmark_index.internalPointer()
         return bookmark_item
 
-    def createNewBookmark(self):
-        new_bookmark_name = self.__getNewUniqueName("New Bookmark", self.rootItem(), item_type=BOOKMARK, exists=False)
-        bookmark_item = self.createBookmarkItem(new_bookmark_name)
-        ScenegraphBookmarkManager.CreateWorkingSetsBookmark(new_bookmark_name, BookmarkManagerTab.WORKING_SETS_TO_SAVE)
-        return bookmark_item
+    def createNewBookmark(self, name=None, folder=None, create_item=True):
+        """ Creates a new Scenegraph Bookmark
+
+        Args:
+            name (str):
+            folder (str):
+            create_item (bool): Determines if the item should be created or not"""
+        if not name:
+            name = self.__getNewUniqueName("New Bookmark", self.rootItem(), item_type=BOOKMARK, exists=False)
+        BookmarkManagerTab.getBookmarkFullName(name, folder)
+
+        # create bookmark
+        ScenegraphBookmarkManager.CreateWorkingSetsBookmark(name, BookmarkManagerTab.WORKING_SETS_TO_SAVE)
+
+        # create item
+        if create_item:
+            bookmark_item = self.createBookmarkItem(name)
+            return bookmark_item
 
     def createNewFolder(self):
         new_folder_name = self.__getNewUniqueName("New Folder", self.rootItem(), item_type=FOLDER, exists=False)
@@ -322,19 +450,28 @@ class BookmarkOrganizerWidget(ModelViewWidget):
         return name
 
     def populate(self):
-        pass
+        if not BookmarkManagerTab.getBookmarkMasterParam(): return
+        self.clearModel()
+
+        for bookmark_param in BookmarkManagerTab.getBookmarkMasterParam().getChildren():
+            full_name = bookmark_param.getChild("name").getValue(0)
+            folder_name = BookmarkManagerTab.getBookmarkFolderFromFullName(full_name)
+            bookmark_name = BookmarkManagerTab.getBookmarkNameFromFullName(full_name)
+
+            # setup bookmark
+            self.createBookmarkItem(bookmark_name, folder_name)
 
     """ PROPERTIES """
     def bookmarkFolders(self):
         return self._bookmark_folders
 
     def removeBookmarkFolder(self, folder):
-        if folder in self.bookmarkFolders():
-            self.bookmarkFolders().remove(folder)
+        if folder in self.bookmarkFolders().keys():
+            del self.bookmarkFolders()[folder]
 
-    def addBookmarkFolder(self, folder):
-        if folder not in self.bookmarkFolders():
-            self.bookmarkFolders().append(folder)
+    def addBookmarkFolder(self, folder, folder_item):
+        if folder not in self.bookmarkFolders().keys():
+            self.bookmarkFolders()[folder] = folder_item
 
     """ EVENTS """
     def __bookmarkRenameEvent(self, item, old_name, new_name):
@@ -348,6 +485,7 @@ class BookmarkOrganizerWidget(ModelViewWidget):
             folder = item.getArg("folder")
             old_full_name = BookmarkManagerTab.getBookmarkFullName(old_name, folder)
             new_full_name = BookmarkManagerTab.getBookmarkFullName(new_name, folder)
+
             BookmarkManagerTab.updateBookmarkName(old_full_name, new_full_name)
 
         # rename folder
@@ -372,8 +510,7 @@ class BookmarkOrganizerWidget(ModelViewWidget):
         if item.getArg("type") == BOOKMARK:
             folder = item.getArg("folder")
             name = item.getArg("name")
-            ScenegraphBookmarkManager.DeleteScenegraphBookmark(
-                BookmarkManagerTab.getBookmarkFullName(name, folder))
+            BookmarkManagerTab.deleteBookmark(name, folder)
 
         # delete folder
         if item.getArg("type") == FOLDER:
@@ -389,7 +526,6 @@ class BookmarkOrganizerWidget(ModelViewWidget):
         for item in items:
             # get attrs
             folder_old_name = item.getArg("folder")
-
             if parent == self.rootItem():
                 folder_new_name = None
             else:
@@ -403,6 +539,10 @@ class BookmarkOrganizerWidget(ModelViewWidget):
             # update folder
             BookmarkManagerTab.updateBookmarkFolder(new_name, folder_old_name, folder_new_name)
 
+    # def keyPressEvent(self, event):
+    #     if event.key() == Qt.Key_F5:
+    #         self.populate()
+    #     return ModelViewWidget.keyPressEvent(self, event)
 
 class OrganizerDelegateWidget(AbstractDragDropModelDelegate):
     def __init__(self, parent=None):

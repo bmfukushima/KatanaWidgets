@@ -9,7 +9,8 @@ TODO: BUGS
                 View, select camera
     *   VariableManager | Can load multiple patterns
             When loading blocks, if it has a pattern that already exists, it will create a duplicate pattern.
-
+    *   NodeColorRegistry
+            Not loading after opening new file
 
 
 
