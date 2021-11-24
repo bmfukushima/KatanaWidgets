@@ -1,3 +1,10 @@
+"""
+TODO
+    GSVManager
+        - View Scroll area
+        - Auto update on creation of new GSVs / edit
+"""
+
 from qtpy.QtWidgets import QVBoxLayout
 
 from Katana import UI4
