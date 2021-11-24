@@ -289,8 +289,18 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
         return full_name
 
     @staticmethod
-    def updateBookmarkFolder(bookmark_name, folder_old_name, folder_new_name):
-        old_full_name = BookmarkManagerTab.getBookmarkFullName(bookmark_name, folder_old_name)
+    def updateBookmarkFolder(bookmark_name, bookmark_old_name, folder_old_name, folder_new_name):
+        """ Updates the bookmarks folder.
+
+        The old bookmark name is required for searching for the update.  As this will look on
+        the bookmarkParam for a match to the old name.
+
+        Args:
+            bookmark_name (str): new name of bookmark (if valid)
+            bookmark_old_name (str): the old name of the bookmark
+            folder_old_name (str): old name of folder
+            folder_new_name (str): """
+        old_full_name = BookmarkManagerTab.getBookmarkFullName(bookmark_old_name, folder_old_name)
         new_full_name = BookmarkManagerTab.getBookmarkFullName(bookmark_name, folder_new_name)
         BookmarkManagerTab.updateBookmarkName(old_full_name, new_full_name)
 
@@ -302,6 +312,8 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
             old_full_name (str):
             new_full_name (str):"""
 
+        # todo this can't get the param sometimes?
+        # same name drop
         bookmark_param = BookmarkManagerTab.getBookmarkParamFromFullName(old_full_name)
         bookmark_param.getChild("name").setValue(new_full_name, 0)
 
@@ -495,7 +507,7 @@ class BookmarkOrganizerWidget(ModelViewWidget):
                 bookmark_name = child.getArg("name")
                 folder_old_name = child.getArg("folder")
                 folder_new_name = new_name
-                BookmarkManagerTab.updateBookmarkFolder(bookmark_name, folder_old_name, folder_new_name)
+                BookmarkManagerTab.updateBookmarkFolder(bookmark_name, bookmark_name, folder_old_name, folder_new_name)
 
                 # update internal property
                 self.removeBookmarkFolder(old_name)
@@ -530,14 +542,15 @@ class BookmarkOrganizerWidget(ModelViewWidget):
                 folder_new_name = None
             else:
                 folder_new_name = parent.name()
-            new_name = self.__getNewUniqueName(item.getArg("name"), item.parent(), item_type=BOOKMARK)
+            old_name = item.getArg("name")
+            new_name = self.__getNewUniqueName(old_name, item.parent(), item_type=BOOKMARK)
 
             # reset folder_new_name arg
             item.setArg("folder", folder_new_name)
             item.setArg("name", new_name)
 
             # update folder
-            BookmarkManagerTab.updateBookmarkFolder(new_name, folder_old_name, folder_new_name)
+            BookmarkManagerTab.updateBookmarkFolder(new_name, old_name, folder_old_name, folder_new_name)
 
     # def keyPressEvent(self, event):
     #     if event.key() == Qt.Key_F5:
