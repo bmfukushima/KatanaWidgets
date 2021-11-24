@@ -462,9 +462,9 @@ class BookmarkOrganizerWidget(ModelViewWidget):
         return name
 
     def populate(self):
-        if not BookmarkManagerTab.getBookmarkMasterParam(): return
         self.clearModel()
-
+        self._bookmark_folders = {}
+        if not BookmarkManagerTab.getBookmarkMasterParam(): return
         for bookmark_param in BookmarkManagerTab.getBookmarkMasterParam().getChildren():
             full_name = bookmark_param.getChild("name").getValue(0)
             folder_name = BookmarkManagerTab.getBookmarkFolderFromFullName(full_name)
@@ -552,10 +552,15 @@ class BookmarkOrganizerWidget(ModelViewWidget):
             # update folder
             BookmarkManagerTab.updateBookmarkFolder(new_name, old_name, folder_old_name, folder_new_name)
 
+    def showEvent(self, event):
+        self.populate()
+        return ModelViewWidget.showEvent(self, event)
+
     # def keyPressEvent(self, event):
     #     if event.key() == Qt.Key_F5:
     #         self.populate()
     #     return ModelViewWidget.keyPressEvent(self, event)
+
 
 class OrganizerDelegateWidget(AbstractDragDropModelDelegate):
     def __init__(self, parent=None):
