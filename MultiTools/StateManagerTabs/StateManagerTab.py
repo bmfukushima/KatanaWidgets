@@ -1,15 +1,17 @@
 """
 TODO
-    GSVManager
-        - View Scroll area
-        - Auto update on creation of new GSVs / edit
+    *   Extract BookmarkManagerTab to abstraction layer
+            - organizer
+            - new state/folder
+                New State Item
+                New Folder Item
 """
 
 from qtpy.QtWidgets import QVBoxLayout, QWidget
 
 from Katana import UI4
 
-from cgwidgets.widgets import ShojiLayout, ShojiModelViewWidget, ModelViewWidget
+from cgwidgets.widgets import ShojiLayout, ShojiModelViewWidget, ModelViewWidget, ButtonInputWidget
 
 from Widgets2 import AbstractStateManagerTab
 
@@ -18,7 +20,7 @@ from .IRFManagerTab import IRFActivationWidget as IRFViewWidget
 from .BookmarkManagerTab import Tab as BookmarkViewWidget
 
 
-class StateManagerTab(AbstractStateManagerTab):
+class StateManagerTab(UI4.Tabs.BaseTab):
     NAME = "State Manager"
     def __init__(self, parent=None):
         super(StateManagerTab, self).__init__(parent)
@@ -46,13 +48,36 @@ class StateManagerTab(AbstractStateManagerTab):
         return self._editor_widget
 
 
-class StateManagerEditorWidget(QWidget):
+class StateManagerOrganizerWidget(ModelViewWidget):
+    def __init__(self, parent=None):
+        super(StateManagerOrganizerWidget, self).__init__(parent)
+
+
+class StateManagerEditorWidget(AbstractStateManagerTab):
     def __init__(self, parent=None):
         super(StateManagerEditorWidget, self).__init__(parent)
-        QVBoxLayout(self)
-        from qtpy.QtWidgets import QLabel
-        self.layout().addWidget(QLabel("test"))
-        self._main_widget = ModelViewWidget(self)
+
+        # setup organizer
+        self._state_organizer_widget = StateManagerOrganizerWidget(self)
+        self.setOrganizerWidget(self._state_organizer_widget)
+
+        # setup events
+        self._create_new_state_widget = ButtonInputWidget(
+            title="New State", user_clicked_event=self.createNewState)
+        self._create_new_folder_widget = ButtonInputWidget(
+            title="New Folder", user_clicked_event=self.createNewFolder)
+
+        self.addUtilsButton(self._create_new_state_widget)
+        self.addUtilsButton(self._create_new_folder_widget)
+
+
+    def createNewState(self, widget):
+        print('create new state')
+        pass
+
+    def createNewFolder(self, widget):
+        print('create new folder')
+        pass
 
 
 class StateManagerViewWidget(ShojiLayout):
@@ -62,11 +87,13 @@ class StateManagerViewWidget(ShojiLayout):
         self._gsv_view = GSVViewWidget(self)
         self._irf_view = IRFViewWidget(self)
         self._bookmarks_view = BookmarkViewWidget(self)
+        self._state_view = StateManagerEditorWidget(self)
 
+        self._main_layout.addWidget(self._state_view)
         self._main_layout.addWidget(self._gsv_view)
         self._main_layout.addWidget(self._irf_view)
         self._main_layout.addWidget(self._bookmarks_view)
-        self._main_layout.setSizes([100, 100, 100])
+        self._main_layout.setSizes([100, 100, 100, 100])
 
         # setup main layout
         QVBoxLayout(self)
