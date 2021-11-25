@@ -92,7 +92,7 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         # insert widgets
         self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self._view_widget)
         self._main_widget.insertShojiWidget(1, column_data={"name":"Activate"}, widget=self._activation_widget)
-        self._main_widget.insertShojiWidget(2, column_data={"name":"Create"}, widget=self._create_widget)
+        self._main_widget.insertShojiWidget(2, column_data={"name":"Edit"}, widget=self._create_widget)
 
         self.layout().addWidget(self.mainWidget())
 
