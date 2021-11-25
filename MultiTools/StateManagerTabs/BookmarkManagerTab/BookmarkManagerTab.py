@@ -340,6 +340,12 @@ class BookmarkOrganizerWidget(ModelViewWidget):
         if folder not in self.bookmarkFolders().keys():
             self.bookmarkFolders()[folder] = folder_item
 
+    def updateBookmarkFolderName(self, old_name, new_name):
+        folder_item = self.bookmarkFolders()[old_name]
+        folder_item.setArg("folder", new_name)
+        self.removeBookmarkFolder(old_name)
+        self.addBookmarkFolder(new_name, folder_item)
+
     """ EVENTS """
     def __bookmarkRenameEvent(self, item, old_name, new_name):
         """ When a user renames a bookmark, this will update the bookmarks/folder associated with the rename"""
@@ -365,9 +371,9 @@ class BookmarkOrganizerWidget(ModelViewWidget):
 
                 # update internal property
                 child.setArg("folder", folder_new_name)
-                folder_item = self.bookmarkFolders()[old_name]
-                self.addBookmarkFolder(new_name, folder_item)
-                self.removeBookmarkFolder(old_name)
+
+            # update folder item
+            self.updateBookmarkFolderName(old_name, folder_new_name)
 
         # update items name
         item.setArg("name", new_name)
