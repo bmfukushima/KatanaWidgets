@@ -76,7 +76,8 @@ class BookmarkUtils(object):
     @staticmethod
     def getBookmarkFullName(bookmark, folder=None):
         """ Returns the full name of the bookmark folderName/bookmarkName"""
-        return "/".join(filter(None, [folder, bookmark]))
+        fullname = "/".join(filter(None, [folder, bookmark]))
+        return fullname
 
     @staticmethod
     def getBookmarkFolderFromFullName(full_name):
@@ -129,4 +130,5 @@ class BookmarkUtils(object):
         # todo this can't get the param sometimes?
         # same name drop
         bookmark_param = BookmarkUtils.getBookmarkParamFromFullName(old_full_name)
+        bookmark_param.setName(new_full_name)
         bookmark_param.getChild("name").setValue(new_full_name, 0)
