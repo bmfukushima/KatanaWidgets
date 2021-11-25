@@ -17,4 +17,4 @@ from .AbstractUserBooleanWidget import AbstractUserBooleanWidget
 from .NodeViewWidget import NodeViewWidget
 from .EventsWidget import *
 from .GroupNodeEditorWidget import GroupNodeEditorWidget
-
+from .AbstractStateManagerTab import AbstractStateManagerTab

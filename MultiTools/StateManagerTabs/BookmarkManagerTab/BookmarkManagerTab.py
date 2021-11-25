@@ -72,7 +72,7 @@ TODO
 
 """
 
-from qtpy.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout
+from qtpy.QtWidgets import QVBoxLayout, QWidget, QHBoxLayout, QLabel
 from qtpy.QtCore import Qt
 
 from Katana import UI4, ScenegraphBookmarkManager, NodegraphAPI, Utils
@@ -81,6 +81,8 @@ from cgwidgets.widgets import ModelViewWidget, ButtonInputWidget, StringInputWid
 from cgwidgets.views import AbstractDragDropModelDelegate
 
 from .BookmarkUtils import BookmarkUtils
+
+from Widgets2 import AbstractStateManagerTab
 
 
 class BookmarkManagerTab(UI4.Tabs.BaseTab):
@@ -102,53 +104,32 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
 
     def __init__(self, parent=None):
         super(BookmarkManagerTab, self).__init__(parent)
-        # setup default attrs
+        # setup main layout
+        QVBoxLayout(self)
+        self._main_widget = AbstractStateManagerTab()
+        self.layout().addWidget(self._main_widget)
 
-        # create main organizer
+        # setup organizer
         self._bookmark_organizer_widget = BookmarkOrganizerWidget(self)
+        self._main_widget.setOrganizerWidget(self._bookmark_organizer_widget)
 
         # create input buttons
         self._create_new_bookmark_widget = ButtonInputWidget(
             title="New Bookmark", user_clicked_event=self.createNewBookmark)
         self._create_new_folder_widget = ButtonInputWidget(
-            title="New Category", user_clicked_event=self.createNewFolder)
-        self._create_bookmarks_layout = QHBoxLayout()
-        self._create_bookmarks_layout.addWidget(self._create_new_bookmark_widget)
-        self._create_bookmarks_layout.addWidget(self._create_new_folder_widget)
+            title="New Folder", user_clicked_event=self.createNewFolder)
 
-        self._last_active_bookmark_widget = StringInputWidget(self)
-        self._last_active_bookmark_widget.setReadOnly(True)
-        self._last_active_bookmark_labelled_widget = LabelledInputWidget(
-            self, name="Last Bookmark", delegate_widget=self._last_active_bookmark_widget, default_label_length=150)
-        self._last_active_bookmark_labelled_widget.setViewAsReadOnly(True)
+        self._main_widget.addUtilsButton(self._create_new_bookmark_widget)
+        self._main_widget.addUtilsButton(self._create_new_folder_widget)
 
-        # additional buttons
-        #self._save_layout = QHBoxLayout()
-        self._load_button_widget = ButtonInputWidget(
-            self, title="Load", user_clicked_event=self.loadEvent)
-
-        self._update_button = ButtonInputWidget(
-            self, title="Update", user_clicked_event=self.updateEvent)
-
-        self._create_bookmarks_layout.addWidget(self._load_button_widget)
-        self._create_bookmarks_layout.addWidget(self._update_button)
-
-        # setup layout
-        QVBoxLayout(self)
-        self.layout().addWidget(self._last_active_bookmark_labelled_widget)
-        self.layout().addLayout(self._create_bookmarks_layout)
-        # self.layout().addLayout(self._save_layout)
-        self.layout().addWidget(self._bookmark_organizer_widget)
-
-        self.layout().setStretch(0, 0)
-        self.layout().setStretch(1, 0)
-        self.layout().setStretch(2, 1)
-        #self.layout().setStretch(3, 1)
+        # setup eventes
+        self._main_widget.setLoadEvent(self.loadEvent)
+        self._main_widget.setUpdateEvent(self.updateEvent)
 
     """ EVENTS """
-    def updateEvent(self, widget):
+    def updateEvent(self):
         """ Saves the currently selected bookmark"""
-        items = self.bookmarkOrganizerWidget().getAllSelectedItems()
+        items = self.organizerWidget().getAllSelectedItems()
         if 0 < len(items):
             if items[0].getArg("type") == BookmarkUtils.BOOKMARK:
 
@@ -161,11 +142,11 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
                 Utils.EventModule.ProcessAllEvents()
 
                 # create new bookmark
-                self.bookmarkOrganizerWidget().createNewBookmark(name, folder, create_item=False)
+                self.organizerWidget().createNewBookmark(name, folder, create_item=False)
 
-    def loadEvent(self, widget):
+    def loadEvent(self):
         """ Loads the currently selected bookmark """
-        items = self.bookmarkOrganizerWidget().getAllSelectedItems()
+        items = self.organizerWidget().getAllSelectedItems()
         if 0 < len(items):
             if items[0].getArg("type") == BookmarkUtils.BOOKMARK:
                 folder = items[0].getArg("folder")
@@ -185,20 +166,16 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
 
         Args:
             category (str): name of category to create"""
-        return self.bookmarkOrganizerWidget().createNewBookmark()
+        return self.organizerWidget().createNewBookmark()
 
     def createNewFolder(self, widget):
-        return self.bookmarkOrganizerWidget().createNewFolder()
-        pass
-
-    """ PROPERTIES """
-
+        return self.organizerWidget().createNewFolder()
 
     """ WIDGETS """
     def lastActiveBookmarkWidget(self):
         return self._last_active_bookmark_widget
 
-    def bookmarkOrganizerWidget(self):
+    def organizerWidget(self):
         return self._bookmark_organizer_widget
 
 

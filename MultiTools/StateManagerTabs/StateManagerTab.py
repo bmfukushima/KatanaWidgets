@@ -11,12 +11,14 @@ from Katana import UI4
 
 from cgwidgets.widgets import ShojiLayout, ShojiModelViewWidget, ModelViewWidget
 
+from Widgets2 import AbstractStateManagerTab
+
 from .GSVManagerTab import GSVViewWidget
 from .IRFManagerTab import IRFActivationWidget as IRFViewWidget
 from .BookmarkManagerTab import Tab as BookmarkViewWidget
 
 
-class StateManagerTab(UI4.Tabs.BaseTab):
+class StateManagerTab(AbstractStateManagerTab):
     NAME = "State Manager"
     def __init__(self, parent=None):
         super(StateManagerTab, self).__init__(parent)
