@@ -298,7 +298,6 @@ class ViewGSVWidget(LabelledInputWidget):
         )
         # setup label
         self.gsv = self.name()
-
         self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
 
         # setup delegate
@@ -307,6 +306,7 @@ class ViewGSVWidget(LabelledInputWidget):
         self.delegateWidget().populate(self.update())
         self.delegateWidget().setCleanItemsFunction(self.update)
         self.delegateWidget().setValidateInputFunction(self.validateGSVEntry)
+        self.setFixedHeight(getFontSize()*3)
 
     def update(self):
         return [[option] for option in gsvutils.getGSVOptions(self.gsv, return_as=gsvutils.STRING)]

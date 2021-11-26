@@ -54,7 +54,7 @@ Hierarchy:
 
 import json
 
-from qtpy.QtWidgets import QVBoxLayout
+from qtpy.QtWidgets import QVBoxLayout, QScrollArea
 from qtpy.QtCore import QModelIndex
 
 from Katana import UI4, NodegraphAPI, Utils
@@ -419,12 +419,16 @@ class StateManagerViewWidget(ShojiLayout):
         super(StateManagerViewWidget, self).__init__(parent)
         #self._main_layout = ShojiLayout(self)
         self._gsv_view_widget = GSVViewWidget(self)
+        self._gsv_scroll_area = QScrollArea(self)
+        self._gsv_scroll_area.setWidget(self._gsv_view_widget)
+        self._gsv_scroll_area.setWidgetResizable(True)
+
         self._irf_view_widget = IRFViewWidget(self)
         self._bookmarks_view_widget = BookmarkViewWidget(self)
         self._state_view_widget = StateManagerEditorWidget(self)
 
         self.addWidget(self._state_view_widget)
-        self.addWidget(self._gsv_view_widget)
+        self.addWidget(self._gsv_scroll_area)
         self.addWidget(self._irf_view_widget)
         self.addWidget(self._bookmarks_view_widget)
         self.setSizes([100, 100, 100, 100])

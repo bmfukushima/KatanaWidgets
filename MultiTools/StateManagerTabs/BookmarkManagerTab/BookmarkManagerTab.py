@@ -109,7 +109,6 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
                 folder = items[0].getArg("folder")
                 name = items[0].getArg("name")
 
-                print(folder, name)
                 # remove old bookmark
                 BookmarkUtils.deleteBookmark(name, folder)
 
