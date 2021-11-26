@@ -199,6 +199,19 @@ def getGSVOptions(gsv, return_as=STRING):
     return options_list
 
 
+def getGSVMap():
+    """ Returns a map of the gsv names and their current values
+
+    Returns (dict): {name:option}"""
+    gsv_map = {}
+    for param in getAllGSV(return_as=PARAMETER):
+        name = param.getName()
+        option = getGSVValue(name)
+        gsv_map[name] = option
+
+    return gsv_map
+
+
 def getVariablesParameter():
     """
     Gets the GSV Variables parameter on the Root Node

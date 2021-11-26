@@ -9,6 +9,7 @@ Callbacks.addCallback(Callbacks.Type.onStartupComplete, paramutils.createKatanaB
 from ParameterMenu import installCustomParametersMenu
 installCustomParametersMenu()
 
+
 # Need to do this like this... because I'm importing the actual modules over
 # these ones =\
 
@@ -16,9 +17,11 @@ installCustomParametersMenu()
 from MultiTools.SimpleTool import installSimpleTools
 installSimpleTools()
 
+
 # Global Events
 from MultiTools.GlobalEventsTab import installGlobalEvents
 installGlobalEvents()
+
 
 # Popup Hotkeys
 from MultiTools.ScriptEditorTab import installPopupHotkeysEventFilter
@@ -29,6 +32,17 @@ Callbacks.addCallback(Callbacks.Type.onStartupComplete, installPopupHotkeysEvent
 from MultiTools.NodeColorRegistryTab import installDefaultNodeColorsEventFilter
 installDefaultNodeColorsEventFilter()
 # Callbacks.addCallback(Callbacks.Type.onStartupComplete, installDefaultNodeColorsEventFilter)
+
+
+# GSV Manager
+from MultiTools.StateManagerTabs.GSVManagerTab import installGSVManagerEvents
+Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGSVManagerEvents)
+
+
+# State Manager
+from MultiTools.StateManagerTabs import installStateManagerDefaultParam
+installStateManagerDefaultParam()
+
 
 # Variable Switch | Populate
 def contextMenu(**kwargs):
@@ -93,8 +107,6 @@ changeFullscreenHotkey(Qt.Key_B)
 changeMinTabSize(50)
 # installNodegraphHotkeyOverrides()
 
-from MultiTools.GSVManagerTab import installGSVManagerEvents
-Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGSVManagerEvents)
 
 # update NMC node
 def createNMCUtilNodes(*args):

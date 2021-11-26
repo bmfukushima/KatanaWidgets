@@ -1,4 +1,5 @@
 from qtpy.QtWidgets import QVBoxLayout, QHBoxLayout, QLabel, QWidget
+from qtpy.QtCore import QModelIndex
 
 from Katana import UI4, ScenegraphBookmarkManager, NodegraphAPI, Utils
 
@@ -131,6 +132,8 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
         # setup flags
         self.setIsEnableable(False)
 
+        self.addContextMenuEvent("Print Data", self.__printData)
+
     """ UTILS """
     def getUniqueName(self, name, parent, item_type=AbstractStateManagerTab.STATE_ITEM, exists=True):
         """ Gets a unique name for an item when it is created
@@ -148,6 +151,11 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
                 children.append(child.getArg("name"))
 
         return getUniqueName(name, children, exists=exists)
+
+    def __printData(self, index, indexes):
+        if index.internalPointer():
+            print("folder == ", index.internalPointer().getArg("folder"))
+            print("name == ", index.internalPointer().getArg("name"))
 
     """ PROPERTIES """
     def folders(self):
@@ -171,45 +179,42 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
         self.addFolder(new_name, folder_item)
 
     """ CREATE """
-    def createNewStateItem(self, state, folder_name=None):
+    def createNewStateItem(self, state, folder_name=None, data=None, parent=QModelIndex()):
         """ Creates a new state item.
 
         If a folder name is specified and it does not exist, the item will be created
 
         Args:
             state (str): name of state
-            folder_name (str): name of folder"""
-        # get folder
-        folder_item = self.rootItem()
-        if folder_name:
-            if folder_name not in self.folders().keys():
-                folder_item = self.createNewFolderItem(folder_name)
-                self.addFolder(folder_name, folder_item)
-            else:
-                folder_item = self.folders()[folder_name]
-        parent_index = self.getIndexFromItem(folder_item)
+            folder_name (str): name of folder
+            data (dict): of additional data to be added to the items
+            parent (QModelIndex): to be the parent
+                Note: if this is provided, it will overwrite the folder_name input"""
 
         # setup data
-        data = {"name": state, "folder": folder_name, "type": AbstractStateManagerTab.STATE_ITEM}
+        item_data = {"name": state, "folder": folder_name, "type": AbstractStateManagerTab.STATE_ITEM}
+        if data:
+            item_data.update(data)
 
         # create item
         state_index = self.insertNewIndex(
             0,
             name=state,
-            column_data=data,
+            column_data=item_data,
             is_deletable=True,
             is_dropable=False,
             is_dragable=True,
-            parent=parent_index
+            parent=parent
         )
         state_item = state_index.internalPointer()
         return state_item
 
-    def createNewFolderItem(self, folder):
+    def createNewFolderItem(self, folder, parent=QModelIndex()):
         data = {"name": folder, "folder": folder, "type": AbstractStateManagerTab.FOLDER_ITEM}
         folder_index = self.insertNewIndex(
             0,
             name=folder,
+            parent=parent,
             column_data=data,
             is_deletable=True,
             is_dropable=True,
@@ -218,3 +223,8 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
         folder_item = folder_index.internalPointer()
         return folder_item
 
+    def createNewFolder(self):
+        new_folder_name = self.getUniqueName("New Folder", self.rootItem(), item_type=AbstractStateManagerTab.FOLDER_ITEM, exists=False)
+        folder_item = self.createNewFolderItem(new_folder_name)
+        self.addFolder(new_folder_name, folder_item)
+        return folder_item

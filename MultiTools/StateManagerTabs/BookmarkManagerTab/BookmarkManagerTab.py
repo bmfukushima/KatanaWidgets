@@ -123,6 +123,10 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
         self._main_widget.setUpdateEvent(self.updateEvent)
         self._main_widget.setCreateNewFolderEvent(self.createNewFolder)
 
+    """ UTILS """
+    def lastActiveBookmark(self):
+        return self.mainWidget().lastActiveWidget().text()
+
     """ EVENTS """
     def updateEvent(self):
         """ Saves the currently selected bookmark"""
@@ -187,63 +191,9 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
         self.setTextChangedEvent(self.__bookmarkRenameEvent)
         self.setDropEvent(self.__bookmarkReparentEvent)
 
-        self.addContextMenuEvent("print data", self.printData)
-
         self.populate()
 
-    def printData(self, index, indexes):
-        if index.internalPointer():
-            print("folder == ", index.internalPointer().getArg("folder"))
-            print("name == ", index.internalPointer().getArg("name"))
-
     """ CREATE """
-    # def createBookmarkItem(self, bookmark, folder_name=None):
-    #     """ Creates a new bookmark item.
-    #
-    #     If a folder name is specified and it does not exist, the item will be created
-    #
-    #     Args:
-    #         bookmark (str): name of bookmark
-    #         folder_name (str): name of folder"""
-    #     # get folder
-    #     folder_item = self.rootItem()
-    #     if folder_name:
-    #         if folder_name not in self.bookmarkFolders().keys():
-    #             folder_item = self.createNewFolderItem(folder_name)
-    #             self.addBookmarkFolder(folder_name, folder_item)
-    #         else:
-    #             folder_item = self.bookmarkFolders()[folder_name]
-    #     parent_index = self.getIndexFromItem(folder_item)
-    #
-    #     # setup data
-    #     data = {"name": bookmark, "folder": folder_name, "type": AbstractStateManagerTab.STATE_ITEM}
-    #
-    #     # create item
-    #     bookmark_index = self.insertNewIndex(
-    #         0,
-    #         name=bookmark,
-    #         column_data=data,
-    #         is_deletable=True,
-    #         is_dropable=False,
-    #         is_dragable=True,
-    #         parent=parent_index
-    #     )
-    #     bookmark_item = bookmark_index.internalPointer()
-    #     return bookmark_item
-    #
-    # def createNewFolderItem(self, folder):
-    #     data = {"name": folder, "folder": folder, "type": AbstractStateManagerTab.FOLDER_ITEM}
-    #     bookmark_index = self.insertNewIndex(
-    #         0,
-    #         name=folder,
-    #         column_data=data,
-    #         is_deletable=True,
-    #         is_dropable=True,
-    #         is_dragable=False
-    #     )
-    #     bookmark_item = bookmark_index.internalPointer()
-    #     return bookmark_item
-
     def createNewBookmark(self, name=None, folder=None, create_item=True):
         """ Creates a new Scenegraph Bookmark
 
@@ -252,8 +202,9 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
             folder (str):
             create_item (bool): Determines if the item should be created or not"""
         if not name:
-            name = self.getUniqueName("New Bookmark", self.rootItem(), item_type=AbstractStateManagerTab.STATE_ITEM, exists=False)
-        BookmarkUtils.getBookmarkFullName(name, folder)
+            name = self.getUniqueName(
+                "New Bookmark", self.rootItem(), item_type=AbstractStateManagerTab.STATE_ITEM, exists=False)
+        # BookmarkUtils.getBookmarkFullName(name, folder)
 
         # create bookmark
         ScenegraphBookmarkManager.CreateWorkingSetsBookmark(name, BookmarkUtils.WORKING_SETS_TO_SAVE)
@@ -262,12 +213,6 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
         if create_item:
             bookmark_item = self.createNewStateItem(name)
             return bookmark_item
-
-    def createNewFolder(self):
-        new_folder_name = self.getUniqueName("New Folder", self.rootItem(), item_type=AbstractStateManagerTab.FOLDER_ITEM, exists=False)
-        folder_item = self.createNewFolderItem(new_folder_name)
-        self.addFolder(new_folder_name, folder_item)
-        return folder_item
 
     """ UTILS """
     def populate(self):
@@ -288,6 +233,30 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
             self.createNewStateItem(bookmark_name, folder_name)
 
     """ EVENTS """
+    def createNewStateItem(self, state, folder_name=None, data=None):
+        """ Creates a new state item.
+
+        If a folder name is specified and it does not exist, the item will be created
+
+        Args:
+            state (str): name of state
+            folder_name (str): name of folder
+            data (dict): of additional data to be added to the items
+            parent (QModelIndex): to be the parent
+                Note: if this is provided, it will overwrite the folder_name input"""
+        # get folder
+        folder_item = self.rootItem()
+        if folder_name:
+            if folder_name not in self.folders().keys():
+                folder_item = self.createNewFolderItem(folder_name)
+                self.addFolder(folder_name, folder_item)
+            else:
+                folder_item = self.folders()[folder_name]
+        parent_index = self.getIndexFromItem(folder_item)
+
+        AbstractStateManagerOrganizerWidget.createNewStateItem(self, state, folder_name, data=data, parent=parent_index)
+
+
     def __bookmarkRenameEvent(self, item, old_name, new_name):
         """ When a user renames a bookmark, this will update the bookmarks/folder associated with the rename"""
         # preflight
@@ -357,7 +326,7 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
     def showEvent(self, event):
         self.populate()
-        return ModelViewWidget.showEvent(self, event)
+        return AbstractStateManagerOrganizerWidget.showEvent(self, event)
 
     # def keyPressEvent(self, event):
     #     if event.key() == Qt.Key_F5:
