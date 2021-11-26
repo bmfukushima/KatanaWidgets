@@ -1,7 +1,9 @@
 """
 Todo:
     *   Bookmarks: store/load
-    *   Delete/Update Item
+            - Need to add to default scenegraph way of working.
+            - Monkey patch on the load trigger?
+    *   Delete
             After updating, doubling up on items created
             Delete, storing NULL child instead of no data.
 
@@ -106,6 +108,7 @@ class StateManagerTab(UI4.Tabs.BaseTab):
         # setup main layout
         QVBoxLayout(self)
         self._main_widget = ShojiModelViewWidget(self)
+        self._main_widget.setHeaderItemIsDeletable(False)
         self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self._view_widget)
         self._main_widget.insertShojiWidget(1, column_data={"name":"Edit"}, widget=self._editor_widget)
 

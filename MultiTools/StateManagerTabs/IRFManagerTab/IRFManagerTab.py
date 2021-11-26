@@ -85,6 +85,7 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         QVBoxLayout(self)
 
         self._main_widget = ShojiModelViewWidget(self)
+        self._main_widget.setHeaderItemIsDeletable(False)
         self._view_widget = IRFViewWidget(parent=self)
         self._activation_widget = IRFActivationWidget(parent=self)
         self._create_widget = IRFCreateWidget(parent=self)
