@@ -1,8 +1,5 @@
 """
 Todo:
-    *   Bookmarks: store/load
-            - Need to add to default scenegraph way of working.
-            - Monkey patch on the load trigger?
     *   Import / Export
     *   New Button
             Kinda like a combo box, but for less than 3-4 values
@@ -65,12 +62,13 @@ from Katana import UI4, NodegraphAPI, Utils
 from cgwidgets.widgets import ShojiLayout, ShojiModelViewWidget, ButtonInputWidget
 from cgwidgets.utils import getWidgetAncestor
 
-from Utils2 import gsvutils
+from Utils2 import gsvutils, widgetutils
 from Widgets2 import AbstractStateManagerTab, AbstractStateManagerOrganizerWidget
 from .GSVManagerTab import GSVViewWidget
 from .IRFManagerTab import IRFActivationWidget as IRFViewWidget
 from .IRFManagerTab.IRFUtils import IRFUtils
 from .BookmarkManagerTab import Tab as BookmarkViewWidget
+from .BookmarkManagerTab.BookmarkUtils import BookmarkUtils
 
 
 PARAM_LOCATION = "KatanaBebop.StateManagerData"
@@ -133,7 +131,6 @@ class StateManagerTab(UI4.Tabs.BaseTab):
     def update(self):
         self.viewWidget().gsvViewWidget().update()
         self.viewWidget().irfViewWidget().update()
-        # todo update bookmark
         self.viewWidget().bookmarksViewWidget().update()
 
     """ WIDGETS """
@@ -263,8 +260,17 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 IRFUtils.enableRenderFilter(irf_node, True)
 
         # bookmark
-        bookmark = item.getArg("bookmark")
-        # todo load bookmarks
+        bookmark_name = item.getArg("bookmark")
+
+        if bookmark_name:
+            from PyUtilModule import ScenegraphBookmarkManager as SBM
+            """ Doing a special load here to ensure we're using the same module that the default
+            handler uses.  This needs to be done, as there is a monkey patch, to store the active
+            bookmark on katanaMainWindow()._last_active_bookmark"""
+
+            bookmark = BookmarkUtils.bookmark(bookmark_name)
+            if bookmark:
+                SBM.LoadBookmark(bookmark)
 
         # set last active
         editor_widget = getWidgetAncestor(self, StateManagerEditorWidget)
@@ -314,8 +320,11 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         if create_item:
             gsv_map = gsvutils.getGSVMap()
             irf_map = [node.getName() for node in IRFUtils.getAllActiveFilters()]
-            active_bookmark = "something"
-            # todo last active bookmark
+            if hasattr(widgetutils.katanaMainWindow(), "_last_active_bookmark"):
+                active_bookmark = widgetutils.katanaMainWindow()._last_active_bookmark
+            else:
+                active_bookmark = None
+
             # this needs to be set as a global attr somewhere, like katana main, or a parameter on KatanaBebop
             state_data = {"irf": irf_map, "gsv": gsv_map, "bookmark": active_bookmark, "name": name}
             state_item = self.createNewStateItem(name, data=state_data, parent=parent, row=row)
@@ -356,7 +365,7 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
         if load_state:
             Utils.EventModule.ProcessAllEvents()
             # Update all tabs
-            for tab_type in ["GSV Manager", "IRF Manager", "State Manager"]:
+            for tab_type in ["GSV Manager", "IRF Manager", "State Manager", "Bookmark Manager"]:
                 tabs = UI4.App.Tabs.GetTabsByType(tab_type)
                 for tab in tabs:
                     tab.update()

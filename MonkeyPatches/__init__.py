@@ -1,3 +1,4 @@
 from .changeFullscreenHotkey import changeFullscreenHotkey
 from .changeMinTabSize import changeMinTabSize
+from .saveLastActiveBookmark import saveLastActiveBookmark
 # from nodegraphHotkeyOverrides import installNodegraphHotkeyOverrides

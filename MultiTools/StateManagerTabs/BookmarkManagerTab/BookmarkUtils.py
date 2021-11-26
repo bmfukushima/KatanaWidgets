@@ -11,6 +11,17 @@ class BookmarkUtils(object):
         return NodegraphAPI.GetRootNode().getParameter("scenegraphBookmarks")
 
     @staticmethod
+    def bookmark(full_name):
+        """ Returns as bookmark from the full name provided
+
+        Args:
+            full_name (str): path to bookmark"""
+        for bookmark in ScenegraphBookmarkManager.GetScenegraphBookmarks():
+            if bookmark['fullName'] == full_name:
+                return bookmark
+        return None
+
+    @staticmethod
     def bookmarks():
         """ Returns a list of all of the scenegraph bookmarks.
 

@@ -101,10 +101,12 @@ Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)
 # change full screen hotkey
 from MonkeyPatches import (
     changeFullscreenHotkey,
-    changeMinTabSize)
+    changeMinTabSize,
+    saveLastActiveBookmark)
 #, installNodegraphHotkeyOverrides)
 changeFullscreenHotkey(Qt.Key_B)
 changeMinTabSize(50)
+saveLastActiveBookmark()
 # installNodegraphHotkeyOverrides()
 
 
