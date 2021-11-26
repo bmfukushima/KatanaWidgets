@@ -1,7 +1,11 @@
 """
 Todo:
     *   Update... destroying the folder
-
+    *   Delete Bookmarks (delete event <>)
+            <> don't work for some reason... have to manually delete
+    *   Flush Caches...
+            attach something to this?
+            F5 refresh? Event Filter?
 
 Bookmarks are actually parameters...
 
@@ -26,13 +30,6 @@ katanaMain._last_active_bookmark = last/bookmark
 |	|- <NodegraphAPI_cmodule.Parameter object at 0x7fad24892270 string 'scenegraphPinning'>
 |	|- <NodegraphAPI_cmodule.Parameter object at 0x7fad24892d30 string 'render'>
 |	|- <NodegraphAPI_cmodule.Parameter object at 0x7fad248a0a70 string 'scenegraphSelection'>
-
-TODO
-    *   Delete Bookmarks (delete event <>)
-            <> don't work for some reason... have to manually delete
-    *   Flush Caches...
-            attach something to this?
-            F5 refresh? Event Filter?
 
 """
 
@@ -112,6 +109,7 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
                 folder = items[0].getArg("folder")
                 name = items[0].getArg("name")
 
+                print(folder, name)
                 # remove old bookmark
                 BookmarkUtils.deleteBookmark(name, folder)
 
@@ -190,11 +188,11 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
         # BookmarkUtils.getBookmarkFullName(name, folder)
 
         # create bookmark
-        ScenegraphBookmarkManager.CreateWorkingSetsBookmark(name, BookmarkUtils.WORKING_SETS_TO_SAVE)
-
+        full_name = BookmarkUtils.getBookmarkFullName(name, folder)
+        ScenegraphBookmarkManager.CreateWorkingSetsBookmark(full_name, BookmarkUtils.WORKING_SETS_TO_SAVE)
         # create item
         if create_item:
-            bookmark_item = self.createNewBookmarkItem(name)
+            bookmark_item = self.createNewBookmarkItem(name, folder_name=folder)
             return bookmark_item
 
     """ UTILS """
@@ -236,7 +234,6 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
             else:
                 folder_item = self.folders()[folder_name]
         parent_index = self.getIndexFromItem(folder_item)
-
         AbstractStateManagerOrganizerWidget.createNewStateItem(self, state, folder_name, data=data, parent=parent_index)
 
     def __bookmarkRenameEvent(self, item, old_name, new_name):
