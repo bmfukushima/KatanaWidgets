@@ -113,6 +113,10 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
             irf_node = NodegraphAPI.CreateNode("InteractiveRenderFilters", NodegraphAPI.GetRootNode())
             self.setDefaultIRFNode(irf_node)
 
+    def update(self):
+        self.activationWidget().update()
+        self.viewWidget().update()
+
     """ PROPERTIES """
     @staticmethod
     def defaultIRFNode():
@@ -129,7 +133,6 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         IRFManagerTab.__setupDefaultIRFParam()
         IRFUtils.irfNodeParam().setExpressionFlag(True)
         IRFUtils.irfNodeParam().setExpression("@{irf_node_name}".format(irf_node_name=irf_node.getName()))
-
 
     """ WIDGETS """
     def irfNodeWidget(self):
@@ -204,6 +207,11 @@ class IRFActivationWidget(ShojiLayout):
         self.addWidget(self._available_filters_widget)
         self.addWidget(self._activated_filters_widget)
 
+    def update(self):
+        self.activatedFiltersWidget().update()
+
+    def activatedFiltersWidget(self):
+        return self._activated_filters_organizer_widget
 
 """ CREATE """
 class IRFCreateWidget(ShojiLayout):

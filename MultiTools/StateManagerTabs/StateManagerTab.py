@@ -1,4 +1,9 @@
 """
+Todo:
+    *   Bookmarks: store/load
+    *   Delete/Update Item
+            After updating, doubling up on items created
+            Delete, storing NULL child instead of no data.
 
 Data Structure:
     same as color registry? just go for an export?
@@ -34,12 +39,13 @@ Hierarchy:
 
 import json
 
-from qtpy.QtWidgets import QVBoxLayout, QWidget
+from qtpy.QtWidgets import QVBoxLayout
 from qtpy.QtCore import QModelIndex
 
-from Katana import UI4, NodegraphAPI
+from Katana import UI4, NodegraphAPI, Utils
 
-from cgwidgets.widgets import ShojiLayout, ShojiModelViewWidget, ModelViewWidget, ButtonInputWidget
+from cgwidgets.widgets import ShojiLayout, ShojiModelViewWidget, ButtonInputWidget
+from cgwidgets.utils import getWidgetAncestor
 
 from Utils2 import gsvutils
 from Widgets2 import AbstractStateManagerTab, AbstractStateManagerOrganizerWidget
@@ -47,7 +53,7 @@ from .GSVManagerTab import GSVViewWidget
 from .IRFManagerTab import IRFActivationWidget as IRFViewWidget
 from .IRFManagerTab.IRFUtils import IRFUtils
 from .BookmarkManagerTab import Tab as BookmarkViewWidget
-from .BookmarkManagerTab.BookmarkManagerTab import BookmarkManagerTab
+
 
 PARAM_LOCATION = "KatanaBebop.StateManagerData"
 
@@ -66,7 +72,6 @@ class StateManagerUtils(object):
         Args:
             state_location (str): full path to state
                 ie. folder1/folder2/folder3/state"""
-
         pass
 
     @staticmethod
@@ -106,11 +111,11 @@ class StateManagerTab(UI4.Tabs.BaseTab):
 
         self.layout().addWidget(self._main_widget)
 
-    def pushData(self):
-        pass
-
-    def pullData(self):
-        pass
+    def update(self):
+        self.viewWidget().gsvViewWidget().update()
+        self.viewWidget().irfViewWidget().update()
+        # todo update bookmark
+        self.viewWidget().bookmarksViewWidget().update()
 
     """ WIDGETS """
     def mainWidget(self):
@@ -127,7 +132,6 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
     def __init__(self, parent=None):
         super(StateManagerOrganizerWidget, self).__init__(parent)
 
-        # todo setup events
         # setup events
         self.setItemDeleteEvent(self.__stateDeleteEvent)
         self.setTextChangedEvent(self.__stateRenameEvent)
@@ -153,21 +157,33 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 new_index = self.getIndexFromItem(new_item)
                 self.populate(child["children"], new_index)
 
-
     """ UPDATE """
     def updateParamData(self):
         data = self.exportModelToDict(self.rootItem())
         StateManagerUtils.updateData(data)
 
+    def getItemFullName(self, item):
+        """ Returns the full path of the item provided
+
+        Args:
+            item (ModelViewItem)"""
+        parents = []
+        parent_item = item
+        while parent_item.parent() != self.rootItem():
+            parents.append(parent_item.parent().name())
+            parent_item = parent_item.parent()
+
+        parents = list(reversed(parents))
+        parents.append(item.name())
+
+        return "/".join(parents)
+
     """ EVENTS """
     def exportStateManager(self, item):
-        """ Individual items dictionary when exported.
+        """ Individual items dictionary when exported."""
 
-        Note:
-            node has to come first.  This is due to how the item.name() function is called.
-            As if no "name" arg is found, it will return the first key in the dict"""
-
-        # store data in dictionary for the actual export data
+        # check to see if item is in delete queue
+        if item.hasArg("is_deleting"): return
 
         # return the export data for the rebuild file
         if item.getArg("type") == AbstractStateManagerTab.STATE_ITEM:
@@ -187,6 +203,59 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
         return data
 
+    def updateState(self):
+        """ Updates the state of the currently selected item"""
+        # get item
+        items = self.getAllSelectedItems()
+        if len(items) == 0: return
+        if items[0].getArg("type") == AbstractStateManagerTab.FOLDER_ITEM: return
+
+        item = items[0]
+        name = item.name()
+        row = item.row()
+        parent_item = item.parent()
+        parent_index = self.getIndexFromItem(parent_item)
+
+        # update item / data
+        self.createNewState(name, parent=parent_index, row=row)
+        self.deleteItem(item, event_update=False)
+        self.updateParamData()
+
+    def loadState(self):
+        """ Loads the state of the currently selected item """
+        items = self.getAllSelectedItems()
+        if len(items) == 0: return False
+        if items[0].getArg("type") == AbstractStateManagerTab.FOLDER_ITEM: return
+
+        item = items[0]
+
+        # set up gsv
+        gsv = item.getArg("gsv")
+
+        for gsv, option in gsv.items():
+            gsvutils.setGSVOption(gsv, option)
+
+        # irf
+        irf_list = item.getArg("irf")
+        IRFUtils.clearAllActiveFilters()
+        for irf_name in irf_list:
+            irf_node = NodegraphAPI.GetNode(irf_name)
+            if irf_node:
+                IRFUtils.enableRenderFilter(irf_node, True)
+
+        # bookmark
+        bookmark = item.getArg("bookmark")
+        # todo load bookmarks
+
+        # set last active
+        editor_widget = getWidgetAncestor(self, StateManagerEditorWidget)
+        full_name = self.getItemFullName(item)
+        editor_widget.lastActiveWidget().setText(full_name)
+
+        view_widget = getWidgetAncestor(self, StateManagerTab).viewWidget()
+        view_widget.lastActiveWidget().setText(full_name)
+        return True
+
     def __stateRenameEvent(self, item, old_name, new_name):
         """ When a user renames a state, this will update the states/folder associated with the rename"""
         # preflight
@@ -198,6 +267,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
     def __stateDeleteEvent(self, item):
         """ When the user deletes an item, this will delete the state/folder associated with the item"""
+        item.setArg("is_deleting", True)
         self.updateParamData()
 
     def __stateReparentEvent(self, data, items, model, row, parent):
@@ -209,12 +279,15 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         self.populate(StateManagerUtils.getMainStateList())
         return AbstractStateManagerOrganizerWidget.showEvent(self, event)
 
-    def createNewState(self, name=None, create_item=True):
+    """ CREATE """
+    def createNewState(self, name=None, create_item=True, parent=QModelIndex(), row=0):
         """ Creates a new State item
 
         Args:
             name (str):
-            create_item (bool): Determines if the item should be created or not"""
+            create_item (bool): Determines if the item should be created or not
+            parent (QModelIndex): parent index to be created under
+            row (int): row to insert item, default is 0"""
         if not name:
             name = self.getUniqueName("New State", self.rootItem(), item_type=AbstractStateManagerTab.STATE_ITEM, exists=False)
 
@@ -222,12 +295,11 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         if create_item:
             gsv_map = gsvutils.getGSVMap()
             irf_map = [node.getName() for node in IRFUtils.getAllActiveFilters()]
-            #active_bookmark = BookmarkManagerTab.lastActiveBookmark()
             active_bookmark = "something"
             # todo last active bookmark
             # this needs to be set as a global attr somewhere, like katana main, or a parameter on KatanaBebop
-            state_data = {"irf": irf_map, "gsv":gsv_map, "bookmark":active_bookmark, "name":name}
-            state_item = self.createNewStateItem(name, data=state_data)
+            state_data = {"irf": irf_map, "gsv": gsv_map, "bookmark": active_bookmark, "name": name}
+            state_item = self.createNewStateItem(name, data=state_data, parent=parent, row=row)
 
             # update param data
             self.updateParamData()
@@ -235,8 +307,8 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
     def createNewFolder(self):
         new_folder_name = self.getUniqueName("New Folder", self.rootItem(), item_type=AbstractStateManagerTab.FOLDER_ITEM, exists=False)
-        folder_item = self.createNewFolderItem(new_folder_name)
-        self.addFolder(new_folder_name, folder_item)
+        folder_item = self.createNewFolderItem(new_folder_name, is_dragable=True)
+        # self.addFolder(new_folder_name, folder_item)
         return folder_item
 
 
@@ -255,17 +327,23 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
         self.addUtilsButton(self._create_new_state_widget)
 
         # setup events
-        self.setLoadEvent(self.loadEvent)
-        self.setUpdateEvent(self.updateEvent)
+        self.setLoadEvent(self.loadStateEvent)
+        self.setUpdateEvent(self.updateStateEvent)
         self.setCreateNewFolderEvent(self.createNewFolder)
 
-    def loadEvent(self):
-        # todo load event
-        print('load')
+    def loadStateEvent(self):
+        load_state = self.organizerWidget().loadState()
 
-    def updateEvent(self):
-        # todo save event
-        print('update')
+        if load_state:
+            Utils.EventModule.ProcessAllEvents()
+            # Update all tabs
+            for tab_type in ["GSV Manager", "IRF Manager", "State Manager"]:
+                tabs = UI4.App.Tabs.GetTabsByType(tab_type)
+                for tab in tabs:
+                    tab.update()
+
+    def updateStateEvent(self):
+        self.organizerWidget().updateState()
 
     def createNewState(self, widget):
         self.organizerWidget().createNewState()
@@ -312,18 +390,33 @@ class StateManagerViewWidget(ShojiLayout):
     def __init__(self, parent=None):
         super(StateManagerViewWidget, self).__init__(parent)
         #self._main_layout = ShojiLayout(self)
-        self._gsv_view = GSVViewWidget(self)
-        self._irf_view = IRFViewWidget(self)
-        self._bookmarks_view = BookmarkViewWidget(self)
-        self._state_view = StateManagerEditorWidget(self)
+        self._gsv_view_widget = GSVViewWidget(self)
+        self._irf_view_widget = IRFViewWidget(self)
+        self._bookmarks_view_widget = BookmarkViewWidget(self)
+        self._state_view_widget = StateManagerEditorWidget(self)
 
-        self.addWidget(self._state_view)
-        self.addWidget(self._gsv_view)
-        self.addWidget(self._irf_view)
-        self.addWidget(self._bookmarks_view)
+        self.addWidget(self._state_view_widget)
+        self.addWidget(self._gsv_view_widget)
+        self.addWidget(self._irf_view_widget)
+        self.addWidget(self._bookmarks_view_widget)
         self.setSizes([100, 100, 100, 100])
 
         # # setup main layout
         # QVBoxLayout(self)
         # self.layout().addWidget(self._main_layout)
 
+    """ WIDGETS """
+    def bookmarksViewWidget(self):
+        return self._bookmarks_view_widget
+
+    def gsvViewWidget(self):
+        return self._gsv_view_widget
+
+    def lastActiveWidget(self):
+        return self.stateViewWidget().lastActiveWidget()
+
+    def irfViewWidget(self):
+        return self._irf_view_widget
+
+    def stateViewWidget(self):
+        return self._state_view_widget

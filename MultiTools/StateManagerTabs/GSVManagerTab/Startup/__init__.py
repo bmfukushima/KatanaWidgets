@@ -95,7 +95,7 @@ def gsvChangedEvent(args):
 def updateGSVsOnSceneLoad(args):
     """ When a new scene is loaded, this will reset all of the GSVManager tabs to the new data"""
     # get all tabs
-    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSVManager")
+    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSV Manager")
 
     # # for each tab, update tab data
     for gsv_manager in gsv_manager_tabs:

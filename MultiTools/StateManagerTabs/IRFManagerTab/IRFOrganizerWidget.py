@@ -154,13 +154,23 @@ class AbstractIRFActiveFiltersOrganizerWidget(AbstractIRFOrganizerWidget):
     def __init__(self, parent=None):
         super(AbstractIRFActiveFiltersOrganizerWidget, self).__init__(parent)
 
-    def showEvent(self, event):
+    def clear(self):
         self._categories = {}
         self.clearModel()
+
+    def populate(self):
         active_filters = IRFUtils.getAllActiveFilters()
         for render_filter_node in active_filters:
             index = self.createFilterItem(render_filter_node)
             self.view().setExpanded(index.parent(), True)
+
+    def update(self):
+        self.clear()
+        self.populate()
+
+    def showEvent(self, event):
+        self.clear()
+        self.populate()
 
         return AbstractIRFOrganizerWidget.showEvent(self, event)
 

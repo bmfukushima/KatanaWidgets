@@ -83,6 +83,7 @@ from cgwidgets.views import AbstractDragDropModelDelegate
 from .BookmarkUtils import BookmarkUtils
 
 from Widgets2 import AbstractStateManagerTab, AbstractStateManagerOrganizerWidget
+from Utils2 import widgetutils
 
 
 class BookmarkManagerTab(UI4.Tabs.BaseTab):
@@ -125,7 +126,16 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
 
     """ UTILS """
     def lastActiveBookmark(self):
+
         return self.mainWidget().lastActiveWidget().text()
+
+    def update(self):
+        # todo bookmarks update function
+        # get active text
+        if hasattr(widgetutils.katanaMainWindow(), "_last_active_bookmark"):
+            full_name = widgetutils.katanaMainWindow()._last_active_bookmark
+            self.mainWidget().lastActiveWidget().setText(full_name)
+        pass
 
     """ EVENTS """
     def updateEvent(self):
@@ -156,8 +166,13 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
 
                 for bookmark in BookmarkUtils.bookmarks():
                     if bookmark["fullName"] == full_name:
+                        # load bookmark
                         ScenegraphBookmarkManager.LoadBookmark(bookmark)
+
+                        # update attrs
                         self.mainWidget().lastActiveWidget().setText(full_name)
+                        widgetutils.katanaMainWindow()._last_active_bookmark = full_name
+
                         return
 
         print("No bookmark found to load...")
@@ -211,7 +226,7 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
         # create item
         if create_item:
-            bookmark_item = self.createNewStateItem(name)
+            bookmark_item = self.createNewBookmarkItem(name)
             return bookmark_item
 
     """ UTILS """
@@ -230,10 +245,10 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
             bookmark_name = BookmarkUtils.getBookmarkNameFromFullName(full_name)
 
             # setup bookmark
-            self.createNewStateItem(bookmark_name, folder_name)
+            self.createNewBookmarkItem(bookmark_name, folder_name)
 
     """ EVENTS """
-    def createNewStateItem(self, state, folder_name=None, data=None):
+    def createNewBookmarkItem(self, state, folder_name=None, data=None):
         """ Creates a new state item.
 
         If a folder name is specified and it does not exist, the item will be created
@@ -255,7 +270,6 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
         parent_index = self.getIndexFromItem(folder_item)
 
         AbstractStateManagerOrganizerWidget.createNewStateItem(self, state, folder_name, data=data, parent=parent_index)
-
 
     def __bookmarkRenameEvent(self, item, old_name, new_name):
         """ When a user renames a bookmark, this will update the bookmarks/folder associated with the rename"""

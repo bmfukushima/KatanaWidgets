@@ -179,7 +179,7 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
         self.addFolder(new_name, folder_item)
 
     """ CREATE """
-    def createNewStateItem(self, state, folder_name=None, data=None, parent=QModelIndex()):
+    def createNewStateItem(self, state, folder_name=None, data=None, parent=QModelIndex(), row=0):
         """ Creates a new state item.
 
         If a folder name is specified and it does not exist, the item will be created
@@ -189,7 +189,9 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
             folder_name (str): name of folder
             data (dict): of additional data to be added to the items
             parent (QModelIndex): to be the parent
-                Note: if this is provided, it will overwrite the folder_name input"""
+                Note: if this is provided, it will overwrite the folder_name input
+            row (int): row to insert item, default is 0"""
+
 
         # setup data
         item_data = {"name": state, "folder": folder_name, "type": AbstractStateManagerTab.STATE_ITEM}
@@ -198,7 +200,7 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
 
         # create item
         state_index = self.insertNewIndex(
-            0,
+            row,
             name=state,
             column_data=item_data,
             is_deletable=True,
@@ -209,7 +211,13 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
         state_item = state_index.internalPointer()
         return state_item
 
-    def createNewFolderItem(self, folder, parent=QModelIndex()):
+    def createNewFolderItem(self, folder, is_dragable=False, parent=QModelIndex()):
+        """ Creates a new folder item and returns it
+
+        Args:
+            folder (str):
+            is_dragable (bool):
+            parent (QModelIndex)"""
         data = {"name": folder, "folder": folder, "type": AbstractStateManagerTab.FOLDER_ITEM}
         folder_index = self.insertNewIndex(
             0,
@@ -218,7 +226,7 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
             column_data=data,
             is_deletable=True,
             is_dropable=True,
-            is_dragable=False
+            is_dragable=is_dragable
         )
         folder_item = folder_index.internalPointer()
         return folder_item

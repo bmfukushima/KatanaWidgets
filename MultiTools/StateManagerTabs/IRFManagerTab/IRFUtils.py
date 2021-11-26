@@ -1,4 +1,4 @@
-from Katana import NodegraphAPI, RenderManager
+from Katana import NodegraphAPI, RenderManager, Utils
 
 class IRFUtils(object):
     FILTER = "filter"
@@ -17,6 +17,11 @@ class IRFUtils(object):
     @staticmethod
     def getIRFDelegate():
         return RenderManager.InteractiveRenderDelegateManager.GetRenderFiltersDelegate()
+
+    @staticmethod
+    def clearAllActiveFilters():
+        irf_delegate = IRFUtils.getIRFDelegate()
+        irf_delegate.setActiveRenderFilterNodes([])
 
     @staticmethod
     def getAllActiveFilters():

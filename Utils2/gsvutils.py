@@ -357,22 +357,26 @@ def renameGSVOption(gsv, old_name, new_name):
     deleteGSVOption(gsv, old_name)
 
 
-def setGSVOption(gsv, option):
+def setGSVOption(gsv, option, create=False):
     """
     Sets the GSV to the option provided
 
     Args:
         gsv (str): gsv to set
         option (str): option to set the GSV to
+        create (bool): determines if the parameter should be created if it doesn't exist
     """
     gsv_param = getGSVParameter(gsv)
-    value_param = gsv_param.getChild('value')
-    value_param.setValue(str(option), 0)
+    if not gsv_param and create:
+        gsv_param = createNewGSV(gsv)
+    if gsv_param:
+        value_param = gsv_param.getChild('value')
+        value_param.setValue(str(option), 0)
 
 
 def updateAllGSVTabs():
     from Katana import UI4
-    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSVManagerTab")
+    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSV Manager")
 
     # # for each tab, update tab data
     for gsv_manager in gsv_manager_tabs:
