@@ -3,27 +3,43 @@ Todo:
     *   Bookmarks: store/load
             - Need to add to default scenegraph way of working.
             - Monkey patch on the load trigger?
-    *   Delete
-            After updating, doubling up on items created
-            Delete, storing NULL child instead of no data.
-
+    *   Import / Export
+    *   New Button
+            Kinda like a combo box, but for less than 3-4 values
 Data Structure:
-    same as color registry? just go for an export?
     "data" :
         [
             {
-                "children": [dict(child_a), dict(child_b)],
-                "color":"(255,255,255,255)",
-                "enabled":bool,
-                "item_type":COLOR|GROUP,
-                "name": item.getName()
-            },
+                "name": item.getArg("name"),
+                "type": item.getArg("type"),
+                "irf": item.getArg("irf"),
+                "gsv": item.getArg("gsv"),
+                "bookmark": item.getArg("bookmark")},
+            {
+                "name": item.getArg("name"),
+                "type": item.getArg("type"),
+                "children": []},
             dict(child_c),
             dict(child_d)
         ]
     }
 
-    gsv_map (dict): {gsv_name: option}
+    state item:{
+        "name": item.getArg("name"),
+        "type": item.getArg("type"),
+        "irf": item.getArg("irf"),
+        "gsv": item.getArg("gsv"),
+        "bookmark": item.getArg("bookmark")
+    }
+    folder item:{
+        "name": item.getArg("name"),
+        "type": item.getArg("type"),
+        "children": []
+    }
+    name (str):
+    type (str): AbstractStateManagerTab.ITEMTYPE
+    children (list) of folder/state items
+    gsv (dict): {gsv_name: option}
     irf (list): of render filter node names
     bookmark (str): of last active bookmark
 
@@ -200,8 +216,8 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         elif item.getArg("type") == AbstractStateManagerTab.FOLDER_ITEM:
             data = {
                 "name": item.getArg("name"),
-                "children": [],
-                "type": item.getArg("type")
+                "type": item.getArg("type"),
+                "children": []
             }
 
         return data
