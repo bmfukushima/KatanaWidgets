@@ -22,6 +22,8 @@ Data Structure:
     }
 
     state item:{
+        "view_node": item.getArg("view_node"),
+        "edit_node": item.getArg("edit_nodes"),
         "name": item.getArg("name"),
         "type": item.getArg("type"),
         "irf": item.getArg("irf"),
@@ -39,6 +41,8 @@ Data Structure:
     gsv (dict): {gsv_name: option}
     irf (list): of render filter node names
     bookmark (str): of last active bookmark
+    view_node (str): name of node viewed
+    edit_node (list): of edited node names
 
 Hierarchy:
     StateManagerTab --> (UI4.Tabs.BaseTab)
@@ -204,6 +208,8 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         # return the export data for the rebuild file
         if item.getArg("type") == AbstractStateManagerTab.STATE_ITEM:
             data = {
+                "view_node": item.getArg("view_node"),
+                "edit_node": item.getArg("edit_node"),
                 "name": item.getArg("name"),
                 "type": item.getArg("type"),
                 "irf": item.getArg("irf"),
@@ -244,6 +250,23 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         if items[0].getArg("type") == AbstractStateManagerTab.FOLDER_ITEM: return
 
         item = items[0]
+
+        # todo update view/edit nodes (load)
+        # update view / edit
+
+        # "view_node": item.getArg("view_node"),
+        # "edit_node": item.getArg("edit_node"),
+        if item.getArg("view_node"):
+            view_node = NodegraphAPI.GetNode(item.getArg("view_node"))
+            NodegraphAPI.SetNodeViewed(view_node, True, exclusive=True)
+
+        if 0 < len(item.getArg("edit_node")):
+            for edit_node in NodegraphAPI.GetAllEditedNodes():
+                NodegraphAPI.SetNodeEdited(edit_node, False)
+
+            for edit_node_name in item.getArg("edit_node"):
+                edit_node = NodegraphAPI.GetNode(edit_node_name)
+                NodegraphAPI.SetNodeEdited(edit_node, True, exclusive=False)
 
         # set up gsv
         gsv = item.getArg("gsv")
@@ -326,7 +349,14 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 active_bookmark = None
 
             # this needs to be set as a global attr somewhere, like katana main, or a parameter on KatanaBebop
-            state_data = {"irf": irf_map, "gsv": gsv_map, "bookmark": active_bookmark, "name": name}
+            state_data = {
+                "irf": irf_map,
+                "gsv": gsv_map,
+                "bookmark": active_bookmark,
+                "name": name,
+                "view_node": NodegraphAPI.GetViewNode().getName() if NodegraphAPI.GetViewNode() else None,
+                "edit_node": [node.getName() for node in NodegraphAPI.GetAllEditedNodes()]
+            }
             state_item = self.createNewStateItem(name, data=state_data, parent=parent, row=row)
 
             # update param data
