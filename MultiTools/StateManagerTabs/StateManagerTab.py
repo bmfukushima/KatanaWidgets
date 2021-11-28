@@ -1,40 +1,34 @@
 """
 Todo:
     *   Import / Export
+    *   Notes
+        - View on selection
+        - View meta data on selection?
     *   New Button
             Kinda like a combo box, but for less than 3-4 values
 Data Structure:
     "data" :
         [
+            # state item
             {
+                "notes": item.getArg("notes")
+                "view_node": item.getArg("view_node"),
+                "edit_node": item.getArg("edit_nodes"),
                 "name": item.getArg("name"),
                 "type": item.getArg("type"),
                 "irf": item.getArg("irf"),
                 "gsv": item.getArg("gsv"),
                 "bookmark": item.getArg("bookmark")},
+            # folder item
             {
                 "name": item.getArg("name"),
                 "type": item.getArg("type"),
-                "children": []},
+                "children": [dict(grandchild_a), dict(grandchild_b)]},
             dict(child_c),
             dict(child_d)
         ]
     }
 
-    state item:{
-        "view_node": item.getArg("view_node"),
-        "edit_node": item.getArg("edit_nodes"),
-        "name": item.getArg("name"),
-        "type": item.getArg("type"),
-        "irf": item.getArg("irf"),
-        "gsv": item.getArg("gsv"),
-        "bookmark": item.getArg("bookmark")
-    }
-    folder item:{
-        "name": item.getArg("name"),
-        "type": item.getArg("type"),
-        "children": []
-    }
     name (str):
     type (str): AbstractStateManagerTab.ITEMTYPE
     children (list) of folder/state items
@@ -43,33 +37,41 @@ Data Structure:
     bookmark (str): of last active bookmark
     view_node (str): name of node viewed
     edit_node (list): of edited node names
+    notes (str): notes created by the user
 
 Hierarchy:
     StateManagerTab --> (UI4.Tabs.BaseTab)
         |- QVBoxLayout
-            |- view_widget --> (StateManagerViewWidget --> ShojiLayout)
+            |- view_widget --> (StateManagerActiveView --> ShojiLayout)
             |    |- gsv_view --> (GSVViewWidget)
-            |    |- irf_view --> (IRFViewWidget)
+            |    |- irf_view --> (IRFActivationWidget)
             |    |- bookmarks_view --> (BookmarkViewWidget)
             |    |- state_view --> (StateManagerEditorWidget)
             |- editor_widget --> (StateManagerEditorWidget --> AbstractStateManagerTab)
                 |- organizer_widget --> (StateManagerOrganizerWidget)
+                |- state_viewer_widget --> (StateManagerItemViewWidget)
+                    |- QVBoxLayout
+                        |- notes_widget --> (QPlainTextEdit)
+                        |- gsv_view_widget --> (ReadOnlyGSVViewWidget)
+                        |- irf_view_widget --> (ReadOnlyIRFViewWidget)
+                        |- bookmark_labelled_widget --> (LabelledInputWidget)
+                            |- bookmark_widget --> (StringInputWidget)
 """
 
 import json
 
-from qtpy.QtWidgets import QVBoxLayout, QScrollArea
+from qtpy.QtWidgets import QVBoxLayout, QScrollArea, QWidget, QPlainTextEdit
 from qtpy.QtCore import QModelIndex
 
 from Katana import UI4, NodegraphAPI, Utils
 
-from cgwidgets.widgets import ShojiLayout, ShojiModelViewWidget, ButtonInputWidget
+from cgwidgets.widgets import ShojiLayout, ShojiModelViewWidget, ButtonInputWidget, StringInputWidget, LabelledInputWidget
 from cgwidgets.utils import getWidgetAncestor
 
 from Utils2 import gsvutils, widgetutils
 from Widgets2 import AbstractStateManagerTab, AbstractStateManagerOrganizerWidget
-from .GSVManagerTab import GSVViewWidget
-from .IRFManagerTab import IRFActivationWidget as IRFViewWidget
+from .GSVManagerTab import GSVViewWidget, ViewGSVWidget
+from .IRFManagerTab import IRFActivationWidget, IRFViewWidget
 from .IRFManagerTab.IRFUtils import IRFUtils
 from .BookmarkManagerTab import Tab as BookmarkViewWidget
 from .BookmarkManagerTab.BookmarkUtils import BookmarkUtils
@@ -120,7 +122,7 @@ class StateManagerTab(UI4.Tabs.BaseTab):
         super(StateManagerTab, self).__init__(parent)
 
         # setup widgets
-        self._view_widget = StateManagerViewWidget(self)
+        self._view_widget = StateManagerActiveView(self)
         self._editor_widget = StateManagerEditorWidget(self)
 
         # setup main layout
@@ -157,6 +159,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         self.setTextChangedEvent(self.__stateRenameEvent)
         self.setDropEvent(self.__stateReparentEvent)
         self.setItemExportDataFunction(self.exportStateManager)
+        self.setIndexSelectedEvent(self.__stateSelectedEvent)
 
         # populate
         self.populate(StateManagerUtils.getMainStateList())
@@ -208,6 +211,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         # return the export data for the rebuild file
         if item.getArg("type") == AbstractStateManagerTab.STATE_ITEM:
             data = {
+                "notes": item.getArg("notes"),
                 "view_node": item.getArg("view_node"),
                 "edit_node": item.getArg("edit_node"),
                 "name": item.getArg("name"),
@@ -251,11 +255,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
         item = items[0]
 
-        # todo update view/edit nodes (load)
         # update view / edit
-
-        # "view_node": item.getArg("view_node"),
-        # "edit_node": item.getArg("edit_node"),
         if item.getArg("view_node"):
             view_node = NodegraphAPI.GetNode(item.getArg("view_node"))
             NodegraphAPI.SetNodeViewed(view_node, True, exclusive=True)
@@ -304,6 +304,11 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         view_widget.lastActiveWidget().setText(full_name)
         return True
 
+    def __stateSelectedEvent(self, item, enabled):
+        if enabled:
+            editor_widget = getWidgetAncestor(self, StateManagerEditorWidget)
+            editor_widget.showItemDetails(item)
+
     def __stateRenameEvent(self, item, old_name, new_name):
         """ When a user renames a state, this will update the states/folder associated with the rename"""
         # preflight
@@ -348,6 +353,10 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
             else:
                 active_bookmark = None
 
+            # get notes
+            editor_widget = getWidgetAncestor(self, StateManagerEditorWidget)
+            notes = editor_widget.stateViewerWidget().notesWidget().toPlainText()
+
             # this needs to be set as a global attr somewhere, like katana main, or a parameter on KatanaBebop
             state_data = {
                 "irf": irf_map,
@@ -355,7 +364,8 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 "bookmark": active_bookmark,
                 "name": name,
                 "view_node": NodegraphAPI.GetViewNode().getName() if NodegraphAPI.GetViewNode() else None,
-                "edit_node": [node.getName() for node in NodegraphAPI.GetAllEditedNodes()]
+                "edit_node": [node.getName() for node in NodegraphAPI.GetAllEditedNodes()],
+                "notes": notes
             }
             state_item = self.createNewStateItem(name, data=state_data, parent=parent, row=row)
 
@@ -371,9 +381,9 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
 
 class StateManagerEditorWidget(AbstractStateManagerTab):
+    """ Main widget for the editor view"""
     def __init__(self, parent=None):
         super(StateManagerEditorWidget, self).__init__(parent)
-
         # setup organizer
         self._state_organizer_widget = StateManagerOrganizerWidget(self)
         self.setOrganizerWidget(self._state_organizer_widget)
@@ -384,10 +394,23 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
 
         self.addUtilsButton(self._create_new_state_widget)
 
+        # setup view
+        self._state_viewer_widget = StateManagerItemViewWidget(self)
+        self.layout().addWidget(self._state_viewer_widget)
+
         # setup events
         self.setLoadEvent(self.loadStateEvent)
         self.setUpdateEvent(self.updateStateEvent)
         self.setCreateNewFolderEvent(self.createNewFolder)
+
+    def showItemDetails(self, item):
+        """ When an item in the organizer is selected, this will update the view to display that items settings"""
+        self.stateViewerWidget().setNotes(item.getArg("notes"))
+
+        # update viewer settings
+        self.stateViewerWidget().setGSVData(item.getArg("gsv"))
+        self.stateViewerWidget().setBookmarkData(item.getArg("bookmark"))
+        self.stateViewerWidget().setIRFData(item.getArg("irf"))
 
     def loadStateEvent(self):
         load_state = self.organizerWidget().loadState()
@@ -443,17 +466,142 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
         bookmark_item = bookmark_index.internalPointer()
         return bookmark_item
 
+    """ WIDGETS """
+    def stateViewerWidget(self):
+        return self._state_viewer_widget
 
-class StateManagerViewWidget(ShojiLayout):
+
+class ReadOnlyGSVViewWidget(GSVViewWidget):
+    """ Read only GSVView for the StateManagerItemViewWidget
+
+    Attributes:
+        gsv_data (dict): {gsv_name: option}"""
+
     def __init__(self, parent=None):
-        super(StateManagerViewWidget, self).__init__(parent)
+        self._gsv_data = {}
+        super(ReadOnlyGSVViewWidget, self).__init__(parent)
+
+    """ POPULATE """
+    def clear(self):
+        """
+        Removes all of the GSVViewWidgets from the display
+        """
+        # clear layout (if it exists)
+        if self.layout().count() > 0:
+            for index in reversed(range(self.layout().count())):
+                self.layout().itemAt(index).widget().setParent(None)
+
+        self._widget_list = {}
+
+    def populate(self):
+        """Creates the display for every GSV.  This is the left side of the display."""
+        # create a combobox for each GSV that is available
+        for gsv, option in self.gsvData().items():
+            self.addWidget(gsv, option)
+
+    def addWidget(self, gsv, option):
+        """
+        Adds a widget to the layout.
+
+        Args:
+            gsv (str): name of GSV to create
+        """
+        widget = ViewGSVWidget(self, name=gsv)
+        widget.delegateWidget().setText(option)
+        self.addInputWidget(widget)
+        self.widgets()[gsv] = widget
+
+    def gsvData(self):
+        return self._gsv_data
+
+    def setGSVData(self, gsv_data):
+        self._gsv_data = gsv_data
+
+
+class ReadOnlyIRFViewWidget(IRFViewWidget):
+    """ Read only IRFView for the StateManagerItemViewWidget
+
+    Attributes:
+        activeFilters (list): of the names of active render filter nodes"""
+
+    def __init__(self, parent=None):
+        self._active_filters = []
+        super(ReadOnlyIRFViewWidget, self).__init__(parent)
+
+    def populate(self):
+        for render_filter_name in self.activeFilters():
+            render_filter_node = NodegraphAPI.GetNode(render_filter_name)
+            index = self.createFilterItem(render_filter_node)
+            self.view().setExpanded(index.parent(), True)
+
+    def activeFilters(self):
+        return self._active_filters
+
+    def setActiveFilters(self, active_filters):
+        self._active_filters = active_filters
+
+
+class StateManagerItemViewWidget(QWidget):
+    """ Displays the options as read only to the user when an item is selected"""
+    def __init__(self, parent):
+        super(StateManagerItemViewWidget, self).__init__(parent)
+        QVBoxLayout(self)
+        self._notes_widget = QPlainTextEdit(self)
+
+        self._gsv_view_widget = ReadOnlyGSVViewWidget(self)
+        self._irf_view_widget = ReadOnlyIRFViewWidget(self)
+
+        # create input buttons
+        self._bookmark_widget = StringInputWidget(self)
+        self._bookmark_widget.setReadOnly(True)
+        self._bookmark_labelled_widget = LabelledInputWidget(
+            self, name="Bookmark", delegate_widget=self._bookmark_widget, default_label_length=150)
+        self._bookmark_labelled_widget.setViewAsReadOnly(True)
+
+        self.layout().addWidget(self._notes_widget)
+        self.layout().addWidget(self._bookmark_labelled_widget)
+        self.layout().addWidget(self._gsv_view_widget)
+        self.layout().addWidget(self._irf_view_widget)
+
+    def setNotes(self, notes):
+        self.notesWidget().setPlainText(notes)
+
+    def setIRFData(self, irf_data):
+        self.irfViewWidget().setActiveFilters(irf_data)
+        self.irfViewWidget().update()
+
+    def setBookmarkData(self, bookmark_data):
+        self.bookmarkWidget().setText(bookmark_data)
+
+    def setGSVData(self, gsv_data):
+        self.gsvViewWidget().setGSVData(gsv_data)
+        self.gsvViewWidget().update()
+
+    """ WIDGETS """
+    def bookmarkWidget(self):
+        return self._bookmark_widget
+
+    def gsvViewWidget(self):
+        return self._gsv_view_widget
+
+    def irfViewWidget(self):
+        return self._irf_view_widget
+
+    def notesWidget(self):
+        return self._notes_widget
+
+
+class StateManagerActiveView(ShojiLayout):
+    """ Widget to show the currently active activation widgets of the different managers"""
+    def __init__(self, parent=None):
+        super(StateManagerActiveView, self).__init__(parent)
         #self._main_layout = ShojiLayout(self)
         self._gsv_view_widget = GSVViewWidget(self)
         self._gsv_scroll_area = QScrollArea(self)
         self._gsv_scroll_area.setWidget(self._gsv_view_widget)
         self._gsv_scroll_area.setWidgetResizable(True)
 
-        self._irf_view_widget = IRFViewWidget(self)
+        self._irf_view_widget = IRFActivationWidget(self)
         self._bookmarks_view_widget = BookmarkViewWidget(self)
         self._state_view_widget = StateManagerEditorWidget(self)
 
