@@ -1,8 +1,6 @@
 """
 Todo:
     *   Import / Export
-    *   QSplitter on StateManagerEditorWidget
-    *   View Tab, disable editor viewer
     *   View Tab, change to activation
     *   New Button
             Kinda like a combo box, but for less than 3-4 values
@@ -130,8 +128,8 @@ class StateManagerTab(UI4.Tabs.BaseTab):
         QVBoxLayout(self)
         self._main_widget = ShojiModelViewWidget(self)
         self._main_widget.setHeaderItemIsDeletable(False)
-        self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self._view_widget)
-        self._main_widget.insertShojiWidget(1, column_data={"name":"Edit"}, widget=self._editor_widget)
+        self._main_widget.insertShojiWidget(0, column_data={"name":"Manage"}, widget=self._view_widget)
+        self._main_widget.insertShojiWidget(1, column_data={"name":"Create/Edit"}, widget=self._editor_widget)
 
         self.layout().addWidget(self._main_widget)
 

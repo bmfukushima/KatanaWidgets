@@ -1,19 +1,11 @@
 """
+TODO: Enhancement
+    *   PopupBar Widget fix image overlays
 TODO: BUGS
     *   NetworkMaterialCreate | segfault after closing a custom Nodegraph
             Has something to do with the clean up event on the AbstractNodegraphWidget
-    *   PopupWidgets | Having issue with popups and closing.
-            1.) Seems to close the widget when the popup happens under the cursor when using the keyboard.
-                Python widgets auto completer
-            2.) Selecting an item in the popup when not hovering over the widget closes.
-                View, select camera
     *   VariableManager | Can load multiple patterns
             When loading blocks, if it has a pattern that already exists, it will create a duplicate pattern.
-    *   NodeColorRegistry
-            Not loading after opening new file
-
-
-
 """
 
 # AbstractParametersDisplayWidget | Error Log
