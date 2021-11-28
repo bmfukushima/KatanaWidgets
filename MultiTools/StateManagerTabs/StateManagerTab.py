@@ -1,9 +1,9 @@
 """
 Todo:
     *   Import / Export
-    *   Notes
-        - View on selection
-        - View meta data on selection?
+    *   QSplitter on StateManagerEditorWidget
+    *   View Tab, disable editor viewer
+    *   View Tab, change to activation
     *   New Button
             Kinda like a combo box, but for less than 3-4 values
 Data Structure:
@@ -123,7 +123,8 @@ class StateManagerTab(UI4.Tabs.BaseTab):
 
         # setup widgets
         self._view_widget = StateManagerActiveView(self)
-        self._editor_widget = StateManagerEditorWidget(self)
+        self._editor_widget = StateManagerEditorMainWidget(self)
+
 
         # setup main layout
         QVBoxLayout(self)
@@ -306,8 +307,9 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
     def __stateSelectedEvent(self, item, enabled):
         if enabled:
-            editor_widget = getWidgetAncestor(self, StateManagerEditorWidget)
-            editor_widget.showItemDetails(item)
+            if item.getArg("type") == AbstractStateManagerTab.STATE_ITEM:
+                editor_widget = getWidgetAncestor(self, StateManagerEditorMainWidget)
+                editor_widget.showItemDetails(item)
 
     def __stateRenameEvent(self, item, old_name, new_name):
         """ When a user renames a state, this will update the states/folder associated with the rename"""
@@ -354,8 +356,8 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 active_bookmark = None
 
             # get notes
-            editor_widget = getWidgetAncestor(self, StateManagerEditorWidget)
-            notes = editor_widget.stateViewerWidget().notesWidget().toPlainText()
+            editor_widget = getWidgetAncestor(self, StateManagerEditorMainWidget)
+            notes = editor_widget.notesWidget().toPlainText()
 
             # this needs to be set as a global attr somewhere, like katana main, or a parameter on KatanaBebop
             state_data = {
@@ -380,6 +382,35 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         return folder_item
 
 
+class StateManagerEditorMainWidget(ShojiLayout):
+    def __init__(self, parent=None):
+        super(StateManagerEditorMainWidget, self).__init__(parent)
+        self._editor_widget = StateManagerEditorWidget(self)
+        self._viewer_widget = StateManagerItemViewWidget(self)
+        self.addWidget(self._editor_widget)
+        self.addWidget(self._viewer_widget)
+
+    def showItemDetails(self, item):
+        """ When an item in the organizer is selected, this will update the view to display that items settings"""
+        self.viewerWidget().setNotes(item.getArg("notes"))
+        self.viewerWidget().setGSVData(item.getArg("gsv"))
+        self.viewerWidget().setBookmarkData(item.getArg("bookmark"))
+        self.viewerWidget().setIRFData(item.getArg("irf"))
+
+    """ WIDGETS """
+    def notesWidget(self):
+        return self._viewer_widget.notesWidget()
+
+    def lastActiveWidget(self):
+        return self._editor_widget.lastActiveWidget()
+
+    def editorWidget(self):
+        return self._editor_widget
+
+    def viewerWidget(self):
+        return self._viewer_widget
+
+
 class StateManagerEditorWidget(AbstractStateManagerTab):
     """ Main widget for the editor view"""
     def __init__(self, parent=None):
@@ -394,23 +425,14 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
 
         self.addUtilsButton(self._create_new_state_widget)
 
-        # setup view
-        self._state_viewer_widget = StateManagerItemViewWidget(self)
-        self.layout().addWidget(self._state_viewer_widget)
+        # # setup view
+        # self._state_viewer_widget = StateManagerItemViewWidget(self)
+        # self.layout().addWidget(self._state_viewer_widget)
 
         # setup events
         self.setLoadEvent(self.loadStateEvent)
         self.setUpdateEvent(self.updateStateEvent)
         self.setCreateNewFolderEvent(self.createNewFolder)
-
-    def showItemDetails(self, item):
-        """ When an item in the organizer is selected, this will update the view to display that items settings"""
-        self.stateViewerWidget().setNotes(item.getArg("notes"))
-
-        # update viewer settings
-        self.stateViewerWidget().setGSVData(item.getArg("gsv"))
-        self.stateViewerWidget().setBookmarkData(item.getArg("bookmark"))
-        self.stateViewerWidget().setIRFData(item.getArg("irf"))
 
     def loadStateEvent(self):
         load_state = self.organizerWidget().loadState()
@@ -465,10 +487,6 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
         )
         bookmark_item = bookmark_index.internalPointer()
         return bookmark_item
-
-    """ WIDGETS """
-    def stateViewerWidget(self):
-        return self._state_viewer_widget
 
 
 class ReadOnlyGSVViewWidget(GSVViewWidget):
@@ -549,6 +567,10 @@ class StateManagerItemViewWidget(QWidget):
         self._notes_widget = QPlainTextEdit(self)
 
         self._gsv_view_widget = ReadOnlyGSVViewWidget(self)
+        self._gsv_scroll_area = QScrollArea(self)
+        self._gsv_scroll_area.setWidget(self._gsv_view_widget)
+        self._gsv_scroll_area.setWidgetResizable(True)
+
         self._irf_view_widget = ReadOnlyIRFViewWidget(self)
 
         # create input buttons
@@ -559,9 +581,9 @@ class StateManagerItemViewWidget(QWidget):
         self._bookmark_labelled_widget.setViewAsReadOnly(True)
 
         self.layout().addWidget(self._notes_widget)
-        self.layout().addWidget(self._bookmark_labelled_widget)
-        self.layout().addWidget(self._gsv_view_widget)
+        self.layout().addWidget(self._gsv_scroll_area)
         self.layout().addWidget(self._irf_view_widget)
+        self.layout().addWidget(self._bookmark_labelled_widget)
 
     def setNotes(self, notes):
         self.notesWidget().setPlainText(notes)
@@ -592,7 +614,7 @@ class StateManagerItemViewWidget(QWidget):
 
 
 class StateManagerActiveView(ShojiLayout):
-    """ Widget to show the currently active activation widgets of the different managers"""
+    """ Widget to show all of the different activation managers managers"""
     def __init__(self, parent=None):
         super(StateManagerActiveView, self).__init__(parent)
         #self._main_layout = ShojiLayout(self)
