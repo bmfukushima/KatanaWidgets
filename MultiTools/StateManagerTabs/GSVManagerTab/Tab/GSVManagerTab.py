@@ -65,9 +65,7 @@ Data:
 GSVEventWidget --> gsvChangedEvent
 """
 """ TODO:
-Katana 4.5
-    * Showing/hiding events before its saved can cause a disconnect
-        of the available events"""
+        *   GSVUtils push changes to PopupBarWidgets"""
 
 import json
 
@@ -192,7 +190,6 @@ class GSVViewWidget(FrameInputWidgetContainer):
         super(GSVViewWidget, self).__init__(parent)
         self.setIsHeaderShown(False)
         self.setDirection(Qt.Vertical)
-        #QVBoxLayout(self)
         self._widget_list = {}
         self.populate()
 
@@ -216,9 +213,7 @@ class GSVViewWidget(FrameInputWidgetContainer):
             self.addWidget(gsv)
 
     def update(self):
-        """
-        Updates the current view widgets dispalyed to the user
-        """
+        """Updates the current view widgets displayed to the user"""
         self.clear()
         self.populate()
 
@@ -269,9 +264,11 @@ class GSVViewWidget(FrameInputWidgetContainer):
     def widgets(self):
         return self._widget_list
 
-    def showEvent(self, event):
-        self.update()
-        FrameInputWidgetContainer.showEvent(self, event)
+    def updateGSVOptionDisplayText(self, gsv, option):
+        """ Updates the display text of a single GSV Option"""
+        self.widgets()[gsv].setIsFrozen(True)
+        self.widgets()[gsv].updateGSVOptionDisplayText(option)
+        self.widgets()[gsv].setIsFrozen(False)
 
 
 class ViewGSVWidget(LabelledInputWidget):
@@ -299,6 +296,7 @@ class ViewGSVWidget(LabelledInputWidget):
         # setup label
         self.gsv = self.name()
         self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
+        self._is_frozen = False
 
         # setup delegate
         self.delegateWidget().dynamic_update = True
@@ -307,6 +305,12 @@ class ViewGSVWidget(LabelledInputWidget):
         self.delegateWidget().setCleanItemsFunction(self.update)
         self.delegateWidget().setValidateInputFunction(self.validateGSVEntry)
         self.setFixedHeight(getFontSize()*3)
+
+    def isFrozen(self):
+        return self._is_frozen
+
+    def setIsFrozen(self, enabled):
+        self._is_frozen = self._is_frozen
 
     def update(self):
         return [[option] for option in gsvutils.getGSVOptions(self.gsv, return_as=gsvutils.STRING)]
@@ -325,9 +329,16 @@ class ViewGSVWidget(LabelledInputWidget):
         else:
             return False
 
+    def updateGSVOptionDisplayText(self, option):
+        """ Updates the display text of a single GSV Option"""
+        self.setIsFrozen(True)
+        self.delegateWidget().setText(option)
+        self.setIsFrozen(False)
+
     def setGSVOption(self, widget, option):
         """Sets the GSV Option parameter to the specified value"""
-        gsvutils.setGSVOption(self.gsv, option)
+        if not self.isFrozen():
+            gsvutils.setGSVOption(self.gsv, option)
 
 
 """ EDIT WIDGET """
@@ -477,9 +488,6 @@ class GSVSelectorWidget(LabelledInputWidget):
                 # handle invalid user input
                 if param.getName() != gsv:
                     self.delegateWidget().setText(param.getName())
-
-                # create new entry in the view widget
-                main_widget.viewWidget().addWidget(param.getName())
 
             # Update options available to the user
             if hasattr(main_widget, '_edit_widget'):

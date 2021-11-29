@@ -18,6 +18,7 @@ def paramDataStatic():
     """
     return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".data")
 
+
 def paramOldValuesStatic():
     return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".old_values")
 
@@ -38,11 +39,10 @@ def gsvChangedEvent(args):
         param = arg[2]['param']
         param_name = param.getName()
 
-
         # check param type
         if param_name != "value": return
 
-        #
+        # get attrs
         gsv = param.getParent().getName()
         option = param.getValue(0)
 
@@ -51,6 +51,7 @@ def gsvChangedEvent(args):
         if gsv in old_values.keys():
             if old_values[gsv] == param.getValue(0):
                 return
+
         # update old values
         """ This is needed to stop the script from running every time the user selects the same GSV twice"""
         old_values[gsv] = option
@@ -91,19 +92,30 @@ def gsvChangedEvent(args):
                 with open(user_data["filepath"]) as script_descriptor:
                     exec(script_descriptor.read(), local_variables)
 
+        # update Tabs
+        for gsv_manager in UI4.App.Tabs.GetTabsByType("GSV Manager"):
+            gsv_manager.updateGSVOption(gsv, option)
 
-def updateGSVsOnSceneLoad(args):
-    """ When a new scene is loaded, this will reset all of the GSVManager tabs to the new data"""
-    # get all tabs
-    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSV Manager")
 
-    # # for each tab, update tab data
-    for gsv_manager in gsv_manager_tabs:
-        gsv_manager.eventsWidget().setNode(NodegraphAPI.GetRootNode())
-        gsv_manager.update()
-        # set event data
-        # update events view
-        pass
+# def updateGSVsOnSceneLoad(args):
+#     """ When a new scene is loaded, this will reset all of the GSVManager tabs to the new data"""
+#     # get all tabs
+#     gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSV Manager")
+#
+#     # # for each tab, update tab data
+#     for gsv_manager in gsv_manager_tabs:
+#         print("============= gsv manager")
+#         print(gsv_manager)
+#         gsv_manager.eventsWidget().setNode(NodegraphAPI.GetRootNode())
+#         gsv_manager.update()
+
+    # update state managers
+    # for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+    #     print("========= state manager")
+    #     print(tab)
+    #     print(tab.viewWidget())
+    #     print(tab.viewWidget().gsvViewWidget())
+    #     tab.viewWidget().gsvViewWidget().update()
 
 
 def createDataParamsOnSceneLoad(*args, **kwargs):
@@ -132,7 +144,7 @@ def installGSVManagerEvents(*args, **kwargs):
     gsvutils.hideEngineersGSVUI()
     #Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, createDataParamsOnSceneLoad)
 
-    Utils.EventModule.RegisterCollapsedHandler(updateGSVsOnSceneLoad, 'nodegraph_setRootNode')
+    # Utils.EventModule.RegisterCollapsedHandler(updateGSVsOnSceneLoad, 'nodegraph_setRootNode')
     Utils.EventModule.RegisterCollapsedHandler(createDataParamsOnSceneLoad, 'nodegraph_loadEnd')
     Utils.EventModule.RegisterCollapsedHandler(gsvChangedEvent, 'parameter_finalizeValue', None)
 

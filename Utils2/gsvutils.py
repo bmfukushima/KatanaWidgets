@@ -86,6 +86,9 @@ def createNewGSV(gsv):
     gsv_param.createChildNumber('enable', 1)
     gsv_param.createChildString('value', '')
     gsv_param.createChildStringArray('options', 0)
+
+    # update all tabs
+    addGSVToAllViewTabs(gsv)
     return gsv_param
 
 
@@ -372,12 +375,50 @@ def setGSVOption(gsv, option, create=False):
     if gsv_param:
         value_param = gsv_param.getChild('value')
         value_param.setValue(str(option), 0)
+        updateGSVOption(gsv, option)
 
 
+""" UI Updates"""
 def updateAllGSVTabs():
+    """ Updates the View Widgets of all of the GSV Manager tabs"""
     from Katana import UI4
     gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSV Manager")
 
     # # for each tab, update tab data
     for gsv_manager in gsv_manager_tabs:
         gsv_manager.viewWidget().update()
+
+
+def addGSVToAllViewTabs(gsv):
+    """ Adds a new GSV entry into the ViewWidget in the GSVManager Tab
+
+    Args:
+        gsv (str): name of gsv to be added"""
+    from Katana import UI4
+    for tab in UI4.App.Tabs.GetTabsByType("GSV Manager"):
+        view_widget = tab.viewWidget()
+        if gsv not in view_widget.widgets().keys():
+            view_widget.addWidget(gsv)
+
+    for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+        view_widget = tab.viewWidget().gsvViewWidget()
+        if gsv not in view_widget.widgets().keys():
+            view_widget.addWidget(gsv)
+
+
+def updateGSVOption(gsv, option):
+    """ Updates the text of a single GSV Option
+
+    Args:
+        gsv (str):
+        option (str):"""
+    from Katana import UI4
+    for tab in UI4.App.Tabs.GetTabsByType("GSV Manager"):
+        tab.viewWidget().updateGSVOptionDisplayText(gsv, option)
+
+    for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+        tab.viewWidget().gsvViewWidget().updateGSVOptionDisplayText(gsv, option)
+
+    # todo update gsv option for PopupBarWidgets
+
+
