@@ -65,7 +65,7 @@ Data:
 GSVEventWidget --> gsvChangedEvent
 """
 
-
+import os
 import json
 
 from qtpy.QtWidgets import (
@@ -137,9 +137,21 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
         self.mainWidget().setHeaderItemIsEnableable(False)
         self.mainWidget().setHeaderItemIsDroppable(False)
 
+        self._update_button = ButtonInputWidget(self, user_clicked_event=self.update)
+        self._update_button.setImage("{KB}/Icons/iconRefresh.png".format(KB=os.environ["KATANABEBOP"]))
+        #self._update_button.setImage("/media/plt01/Downloads_web/icons/refresh.png")
+        self._update_button.setFixedSize(50, 50)
+
         # setup Katana events
         Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
-        self.installEventFilter(self)
+
+    def showEvent(self, event):
+        self._update_button.move(self.geometry().width() - 50, 0)
+        return UI4.Tabs.BaseTab.showEvent(self, event)
+
+    def resizeEvent(self, event):
+        self._update_button.move(self.geometry().width() - 50, 0)
+        return UI4.Tabs.BaseTab.resizeEvent(self, event)
 
     def __name__(self):
         return GSVManagerTab.NAME
@@ -175,19 +187,10 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
         self.editWidget().update()
         self.eventsWidget().update()
 
-    def update(self):
+    def update(self, *args):
         self.eventsWidget().update()
         self.editWidget().update()
         self.viewWidget().update()
-
-    def eventFilter(self, obj, event):
-        from qtpy.QtCore import QEvent
-        if event.type() == QEvent.KeyPress:
-            if event.key() == Qt.Key_F5:
-                self.update()
-                print('update')
-                return True
-        return False
 
 """ VIEW WIDGET """
 class GSVViewWidget(FrameInputWidgetContainer):

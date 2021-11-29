@@ -123,7 +123,6 @@ class StateManagerTab(UI4.Tabs.BaseTab):
         self._view_widget = StateManagerActiveView(self)
         self._editor_widget = StateManagerEditorMainWidget(self)
 
-
         # setup main layout
         QVBoxLayout(self)
         self._main_widget = ShojiModelViewWidget(self)

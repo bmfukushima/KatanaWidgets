@@ -1,6 +1,6 @@
 """
 TODO: Enhancement
-    *   PopupBar Widget fix image overlays
+    *   PopupBar Widget fix image overlays on show
 TODO: BUGS
     *   NetworkMaterialCreate | segfault after closing a custom Nodegraph
             Has something to do with the clean up event on the AbstractNodegraphWidget
