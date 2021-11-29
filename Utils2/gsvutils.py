@@ -415,6 +415,7 @@ def removeGSVWidgetFromAllViewTabs(gsv):
                     view_widget = popup_widget.viewWidget().gsvViewWidget()
                     view_widget.removeWidget(gsv)
 
+    # todo custom handler for custom user popup bar widgets
 
 def addGSVToAllViewTabs(gsv):
     """ Adds a new GSV Widget entry into the ViewWidget in the GSVManager Tab
@@ -449,6 +450,8 @@ def addGSVToAllViewTabs(gsv):
                     view_widget = popup_widget.viewWidget().gsvViewWidget()
                     addGSVWidget(view_widget, gsv)
 
+    # todo custom handler for custom user popup bar widgets
+
 def updateGSVOption(gsv, option):
     """ Updates the text of a single GSV Option
 
@@ -473,4 +476,4 @@ def updateGSVOption(gsv, option):
                 if popup_widget.__name__() == "State Manager":
                     popup_widget.viewWidget().gsvViewWidget().updateGSVOptionDisplayText(gsv, option)
 
-
+    # todo custom handler for custom user popup bar widgets

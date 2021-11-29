@@ -64,8 +64,7 @@ Data:
 
 GSVEventWidget --> gsvChangedEvent
 """
-""" TODO:
-        *   GSVUtils push changes to PopupBarWidgets"""
+
 
 import json
 
