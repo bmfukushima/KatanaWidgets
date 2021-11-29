@@ -791,14 +791,14 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         if edit_widget.displayMode() == gsvutils.VARIABLES:
             # get attrs
             main_widget = getWidgetAncestor(self, GSVManagerTab)
-            view_widget = main_widget.viewWidget()
+            # view_widget = main_widget.viewWidget()
             gsv = item.columnData()['name']
 
             # remove param
             gsvutils.deleteGSV(gsv)
 
             # remove widget
-            view_widget.removeWidget(gsv)
+            # view_widget.removeWidget(gsv)
 
             # remove event
             if gsv in list(events_widget.eventsData().keys()):

@@ -157,6 +157,7 @@ def deleteGSV(gsv):
     gsv_param = getGSVParameter(gsv)
     getVariablesParameter().deleteChild(gsv_param)
 
+    removeGSVWidgetFromAllViewTabs(gsv)
 
 def getAllGSV(return_as=STRING):
     """Returns a list of all the possible GSVs in the scene
@@ -389,9 +390,30 @@ def updateAllGSVTabs():
         gsv_manager.viewWidget().update()
 
 
-def removeGSVFromAllViewTabs(gsv):
+def removeGSVWidgetFromAllViewTabs(gsv):
+    """ Removes the GSV Widget entry in the ViewWidget in the GSVManager Tab """
+    from Katana import UI4
 
-    pass
+    # update All tabs
+    for tab in UI4.App.Tabs.GetTabsByType("GSV Manager"):
+        view_widget = tab.viewWidget()
+        view_widget.removeWidget(gsv)
+
+    for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+        view_widget = tab.viewWidget().gsvViewWidget()
+        view_widget.removeWidget(gsv)
+
+    for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
+        widgets = tab.popupBarDisplayWidget().widgets()
+        for widget in widgets:
+            popup_widget = widget.popupWidget()
+            if hasattr(popup_widget, "__name__"):
+                if popup_widget.__name__() == "GSV Manager":
+                    view_widget = popup_widget.viewWidget()
+                    view_widget.removeWidget(gsv)
+                if popup_widget.__name__() == "State Manager":
+                    view_widget = popup_widget.viewWidget().gsvViewWidget()
+                    view_widget.removeWidget(gsv)
 
 
 def addGSVToAllViewTabs(gsv):
