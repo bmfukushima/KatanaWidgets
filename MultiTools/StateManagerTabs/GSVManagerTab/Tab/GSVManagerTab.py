@@ -137,21 +137,8 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
         self.mainWidget().setHeaderItemIsEnableable(False)
         self.mainWidget().setHeaderItemIsDroppable(False)
 
-        self._update_button = ButtonInputWidget(self, user_clicked_event=self.update)
-        self._update_button.setImage("{KB}/Icons/iconRefresh.png".format(KB=os.environ["KATANABEBOP"]))
-        #self._update_button.setImage("/media/plt01/Downloads_web/icons/refresh.png")
-        self._update_button.setFixedSize(50, 50)
-
         # setup Katana events
         Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
-
-    def showEvent(self, event):
-        self._update_button.move(self.geometry().width() - 50, 0)
-        return UI4.Tabs.BaseTab.showEvent(self, event)
-
-    def resizeEvent(self, event):
-        self._update_button.move(self.geometry().width() - 50, 0)
-        return UI4.Tabs.BaseTab.resizeEvent(self, event)
 
     def __name__(self):
         return GSVManagerTab.NAME
@@ -202,10 +189,24 @@ class GSVViewWidget(FrameInputWidgetContainer):
     """
     def __init__(self, parent=None):
         super(GSVViewWidget, self).__init__(parent)
+        self._update_button = ButtonInputWidget(self, user_clicked_event=self.update)
+        self._update_button.setImage("{KB}/Icons/iconRefresh.png".format(KB=os.environ["KATANABEBOP"]))
+        self._update_button.setFixedSize(getFontSize()*3, getFontSize()*3)
+
         self.setIsHeaderShown(False)
         self.setDirection(Qt.Vertical)
         self._widget_list = {}
         self.populate()
+
+    """ EVENTS """
+    # These are for manually placing the update button
+    def showEvent(self, event):
+        self._update_button.move(self.geometry().width() - 50, 0)
+        return FrameInputWidgetContainer.showEvent(self, event)
+
+    def resizeEvent(self, event):
+        self._update_button.move(self.geometry().width() - 50, 0)
+        return FrameInputWidgetContainer.resizeEvent(self, event)
 
     """ POPULATE """
     def clear(self):
@@ -226,7 +227,7 @@ class GSVViewWidget(FrameInputWidgetContainer):
         for gsv in gsv_keys:
             self.addWidget(gsv)
 
-    def update(self):
+    def update(self, *args):
         """Updates the current view widgets displayed to the user"""
         self.clear()
         self.populate()
@@ -243,6 +244,9 @@ class GSVViewWidget(FrameInputWidgetContainer):
         widget.delegateWidget().setText(gsvutils.getGSVValue(gsv))
         self.addInputWidget(widget)
         self.widgets()[gsv] = widget
+
+        if 1 < len(self.widgets().keys()):
+            self._update_button.raise_()
 
     def removeWidget(self, gsv):
         # remove widget
