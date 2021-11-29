@@ -86,6 +86,9 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
         self._main_widget.setUpdateEvent(self.updateEvent)
         self._main_widget.setCreateNewFolderEvent(self.createNewFolder)
 
+    def __name__(self):
+        return BookmarkManagerTab.NAME
+
     """ UTILS """
     def lastActiveBookmark(self):
 

@@ -141,6 +141,9 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
         # setup Katana events
         Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
 
+    def __name__(self):
+        return GSVManagerTab.NAME
+
     def rename(self, args):
         pass
 

@@ -97,6 +97,9 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
 
         self.layout().addWidget(self.mainWidget())
 
+    def __name__(self):
+        return IRFManagerTab.NAME
+
     """ UTILS """
     @staticmethod
     def __setupDefaultIRFParam():

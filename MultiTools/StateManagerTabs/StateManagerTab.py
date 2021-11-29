@@ -135,6 +135,9 @@ class StateManagerTab(UI4.Tabs.BaseTab):
 
         Utils.EventModule.RegisterCollapsedHandler(self.update, 'nodegraph_loadEnd', None)
 
+    def __name__(self):
+        return StateManagerTab.NAME
+
     def update(self, *args):
         self.viewWidget().gsvViewWidget().update()
         self.viewWidget().irfViewWidget().update()
