@@ -312,7 +312,8 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         if enabled:
             if item.getArg("type") == AbstractStateManagerTab.STATE_ITEM:
                 editor_widget = getWidgetAncestor(self, StateManagerEditorMainWidget)
-                editor_widget.showItemDetails(item)
+                if editor_widget:
+                    editor_widget.showItemDetails(item)
 
     def __stateRenameEvent(self, item, old_name, new_name):
         """ When a user renames a state, this will update the states/folder associated with the rename"""

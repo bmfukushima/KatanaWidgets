@@ -139,6 +139,7 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
 
         # setup Katana events
         Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
+        self.installEventFilter(self)
 
     def __name__(self):
         return GSVManagerTab.NAME
@@ -179,6 +180,14 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
         self.editWidget().update()
         self.viewWidget().update()
 
+    def eventFilter(self, obj, event):
+        from qtpy.QtCore import QEvent
+        if event.type() == QEvent.KeyPress:
+            if event.key() == Qt.Key_F5:
+                self.update()
+                print('update')
+                return True
+        return False
 
 """ VIEW WIDGET """
 class GSVViewWidget(FrameInputWidgetContainer):
