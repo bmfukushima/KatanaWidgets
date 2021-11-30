@@ -1,4 +1,20 @@
 """
+TODO:
+    *   Update GSV Name
+            Update events in ALL views
+            gsvutils.updateGSVNameForAllViewTabs
+    *   GSV Select Event | Deselects all other events
+            DisplayGSVEventWidget --> updateGUI
+            Only freezing the current, not ALL the tabs
+    *   Create new option
+            Creating duplicates
+CLEANUP:
+    *   GSV Event Update (cleanup)
+            Needs to move to a wrapper GSVEvent --> Events
+            deleteOptionEvent, optionChangedEvent, optionChangedEvent, _setMode, setFilepath, setScript
+"""
+
+"""
 The GSVManagerTab is a TAB that has three separate portions. View, Create/Edit, Events.
 
 View:
@@ -101,9 +117,6 @@ from Widgets2 import (
 )
 from Utils2 import gsvutils, getFontSize, paramutils
 
-PARAM_LOCATION = "KatanaBebop.GSVEventsData"
-
-
 class GSVManagerTab(UI4.Tabs.BaseTab):
     """Main convenience widget for displaying GSV manipulators to the user."""
     NAME = "GSV Manager"
@@ -178,6 +191,7 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
         self.eventsWidget().update()
         self.editWidget().update()
         self.viewWidget().update()
+
 
 """ VIEW WIDGET """
 class GSVViewWidget(FrameInputWidgetContainer):
@@ -312,7 +326,6 @@ class ViewGSVWidget(LabelledInputWidget):
             delegate_widget=delegate_widget
         )
         # setup label
-        self.gsv = self.name()
         self.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
         self._is_frozen = False
 
@@ -331,7 +344,7 @@ class ViewGSVWidget(LabelledInputWidget):
         self._is_frozen = self._is_frozen
 
     def update(self):
-        return [[option] for option in gsvutils.getGSVOptions(self.gsv, return_as=gsvutils.STRING)]
+        return [[option] for option in gsvutils.getGSVOptions(self.gsv(), return_as=gsvutils.STRING)]
 
     def validateGSVEntry(self):
         """
@@ -340,7 +353,7 @@ class ViewGSVWidget(LabelledInputWidget):
         If it is not valid, it will reset this widget back to its original value
         """
         option = self.delegateWidget().text()
-        if option in gsvutils.getGSVOptions(self.gsv, return_as=gsvutils.STRING):
+        if option in gsvutils.getGSVOptions(self.gsv(), return_as=gsvutils.STRING):
             return True
         elif option == "":
             return True
@@ -356,7 +369,13 @@ class ViewGSVWidget(LabelledInputWidget):
     def setGSVOption(self, widget, option):
         """Sets the GSV Option parameter to the specified value"""
         if not self.isFrozen():
-            gsvutils.setGSVOption(self.gsv, option)
+            gsvutils.setGSVOption(self.gsv(), option)
+
+    def gsv(self):
+        return self.name()
+
+    def setGSV(self, gsv):
+        self.setName(gsv)
 
 
 """ EDIT WIDGET """
@@ -847,11 +866,6 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
             # rename
             gsvutils.renameGSV(old_value, new_value)
 
-            # update view widget
-            main_widget = getWidgetAncestor(self, GSVManagerTab)
-            view_widget = main_widget.viewWidget()
-            view_widget.renameWidget(old_value, new_value)
-
 
 """ EVENTS WIDGET (INHERIT)"""
 class GSVEventWidget(AbstractEventWidget):
@@ -881,7 +895,7 @@ class GSVEventWidget(AbstractEventWidget):
                                 | -* DynamicArgsInputWidget
     """
 
-    def __init__(self, parent=None, param=PARAM_LOCATION):
+    def __init__(self, parent=None, param=gsvutils.EVENT_PARAM_LOCATION):
         super(GSVEventWidget, self).__init__(
             delegate_widget_type=DisplayGSVEventWidget,
             events_list_view=GSVEventsListView,
@@ -890,10 +904,11 @@ class GSVEventWidget(AbstractEventWidget):
         )
 
         # setup default attrs
+        self._is_frozen = False
         self.eventsWidget().setHeaderPosition(attrs.WEST, attrs.SOUTH)
 
         paramutils.createParamAtLocation(
-            PARAM_LOCATION + ".old_values", NodegraphAPI.GetRootNode(), paramutils.STRING, initial_value="{}")
+            gsvutils.EVENT_PARAM_LOCATION + ".old_values", NodegraphAPI.GetRootNode(), paramutils.STRING, initial_value="{}")
 
         # self.eventsWidget().setHeaderItemIsEditable(False)
         self.eventsWidget().setHeaderItemIsDraggable(False)
@@ -929,21 +944,28 @@ class GSVEventWidget(AbstractEventWidget):
     def setCurrentGSV(self, gsv):
         self._current_gsv = gsv
 
+    def isFrozen(self):
+        return self._is_frozen
+
+    def setIsFrozen(self, is_frozen):
+        self._is_frozen = is_frozen
+
     """ UTILS """
+    # todo move to utils
     @staticmethod
     def paramDataStatic():
         """ Gets the events data
 
         Returns (str): repr of JSON
         """
-        return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".data").getValue(0)
+        return NodegraphAPI.GetRootNode().getParameter(gsvutils.EVENT_PARAM_LOCATION+".data").getValue(0)
 
     @staticmethod
     def paramScriptsStatic():
         """ Gets the scripts group parameter
 
         Returns (param)"""
-        return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".scripts")
+        return NodegraphAPI.GetRootNode().getParameter(gsvutils.EVENT_PARAM_LOCATION+".scripts")
 
     """ EVENTS """
     def cacheScriptToParam(self, script):
@@ -1017,8 +1039,8 @@ class GSVEventWidget(AbstractEventWidget):
         self.eventsWidget().clearModel()
 
         # get data
-        if NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION):
-            event_data = json.loads(NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".data").getValue(0))
+        if NodegraphAPI.GetRootNode().getParameter(gsvutils.EVENT_PARAM_LOCATION):
+            event_data = json.loads(NodegraphAPI.GetRootNode().getParameter(gsvutils.EVENT_PARAM_LOCATION+".data").getValue(0))
 
             # get GSVs
             for gsv in list(event_data.keys()):
@@ -1088,6 +1110,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
 
         # get attrs
         events_widget = getWidgetAncestor(parent, GSVEventWidget)
+        events_widget.setIsFrozen(True)
         display_widget = widget.getMainWidget()
         gsv = item.columnData()['name']
         param_data = events_widget.paramData().getValue(0)
@@ -1131,6 +1154,9 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
             doesnt work =/"""
             if str(text) == events_widget.pythonWidget().filepath():
                 widget.updateScriptDisplayFlag()
+
+        Utils.EventModule.ProcessAllEvents()
+        events_widget.setIsFrozen(False)
 
 
 class DisplayGSVEventWidgetHeader(OverlayInputWidget):
@@ -1286,6 +1312,8 @@ class GSVEvent(AbstractScriptInputWidget):
         return self._disable_script_button
 
     """ EVENTS """
+    # todo move this to a wrapper
+    # deleteOptionEvent, optionChangedEvent, optionChangedEvent, _setMode, setFilepath, setScript
     def populateGSVOptions(self):
         """ Returns a list of options for the current GSV
 
@@ -1296,6 +1324,9 @@ class GSVEvent(AbstractScriptInputWidget):
 
     def deleteOptionEvent(self, widget):
         """Deletes the user event created for this GSV/Option pairing"""
+        events_widget = getWidgetAncestor(self, GSVEventWidget)
+        events_widget.setIsFrozen(True)
+
         # get events widget
         event_widget = getWidgetAncestor(self, GSVEventWidget)
         display_widget = event_widget.eventsWidget().delegateWidget().widget(1).getMainWidget()
@@ -1310,6 +1341,9 @@ class GSVEvent(AbstractScriptInputWidget):
         # remove widget
         self.deleteLater()
         self.setParent(None)
+
+        Utils.EventModule.ProcessAllEvents()
+        events_widget.setIsFrozen(False)
 
     def showEvent(self, event):
         """ Sets the default size of the main buttons widget (far right buttons)"""
@@ -1412,8 +1446,15 @@ class GSVEvent(AbstractScriptInputWidget):
         # reset to new value
         self.setCurrentOption(option)
         self.setOrigValue(option)
+
         # save
+        events_widget = getWidgetAncestor(self, GSVEventWidget)
+        events_widget.setIsFrozen(True)
+
         events_widget.saveEventsData()
+
+        Utils.EventModule.ProcessAllEvents()
+        events_widget.setIsFrozen(False)
 
     """ VIRTUAL """
     def _setMode(self, mode):
@@ -1439,7 +1480,15 @@ class GSVEvent(AbstractScriptInputWidget):
 
         # update
         self.setText(text)
-        event_widget.saveEventsData()
+
+        # save
+        events_widget = getWidgetAncestor(self, GSVEventWidget)
+        events_widget.setIsFrozen(True)
+
+        events_widget.saveEventsData()
+
+        Utils.EventModule.ProcessAllEvents()
+        events_widget.setIsFrozen(False)
 
     def setFilepath(self, filepath):
         # preflight
@@ -1451,8 +1500,15 @@ class GSVEvent(AbstractScriptInputWidget):
         #
         event_widget = getWidgetAncestor(self, GSVEventWidget)
         event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["filepath"] = filepath
+
         # save
-        event_widget.saveEventsData()
+        events_widget = getWidgetAncestor(self, GSVEventWidget)
+        events_widget.setIsFrozen(True)
+
+        events_widget.saveEventsData()
+
+        Utils.EventModule.ProcessAllEvents()
+        events_widget.setIsFrozen(False)
 
         # showScript
         if self.isEditingActive():
@@ -1468,7 +1524,14 @@ class GSVEvent(AbstractScriptInputWidget):
         event_widget.eventsData()[event_widget.currentGSV()]["data"][self.currentOption()]["script"] = script
 
         # save
-        event_widget.saveEventsData()
+        events_widget = getWidgetAncestor(self, GSVEventWidget)
+        events_widget.setIsFrozen(True)
+
+        events_widget.saveEventsData()
+
+        Utils.EventModule.ProcessAllEvents()
+        events_widget.setIsFrozen(False)
+
 
         # showScript
         if self.isEditingActive():
@@ -1499,7 +1562,13 @@ class GSVEvent(AbstractScriptInputWidget):
         self.setIsEnabled(enabled)
         events_widget = getWidgetAncestor(widget, GSVEventWidget)
         events_widget.eventsData()[events_widget.currentGSV()]["data"][self.currentOption()]["enabled"] = enabled
+
+        events_widget = getWidgetAncestor(self, GSVEventWidget)
+        events_widget.setIsFrozen(True)
         events_widget.saveEventsData()
+        Utils.EventModule.ProcessAllEvents()
+        events_widget.setIsFrozen(False)
+
 
     """ PROPERTIES """
     def isEnabled(self):

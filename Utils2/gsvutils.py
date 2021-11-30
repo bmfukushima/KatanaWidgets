@@ -1,3 +1,4 @@
+import json
 
 try:
     import NodegraphAPI
@@ -11,6 +12,8 @@ PARAMETER = 1
 # display modes
 VARIABLES = 0
 OPTIONS = 1
+
+EVENT_PARAM_LOCATION = "KatanaBebop.GSVEventsData"
 
 # pretty sure I can delete this...
 def createNewPattern(pattern, variable, set=False):
@@ -58,8 +61,8 @@ def createNewPattern(pattern, variable, set=False):
 #         variable_param.createChildStringArray('options', 0)
 
 
-def isGSVEvent(arg):
-    """Checks an arg from the Katana events/callbacks to determine if a GSV Event change is happening"""
+def isGSVOptionEvent(arg):
+    """ Determines if this is an event running on the <root_node>.variables.<gsv>.<value>"""
     root_node = NodegraphAPI.GetRootNode()
     if arg[2]['node'] != root_node: return False
     if "param" not in list(arg[2].keys()): return False
@@ -67,6 +70,17 @@ def isGSVEvent(arg):
     if not arg[2]['param'].getParent().getParent(): return False
     if arg[2]['param'].getParent().getParent() != getVariablesParameter(): return False
 
+    return True
+
+
+def isGSVCreateDestroyEvent(arg):
+    """ Determines if this is an event running on the <root_node>.variables.<gsv>"""
+    root_node = NodegraphAPI.GetRootNode()
+    if arg[2]['node'] != root_node: return False
+    if "childParam" not in list(arg[2].keys()): return False
+    if not arg[2]['childParam']: return False
+    if not arg[2]['param']: return False
+    if arg[2]['param'] != getVariablesParameter(): return False
     return True
 
 
@@ -88,7 +102,7 @@ def createNewGSV(gsv):
     gsv_param.createChildStringArray('options', 0)
 
     # update all tabs
-    addGSVToAllViewTabs(gsv)
+    # addGSVToAllViewTabs(gsv)
     return gsv_param
 
 
@@ -157,7 +171,8 @@ def deleteGSV(gsv):
     gsv_param = getGSVParameter(gsv)
     getVariablesParameter().deleteChild(gsv_param)
 
-    removeGSVWidgetFromAllViewTabs(gsv)
+    removeGSVFromAllViewTabs(gsv)
+
 
 def getAllGSV(return_as=STRING):
     """Returns a list of all the possible GSVs in the scene
@@ -376,46 +391,46 @@ def setGSVOption(gsv, option, create=False):
     if gsv_param:
         value_param = gsv_param.getChild('value')
         value_param.setValue(str(option), 0)
-        updateGSVOption(gsv, option)
+        # updateGSVOption(gsv, option)
 
 
-""" UI Updates"""
-def updateAllGSVTabs():
-    """ Updates the View Widgets of all of the GSV Manager tabs"""
-    from Katana import UI4
-    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSV Manager")
+""" EVENTS """
+def getGSVEventParam():
+    """ Returns the group parameter for the GSV Data"""
+    return NodegraphAPI.GetRootNode().getParameter(EVENT_PARAM_LOCATION)
 
-    # # for each tab, update tab data
-    for gsv_manager in gsv_manager_tabs:
-        gsv_manager.viewWidget().update()
+def getGSVEventDataParam():
+    """ Gets the events data
+
+    Returns (str): repr of JSON
+    """
+    return NodegraphAPI.GetRootNode().getParameter(EVENT_PARAM_LOCATION+".data")
 
 
-def removeGSVWidgetFromAllViewTabs(gsv):
-    """ Removes the GSV Widget entry in the ViewWidget in the GSVManager Tab """
-    from Katana import UI4
+def paramScriptsStatic():
+    return NodegraphAPI.GetRootNode().getParameter(EVENT_PARAM_LOCATION + ".scripts")
 
-    # update All tabs
-    for tab in UI4.App.Tabs.GetTabsByType("GSV Manager"):
-        view_widget = tab.viewWidget()
-        view_widget.removeWidget(gsv)
 
-    for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
-        view_widget = tab.viewWidget().gsvViewWidget()
-        view_widget.removeWidget(gsv)
+def paramOldValuesStatic():
+    return NodegraphAPI.GetRootNode().getParameter(EVENT_PARAM_LOCATION + ".old_values")
 
-    for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
-        widgets = tab.popupBarDisplayWidget().widgets()
-        for widget in widgets:
-            popup_widget = widget.popupWidget()
-            if hasattr(popup_widget, "__name__"):
-                if popup_widget.__name__() == "GSV Manager":
-                    view_widget = popup_widget.viewWidget()
-                    view_widget.removeWidget(gsv)
-                if popup_widget.__name__() == "State Manager":
-                    view_widget = popup_widget.viewWidget().gsvViewWidget()
-                    view_widget.removeWidget(gsv)
 
-    # todo custom handler for custom user popup bar widgets
+def updateGSVEventDataName(old_name, new_name):
+    """ Updates the GSV Event data when a GSV Name change occurs.
+
+    This will update all of the data on the root node"""
+
+    # update gsv parameter event data
+    param_data = json.loads(getGSVEventDataParam().getValue(0))
+    if old_name in param_data.keys():
+        param_data[new_name] = param_data[old_name]
+        del param_data[old_name]
+        getGSVEventDataParam().setValue(json.dumps(param_data), 0)
+
+
+""" UI UPDATE """
+# Todo GSV UI Updates, need to consolodate into one update function
+
 
 def addGSVToAllViewTabs(gsv):
     """ Adds a new GSV Widget entry into the ViewWidget in the GSVManager Tab
@@ -452,7 +467,99 @@ def addGSVToAllViewTabs(gsv):
 
     # todo custom handler for custom user popup bar widgets
 
-def updateGSVOption(gsv, option):
+
+def removeGSVFromAllViewTabs(gsv):
+    """ Removes the GSV Widget entry in the ViewWidget in the GSVManager Tab """
+    from Katana import UI4
+
+    # update All tabs
+    for tab in UI4.App.Tabs.GetTabsByType("GSV Manager"):
+        view_widget = tab.viewWidget()
+        view_widget.removeWidget(gsv)
+
+    for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+        view_widget = tab.viewWidget().gsvViewWidget()
+        view_widget.removeWidget(gsv)
+
+    for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
+        widgets = tab.popupBarDisplayWidget().widgets()
+        for widget in widgets:
+            popup_widget = widget.popupWidget()
+            if hasattr(popup_widget, "__name__"):
+                if popup_widget.__name__() == "GSV Manager":
+                    view_widget = popup_widget.viewWidget()
+                    view_widget.removeWidget(gsv)
+                if popup_widget.__name__() == "State Manager":
+                    view_widget = popup_widget.viewWidget().gsvViewWidget()
+                    view_widget.removeWidget(gsv)
+
+    # todo custom handler for custom user popup bar widgets
+
+
+def updateGSVNameForAllViewTabs(old_name, new_name):
+    """ Updates a GSV's name for all of the view tabs."""
+    from Katana import UI4
+
+    updateGSVEventDataName(old_name, new_name)
+
+    # update GUIs
+    for tab in UI4.App.Tabs.GetTabsByType("GSV Manager"):
+        view_widget = tab.viewWidget()
+        view_widget.renameWidget(old_name, new_name)
+
+        event_widget = tab.eventsWidget()
+        event_widget.update()
+
+    for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+        view_widget = tab.viewWidget().gsvViewWidget()
+        view_widget.renameWidget(old_name, new_name)
+
+    for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
+        widgets = tab.popupBarDisplayWidget().widgets()
+        for widget in widgets:
+            popup_widget = widget.popupWidget()
+            if hasattr(popup_widget, "__name__"):
+                if popup_widget.__name__() in ("GSV Manager", "State Manager"):
+                    if popup_widget.__name__() == "GSV Manager":
+                        popup_widget.viewWidget().renameWidget(old_name, new_name)
+                    if popup_widget.__name__() == "State Manager":
+                        popup_widget.viewWidget().gsvViewWidget().renameWidget(old_name, new_name)
+
+
+def updateAllGSVEventsTabs():
+    """ Updates all of the Events Tab Displays."""
+    from Katana import UI4
+
+    # update GUIs
+    for tab in UI4.App.Tabs.GetTabsByType("GSV Manager"):
+        event_widget = tab.eventsWidget()
+        if not event_widget.isFrozen():
+            print("update ALL ==", event_widget)
+            event_widget.update()
+
+    for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
+        widgets = tab.popupBarDisplayWidget().widgets()
+        for widget in widgets:
+            popup_widget = widget.popupWidget()
+            if hasattr(popup_widget, "__name__"):
+                if popup_widget.__name__() in ("GSV Manager"):
+                    event_widget = popup_widget.eventsWidget()
+                    if not event_widget.isFrozen():
+                        print("update ALL ==", event_widget)
+                        event_widget.update()
+
+
+def updateAllGSVViewTabs():
+    """ Updates the View Widgets of all of the GSV Manager tabs"""
+    from Katana import UI4
+    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSV Manager")
+
+    # # for each tab, update tab data
+    for gsv_manager in gsv_manager_tabs:
+        gsv_manager.viewWidget().update()
+
+
+def updateGSVOptionForAllViewTabs(gsv, option):
     """ Updates the text of a single GSV Option
 
     Args:

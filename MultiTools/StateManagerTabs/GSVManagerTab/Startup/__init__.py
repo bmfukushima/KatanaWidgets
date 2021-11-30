@@ -5,23 +5,6 @@ from Katana import NodegraphAPI, UI4, Callbacks
 
 from Utils2 import gsvutils, paramutils
 
-PARAM_LOCATION = "KatanaBebop.GSVEventsData"
-
-def paramScriptsStatic():
-    return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION + ".scripts")
-
-
-def paramDataStatic():
-    """ Gets the events data
-
-    Returns (str): repr of JSON
-    """
-    return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".data")
-
-
-def paramOldValuesStatic():
-    return NodegraphAPI.GetRootNode().getParameter(PARAM_LOCATION+".old_values")
-
 
 def gsvChangedEvent(args):
     """
@@ -33,7 +16,7 @@ def gsvChangedEvent(args):
     """
     for arg in args:
         # preflight
-        if not gsvutils.isGSVEvent(arg): return
+        if not gsvutils.isGSVOptionEvent(arg): return
 
         # get param/attrs
         param = arg[2]['param']
@@ -47,18 +30,21 @@ def gsvChangedEvent(args):
         option = param.getValue(0)
 
         # check to see if this GSV is setting to its current value
-        old_values = json.loads(paramOldValuesStatic().getValue(0))
+        old_values = json.loads(gsvutils.paramOldValuesStatic().getValue(0))
         if gsv in old_values.keys():
             if old_values[gsv] == param.getValue(0):
                 return
 
+        # update tabs
+        gsvutils.updateGSVOptionForAllViewTabs(gsv, option)
+
         # update old values
         """ This is needed to stop the script from running every time the user selects the same GSV twice"""
         old_values[gsv] = option
-        paramOldValuesStatic().setValue(json.dumps(old_values), 0)
+        gsvutils.paramOldValuesStatic().setValue(json.dumps(old_values), 0)
 
         # load events data
-        event_data = json.loads(paramDataStatic().getValue(0))
+        event_data = json.loads(gsvutils.getGSVEventDataParam().getValue(0))
 
         # preflight
         if gsv not in list(event_data.keys()): return
@@ -85,17 +71,111 @@ def gsvChangedEvent(args):
 
         # execute script
         if user_data["is_script"]:
-            script = paramScriptsStatic().getChild(user_data["script"]).getValue(0)
+            script = gsvutils.paramScriptsStatic().getChild(user_data["script"]).getValue(0)
             exec(script, globals(), local_variables)
         elif not user_data["is_script"]:
             if os.path.exists(user_data["filepath"]):
                 with open(user_data["filepath"]) as script_descriptor:
                     exec(script_descriptor.read(), local_variables)
 
-        # update Tabs
-        for gsv_manager in UI4.App.Tabs.GetTabsByType("GSV Manager"):
-            gsv_manager.updateGSVOption(gsv, option)
 
+def gsvEventChangedEvent(args):
+    """ Updates all of the event views when the user updates the event data.
+    The GSV Event Data located on gsvutils.EVENT_PARAM_LOCATION (KatanaBebop.GSVEventsData)"""
+    # get param/attrs
+    for arg in args:
+        root_node = NodegraphAPI.GetRootNode()
+        if arg[2]["node"] != root_node: return False
+        if "param" not in list(arg[2].keys()): return False
+        if not arg[2]["param"]: return False
+        if arg[2]["param"] != gsvutils.getGSVEventDataParam(): return False
+
+        gsvutils.updateAllGSVEventsTabs()
+        # param = arg[2]["param"]
+        # param_name = param.getName()
+
+
+def gsvNameChangeEvent(args):
+    """
+    (   'parameter_setName',
+        1174573088,
+        {
+            'param': <NodegraphAPI_cmodule.Parameter object at 0x7f62bc6d96b0 group 'c'>,
+            'paramParentName': 'rootNode.variables',
+            'oldName': 'b',
+            'newName': 'c'
+        }
+    )
+    Args:
+        args:
+
+    Returns:
+
+    """
+    for arg in args:
+        if "param" not in list(arg[2].keys()): return False
+        if not arg[2]['param']: return False
+        if not arg[2]['param'].getParent(): return False
+        if arg[2]['param'].getParent() != gsvutils.getVariablesParameter(): return False
+
+        old_name = arg[2]["oldName"]
+        new_name = arg[2]["newName"]
+        gsvutils.updateGSVNameForAllViewTabs(old_name, new_name)
+        # gsvutils.updateAllGSVEventsTabs()
+
+
+def gsvDeleteEvent(args):
+    """
+    (
+        'parameter_deleteChild',
+        1174573088,
+        {
+            'param': <NodegraphAPI_cmodule.Parameter object at 0x7f62ccceef30 group 'variables'>,
+            'paramName': 'rootNode.variables',
+            'node': <RootNode NodegraphAPI_cmodule.GroupNode 'rootNode'>,
+            'childParam': <NodegraphAPI_cmodule.Parameter object at 0x7f62bc6d96b0 group 'c' orphaned>
+            'childName': 'c'
+            'element': <PyXmlIO.Element object at 0x7f62bc6fde30>
+            'index': 0
+        }
+    )
+    Args:
+        args:
+
+    Returns:
+
+    """
+    for arg in args:
+        # check to make sure it is a GSV Create event
+        if not gsvutils.isGSVCreateDestroyEvent(arg): return
+        gsv = arg[2]["childName"]
+        gsvutils.removeGSVFromAllViewTabs(gsv)
+
+
+def gsvCreateEvent(args):
+    """
+ (  'parameter_createChild',
+    1024916048,
+    {
+        'param': <NodegraphAPI_cmodule.Parameter object at 0x7f3af0c21eb0 group 'variables'>
+        'paramName': 'rootNode.variables'
+        'node': <RootNode NodegraphAPI_cmodule.GroupNode 'rootNode'>
+        'childParam': <NodegraphAPI_cmodule.Parameter object at 0x7f3be000baf0 group 'var1'>
+        'element': <PyXmlIO.Element object at 0x7f3be000bbb0>
+        'index': 2
+    }
+)
+    Args:
+        args:
+
+    Returns:
+
+    """
+    for arg in args:
+        # check to make sure it is a GSV Create event
+        if not gsvutils.isGSVCreateDestroyEvent(arg): return
+        gsv = arg[2]["childParam"].getName()
+        gsvutils.addGSVToAllViewTabs(gsv)
 
 # def updateGSVsOnSceneLoad(args):
 #     """ When a new scene is loaded, this will reset all of the GSVManager tabs to the new data"""
@@ -123,14 +203,14 @@ def createDataParamsOnSceneLoad(*args, **kwargs):
     from Katana import Utils
 
     node = NodegraphAPI.GetRootNode()
-    events_data = node.getParameter(PARAM_LOCATION)
+    events_data = node.getParameter(gsvutils.EVENT_PARAM_LOCATION)
 
     # create default parameter if needed
     if not events_data:
         Utils.UndoStack.DisableCapture()
-        paramutils.createParamAtLocation(PARAM_LOCATION + ".data", node, paramutils.STRING, initial_value="{}")
-        paramutils.createParamAtLocation(PARAM_LOCATION + ".old_values", node, paramutils.STRING, initial_value="{}")
-        paramutils.createParamAtLocation(PARAM_LOCATION + ".scripts", node, paramutils.GROUP)
+        paramutils.createParamAtLocation(gsvutils.EVENT_PARAM_LOCATION + ".data", node, paramutils.STRING, initial_value="{}")
+        paramutils.createParamAtLocation(gsvutils.EVENT_PARAM_LOCATION + ".old_values", node, paramutils.STRING, initial_value="{}")
+        paramutils.createParamAtLocation(gsvutils.EVENT_PARAM_LOCATION + ".scripts", node, paramutils.GROUP)
 
         Utils.UndoStack.EnableCapture()
 
@@ -141,11 +221,16 @@ def installGSVManagerEvents(*args, **kwargs):
     # EventWidget.createGSVEventsParam()
     Utils.UndoStack.DisableCapture()
 
-    gsvutils.hideEngineersGSVUI()
+    # gsvutils.hideEngineersGSVUI()
     #Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, createDataParamsOnSceneLoad)
 
     # Utils.EventModule.RegisterCollapsedHandler(updateGSVsOnSceneLoad, 'nodegraph_setRootNode')
-    Utils.EventModule.RegisterCollapsedHandler(createDataParamsOnSceneLoad, 'nodegraph_loadEnd')
-    Utils.EventModule.RegisterCollapsedHandler(gsvChangedEvent, 'parameter_finalizeValue', None)
+    Utils.EventModule.RegisterCollapsedHandler(createDataParamsOnSceneLoad, "nodegraph_loadEnd")
+    Utils.EventModule.RegisterCollapsedHandler(gsvChangedEvent, "parameter_finalizeValue", None)
+    Utils.EventModule.RegisterCollapsedHandler(gsvEventChangedEvent, "parameter_finalizeValue", None)
+    Utils.EventModule.RegisterCollapsedHandler(gsvNameChangeEvent, "parameter_setName", None)
+    Utils.EventModule.RegisterCollapsedHandler(gsvDeleteEvent, "parameter_deleteChild", None)
+    Utils.EventModule.RegisterCollapsedHandler(gsvCreateEvent, "parameter_createChild", None)
+
 
     Utils.UndoStack.EnableCapture()

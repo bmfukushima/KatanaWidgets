@@ -548,7 +548,7 @@ class VariableManagerGSVMenu(ListInputWidget):
         # create new pattern if it doesn't exist
         if variable not in gsvutils.getAllGSV(return_as=gsvutils.STRING):
             gsvutils.createNewGSV(variable)
-            gsvutils.updateAllGSVTabs()
+            gsvutils.updateAllGSVViewTabs()
 
         # update variables
         self.main_widget.setVariable(variable)
