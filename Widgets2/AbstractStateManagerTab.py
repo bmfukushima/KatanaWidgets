@@ -114,6 +114,15 @@ class AbstractStateManagerTab(QWidget):
     def organizerWidget(self):
         return self._organizer_widget
 
+    def createNewFolderButton(self):
+        return self._create_new_folder_widget
+
+    def loadButton(self):
+        return self._load_button_widget
+
+    def updateButton(self):
+        return self._update_button
+
 
 class AbstractStateManagerOrganizerWidget(ModelViewWidget):
     """ Organizer for different states, this is used for the State and Bookmark Managers

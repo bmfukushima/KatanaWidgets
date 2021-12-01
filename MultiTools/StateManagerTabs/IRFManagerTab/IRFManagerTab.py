@@ -103,7 +103,6 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         return IRFManagerTab.NAME
 
     """ UTILS """
-
     def __setupDefaultIRFNode(self):
         """ On init, this creates the default IRF Node if none exist"""
         irfutils.setupDefaultIRFParam()

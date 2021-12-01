@@ -1,5 +1,6 @@
 """
 Todo:
+    *   Clear last active data on scene load
     *   This should all be driven through models for the multiple displays...
             - not unique models being updated...
     *   Import / Export
@@ -47,7 +48,7 @@ Hierarchy:
             |    |- irf_view --> (IRFActivationWidget)
             |    |- bookmarks_view --> (BookmarkViewWidget)
             |    |- state_view --> (StateManagerEditorWidget)
-            |- editor_widget --> (StateManagerEditorWidget --> AbstractStateManagerTab)
+            |- create_widget --> (StateManagerEditorWidget --> AbstractStateManagerTab)
                 |- organizer_widget --> (StateManagerOrganizerWidget)
                 |- state_viewer_widget --> (StateManagerItemViewWidget)
                     |- QVBoxLayout
@@ -78,6 +79,7 @@ from .BookmarkManagerTab.BookmarkUtils import BookmarkUtils
 
 
 PARAM_LOCATION = "KatanaBebop.StateManagerData"
+
 
 class StateManagerUtils(object):
 
@@ -140,9 +142,14 @@ class StateManagerTab(UI4.Tabs.BaseTab):
         return StateManagerTab.NAME
 
     def update(self, *args):
+        self.viewWidget().stateViewWidget().organizerWidget().update()
         self.viewWidget().gsvViewWidget().update()
         self.viewWidget().irfViewWidget().update()
         self.viewWidget().bookmarksViewWidget().update()
+
+    def setLastActive(self, last_active):
+        self.viewWidget().stateViewWidget().lastActiveWidget().setText(last_active)
+        self.createWidget().lastActiveWidget().setText(last_active)
 
     """ WIDGETS """
     def mainWidget(self):
@@ -151,13 +158,21 @@ class StateManagerTab(UI4.Tabs.BaseTab):
     def viewWidget(self):
         return self._view_widget
 
-    def editorWidget(self):
+    def createWidget(self):
         return self._editor_widget
 
 
 class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
+    """ Organizer for the CREATE portion"""
     def __init__(self, parent=None):
         super(StateManagerOrganizerWidget, self).__init__(parent)
+
+        # setup custom model
+        """ This is needed to ensure all tabs remain synchronized"""
+        if not hasattr(widgetutils.katanaMainWindow(), "_state_manager_model"):
+            widgetutils.katanaMainWindow()._state_manager_model = self.model()
+        else:
+            self.setModel(widgetutils.katanaMainWindow()._state_manager_model)
 
         # setup events
         self.setItemDeleteEvent(self.__stateDeleteEvent)
@@ -184,6 +199,10 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 new_item = self.createNewFolderItem(child["name"], parent=parent)
                 new_index = self.getIndexFromItem(new_item)
                 self.populate(child["children"], new_index)
+
+    def update(self):
+        self.clearModel()
+        self.populate(StateManagerUtils.getMainStateList())
 
     """ UPDATE """
     def updateParamData(self):
@@ -301,12 +320,10 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 SBM.LoadBookmark(bookmark)
 
         # set last active
-        editor_widget = getWidgetAncestor(self, StateManagerEditorWidget)
-        full_name = self.getItemFullName(item)
-        editor_widget.lastActiveWidget().setText(full_name)
+        for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+            full_name = self.getItemFullName(item)
+            tab.setLastActive(full_name)
 
-        view_widget = getWidgetAncestor(self, StateManagerTab).viewWidget()
-        view_widget.lastActiveWidget().setText(full_name)
         return True
 
     def __stateSelectedEvent(self, item, enabled):
@@ -334,10 +351,10 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         """ On drop, reparent the state"""
         self.updateParamData()
 
-    def showEvent(self, event):
-        self.clearModel()
-        self.populate(StateManagerUtils.getMainStateList())
-        return AbstractStateManagerOrganizerWidget.showEvent(self, event)
+    # def showEvent(self, event):
+    #     self.clearModel()
+    #     self.populate(StateManagerUtils.getMainStateList())
+    #     return AbstractStateManagerOrganizerWidget.showEvent(self, event)
 
     """ CREATE """
     def createNewState(self, name=None, create_item=True, parent=QModelIndex(), row=0):
@@ -424,6 +441,7 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
         self._state_organizer_widget = StateManagerOrganizerWidget(self)
         self.setOrganizerWidget(self._state_organizer_widget)
 
+
         # setup events
         self._create_new_state_widget = ButtonInputWidget(
             title="New State", user_clicked_event=self.createNewState)
@@ -492,6 +510,10 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
         )
         bookmark_item = bookmark_index.internalPointer()
         return bookmark_item
+
+    """ WIDGETS """
+    def createNewStateButton(self):
+        return self._create_new_state_widget
 
 
 class ReadOnlyGSVViewWidget(GSVViewWidget):
@@ -636,6 +658,11 @@ class StateManagerActiveView(ShojiLayout):
         self.addWidget(self._gsv_scroll_area)
         self.addWidget(self._irf_view_widget)
         self.addWidget(self._bookmarks_view_widget)
+
+        # setup style
+        self._state_view_widget.createNewStateButton().hide()
+        self._state_view_widget.createNewFolderButton().hide()
+        self._state_view_widget.updateButton().hide()
         self.setSizes([100, 100, 100, 100])
 
         # # setup main layout
