@@ -1,8 +1,5 @@
 """
 TODO:
-    *   Update GSV Name
-            Update events in ALL views
-            gsvutils.updateGSVNameForAllViewTabs
     *   GSV Select Event | Deselects all other events
             DisplayGSVEventWidget --> updateGUI
             Only freezing the current, not ALL the tabs
@@ -618,6 +615,7 @@ class CreateNewGSVOptionWidget(LabelledInputWidget):
             # return if GSV exists
             else:
                 print("{gsv} already exists you dingus".format(gsv=gsv))
+                self.delegateWidget().setText('')
                 return
 
         # create new list entry
@@ -1112,10 +1110,15 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         # preflight
         if not item: return
 
-        # get attrs
+        # get widgets
+        events_widgets = gsvutils.getAllGSVEventsWidgets()
+        for ew in events_widgets:
+            ew.setIsFrozen(True)
+
         events_widget = getWidgetAncestor(parent, GSVEventWidget)
-        events_widget.setIsFrozen(True)
         display_widget = widget.getMainWidget()
+
+        # get attrs
         gsv = item.columnData()['name']
         param_data = events_widget.paramData().getValue(0)
 
@@ -1160,7 +1163,8 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
                 widget.updateScriptDisplayFlag()
 
         Utils.EventModule.ProcessAllEvents()
-        events_widget.setIsFrozen(False)
+        for ew in events_widgets:
+            ew.setIsFrozen(False)
 
 
 class DisplayGSVEventWidgetHeader(OverlayInputWidget):
