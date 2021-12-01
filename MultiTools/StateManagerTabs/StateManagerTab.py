@@ -68,11 +68,11 @@ from Katana import UI4, NodegraphAPI, Utils
 from cgwidgets.widgets import ShojiLayout, ShojiModelViewWidget, ButtonInputWidget, StringInputWidget, LabelledInputWidget
 from cgwidgets.utils import getWidgetAncestor
 
-from Utils2 import gsvutils, widgetutils
+from Utils2 import gsvutils, widgetutils, irfutils
 from Widgets2 import AbstractStateManagerTab, AbstractStateManagerOrganizerWidget
 from .GSVManagerTab import GSVViewWidget, ViewGSVWidget
 from .IRFManagerTab import IRFActivationWidget, IRFViewWidget
-from .IRFManagerTab.IRFUtils import IRFUtils
+
 from .BookmarkManagerTab import Tab as BookmarkViewWidget
 from .BookmarkManagerTab.BookmarkUtils import BookmarkUtils
 
@@ -281,11 +281,11 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
         # irf
         irf_list = item.getArg("irf")
-        IRFUtils.clearAllActiveFilters()
+        irfutils.clearAllActiveFilters()
         for irf_name in irf_list:
             irf_node = NodegraphAPI.GetNode(irf_name)
             if irf_node:
-                IRFUtils.enableRenderFilter(irf_node, True)
+                irfutils.enableRenderFilter(irf_node, True)
 
         # bookmark
         bookmark_name = item.getArg("bookmark")
@@ -354,7 +354,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         # create item
         if create_item:
             gsv_map = gsvutils.getGSVMap()
-            irf_map = [node.getName() for node in IRFUtils.getAllActiveFilters()]
+            irf_map = [node.getName() for node in irfutils.getAllActiveFilters()]
             if hasattr(widgetutils.katanaMainWindow(), "_last_active_bookmark"):
                 active_bookmark = widgetutils.katanaMainWindow()._last_active_bookmark
             else:

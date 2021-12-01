@@ -44,10 +44,6 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
                 categories[child.name()] = child
         return categories
 
-    def defaultIRFNode(self):
-        create_widget = getWidgetAncestorByObjectName(self, "Create Widget")
-        return create_widget.defaultIRFNode()
-
     def isCategoryItemDeletable(self):
         return self._is_category_item_deletable
 
@@ -242,7 +238,7 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
 
     def createNewFilter(self, *args):
         """ Creates a new render filter"""
-        default_irf_node = self.defaultIRFNode()
+        default_irf_node = irfutils.defaultIRFNode()
         new_filter_node = default_irf_node.buildChildNode()
         self.createFilterItem(new_filter_node)
 

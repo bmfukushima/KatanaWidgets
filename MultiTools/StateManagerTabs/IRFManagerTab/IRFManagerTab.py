@@ -103,42 +103,20 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         return IRFManagerTab.NAME
 
     """ UTILS """
-    @staticmethod
-    def __setupDefaultIRFParam():
-        Utils.UndoStack.DisableCapture()
-        paramutils.createParamAtLocation("KatanaBebop.IRFNode", NodegraphAPI.GetRootNode(), paramutils.STRING)
-        Utils.UndoStack.EnableCapture()
 
     def __setupDefaultIRFNode(self):
         """ On init, this creates the default IRF Node if none exist"""
-        self.__setupDefaultIRFParam()
+        irfutils.setupDefaultIRFParam()
         irf_node_name = irfutils.irfNodeParam().getValue(0)
         irf_node = NodegraphAPI.GetNode(irf_node_name)
 
         if not irf_node:
             irf_node = NodegraphAPI.CreateNode("InteractiveRenderFilters", NodegraphAPI.GetRootNode())
-            self.setDefaultIRFNode(irf_node)
+            irfutils.setDefaultIRFNode(irf_node)
 
     def update(self):
         self.activationWidget().update()
         self.viewWidget().update()
-
-    """ PROPERTIES """
-    @staticmethod
-    def defaultIRFNode():
-        if irfutils.irfNodeParam():
-            return NodegraphAPI.GetNode(irfutils.irfNodeParam().getValue(0))
-        return None
-
-    @staticmethod
-    def setDefaultIRFNode(irf_node):
-        """ Sets the default IRF node
-
-        Args:
-            irf_node (Node): Node that will be set as the default IRF node """
-        IRFManagerTab.__setupDefaultIRFParam()
-        irfutils.irfNodeParam().setExpressionFlag(True)
-        irfutils.irfNodeParam().setExpression("@{irf_node_name}".format(irf_node_name=irf_node.getName()))
 
     """ WIDGETS """
     def irfNodeWidget(self):
@@ -177,9 +155,11 @@ class IRFNodeWidget(ListInputWidget):
     def updateDefaultIRFNode(self, widget, value):
         if value in [node.getName() for node in irfutils.getAllRenderFilterContainers()]:
             node = NodegraphAPI.GetNode(value)
-            IRFManagerTab.setDefaultIRFNode(node)
+            irfutils.setDefaultIRFNode(node)
+
+            # update all
         else:
-            self.setText(IRFManagerTab.defaultIRFNode().getName())
+            self.setText(irfutils.defaultIRFNode().getName())
 
     def populateIRFNodes(self):
         return [[node.getName()] for node in irfutils.getAllRenderFilterContainers()]
@@ -273,15 +253,12 @@ class IRFCreateWidget(ShojiLayout):
         self.addWidget(self._nodegraph_widget)
 
         # set default irf node
-        self._irf_node_widget.setText(IRFManagerTab.defaultIRFNode().getName())
+        self._irf_node_widget.setText(irfutils.defaultIRFNode().getName())
 
         # setup style
         self._create_new_filter_button.setFixedHeight(getFontSize() * 3)
         self._irf_node_labelled_widget.setFixedHeight(getFontSize() * 3)
         self._create_new_category_button.setFixedHeight(getFontSize() * 3)
-
-    def defaultIRFNode(self):
-        return NodegraphAPI.GetNode(self.irfNodeWidget().text())
 
     """ WIDGETS """
     def irfNodeWidget(self):
