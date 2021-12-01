@@ -1,8 +1,10 @@
 """
 TODO:
-    * Custom handler for custom user popup bar widgets
+    * Handler for user popup bar widgets
         - gsvutils --> getAllGSVViewWidgets, getAllGSVEventsWidgets
 TODO CLEANUP:
+    *   GSV Updates (GSVEventWidget)
+            Move to model
     *   GSV Event Update (cleanup)
             Needs to move to a wrapper GSVEvent --> Events
             deleteOptionEvent, optionChangedEvent, optionChangedEvent, _setMode, setFilepath, setScript
@@ -995,7 +997,6 @@ class GSVEventWidget(AbstractEventWidget):
 
     def gsvChangedEvent(self, item, old_value, new_value):
         """ When the user changes the GSV"""
-        # todo delete old GSV data?
 
         """ Create a new event item"""
         # get attrs
