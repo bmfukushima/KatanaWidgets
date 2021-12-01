@@ -34,24 +34,31 @@ Hierarchy:
                 |            |- QLabel
                 |            |- _activated_filters_organizer_widget --> (ActivateActiveFiltersOrganizerWidget)
                 |- create_widget --> (ShojiLayout)
-                    |- irf_node_widget (ListInputWidget)
+                    |- QWidget
+                    |    |- QVBoxLayout
+                    |        |- irf_node_labelled_widget --> (LabelledInputWidget)
+                    |        |   |- delegate --> (IRFNodeWidget)
+                    |        |- QHBoxLayout
+                    |            |- _create_new_filter_button --> (ButtonInputWidget)
+                    |            |- _create_new_category_button --> (ButtonInputWidget)
                     |- irf_organizer_widget (CreateAvailableFiltersOrganizerWidget)
                     |- nodegraph_widget (GroupNodeEditorWidget)
 """
 
-from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget, QSizePolicy
+from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget, QSizePolicy, QHBoxLayout
 from qtpy.QtCore import Qt
 
 from Katana import UI4, NodegraphAPI, RenderManager, Utils
 
 from cgwidgets.widgets import (
+    ButtonInputWidget,
     ShojiModelViewWidget,
     ListInputWidget,
     LabelledInputWidget,
     ShojiLayout
 )
 
-from Utils2 import paramutils, irfutils
+from Utils2 import paramutils, irfutils, getFontSize
 from Widgets2 import GroupNodeEditorWidget
 
 from .IRFOrganizerWidget import (
@@ -215,6 +222,7 @@ class IRFActivationWidget(ShojiLayout):
     def activatedFiltersWidget(self):
         return self._activated_filters_organizer_widget
 
+
 """ CREATE """
 class IRFCreateWidget(ShojiLayout):
     """ Widget responsible for creating/modifying IRFs
@@ -232,20 +240,39 @@ class IRFCreateWidget(ShojiLayout):
         self.setObjectName("Create Widget")
 
         # setup gui
-        QVBoxLayout(self)
+        self._irf_organizer_widget = CreateAvailableFiltersOrganizerWidget(self)
+
+        self._create_new_items_widget = QWidget()
+        self._create_new_items_layout = QVBoxLayout(self._create_new_items_widget)
         self._irf_node_widget = IRFNodeWidget(parent=self)
         self._irf_node_labelled_widget = LabelledInputWidget(
             name="Node", delegate_widget=self._irf_node_widget, default_label_length=100)
+        self._irf_node_labelled_widget.setViewAsReadOnly(True)
 
-        self._irf_organizer_widget = CreateAvailableFiltersOrganizerWidget(self)
+        self._create_buttons_layout = QHBoxLayout(self._create_new_items_widget)
+        self._create_new_filter_button = ButtonInputWidget(title="New Filter", user_clicked_event=self.irfOrganizerWidget().createNewFilter)
+        self._create_new_category_button = ButtonInputWidget(title="New Filter", user_clicked_event=self.irfOrganizerWidget().createNewCategory)
+
+        self._create_buttons_layout.addWidget(self._create_new_filter_button)
+        self._create_buttons_layout.addWidget(self._create_new_category_button)
+
+        self._create_new_items_layout.addWidget(self._irf_node_labelled_widget)
+        self._create_new_items_layout.addLayout(self._create_buttons_layout)
+        self._create_new_items_layout.addWidget(self._irf_organizer_widget)
+
         self._nodegraph_widget = GroupNodeEditorWidget(self, node=NodegraphAPI.GetRootNode())
 
-        self.addWidget(self._irf_node_labelled_widget)
-        self.addWidget(self._irf_organizer_widget)
+        QVBoxLayout(self)
+        self.addWidget(self._create_new_items_widget)
         self.addWidget(self._nodegraph_widget)
 
         # set default irf node
         self._irf_node_widget.setText(IRFManagerTab.defaultIRFNode().getName())
+
+        # setup style
+        self._create_new_filter_button.setFixedHeight(getFontSize() * 3)
+        self._irf_node_labelled_widget.setFixedHeight(getFontSize() * 3)
+        self._create_new_category_button.setFixedHeight(getFontSize() * 3)
 
     def defaultIRFNode(self):
         return NodegraphAPI.GetNode(self.irfNodeWidget().text())

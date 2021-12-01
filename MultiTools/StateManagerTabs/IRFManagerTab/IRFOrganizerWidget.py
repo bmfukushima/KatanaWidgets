@@ -202,8 +202,8 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
 
         # context menu
         self.addContextMenuSeparator()
-        self.addContextMenuEvent("Create New Category", self.__createNewCategory)
-        self.addContextMenuEvent("Create New Filter", self.__createNewFilter)
+        self.addContextMenuEvent("Create New Category", self.createNewCategory)
+        self.addContextMenuEvent("Create New Filter", self.createNewFilter)
 
         # setup delegate
         delegate = CreateOrganizerDelegate(self)
@@ -228,7 +228,7 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
                 if render_filter_node.getParameter("category").getValue(0) == old_value:
                     render_filter_node.getParameter("category").setValue(new_value, 0)
 
-    def __createNewFilter(self, item, indexes):
+    def createNewFilter(self, *args):
         """ Creates a new render filter"""
         default_irf_node = self.defaultIRFNode()
         new_filter_node = default_irf_node.buildChildNode()
@@ -242,7 +242,7 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
         # input_port.connect(output_port)
         node.delete()
 
-    def __createNewCategory(self, item, indexes):
+    def createNewCategory(self, *args):
         self.createCategoryItem("<New Category>")
 
     def __irfSelectionChanged(self, item, enabled):
