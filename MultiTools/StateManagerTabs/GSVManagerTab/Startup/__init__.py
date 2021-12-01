@@ -91,8 +91,6 @@ def gsvEventChangedEvent(args):
         if arg[2]["param"] != gsvutils.getGSVEventDataParam(): return False
 
         gsvutils.updateAllGSVEventsTabs()
-        # param = arg[2]["param"]
-        # param_name = param.getName()
 
 
 def gsvNameChangeEvent(args):
@@ -121,7 +119,6 @@ def gsvNameChangeEvent(args):
         old_name = arg[2]["oldName"]
         new_name = arg[2]["newName"]
         gsvutils.updateGSVNameForAllViewTabs(old_name, new_name)
-        # gsvutils.updateAllGSVEventsTabs()
 
 
 def gsvDeleteEvent(args):
@@ -231,6 +228,5 @@ def installGSVManagerEvents(*args, **kwargs):
     Utils.EventModule.RegisterCollapsedHandler(gsvNameChangeEvent, "parameter_setName", None)
     Utils.EventModule.RegisterCollapsedHandler(gsvDeleteEvent, "parameter_deleteChild", None)
     Utils.EventModule.RegisterCollapsedHandler(gsvCreateEvent, "parameter_createChild", None)
-
 
     Utils.UndoStack.EnableCapture()

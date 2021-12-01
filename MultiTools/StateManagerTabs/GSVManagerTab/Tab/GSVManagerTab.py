@@ -1,9 +1,8 @@
 """
 TODO:
-    *   GSV Select Event | Deselects all other events
-            DisplayGSVEventWidget --> updateGUI
-            Only freezing the current, not ALL the tabs
-CLEANUP:
+    * Custom handler for custom user popup bar widgets
+        - gsvutils --> getAllGSVViewWidgets, getAllGSVEventsWidgets
+TODO CLEANUP:
     *   GSV Event Update (cleanup)
             Needs to move to a wrapper GSVEvent --> Events
             deleteOptionEvent, optionChangedEvent, optionChangedEvent, _setMode, setFilepath, setScript
@@ -952,23 +951,6 @@ class GSVEventWidget(AbstractEventWidget):
     def setIsFrozen(self, is_frozen):
         self._is_frozen = is_frozen
 
-    """ UTILS """
-    # todo move to utils
-    @staticmethod
-    def paramDataStatic():
-        """ Gets the events data
-
-        Returns (str): repr of JSON
-        """
-        return NodegraphAPI.GetRootNode().getParameter(gsvutils.EVENT_PARAM_LOCATION+".data").getValue(0)
-
-    @staticmethod
-    def paramScriptsStatic():
-        """ Gets the scripts group parameter
-
-        Returns (param)"""
-        return NodegraphAPI.GetRootNode().getParameter(gsvutils.EVENT_PARAM_LOCATION+".scripts")
-
     """ EVENTS """
     def cacheScriptToParam(self, script):
         """ This will cache the script to a local value
@@ -1102,11 +1084,6 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
     @staticmethod
     def updateGUI(parent, widget, item):
         """ Updates the Dynamic display for the current GSV Event shown to the user"""
-        # todo this is updating like 4 times.. which makes it slow...
-        #print('update gui')
-        # import time
-        # start = time.time()
-        # print(time.time() - start)
         # preflight
         if not item: return
 
@@ -1138,7 +1115,6 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         events_dict = json.loads(param_data)[gsv]["data"]
         display_widget.headerWidget().setDisplayMode(OverlayInputWidget.ENTER)
 
-        # todo figure out why this sometimes runs 4 times when looking at Katana...
         for option, data in events_dict.items():
             # create widget
             widget = display_widget.createNewOptionEvent(
