@@ -171,6 +171,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         """ This is needed to ensure all tabs remain synchronized"""
         if not hasattr(widgetutils.katanaMainWindow(), "_state_manager_model"):
             widgetutils.katanaMainWindow()._state_manager_model = self.model()
+            self.populate(StateManagerUtils.getMainStateList())
         else:
             self.setModel(widgetutils.katanaMainWindow()._state_manager_model)
 
@@ -180,9 +181,6 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
         self.setDropEvent(self.__stateReparentEvent)
         self.setItemExportDataFunction(self.exportStateManager)
         self.setIndexSelectedEvent(self.__stateSelectedEvent)
-
-        # populate
-        self.populate(StateManagerUtils.getMainStateList())
 
     def populate(self, children, parent=QModelIndex()):
 

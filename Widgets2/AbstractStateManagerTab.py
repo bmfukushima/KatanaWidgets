@@ -166,6 +166,13 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
             print("folder == ", index.internalPointer().getArg("folder"))
             print("name == ", index.internalPointer().getArg("name"))
 
+    def populate(self):
+        pass
+
+    def update(self):
+        self.clearModel()
+        self.populate()
+
     """ PROPERTIES """
     def folders(self):
         return self._folders

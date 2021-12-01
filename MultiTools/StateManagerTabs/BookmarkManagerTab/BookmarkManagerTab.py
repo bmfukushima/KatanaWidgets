@@ -82,9 +82,11 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
         self._main_widget.addUtilsButton(self._create_new_bookmark_widget)
 
         # setup events
-        self._main_widget.setLoadEvent(self.loadEvent)
-        self._main_widget.setUpdateEvent(self.updateEvent)
+        self._main_widget.setLoadEvent(self.loadBookmarkEvent)
+        self._main_widget.setUpdateEvent(self.updateBookmarkEvent)
         self._main_widget.setCreateNewFolderEvent(self.createNewFolder)
+
+        Utils.EventModule.RegisterCollapsedHandler(self.update, 'nodegraph_loadEnd', None)
 
     def __name__(self):
         return BookmarkManagerTab.NAME
@@ -94,16 +96,16 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
 
         return self.mainWidget().lastActiveWidget().text()
 
-    def update(self):
-        # todo bookmarks update function
+    def update(self, *args):
+        self.organizerWidget().update()
+
         # get active text
         if hasattr(widgetutils.katanaMainWindow(), "_last_active_bookmark"):
             full_name = widgetutils.katanaMainWindow()._last_active_bookmark
             self.mainWidget().lastActiveWidget().setText(full_name)
-        pass
 
     """ EVENTS """
-    def updateEvent(self):
+    def updateBookmarkEvent(self):
         """ Saves the currently selected bookmark"""
         items = self.organizerWidget().getAllSelectedItems()
         if 0 < len(items):
@@ -120,7 +122,7 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
                 # create new bookmark
                 self.organizerWidget().createNewBookmark(name, folder, create_item=False)
 
-    def loadEvent(self):
+    def loadBookmarkEvent(self):
         """ Loads the currently selected bookmark """
         items = self.organizerWidget().getAllSelectedItems()
         if 0 < len(items):
@@ -169,12 +171,18 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
     def __init__(self, parent=None):
         super(BookmarkOrganizerWidget, self).__init__(parent)
 
+        # setup custom model
+        """ This is needed to ensure all tabs remain synchronized"""
+        if not hasattr(widgetutils.katanaMainWindow(), "_bookmarks_manager_model"):
+            widgetutils.katanaMainWindow()._bookmarks_manager_model = self.model()
+            self.populate()
+        else:
+            self.setModel(widgetutils.katanaMainWindow()._bookmarks_manager_model)
+
         # setup events
         self.setItemDeleteEvent(self.__bookmarkDeleteEvent)
         self.setTextChangedEvent(self.__bookmarkRenameEvent)
         self.setDropEvent(self.__bookmarkReparentEvent)
-
-        self.populate()
 
     """ CREATE """
     def createNewBookmark(self, name=None, folder=None, create_item=True):
@@ -200,7 +208,6 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
     """ UTILS """
     def populate(self):
         # clear old UI
-        self.clearModel()
         self.clearFolders()
 
         # preflight
@@ -304,15 +311,6 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
             # update folder
             BookmarkUtils.updateBookmarkFolder(new_name, old_name, folder_old_name, folder_new_name)
-
-    def showEvent(self, event):
-        self.populate()
-        return AbstractStateManagerOrganizerWidget.showEvent(self, event)
-
-    # def keyPressEvent(self, event):
-    #     if event.key() == Qt.Key_F5:
-    #         self.populate()
-    #     return ModelViewWidget.keyPressEvent(self, event)
 
 
 class OrganizerDelegateWidget(AbstractDragDropModelDelegate):
