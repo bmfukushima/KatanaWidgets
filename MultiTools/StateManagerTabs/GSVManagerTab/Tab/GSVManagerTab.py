@@ -6,8 +6,6 @@ TODO:
     *   GSV Select Event | Deselects all other events
             DisplayGSVEventWidget --> updateGUI
             Only freezing the current, not ALL the tabs
-    *   Create new option
-            Creating duplicates
 CLEANUP:
     *   GSV Event Update (cleanup)
             Needs to move to a wrapper GSVEvent --> Events
@@ -593,9 +591,14 @@ class CreateNewGSVOptionWidget(LabelledInputWidget):
         # Create new GSV Option
         if current_gsv_text != '<variables>':
             option = str(value)
-            if current_gsv_text in gsvutils.getAllGSV(return_as=gsvutils.STRING):
-                param = gsvutils.createNewGSVOption(current_gsv_text, option)
-                new_entry_text = option
+            if option not in gsvutils.getGSVOptions(current_gsv_text, return_as=gsvutils.STRING):
+                if current_gsv_text in gsvutils.getAllGSV(return_as=gsvutils.STRING):
+                    param = gsvutils.createNewGSVOption(current_gsv_text, option)
+                    new_entry_text = option
+            else:
+                print("{OPTION} already exists for {GSV}".format(OPTION=option, GSV=current_gsv_text))
+                self.delegateWidget().setText('')
+                return
 
         # Create new GSV
         elif current_gsv_text == '<variables>':
@@ -616,6 +619,7 @@ class CreateNewGSVOptionWidget(LabelledInputWidget):
             else:
                 print("{gsv} already exists you dingus".format(gsv=gsv))
                 return
+
         # create new list entry
         model = main_widget.editWidget().displayEditableOptionsWidget().model()
         root_item = model.rootItem()

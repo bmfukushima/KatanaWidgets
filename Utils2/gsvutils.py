@@ -124,8 +124,8 @@ def createNewGSVOption(gsv, new_option, row=None):
         options = gsv_param.getChild("options")
 
     # get all options
-    options_list = [gsv_param.getValue(0) for gsv_param in options.getChildren()]
-
+    #options_list = [gsv_param.getValue(0) for gsv_param in options.getChildren()]
+    options_list = getGSVOptions(gsv, return_as=STRING)
     # create new GSV option
     if new_option not in options_list:
         if not row:
@@ -377,8 +377,7 @@ def renameGSVOption(gsv, old_name, new_name):
 
 
 def setGSVOption(gsv, option, create=False):
-    """
-    Sets the GSV to the option provided
+    """ Sets the GSV to the option provided
 
     Args:
         gsv (str): gsv to set
