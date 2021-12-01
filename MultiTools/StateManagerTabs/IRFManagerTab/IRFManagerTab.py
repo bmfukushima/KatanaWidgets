@@ -1,11 +1,16 @@
 """TODO
+    *   Sync Tabs
+            - Create Filter/Folder
+            - Rename Filter/Folder
+            - Delete Filter/Folder
+            - Activate/Deactivate Filter
+    *   Add Create Filter/Folder buttons
     *   Create
             - Conflicting names
                 - Currently this just automagically works...
                 - should do a check to make sure that there are no conflicting names
     *   View
-"""
-"""
+
 Create
     - Can create new categories/filters.
     - Categories MUST have atleast one filter in them, or else they will be deleted
@@ -33,9 +38,8 @@ Hierarchy:
                     |- irf_organizer_widget (CreateAvailableFiltersOrganizerWidget)
                     |- nodegraph_widget (GroupNodeEditorWidget)
 """
-import json
 
-from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget, QHBoxLayout, QSizePolicy
+from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget, QSizePolicy
 from qtpy.QtCore import Qt
 
 from Katana import UI4, NodegraphAPI, RenderManager, Utils
@@ -43,25 +47,19 @@ from Katana import UI4, NodegraphAPI, RenderManager, Utils
 from cgwidgets.widgets import (
     ShojiModelViewWidget,
     ListInputWidget,
-    StringInputWidget,
     LabelledInputWidget,
-    ModelViewWidget,
-    ModelViewItem,
     ShojiLayout
 )
-from cgwidgets.views import AbstractDragDropModelDelegate
 
-from cgwidgets.utils import getWidgetAncestor
-
-from Utils2 import widgetutils, paramutils, nodeutils
+from Utils2 import paramutils, irfutils
 from Widgets2 import GroupNodeEditorWidget
 
 from .IRFOrganizerWidget import (
     ActivateAvailableFiltersOrganizerWidget,
     ActivateActiveFiltersOrganizerWidget,
     CreateAvailableFiltersOrganizerWidget,
-    ViewActiveFiltersOrganizerWidget)
-from .IRFUtils import IRFUtils
+    ViewActiveFiltersOrganizerWidget
+)
 
 
 class IRFManagerTab(UI4.Tabs.BaseTab):
@@ -110,7 +108,7 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
     def __setupDefaultIRFNode(self):
         """ On init, this creates the default IRF Node if none exist"""
         self.__setupDefaultIRFParam()
-        irf_node_name = IRFUtils.irfNodeParam().getValue(0)
+        irf_node_name = irfutils.irfNodeParam().getValue(0)
         irf_node = NodegraphAPI.GetNode(irf_node_name)
 
         if not irf_node:
@@ -124,8 +122,8 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
     """ PROPERTIES """
     @staticmethod
     def defaultIRFNode():
-        if IRFUtils.irfNodeParam():
-            return NodegraphAPI.GetNode(IRFUtils.irfNodeParam().getValue(0))
+        if irfutils.irfNodeParam():
+            return NodegraphAPI.GetNode(irfutils.irfNodeParam().getValue(0))
         return None
 
     @staticmethod
@@ -135,8 +133,8 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         Args:
             irf_node (Node): Node that will be set as the default IRF node """
         IRFManagerTab.__setupDefaultIRFParam()
-        IRFUtils.irfNodeParam().setExpressionFlag(True)
-        IRFUtils.irfNodeParam().setExpression("@{irf_node_name}".format(irf_node_name=irf_node.getName()))
+        irfutils.irfNodeParam().setExpressionFlag(True)
+        irfutils.irfNodeParam().setExpression("@{irf_node_name}".format(irf_node_name=irf_node.getName()))
 
     """ WIDGETS """
     def irfNodeWidget(self):
@@ -168,14 +166,14 @@ class IRFNodeWidget(ListInputWidget):
         self.setUserFinishedEditingEvent(self.updateDefaultIRFNode)
 
     def updateDefaultIRFNode(self, widget, value):
-        if value in [node.getName() for node in IRFUtils.getAllRenderFilterContainers()]:
+        if value in [node.getName() for node in irfutils.getAllRenderFilterContainers()]:
             node = NodegraphAPI.GetNode(value)
             IRFManagerTab.setDefaultIRFNode(node)
         else:
             self.setText(IRFManagerTab.defaultIRFNode().getName())
 
     def populateIRFNodes(self):
-        return [[node.getName()] for node in IRFUtils.getAllRenderFilterContainers()]
+        return [[node.getName()] for node in irfutils.getAllRenderFilterContainers()]
 
 
 class IRFViewWidget(ViewActiveFiltersOrganizerWidget):

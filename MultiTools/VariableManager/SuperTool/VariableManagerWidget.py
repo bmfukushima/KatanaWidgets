@@ -403,7 +403,7 @@ class VariableManagerCreateNewItemWidget(QWidget):
         if self.item_type == PATTERN_ITEM:
             variable = self.main_widget.variable
             pattern = str(self.item_text_field.text())
-            gsvutils.createNewPattern(pattern, variable)
+            gsvutils.createNewGSVOption(pattern, variable)
             self._patterns.append(pattern)
 
         # reset text

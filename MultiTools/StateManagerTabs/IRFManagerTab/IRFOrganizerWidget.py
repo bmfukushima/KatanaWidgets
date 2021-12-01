@@ -1,26 +1,13 @@
-import json
-
-from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget
-from qtpy.QtCore import Qt, QByteArray
+from qtpy.QtCore import QByteArray
 
 from Katana import UI4, NodegraphAPI, RenderManager, Utils
 
-from cgwidgets.widgets import (
-    ShojiModelViewWidget,
-    ListInputWidget,
-    StringInputWidget,
-    LabelledInputWidget,
-    ModelViewWidget,
-    ModelViewItem,
-    ShojiLayout
-)
+from cgwidgets.widgets import ModelViewWidget
 from cgwidgets.views import AbstractDragDropModelDelegate
+from cgwidgets.utils import getWidgetAncestorByObjectName
 
-from cgwidgets.utils import getWidgetAncestor, getWidgetAncestorByObjectName
+from Utils2 import nodeutils, irfutils
 
-from Utils2 import widgetutils, paramutils, nodeutils
-from Widgets2 import GroupNodeEditorWidget
-from .IRFUtils import IRFUtils
 
 """ ABSTRACT ORGANIZERS"""
 class AbstractIRFOrganizerWidget(ModelViewWidget):
@@ -77,7 +64,7 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
 
         Args:
             category (str): name of category to create"""
-        data = {"name": category, "type": IRFUtils.CATEGORY}
+        data = {"name": category, "type": irfutils.CATEGORY}
         category_index = self.insertNewIndex(
             0, name=category, column_data=data, is_deletable=self.isCategoryItemDeletable(), is_dropable=True, is_dragable=self.isCategoryItemDragable())
         category_item = category_index.internalPointer()
@@ -101,7 +88,7 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
 
         parent_index = self.getIndexFromItem(parent_item)
 
-        data = {"name": name, "type": IRFUtils.FILTER, "node": render_filter_node}
+        data = {"name": name, "type": irfutils.FILTER, "node": render_filter_node}
         index = self.insertNewIndex(0, name=name, column_data=data, parent=parent_index, is_dropable=False)
 
         return index
@@ -123,21 +110,21 @@ class AbstractIRFAvailableOrganizerWidget(AbstractIRFOrganizerWidget):
         ba = QByteArray()
         nodes = []
         for item in items:
-            if item.getArg("type") == IRFUtils.FILTER:
+            if item.getArg("type") == irfutils.FILTER:
                 nodes.append(item.getArg("node").getName())
-            elif item.getArg("type") == IRFUtils.CATEGORY:
+            elif item.getArg("type") == irfutils.CATEGORY:
                 for child in item.children():
                     nodes.append(child.getArg("node").getName())
 
         ba.append(",".join(nodes))
 
-        mimedata.setData(IRFUtils.IS_IRF, ba)
+        mimedata.setData(irfutils.IS_IRF, ba)
 
         return mimedata
 
     def populate(self):
         """ Creates all of the IRF items/category items"""
-        render_filter_nodes = IRFUtils.getAllRenderFilterNodes()
+        render_filter_nodes = irfutils.getAllRenderFilterNodes()
         for render_filter_node in render_filter_nodes:
             self.createFilterItem(render_filter_node)
 
@@ -159,7 +146,7 @@ class AbstractIRFActiveFiltersOrganizerWidget(AbstractIRFOrganizerWidget):
         self.clearModel()
 
     def populate(self):
-        active_filters = IRFUtils.getAllActiveFilters()
+        active_filters = irfutils.getAllActiveFilters()
         for render_filter_node in active_filters:
             index = self.createFilterItem(render_filter_node)
             self.view().setExpanded(index.parent(), True)
@@ -234,10 +221,10 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
         """ When the user changes a name:
                 if it is a FILTER, update the filters name
                 if it is a CATEGORY, update all categories to that new name"""
-        if item.getArg("type") == IRFUtils.FILTER:
+        if item.getArg("type") == irfutils.FILTER:
             item.getArg("node").getParameter("name").setValue(new_value, 0)
-        if item.getArg("type") == IRFUtils.CATEGORY:
-            for render_filter_node in IRFUtils.getAllRenderFilterNodes():
+        if item.getArg("type") == irfutils.CATEGORY:
+            for render_filter_node in irfutils.getAllRenderFilterNodes():
                 if render_filter_node.getParameter("category").getValue(0) == old_value:
                     render_filter_node.getParameter("category").setValue(new_value, 0)
 
@@ -260,7 +247,7 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
 
     def __irfSelectionChanged(self, item, enabled):
         if enabled:
-            if item.getArg("type") == IRFUtils.FILTER:
+            if item.getArg("type") == irfutils.FILTER:
                 irf_create_wiget = getWidgetAncestorByObjectName(self, "Create Widget")
                 irf_create_wiget.nodegraphWidget().setNode(item.getArg("node"))
 
@@ -297,26 +284,26 @@ class ActivateActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidg
 
     def disableFilter(self, item):
         """ On delete, disable filters"""
-        if item.getArg("type") == IRFUtils.CATEGORY:
+        if item.getArg("type") == irfutils.CATEGORY:
             for child in item.children():
                 self.disableFilter(child)
             del self.categories()[item.getArg("name")]
-        if item.getArg("type") == IRFUtils.FILTER:
-            IRFUtils.enableRenderFilter(item.getArg("node"), False)
+        if item.getArg("type") == irfutils.FILTER:
+            irfutils.enableRenderFilter(item.getArg("node"), False)
 
     def dropEvent(self, event):
         """ On drop, activate filters"""
-        nodes = event.mimeData().data(IRFUtils.IS_IRF).data().decode("utf-8").split(",")
+        nodes = event.mimeData().data(irfutils.IS_IRF).data().decode("utf-8").split(",")
         for node_name in nodes:
             node = NodegraphAPI.GetNode(node_name)
-            if node not in IRFUtils.getAllActiveFilters():
+            if node not in irfutils.getAllActiveFilters():
                 self.createFilterItem(node)
-                IRFUtils.enableRenderFilter(node, True)
+                irfutils.enableRenderFilter(node, True)
 
         return AbstractIRFOrganizerWidget.dropEvent(self, event)
 
     def dragEnterEvent(self, event):
-        if IRFUtils.IS_IRF in event.mimeData().formats():
+        if irfutils.IS_IRF in event.mimeData().formats():
             event.accept()
         return AbstractIRFOrganizerWidget.dragEnterEvent(self, event)
 
