@@ -1214,7 +1214,6 @@ class EventDelegateWidget(QWidget):
         """
         # preflight
         if not item: return
-
         events_widget = getWidgetAncestor(widget, EventWidget)
         # set item
         this = widget.getMainWidget()

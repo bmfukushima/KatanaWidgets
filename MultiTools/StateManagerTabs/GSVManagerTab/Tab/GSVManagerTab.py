@@ -109,7 +109,8 @@ from Widgets2 import (
     AbstractScriptInputWidget,
     PythonWidget
 )
-from Utils2 import gsvutils, getFontSize, paramutils
+from Utils2 import gsvutils, getFontSize, paramutils, widgetutils
+
 
 class GSVManagerTab(UI4.Tabs.BaseTab):
     """Main convenience widget for displaying GSV manipulators to the user."""
@@ -903,6 +904,24 @@ class GSVEventWidget(AbstractEventWidget):
         # set style
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
+        # todo move GSVManager to global model
+        """ For some reason this keeps populating the same widget...
+        It appears that somehow the "parent" in updateGUI is retrieving
+        the same parent..."""
+        # # setup custom model
+        # """ This is needed to ensure all tabs remain synchronized"""
+        # if not hasattr(widgetutils.katanaMainWindow(), "_gsv_events_widget"):
+        #     widgetutils.katanaMainWindow()._gsv_events_widget = self.eventsWidget().model()
+        #
+        #     # populate
+        #     self._events_data = json.loads(self.paramData().getValue(0))
+        #     gsv_list = list(self.eventsData().keys())
+        #     for gsv in gsv_list:
+        #         self.eventsWidget().insertShojiWidget(0, column_data={"name": str(gsv)})
+        #
+        # else:
+        #     self.eventsWidget().setModel(widgetutils.katanaMainWindow()._gsv_events_widget)
+
         # populate
         self._events_data = json.loads(self.paramData().getValue(0))
         gsv_list = list(self.eventsData().keys())
@@ -914,10 +933,14 @@ class GSVEventWidget(AbstractEventWidget):
         self.eventsWidget().setHeaderItemEnabledEvent(self.disableGSVEvent)
         self.eventsWidget().setHeaderItemTextChangedEvent(self.gsvChangedEvent)
 
-    """ WIDGETS """
-    def gsvEventsListWidget(self):
-        return self._gsv_events_list_widget
+        # self.eventsWidget().setDelegateType(
+        #     ShojiModelViewWidget.DYNAMIC,
+        #     dynamic_widget=DisplayGSVEventWidget,
+        #     dynamic_function=DisplayGSVEventWidget.updateGUI
+        # )
+        # self.eventsWidget().model()
 
+    """ WIDGETS """
     def displayWidget(self):
         # todo this doesnt work...
         self.eventsWidget().delegateWidget().widget(1).getMainWidget()
@@ -995,11 +1018,14 @@ class GSVEventWidget(AbstractEventWidget):
         self.eventsData()[gsv] = {}
         self.eventsData()[gsv]["data"] = {}
         self.eventsData()[gsv]["enabled"] = True
-
+        if old_value in self.eventsData().keys():
+            del self.eventsData()[old_value]
         # update data
         self.saveEventsData()
         self.setCurrentGSV(gsv)
         self.eventsWidget().updateDelegateDisplay()
+
+        gsvutils.updateAllGSVEventsTabs()
 
     def update(self):
         """ Clears the model and repopulates it """
@@ -1011,7 +1037,7 @@ class GSVEventWidget(AbstractEventWidget):
             event_data = json.loads(NodegraphAPI.GetRootNode().getParameter(gsvutils.EVENT_PARAM_LOCATION+".data").getValue(0))
 
             # get GSVs
-            for gsv in list(event_data.keys()):
+            for gsv in reversed(sorted(list(event_data.keys()))):
                 self.eventsWidget().insertShojiWidget(0, column_data={"name": str(gsv)})
 
             self.setEventsData(event_data)
