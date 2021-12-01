@@ -275,16 +275,20 @@ class ViewActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidget):
         super(ViewActiveFiltersOrganizerWidget, self).__init__(parent)
         # setup custom model
         """ This is needed to ensure all tabs remain synchronized"""
-        if not hasattr(widgetutils.katanaMainWindow(), "_irf_view_available_filters_model"):
-            widgetutils.katanaMainWindow()._irf_view_available_filters_model = self.model()
+        if not hasattr(widgetutils.katanaMainWindow(), "_irf_active_filters_model"):
+            widgetutils.katanaMainWindow()._irf_active_filters_model = self.model()
         else:
-            self.setModel(widgetutils.katanaMainWindow()._irf_view_available_filters_model)
+            self.setModel(widgetutils.katanaMainWindow()._irf_active_filters_model)
 
+    def enterEvent(self, event):
         self.setAcceptDrops(False)
+        self.setIsCategoryItemDeletable(False)
         self.setIsDeletable(False)
         self.setIsDraggable(False)
         self.setIsDroppable(False)
         self.setIsRootDroppable(False)
+
+        return AbstractIRFActiveFiltersOrganizerWidget.enterEvent(self, event)
 
 
 class ActivateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget):
@@ -315,16 +319,21 @@ class ActivateActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidg
         super(ActivateActiveFiltersOrganizerWidget, self).__init__(parent)
         # setup custom model
         """ This is needed to ensure all tabs remain synchronized"""
-        if not hasattr(widgetutils.katanaMainWindow(), "_irf_activate_active_filters_model"):
-            widgetutils.katanaMainWindow()._irf_activate_active_filters_model = self.model()
+        if not hasattr(widgetutils.katanaMainWindow(), "_irf_active_filters_model"):
+            widgetutils.katanaMainWindow()._irf_active_filters_model = self.model()
         else:
-            self.setModel(widgetutils.katanaMainWindow()._irf_activate_active_filters_model)
+            self.setModel(widgetutils.katanaMainWindow()._irf_active_filters_model)
 
-        self.setAcceptDrops(True)
-        self.setIsRootDroppable(True)
         self.setItemDeleteEvent(self.disableFilter)
-        self.setIsDraggable(False)
+
+    def enterEvent(self, event):
+        self.setAcceptDrops(True)
         self.setIsCategoryItemDeletable(True)
+        self.setIsDeletable(True)
+        self.setIsDraggable(False)
+        self.setIsDroppable(True)
+        self.setIsRootDroppable(True)
+        return AbstractIRFActiveFiltersOrganizerWidget.enterEvent(self, event)
 
     def disableFilter(self, item):
         """ On delete, disable filters"""

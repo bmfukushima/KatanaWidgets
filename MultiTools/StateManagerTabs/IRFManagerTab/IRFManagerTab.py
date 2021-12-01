@@ -1,15 +1,10 @@
 """TODO
-    *   Sync Tabs
-            - Create Filter/Folder
-            - Rename Filter/Folder
-            - Delete Filter/Folder
-            - Activate/Deactivate Filter
-    *   Add Create Filter/Folder buttons
+    *   On load, populate (update on nodegraph load)
+    *   View uses same model
     *   Create
             - Conflicting names
                 - Currently this just automagically works...
                 - should do a check to make sure that there are no conflicting names
-    *   View
 
 Create
     - Can create new categories/filters.
@@ -101,6 +96,8 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         self._main_widget.insertShojiWidget(2, column_data={"name":"Edit"}, widget=self._create_widget)
 
         self.layout().addWidget(self.mainWidget())
+        # setup Katana events
+        Utils.EventModule.RegisterCollapsedHandler(self.nodegraphLoad, 'nodegraph_loadEnd', None)
 
     def __name__(self):
         return IRFManagerTab.NAME
@@ -164,6 +161,10 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         self.__setupDefaultIRFNode()
         return UI4.Tabs.BaseTab.showEvent(self, event)
 
+    def nodegraphLoad(self, args):
+        pass
+        # todo update on nodegraph load
+        # update view, activate
 
 class IRFNodeWidget(ListInputWidget):
     """ Allows the user to choose which IRF Node they want to save their changes to"""

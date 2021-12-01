@@ -145,7 +145,7 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
         self.mainWidget().setHeaderItemIsDroppable(False)
 
         # setup Katana events
-        Utils.EventModule.RegisterCollapsedHandler(self.nodeGraphLoad, 'nodegraph_loadEnd', None)
+        Utils.EventModule.RegisterCollapsedHandler(self.nodegraphLoad, 'nodegraph_loadEnd', None)
 
     def __name__(self):
         return GSVManagerTab.NAME
@@ -167,7 +167,7 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
         return self._view_widget
 
     """ KATANA EVENTS """
-    def nodeGraphLoad(self, args):
+    def nodegraphLoad(self, args):
         """ Reload the View Widget when a new Katana scene is opened"""
         # preflight
         if not self.eventsWidget().paramData(): return
