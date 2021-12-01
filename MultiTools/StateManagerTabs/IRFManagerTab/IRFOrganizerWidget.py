@@ -25,7 +25,6 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
         super(AbstractIRFOrganizerWidget, self).__init__(parent)
 
         # setup default attrs
-        self._categories = {}
         self._is_category_item_deletable = False
         self._is_category_item_draggable = False
         self.setPresetViewType(ModelViewWidget.TREE_VIEW)
@@ -99,12 +98,23 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
 
         return index
 
+    """ UPDATE """
+    def populate(self):
+        pass
+
+    def clear(self):
+        self.clearModel()
+
+    def update(self):
+        self.clearModel()
+        self.populate()
 
 class AbstractIRFAvailableOrganizerWidget(AbstractIRFOrganizerWidget):
     """ Organizer View widget, this will display ALL of the IRFs in the scene"""
     def __init__(self, parent=None):
         super(AbstractIRFAvailableOrganizerWidget, self).__init__(parent)
         self.setAddMimeDataFunction(self.addMimedata)
+        self.populate()
 
     def addMimedata(self, mimedata, items):
         """ Creates a CSV List of the names of the Render Filter nodes to be activated
@@ -131,15 +141,9 @@ class AbstractIRFAvailableOrganizerWidget(AbstractIRFOrganizerWidget):
     def populate(self):
         """ Creates all of the IRF items/category items"""
         render_filter_nodes = irfutils.getAllRenderFilterNodes()
+
         for render_filter_node in render_filter_nodes:
             self.createFilterItem(render_filter_node)
-
-    # """ EVENTS """
-    # def showEvent(self, event):
-    #     self.clearModel()
-    #     self._categories = {}
-    #     self.populate()
-    #     return ModelViewWidget.showEvent(self, event)
 
 
 class AbstractIRFActiveFiltersOrganizerWidget(AbstractIRFOrganizerWidget):
@@ -147,19 +151,11 @@ class AbstractIRFActiveFiltersOrganizerWidget(AbstractIRFOrganizerWidget):
     def __init__(self, parent=None):
         super(AbstractIRFActiveFiltersOrganizerWidget, self).__init__(parent)
 
-    def clear(self):
-        self._categories = {}
-        self.clearModel()
-
     def populate(self):
         active_filters = irfutils.getAllActiveFilters()
         for render_filter_node in active_filters:
             index = self.createFilterItem(render_filter_node)
             self.view().setExpanded(index.parent(), True)
-
-    def update(self):
-        self.clear()
-        self.populate()
 
 
 """ DELEGATES """
@@ -213,6 +209,8 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
         # setup delegate
         delegate = CreateOrganizerDelegate(self)
         self.view().setItemDelegate(delegate)
+
+        self.populate()
 
     def enterEvent(self, event):
         self.setIsCategoryItemDeletable(True)
@@ -280,6 +278,8 @@ class ViewActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidget):
         else:
             self.setModel(widgetutils.katanaMainWindow()._irf_active_filters_model)
 
+        self.populate()
+
     def enterEvent(self, event):
         self.setAcceptDrops(False)
         self.setIsCategoryItemDeletable(False)
@@ -302,6 +302,8 @@ class ActivateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidge
         else:
             self.setModel(widgetutils.katanaMainWindow()._irf_create_available_filters_model)
 
+        self.populate()
+
         self.setMultiSelect(True)
 
     def enterEvent(self, event):
@@ -323,6 +325,8 @@ class ActivateActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidg
             widgetutils.katanaMainWindow()._irf_active_filters_model = self.model()
         else:
             self.setModel(widgetutils.katanaMainWindow()._irf_active_filters_model)
+
+        self.populate()
 
         self.setItemDeleteEvent(self.disableFilter)
 

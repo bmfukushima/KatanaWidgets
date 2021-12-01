@@ -1,6 +1,6 @@
 """TODO
     *   On load, populate (update on nodegraph load)
-    *   View uses same model
+    *   Move default IRF Node to create
     *   Create
             - Conflicting names
                 - Currently this just automagically works...
@@ -93,7 +93,7 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         # insert widgets
         self._main_widget.insertShojiWidget(0, column_data={"name":"View"}, widget=self._view_widget)
         self._main_widget.insertShojiWidget(1, column_data={"name":"Activate"}, widget=self._activation_widget)
-        self._main_widget.insertShojiWidget(2, column_data={"name":"Edit"}, widget=self._create_widget)
+        self._main_widget.insertShojiWidget(2, column_data={"name":"Create"}, widget=self._create_widget)
 
         self.layout().addWidget(self.mainWidget())
         # setup Katana events
@@ -162,9 +162,10 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         return UI4.Tabs.BaseTab.showEvent(self, event)
 
     def nodegraphLoad(self, args):
-        pass
-        # todo update on nodegraph load
-        # update view, activate
+        """ Updates all of the models views.  This only needs to update the activationWidget()
+        as it stores views for both models on it.  Which should then propogate to the create/viewWidgets()"""
+        self.activationWidget().update()
+
 
 class IRFNodeWidget(ListInputWidget):
     """ Allows the user to choose which IRF Node they want to save their changes to"""
@@ -218,7 +219,11 @@ class IRFActivationWidget(ShojiLayout):
         self.addWidget(self._activated_filters_widget)
 
     def update(self):
+        self.availableFiltersWidget().update()
         self.activatedFiltersWidget().update()
+
+    def availableFiltersWidget(self):
+        return self._available_filters_organizer_widget
 
     def activatedFiltersWidget(self):
         return self._activated_filters_organizer_widget
