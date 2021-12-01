@@ -249,9 +249,9 @@ class IRFCreateWidget(ShojiLayout):
             name="Node", delegate_widget=self._irf_node_widget, default_label_length=100)
         self._irf_node_labelled_widget.setViewAsReadOnly(True)
 
-        self._create_buttons_layout = QHBoxLayout(self._create_new_items_widget)
+        self._create_buttons_layout = QHBoxLayout()
         self._create_new_filter_button = ButtonInputWidget(title="New Filter", user_clicked_event=self.irfOrganizerWidget().createNewFilter)
-        self._create_new_category_button = ButtonInputWidget(title="New Filter", user_clicked_event=self.irfOrganizerWidget().createNewCategory)
+        self._create_new_category_button = ButtonInputWidget(title="New Category", user_clicked_event=self.irfOrganizerWidget().createNewCategory)
 
         self._create_buttons_layout.addWidget(self._create_new_filter_button)
         self._create_buttons_layout.addWidget(self._create_new_category_button)
@@ -286,7 +286,6 @@ class IRFCreateWidget(ShojiLayout):
 
     def nodegraphWidget(self):
         return self._nodegraph_widget
-
 
 
 if __name__ == "__main__":

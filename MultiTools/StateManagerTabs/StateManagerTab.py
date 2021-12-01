@@ -382,7 +382,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
     def createNewFolder(self):
         new_folder_name = self.getUniqueName("New Folder", self.rootItem(), item_type=AbstractStateManagerTab.FOLDER_ITEM, exists=False)
-        folder_item = self.createNewFolderItem(new_folder_name, is_dragable=True)
+        folder_item = self.createNewFolderItem(new_folder_name, is_draggable=True)
         # self.addFolder(new_folder_name, folder_item)
         return folder_item
 
@@ -486,8 +486,8 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
             name=bookmark,
             column_data=data,
             is_deletable=True,
-            is_dropable=False,
-            is_dragable=True,
+            is_droppable=False,
+            is_draggable=True,
             parent=parent_index
         )
         bookmark_item = bookmark_index.internalPointer()

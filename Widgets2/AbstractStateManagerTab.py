@@ -204,19 +204,19 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
             name=state,
             column_data=item_data,
             is_deletable=True,
-            is_dropable=False,
-            is_dragable=True,
+            is_droppable=False,
+            is_draggable=True,
             parent=parent
         )
         state_item = state_index.internalPointer()
         return state_item
 
-    def createNewFolderItem(self, folder, is_dragable=False, parent=QModelIndex()):
+    def createNewFolderItem(self, folder, is_draggable=False, parent=QModelIndex()):
         """ Creates a new folder item and returns it
 
         Args:
             folder (str):
-            is_dragable (bool):
+            is_draggable (bool):
             parent (QModelIndex)"""
         data = {"name": folder, "folder": folder, "type": AbstractStateManagerTab.FOLDER_ITEM}
         folder_index = self.insertNewIndex(
@@ -225,8 +225,8 @@ class AbstractStateManagerOrganizerWidget(ModelViewWidget):
             parent=parent,
             column_data=data,
             is_deletable=True,
-            is_dropable=True,
-            is_dragable=is_dragable
+            is_droppable=True,
+            is_draggable=is_draggable
         )
         folder_item = folder_index.internalPointer()
         return folder_item

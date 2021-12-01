@@ -6,7 +6,7 @@ from cgwidgets.widgets import ModelViewWidget
 from cgwidgets.views import AbstractDragDropModelDelegate
 from cgwidgets.utils import getWidgetAncestorByObjectName
 
-from Utils2 import nodeutils, irfutils
+from Utils2 import nodeutils, irfutils, widgetutils
 
 
 """ ABSTRACT ORGANIZERS"""
@@ -27,7 +27,7 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
         # setup default attrs
         self._categories = {}
         self._is_category_item_deletable = False
-        self._is_category_item_dragable = False
+        self._is_category_item_draggable = False
         self.setPresetViewType(ModelViewWidget.TREE_VIEW)
         self.setIsEnableable(False)
         self.setHeaderData(["name", "type"])
@@ -39,10 +39,13 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
 
     """ PROPERTIES """
     def categories(self):
-        return self._categories
+        categories = {}
+        for child in self.rootItem().children():
+            if child.getArg("type") == irfutils.CATEGORY:
+                categories[child.name()] = child
+        return categories
 
     def defaultIRFNode(self):
-        #create_widget = getWidgetAncestor(self, IRFCreateWidget)
         create_widget = getWidgetAncestorByObjectName(self, "Create Widget")
         return create_widget.defaultIRFNode()
 
@@ -51,12 +54,16 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
 
     def setIsCategoryItemDeletable(self, is_deletable):
         self._is_category_item_deletable = is_deletable
+        for item in self.categories().values():
+            item.setIsDeletable(is_deletable)
 
-    def isCategoryItemDragable(self):
-        return self._is_category_item_dragable
+    def isCategoryItemDraggable(self):
+        return self._is_category_item_draggable
 
-    def setIsCategoryItemDragable(self, is_dragable):
-        self._is_category_item_dragable = is_dragable
+    def setIsCategoryItemDraggable(self, is_draggable):
+        self._is_category_item_draggable = is_draggable
+        for item in self.categories().values():
+            item.setIsDraggable(is_draggable)
 
     """ UTILS """
     def createCategoryItem(self, category):
@@ -66,9 +73,8 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
             category (str): name of category to create"""
         data = {"name": category, "type": irfutils.CATEGORY}
         category_index = self.insertNewIndex(
-            0, name=category, column_data=data, is_deletable=self.isCategoryItemDeletable(), is_dropable=True, is_dragable=self.isCategoryItemDragable())
+            0, name=category, column_data=data, is_deletable=self.isCategoryItemDeletable(), is_droppable=True, is_draggable=self.isCategoryItemDraggable())
         category_item = category_index.internalPointer()
-        self.categories()[category] = category_item
 
         return category_item
 
@@ -89,7 +95,7 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
         parent_index = self.getIndexFromItem(parent_item)
 
         data = {"name": name, "type": irfutils.FILTER, "node": render_filter_node}
-        index = self.insertNewIndex(0, name=name, column_data=data, parent=parent_index, is_dropable=False)
+        index = self.insertNewIndex(0, name=name, column_data=data, parent=parent_index, is_droppable=False)
 
         return index
 
@@ -128,12 +134,12 @@ class AbstractIRFAvailableOrganizerWidget(AbstractIRFOrganizerWidget):
         for render_filter_node in render_filter_nodes:
             self.createFilterItem(render_filter_node)
 
-    """ EVENTS """
-    def showEvent(self, event):
-        self.clearModel()
-        self._categories = {}
-        self.populate()
-        return ModelViewWidget.showEvent(self, event)
+    # """ EVENTS """
+    # def showEvent(self, event):
+    #     self.clearModel()
+    #     self._categories = {}
+    #     self.populate()
+    #     return ModelViewWidget.showEvent(self, event)
 
 
 class AbstractIRFActiveFiltersOrganizerWidget(AbstractIRFOrganizerWidget):
@@ -154,12 +160,6 @@ class AbstractIRFActiveFiltersOrganizerWidget(AbstractIRFOrganizerWidget):
     def update(self):
         self.clear()
         self.populate()
-
-    def showEvent(self, event):
-        self.clear()
-        self.populate()
-
-        return AbstractIRFOrganizerWidget.showEvent(self, event)
 
 
 """ DELEGATES """
@@ -192,7 +192,12 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
     def __init__(self, parent=None):
         super(CreateAvailableFiltersOrganizerWidget, self).__init__(parent)
 
-        self.setIsCategoryItemDeletable(True)
+        # setup custom model
+        """ This is needed to ensure all tabs remain synchronized"""
+        if not hasattr(widgetutils.katanaMainWindow(), "_irf_create_available_filters_model"):
+            widgetutils.katanaMainWindow()._irf_create_available_filters_model = self.model()
+        else:
+            self.setModel(widgetutils.katanaMainWindow()._irf_create_available_filters_model)
 
         # setup events
         self.setIndexSelectedEvent(self.__irfSelectionChanged)
@@ -208,6 +213,15 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
         # setup delegate
         delegate = CreateOrganizerDelegate(self)
         self.view().setItemDelegate(delegate)
+
+    def enterEvent(self, event):
+        self.setIsCategoryItemDeletable(True)
+        self.setIsCategoryItemDraggable(False)
+
+        self.setIsDroppable(True)
+        self.setIsDeletable(True)
+
+        return AbstractIRFAvailableOrganizerWidget.enterEvent(self, event)
 
     def __itemParentChanged(self, data, items, model, row, parent):
         """ On drop update the item drops category to the new parents"""
@@ -235,12 +249,15 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
         self.createFilterItem(new_filter_node)
 
     def __deleteFilter(self, item):
-        node = item.getArg("node")
-        nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
-        # input_port = node.getInputPortByIndex(0).getConnectedPorts()[0]
-        # output_port = node.getOutputPortByIndex(0).getConnectedPorts()[0]
-        # input_port.connect(output_port)
-        node.delete()
+        if item.getArg("type") == irfutils.FILTER:
+            node = item.getArg("node")
+            nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
+            node.delete()
+
+        if item.getArg("type") == irfutils.CATEGORY:
+            # get all children
+            for child in item.children():
+                self.__deleteFilter(child)
 
     def createNewCategory(self, *args):
         self.createCategoryItem("<New Category>")
@@ -256,6 +273,13 @@ class ViewActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidget):
     """ Available filters organizer to be used in the VIEW widget"""
     def __init__(self, parent=None):
         super(ViewActiveFiltersOrganizerWidget, self).__init__(parent)
+        # setup custom model
+        """ This is needed to ensure all tabs remain synchronized"""
+        if not hasattr(widgetutils.katanaMainWindow(), "_irf_view_available_filters_model"):
+            widgetutils.katanaMainWindow()._irf_view_available_filters_model = self.model()
+        else:
+            self.setModel(widgetutils.katanaMainWindow()._irf_view_available_filters_model)
+
         self.setAcceptDrops(False)
         self.setIsDeletable(False)
         self.setIsDraggable(False)
@@ -267,15 +291,35 @@ class ActivateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidge
     """ Available filters for the ACTIVATE widget"""
     def __init__(self, parent=None):
         super(ActivateAvailableFiltersOrganizerWidget, self).__init__(parent)
-        self.setIsDeletable(False)
+        # setup custom model
+        """ This is needed to ensure all tabs remain synchronized"""
+        if not hasattr(widgetutils.katanaMainWindow(), "_irf_create_available_filters_model"):
+            widgetutils.katanaMainWindow()._irf_create_available_filters_model = self.model()
+        else:
+            self.setModel(widgetutils.katanaMainWindow()._irf_create_available_filters_model)
+
         self.setMultiSelect(True)
-        self.setIsCategoryItemDragable(True)
+
+    def enterEvent(self, event):
+        self.setIsDeletable(False)
+        self.setIsDroppable(False)
+
+        self.setIsCategoryItemDraggable(True)
+        self.setIsCategoryItemDeletable(False)
+        return AbstractIRFAvailableOrganizerWidget.enterEvent(self, event)
 
 
 class ActivateActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidget):
     """ Available filters to be displayed in the ACTIVATE Widget"""
     def __init__(self, parent=None):
         super(ActivateActiveFiltersOrganizerWidget, self).__init__(parent)
+        # setup custom model
+        """ This is needed to ensure all tabs remain synchronized"""
+        if not hasattr(widgetutils.katanaMainWindow(), "_irf_activate_active_filters_model"):
+            widgetutils.katanaMainWindow()._irf_activate_active_filters_model = self.model()
+        else:
+            self.setModel(widgetutils.katanaMainWindow()._irf_activate_active_filters_model)
+
         self.setAcceptDrops(True)
         self.setIsRootDroppable(True)
         self.setItemDeleteEvent(self.disableFilter)
