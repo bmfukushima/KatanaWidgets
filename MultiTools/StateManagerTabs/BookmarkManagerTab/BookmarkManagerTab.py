@@ -1,12 +1,4 @@
 """
-Todo:
-    *   Update... destroying the folder
-    *   Delete Bookmarks (delete event <>)
-            <> don't work for some reason... have to manually delete
-    *   Flush Caches...
-            attach something to this?
-            F5 refresh? Event Filter?
-
 Bookmarks are actually parameters...
 
 root_node = NodegraphAPI.GetRootNode()

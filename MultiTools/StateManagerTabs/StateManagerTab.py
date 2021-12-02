@@ -1,8 +1,7 @@
 """
 Todo:
     *   Clear last active data on scene load
-    *   This should all be driven through models for the multiple displays...
-            - not unique models being updated...
+    *   IRF Activated Widgets going wonky
     *   Import / Export
     *   View Tab, change to activation
     *   New Button
@@ -68,6 +67,7 @@ from Katana import UI4, NodegraphAPI, Utils
 
 from cgwidgets.widgets import ShojiLayout, ShojiModelViewWidget, ButtonInputWidget, StringInputWidget, LabelledInputWidget
 from cgwidgets.utils import getWidgetAncestor
+from cgwidgets.views import AbstractDragDropModel
 
 from Utils2 import gsvutils, widgetutils, irfutils
 from Widgets2 import AbstractStateManagerTab, AbstractStateManagerOrganizerWidget
@@ -439,7 +439,6 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
         self._state_organizer_widget = StateManagerOrganizerWidget(self)
         self.setOrganizerWidget(self._state_organizer_widget)
 
-
         # setup events
         self._create_new_state_widget = ButtonInputWidget(
             title="New State", user_clicked_event=self.createNewState)
@@ -570,6 +569,9 @@ class ReadOnlyIRFViewWidget(IRFViewWidget):
     def __init__(self, parent=None):
         self._active_filters = []
         super(ReadOnlyIRFViewWidget, self).__init__(parent)
+        # todo model2
+        model = AbstractDragDropModel(self)
+        self.setModel(model)
 
     def populate(self):
         for render_filter_name in self.activeFilters():
@@ -649,6 +651,10 @@ class StateManagerActiveView(ShojiLayout):
         self._gsv_scroll_area.setWidgetResizable(True)
 
         self._irf_view_widget = IRFActivationWidget(self)
+        #todo model 1
+        # model = AbstractDragDropModel(self)
+        # self._irf_view_widget.activatedFiltersWidget().setModel(model)
+
         self._bookmarks_view_widget = BookmarkViewWidget(self)
         self._state_view_widget = StateManagerEditorWidget(self)
 

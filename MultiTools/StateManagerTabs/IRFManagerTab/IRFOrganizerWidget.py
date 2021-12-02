@@ -110,7 +110,7 @@ class AbstractIRFAvailableOrganizerWidget(AbstractIRFOrganizerWidget):
     def __init__(self, parent=None):
         super(AbstractIRFAvailableOrganizerWidget, self).__init__(parent)
         self.setAddMimeDataFunction(self.addMimedata)
-        self.populate()
+        # self.populate()
 
     def addMimedata(self, mimedata, items):
         """ Creates a CSV List of the names of the Render Filter nodes to be activated
@@ -188,6 +188,7 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
         """ This is needed to ensure all tabs remain synchronized"""
         if not hasattr(widgetutils.katanaMainWindow(), "_irf_create_available_filters_model"):
             widgetutils.katanaMainWindow()._irf_create_available_filters_model = self.model()
+            self.populate()
         else:
             self.setModel(widgetutils.katanaMainWindow()._irf_create_available_filters_model)
 
@@ -205,8 +206,6 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
         # setup delegate
         delegate = CreateOrganizerDelegate(self)
         self.view().setItemDelegate(delegate)
-
-        self.populate()
 
     def enterEvent(self, event):
         self.setIsCategoryItemDeletable(True)
@@ -271,10 +270,9 @@ class ViewActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidget):
         """ This is needed to ensure all tabs remain synchronized"""
         if not hasattr(widgetutils.katanaMainWindow(), "_irf_active_filters_model"):
             widgetutils.katanaMainWindow()._irf_active_filters_model = self.model()
+            self.populate()
         else:
             self.setModel(widgetutils.katanaMainWindow()._irf_active_filters_model)
-
-        self.populate()
 
     def enterEvent(self, event):
         self.setAcceptDrops(False)
@@ -295,10 +293,10 @@ class ActivateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidge
         """ This is needed to ensure all tabs remain synchronized"""
         if not hasattr(widgetutils.katanaMainWindow(), "_irf_create_available_filters_model"):
             widgetutils.katanaMainWindow()._irf_create_available_filters_model = self.model()
+            self.populate()
+
         else:
             self.setModel(widgetutils.katanaMainWindow()._irf_create_available_filters_model)
-
-        self.populate()
 
         self.setMultiSelect(True)
 
@@ -319,10 +317,9 @@ class ActivateActiveFiltersOrganizerWidget(AbstractIRFActiveFiltersOrganizerWidg
         """ This is needed to ensure all tabs remain synchronized"""
         if not hasattr(widgetutils.katanaMainWindow(), "_irf_active_filters_model"):
             widgetutils.katanaMainWindow()._irf_active_filters_model = self.model()
+            self.populate()
         else:
             self.setModel(widgetutils.katanaMainWindow()._irf_active_filters_model)
-
-        self.populate()
 
         self.setItemDeleteEvent(self.disableFilter)
 
