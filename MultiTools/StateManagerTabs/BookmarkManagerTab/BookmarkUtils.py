@@ -156,3 +156,15 @@ class BookmarkUtils(object):
             tab.setLastActiveBookmark(last_active_bookmark)
         for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
             tab.viewWidget().bookmarksViewWidget().setLastActiveBookmark(last_active_bookmark)
+
+        for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
+            # get a list of all of the widgets
+            popup_widgets = tab.popupBarDisplayWidget().allWidgets()
+
+            for widget in popup_widgets:
+                popup_widget = widget.popupWidget()
+                if hasattr(popup_widget, "__name__"):
+                    if popup_widget.__name__() == "Bookmark Manager":
+                        popup_widget.setLastActiveBookmark(last_active_bookmark)
+                    if popup_widget.__name__() == "State Manager":
+                        popup_widget.viewWidget().bookmarksViewWidget().setLastActiveBookmark(last_active_bookmark)
