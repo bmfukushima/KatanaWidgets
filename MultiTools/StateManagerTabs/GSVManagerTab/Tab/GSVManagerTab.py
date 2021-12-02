@@ -821,14 +821,12 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
             # remove param
             gsvutils.deleteGSV(gsv)
 
-            # remove widget
-            # view_widget.removeWidget(gsv)
-
             # remove event
+            # todo update model on delete
             if gsv in list(events_widget.eventsData().keys()):
                 # remove item
-                for item in events_widget.model().findItems(gsv):
-                    events_widget.model().deleteItem(item.internalPointer(), event_update=True)
+                for item in events_widget.eventsWidget().model().findItems(gsv):
+                    events_widget.eventsWidget().model().deleteItem(item.internalPointer(), event_update=True)
 
     def renameSelectedItem(self, item, old_value, new_value):
         """
