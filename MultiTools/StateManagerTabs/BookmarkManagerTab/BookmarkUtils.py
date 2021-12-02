@@ -1,6 +1,5 @@
 from Katana import UI4, ScenegraphBookmarkManager, NodegraphAPI, Utils
 
-
 class BookmarkUtils(object):
     WORKING_SETS_TO_SAVE = ["liveRenderUpdates", "render", "scenegraphExpansion", "scenegraphPinning", "scenegraphSelection", "viewerVisibility"]
     BOOKMARK = "bookmark"
@@ -143,3 +142,17 @@ class BookmarkUtils(object):
         bookmark_param = BookmarkUtils.getBookmarkParamFromFullName(old_full_name)
         bookmark_param.setName(new_full_name)
         bookmark_param.getChild("name").setValue(new_full_name, 0)
+
+    """ DISPLAY """
+    @staticmethod
+    def updateLastActiveBookmarkDisplays(last_active_bookmark):
+        """Sets the last active bookmark meta data, and updates all tabs
+
+        Args:
+            last_active_bookmark (str):"""
+
+        # update attrs
+        for tab in UI4.App.Tabs.GetTabsByType("Bookmark Manager"):
+            tab.setLastActiveBookmark(last_active_bookmark)
+        for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+            tab.viewWidget().bookmarksViewWidget().setLastActiveBookmark(last_active_bookmark)

@@ -86,23 +86,32 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
         self._main_widget.setUpdateEvent(self.updateBookmarkEvent)
         self._main_widget.setCreateNewFolderEvent(self.createNewFolder)
 
-        Utils.EventModule.RegisterCollapsedHandler(self.update, 'nodegraph_loadEnd', None)
+        Utils.EventModule.RegisterCollapsedHandler(self.newScene, 'nodegraph_loadEnd', None)
+        if hasattr(widgetutils.katanaMainWindow(), "_last_active_bookmark"):
+            full_name = widgetutils.katanaMainWindow()._last_active_bookmark
+            self.setLastActiveBookmark(full_name)
 
     def __name__(self):
         return BookmarkManagerTab.NAME
 
     """ UTILS """
     def lastActiveBookmark(self):
+        return widgetutils.katanaMainWindow()._last_active_bookmark
 
-        return self.mainWidget().lastActiveWidget().text()
+    def setLastActiveBookmark(self, last_active_bookmark):
+        self.mainWidget().lastActiveWidget().setText(last_active_bookmark)
 
-    def update(self, *args):
+    def newScene(self, *args):
+        widgetutils.katanaMainWindow()._last_active_bookmark = None
+        self.update()
+
+    def update(self):
         self.organizerWidget().update()
 
         # get active text
         if hasattr(widgetutils.katanaMainWindow(), "_last_active_bookmark"):
             full_name = widgetutils.katanaMainWindow()._last_active_bookmark
-            self.mainWidget().lastActiveWidget().setText(full_name)
+            self.setLastActiveBookmark(full_name)
 
     """ EVENTS """
     def updateBookmarkEvent(self):
@@ -140,9 +149,7 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
                         bookmark on katanaMainWindow()._last_active_bookmark"""
                         SBM.LoadBookmark(bookmark)
 
-                        # update attrs
-                        self.mainWidget().lastActiveWidget().setText(full_name)
-
+                        BookmarkUtils.updateLastActiveBookmarkDisplays(full_name)
                         return
 
         print("No bookmark found to load...")
