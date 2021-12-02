@@ -423,7 +423,7 @@ def getAllGSVViewWidgets():
         # get a list of all of the widgets
         popup_widgets = tab.popupBarDisplayWidget().allWidgets()
 
-        #
+        # todo update popup bar widgets
         for widget in popup_widgets:
             popup_widget = widget.popupWidget()
             if hasattr(popup_widget, "__name__"):
@@ -445,7 +445,7 @@ def getAllGSVEventsWidgets():
     # update GUIs
     for tab in UI4.App.Tabs.GetTabsByType("GSV Manager"):
         widgets.append(tab.eventsWidget())
-
+    # todo update popup bar widgets
     for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
         popup_widgets = tab.popupBarDisplayWidget().allWidgets()
 

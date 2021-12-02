@@ -147,8 +147,8 @@ class StateManagerTab(UI4.Tabs.BaseTab):
         self.viewWidget().bookmarksViewWidget().update()
 
     def setLastActive(self, last_active):
-        self.viewWidget().stateViewWidget().lastActiveWidget().setText(last_active)
-        self.createWidget().lastActiveWidget().setText(last_active)
+        self.viewWidget().stateViewWidget().setLastActive(last_active)
+        self.createWidget().setLastActive(last_active)
 
     """ WIDGETS """
     def mainWidget(self):
@@ -317,10 +317,22 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 SBM.LoadBookmark(bookmark)
 
         # set last active
+        last_active_state = self.getItemFullName(item)
         for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
-            full_name = self.getItemFullName(item)
-            tab.setLastActive(full_name)
+            tab.setLastActive(last_active_state)
 
+        # todo update popup bar widgets
+        for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
+            # get a list of all of the widgets
+            popup_widgets = tab.popupBarDisplayWidget().allWidgets()
+
+            for widget in popup_widgets:
+                popup_widget = widget.popupWidget()
+                if hasattr(popup_widget, "__name__"):
+                    if popup_widget.__name__() == "State Manager":
+                        popup_widget.setLastActive(last_active_state)
+                        # popup_widget.viewWidget().stateViewWidget().setLastActive(last_active_state)
+                        # popup_widget.createWidget().setLastActive(last_active_state)
         return True
 
     def __stateSelectedEvent(self, item, enabled):
@@ -408,6 +420,9 @@ class StateManagerEditorMainWidget(ShojiLayout):
         self._viewer_widget = StateManagerItemViewWidget(self)
         self.addWidget(self._editor_widget)
         self.addWidget(self._viewer_widget)
+
+    def setLastActive(self, last_active):
+        self.editorWidget().setLastActive(last_active)
 
     def showItemDetails(self, item):
         """ When an item in the organizer is selected, this will update the view to display that items settings"""

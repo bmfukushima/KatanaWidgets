@@ -62,6 +62,10 @@ class AbstractStateManagerTab(QWidget):
         self.layout().setStretch(0, 0)
         self.layout().setStretch(1, 0)
 
+    """ UTILS """
+    def setLastActive(self, last_active):
+        self.lastActiveWidget().setText(last_active)
+
     """ SETUP WIDGETS """
     def setOrganizerWidget(self, organizer_widget):
         """Sets the organizer widget to the one provided"""

@@ -156,7 +156,7 @@ class BookmarkUtils(object):
             tab.setLastActiveBookmark(last_active_bookmark)
         for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
             tab.viewWidget().bookmarksViewWidget().setLastActiveBookmark(last_active_bookmark)
-
+        # todo update popup bar widgets
         for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
             # get a list of all of the widgets
             popup_widgets = tab.popupBarDisplayWidget().allWidgets()

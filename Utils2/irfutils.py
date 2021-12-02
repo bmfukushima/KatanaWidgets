@@ -93,6 +93,7 @@ def getAllIRFTabs():
     for tab in UI4.App.Tabs.GetTabsByType("IRF Manager"):
         widgets.append(tab)
 
+    # todo update popup bar widgets
     for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
         popup_widgets = tab.popupBarDisplayWidget().allWidgets()
 
