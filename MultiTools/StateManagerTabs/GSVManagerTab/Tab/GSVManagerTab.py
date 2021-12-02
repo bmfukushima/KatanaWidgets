@@ -238,10 +238,12 @@ class GSVViewWidget(FrameInputWidgetContainer):
         Args:
             gsv (str): name of GSV to create
         """
+        print('add gsv', gsv)
         widget = ViewGSVWidget(self, name=gsv)
         widget.delegateWidget().setText(gsvutils.getGSVValue(gsv))
         self.addInputWidget(widget)
         self.widgets()[gsv] = widget
+        print("end")
 
     def removeWidget(self, gsv):
         # remove widget
@@ -507,6 +509,10 @@ class GSVSelectorWidget(LabelledInputWidget):
                 if param.getName() != gsv:
                     self.delegateWidget().setText(param.getName())
 
+                # # todo why is this necessary
+                # main_widget = getWidgetAncestor(self, GSVManagerTab)
+                # main_widget.viewWidget().addWidget(gsv)
+
             # Update options available to the user
             if hasattr(main_widget, '_edit_widget'):
                 edit_widget.displayEditableOptionsWidget().update()
@@ -564,6 +570,7 @@ class CreateNewGSVOptionWidget(LabelledInputWidget):
             value (str): value being set
         """
         main_widget = getWidgetAncestor(self, GSVManagerTab)
+
         edit_widget = main_widget.editWidget()
         current_gsv_text = str(edit_widget.text())
 
@@ -592,8 +599,9 @@ class CreateNewGSVOptionWidget(LabelledInputWidget):
                 # create new GSV in katana
                 param = gsvutils.createNewGSV(gsv)
 
+                # todo why is this necessary
                 # create new entry in the view widget
-                main_widget.viewWidget().addWidget(gsv)
+                # main_widget.viewWidget().addWidget(gsv)
 
                 # get new entry text
                 new_entry_text = gsv

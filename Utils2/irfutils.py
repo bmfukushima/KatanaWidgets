@@ -94,7 +94,8 @@ def getAllIRFTabs():
         widgets.append(tab)
 
     for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
-        popup_widgets = tab.popupBarDisplayWidget().widgets()
+        popup_widgets = tab.popupBarDisplayWidget().allWidgets()
+
         for widget in popup_widgets:
             popup_widget = widget.popupWidget()
             if hasattr(popup_widget, "__name__"):

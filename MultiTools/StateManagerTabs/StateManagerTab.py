@@ -1,7 +1,6 @@
 """
 Todo:
     *   Clear last active data on scene load
-    *   IRF Activated Widgets going wonky
     *   Import / Export
     *   View Tab, change to activation
     *   New Button

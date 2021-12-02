@@ -218,7 +218,7 @@ def installGSVManagerEvents(*args, **kwargs):
     # EventWidget.createGSVEventsParam()
     Utils.UndoStack.DisableCapture()
 
-    gsvutils.hideEngineersGSVUI()
+    # gsvutils.hideEngineersGSVUI()
     #Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, createDataParamsOnSceneLoad)
 
     # Utils.EventModule.RegisterCollapsedHandler(updateGSVsOnSceneLoad, 'nodegraph_setRootNode')

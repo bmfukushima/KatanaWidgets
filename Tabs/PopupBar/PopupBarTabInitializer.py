@@ -45,17 +45,25 @@ def createConstructor(filepath, popup_bar_widget_name):
         def popupBarDisplayWidget(self):
             return self._popup_bar_display_widget
 
-        def popupWidget(self):
+        def popupBarWidget(self):
             return self.popupBarDisplayWidget().popupBarWidget()
 
+        def widgets(self):
+            return self.popupBarDisplayWidget().widgets()
+
+        def enlargedWidget(self):
+            return self.popupBarWidget().enlargedWidget()
+
         def isEnlarged(self):
-            return self.popupWidget().isEnlarged()
+            return self.popupBarWidget().isEnlarged()
 
         def displayMode(self):
-            return self.popupWidget().displayMode()
+            return self.popupBarWidget().displayMode()
 
         def closeEnlargedView(self):
-            self.popupWidget().closeEnlargedView()
+            self.popupBarWidget().closeEnlargedView()
+
+
 
     return PopupBarDisplayTab
 

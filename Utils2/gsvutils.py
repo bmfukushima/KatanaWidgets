@@ -420,7 +420,10 @@ def getAllGSVViewWidgets():
         widgets.append(tab.viewWidget().gsvViewWidget())
 
     for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
-        popup_widgets = tab.popupBarDisplayWidget().widgets()
+        # get a list of all of the widgets
+        popup_widgets = tab.popupBarDisplayWidget().allWidgets()
+
+        #
         for widget in popup_widgets:
             popup_widget = widget.popupWidget()
             if hasattr(popup_widget, "__name__"):
@@ -444,7 +447,8 @@ def getAllGSVEventsWidgets():
         widgets.append(tab.eventsWidget())
 
     for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
-        popup_widgets = tab.popupBarDisplayWidget().widgets()
+        popup_widgets = tab.popupBarDisplayWidget().allWidgets()
+
         for widget in popup_widgets:
             popup_widget = widget.popupWidget()
             if hasattr(popup_widget, "__name__"):
@@ -467,7 +471,9 @@ def addGSVToAllViewTabs(gsv):
     view_widgets = getAllGSVViewWidgets()
 
     for view_widget in view_widgets:
+        print(view_widget)
         if gsv not in view_widget.widgets().keys():
+            print("=== add ===", gsv)
             view_widget.addWidget(gsv)
 
 
@@ -476,7 +482,10 @@ def removeGSVFromAllViewTabs(gsv):
     view_widgets = getAllGSVViewWidgets()
 
     for view_widget in view_widgets:
+
         if gsv not in view_widget.widgets().keys():
+            print("=== remove ===", gsv, view_widget)
+
             view_widget.removeWidget(gsv)
 
 
