@@ -155,7 +155,7 @@ def deleteGSV(gsv):
     gsv_param = getGSVParameter(gsv)
     getVariablesParameter().deleteChild(gsv_param)
 
-    removeGSVFromAllViewTabs(gsv)
+    # removeGSVFromAllViewTabs(gsv)
 
 
 def getAllGSV(return_as=STRING):
@@ -471,9 +471,7 @@ def addGSVToAllViewTabs(gsv):
     view_widgets = getAllGSVViewWidgets()
 
     for view_widget in view_widgets:
-        print(view_widget)
         if gsv not in view_widget.widgets().keys():
-            print("=== add ===", gsv)
             view_widget.addWidget(gsv)
 
 
@@ -482,10 +480,7 @@ def removeGSVFromAllViewTabs(gsv):
     view_widgets = getAllGSVViewWidgets()
 
     for view_widget in view_widgets:
-
-        if gsv not in view_widget.widgets().keys():
-            print("=== remove ===", gsv, view_widget)
-
+        if gsv in view_widget.widgets().keys():
             view_widget.removeWidget(gsv)
 
 
