@@ -331,8 +331,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 if hasattr(popup_widget, "__name__"):
                     if popup_widget.__name__() == "State Manager":
                         popup_widget.setLastActive(last_active_state)
-                        # popup_widget.viewWidget().stateViewWidget().setLastActive(last_active_state)
-                        # popup_widget.createWidget().setLastActive(last_active_state)
+
         return True
 
     def __stateSelectedEvent(self, item, enabled):

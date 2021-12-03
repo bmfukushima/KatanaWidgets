@@ -47,7 +47,7 @@ class KatanaLauncherWidget(QWidget):
             plugins = {}
         self._plugins = plugins
 
-        self.default_katana_version = '5.0v1b1'
+        self.default_katana_version = '5.0v1b2'
         self.default_render_engine = 'prman'
         self.default_render_engine_version = '24.1'
 
@@ -402,7 +402,15 @@ class KatanaLauncherWidget(QWidget):
 
         # additional 2.7 libs
         # os.environ["PYTHONPATH"] += ":/usr/local/lib/python2.7/dist-packages"
-
+        """
+        The NUKE_PATH environment variable appends the plugins/Resources/Nuke subdirectory of the Katana root.
+        The PATH environment variable appends the plugins/Resources/Nuke/bin subdirectory of the Katana root.
+        """
+        # nuke executable
+        os.environ["PATH"] += "{KATANA_ROOT}/plugins/Resources/Nuke/bin".format(KATANA_ROOT=self.katanaRoot())
+        os.environ["NUKE_PATH"] = "{KATANA_ROOT}/plugins/Resources/Nuke".format(KATANA_ROOT=self.katanaRoot())
+        #os.environ["KATANA_NUKE_EXECUTABLE"] = "/opt/nuke/13.0v6/Nuke13.0"
+        os.environ["KATANA_NUKE_EXECUTABLE"] = "/opt/nuke/13.1v1/Nuke13.1"
         # # launch katana instance
         subprocess.Popen([self.katana_bin])
         self.close()

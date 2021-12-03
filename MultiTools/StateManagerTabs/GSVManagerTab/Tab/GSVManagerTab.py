@@ -2,6 +2,7 @@
 TODO:
     * Handler for user popup bar widgets
         - gsvutils --> getAllGSVViewWidgets, getAllGSVEventsWidgets
+
 TODO CLEANUP:
     *   GSV Updates (GSVEventWidget)
             Move to model

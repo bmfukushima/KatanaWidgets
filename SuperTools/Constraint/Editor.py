@@ -226,9 +226,10 @@ class ConstraintTypeWidget(ListInputWidget, iParameter):
 
         # create / update node
         constraint_node = NodegraphAPI.CreateNode(node_type, this_node)
+        NodegraphAPI.SetNodePosition(constraint_node, (0, -100))
 
         # connect node
-        constraint_node.getInputPortByIndex(0).connect(this_node.getSendPort("in"))
+        constraint_node.getInputPortByIndex(0).connect(this_node.constraintResolveNode().getOutputPortByIndex(0))
         constraint_node.getOutputPortByIndex(0).connect(this_node.constraintDotNode().getInputPortByIndex(0))
 
         # delete old node

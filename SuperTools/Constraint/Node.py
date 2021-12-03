@@ -67,6 +67,7 @@ class ConstraintNode(AbstractSuperToolNode):
         # create nodes
 
         # create temp constraint node
+        self._constraint_resolve_node = NodegraphAPI.CreateNode("ConstraintResolve", self)
         self._constraint_node = NodegraphAPI.CreateNode("Dot", self)
         self._constraint_node.getParameters().createChildString("basePath", "")
         self._constraint_node.getParameters().createChildString("targetPath", "")
@@ -77,7 +78,9 @@ class ConstraintNode(AbstractSuperToolNode):
         self.__setupMaintainOffsetNodes()
 
         # connect nodes
-        self.getSendPort("in").connect(self._constraint_node.getInputPortByIndex(0))
+        self.getSendPort("in").connect(self._constraint_resolve_node.getInputPortByIndex(0))
+        self._constraint_resolve_node.getOutputPortByIndex(0).connect(self._constraint_node.getInputPortByIndex(0))
+
         self._constraint_node.getOutputPortByIndex(0).connect(self._constraint_dot_node.getInputPortByIndex(0))
         self._constraint_dot_node.getOutputPortByIndex(0).connect(self._stack_order_switch_node.getInputPortByIndex(0))
 
@@ -87,24 +90,26 @@ class ConstraintNode(AbstractSuperToolNode):
         self._transfer_xform_node.getOutputPortByIndex(0).connect(self._stack_order_switch_node.getInputPortByIndex(1))
 
         # connect nodes (maintain offset)
-        self._maintain_offset_script_node.getInputPortByIndex(1).connect(self.getSendPort("in"))
+        self._maintain_offset_script_node.getInputPortByIndex(1).connect(self._constraint_resolve_node.getOutputPortByIndex(0))
         self._stack_order_switch_node.getOutputPortByIndex(0).connect(self._maintain_offset_script_node.getInputPortByIndex(0))
         self._stack_order_switch_node.getOutputPortByIndex(0).connect(self._maintain_offset_switch_node.getInputPortByIndex(0))
         self._maintain_offset_script_node.getOutputPortByIndex(0).connect(self._maintain_offset_switch_node.getInputPortByIndex(1))
         self._maintain_offset_switch_node.getOutputPortByIndex(0).connect(self.getReturnPort("out"))
 
         # place nodes
-        NodegraphAPI.SetNodePosition(self._constraint_dot_node, (0, -100))
-        NodegraphAPI.SetNodePosition(self._duplicate_xform_node, (0, -200))
-        NodegraphAPI.SetNodePosition(self._transfer_xform_node, (0, -300))
-        NodegraphAPI.SetNodePosition(self._stack_order_switch_node, (0, -400))
-        NodegraphAPI.SetNodePosition(self._maintain_offset_script_node, (0, -500))
-        NodegraphAPI.SetNodePosition(self._maintain_offset_switch_node, (0, -600))
+        NodegraphAPI.SetNodePosition(self._constraint_node, (0, -100))
+        NodegraphAPI.SetNodePosition(self._constraint_dot_node, (0, -200))
+        NodegraphAPI.SetNodePosition(self._duplicate_xform_node, (0, -300))
+        NodegraphAPI.SetNodePosition(self._transfer_xform_node, (0, -400))
+        NodegraphAPI.SetNodePosition(self._stack_order_switch_node, (0, -500))
+        NodegraphAPI.SetNodePosition(self._maintain_offset_script_node, (0, -600))
+        NodegraphAPI.SetNodePosition(self._maintain_offset_switch_node, (0, -700))
 
         self.__setupParams()
 
     def __setupParams(self):
         node_reference_param = self.getParameters().createChildGroup("NodeReference")
+        paramutils.createNodeReference("ConstraintResolveNode", self._constraint_resolve_node, node_reference_param)
         paramutils.createNodeReference("ConstraintNode", self._constraint_node, node_reference_param)
         paramutils.createNodeReference("ConstraintDotNode", self._constraint_dot_node, node_reference_param)
         paramutils.createNodeReference("DuplicateXFormNode", self._duplicate_xform_node, node_reference_param)
@@ -369,8 +374,59 @@ elseif stack_order == 1 then
     end
 end
 
+--[[Searches the XForm attribute to determine a unique name for adding this attribute
+to the xform stack.]]
 
-Interface.SetAttr("xform.group0.matrix", DoubleAttribute(rebuilt_offset_mat:toTable(),16))
+local function has_value (tab, val)
+    -- Checks to see if the value exists in the table
+    for index, value in ipairs(tab) do
+        if value == val then
+            return true
+        end
+    end
+
+    return false
+end
+
+
+local function isInteger(str)
+    -- Determines if a str is an integer
+    return not (str == "" or str:find("%D"))  -- str:match("%D") also works
+  
+end
+
+
+local function getUniqueGroupName()
+
+    local xform_attr = Interface.GetAttr("xform")
+    local num_children = xform_attr:getNumberOfChildren()
+    local unique_xform_name = "group"
+    local xform_names = {}
+
+    for var=0,num_children-1 do
+        local child = xform_attr:getChildByIndex(var)
+        local child_name = xform_attr:getChildName(var)
+        table.insert(xform_names, child_name)
+
+    end
+
+    while has_value(xform_names, unique_xform_name) do
+        local string_length = string.len(unique_xform_name)
+        local last_char = string.sub(unique_xform_name, string_length)
+        if isInteger(last_char) then
+            local suffix = tostring(tonumber(last_char) + 1)
+            unique_xform_name = string.sub(unique_xform_name, 1, string_length-1) .. suffix
+        else
+            unique_xform_name = string.sub(unique_xform_name, 1, string_length) .. "0"
+        end
+
+    end
+
+    return unique_xform_name
+end
+
+local xform_name = getUniqueGroupName()
+Interface.SetAttr("xform.".. xform_name .. ".matrix", DoubleAttribute(rebuilt_offset_mat:toTable(),16))
                 """, 0)
 
         # setup switch node
@@ -390,6 +446,9 @@ Interface.SetAttr("xform.group0.matrix", DoubleAttribute(rebuilt_offset_mat:toTa
 
     def constraintDotNode(self):
         return NodegraphAPI.GetNode(self.getParameter("NodeReference.ConstraintDotNode").getValue(0))
+
+    def constraintResolveNode(self):
+        return NodegraphAPI.GetNode(self.getParameter("NodeReference.ConstraintResolveNode").getValue(0))
 
     """ NODES ( STACK ORDER ) """
     def duplicateXFormNode(self):
