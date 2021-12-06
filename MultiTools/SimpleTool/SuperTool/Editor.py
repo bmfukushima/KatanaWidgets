@@ -57,8 +57,6 @@ from cgwidgets.views import AbstractDragDropListView
 from Katana import UI4, Utils
 from Widgets2 import (TwoFacedSuperToolWidget, SimpleToolEventWidget, GroupNodeEditorWidget)
 
-# from .GroupNodeEditor import GroupNodeEditorMainWidget
-
 
 class SimpleToolEditor(TwoFacedSuperToolWidget):
     """
@@ -118,8 +116,8 @@ class SimpleToolParamViewWidget(QWidget):
 
         self._node = node
         self._live_group_widget = QLabel("Live Group (Place holder)")
+        # from Widgets2 import AbstractNodegraphWidget
         self._group_node_editor_widget = GroupNodeEditorWidget(self, node=self._node)
-
         self.layout().addWidget(self._live_group_widget)
         self.layout().addWidget(self._group_node_editor_widget)
 

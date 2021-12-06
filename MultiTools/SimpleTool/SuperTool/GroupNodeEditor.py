@@ -70,14 +70,14 @@ class GroupNodeEditor(ShojiLayout):
 
 
 class NodegraphWidget(AbstractNodegraphWidget):
-    def __init__(self, parent=None, node=None):
-        super(NodegraphWidget, self).__init__(parent)
+    def __init__(self, parent=None, node=None, display_menus=True):
+        super(NodegraphWidget, self).__init__(parent, parent=None, display_menus=display_menus, node=node)
         # setup attrs
-        self.setNode(node)
+        # self.setNode(node)
 
-        AbstractNodegraphWidget.displayMenus(False, self.getPanel())
-        self.enableScrollWheel(False)
-        self.goToNode(node.getChildByIndex(0))
+        #AbstractNodegraphWidget.displayMenus(False, self.getPanel())
+        #self.enableScrollWheel(False)
+        # self.goToNode(node.getChildByIndex(0))
         #self.setupDestroyNodegraphEvent()
 
 

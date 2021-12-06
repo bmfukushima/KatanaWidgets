@@ -9,6 +9,7 @@ from qtpy.QtCore import QEvent, Qt
 
 try:
     from Katana import NodeGraphView, UI4, Utils
+    from UI4.App import Tabs
 except ModuleNotFoundError:
     pass
 
@@ -39,13 +40,16 @@ class AbstractNodegraphWidget(QWidget):
     def __init__(self, parent=None, display_menus=True, node=None):
         super(AbstractNodegraphWidget, self).__init__(parent)
         QVBoxLayout(self)
-
+        # from qtpy.QtWidgets import QLabel
+        # self.layout().addWidget(QLabel("test"))
         # set up attrs
         self.setNode(node)
         self._is_scrolling = False
 
         # create node graph
-        self.setTab(self.__createNodegraph())
+        self._nodegraph_panel = self.createNodegraph()
+        self._nodegraph_widget = self._nodegraph_panel.getNodeGraphWidget()
+        self.layout().addWidget(self._nodegraph_panel)
 
         # setup nodegraph display
         panel = self.getPanel()
@@ -66,17 +70,17 @@ class AbstractNodegraphWidget(QWidget):
         # display menus
         self.displayMenus(display_menus, panel)
 
-    @staticmethod
-    def __createNodegraph():
+    def createNodegraph(self):
         """
         Creates the the nodegraph widget.
 
         Returns (NodegraphWidget)
         """
-        tab_with_timeline = UI4.App.Tabs.CreateTab('Node Graph', None)
-        nodegraph_tab = tab_with_timeline
+        plugins = Tabs._LoadedTabPluginsByTabTypeName
+        parent = self
+        nodegraph_widget = plugins["Node Graph"].data(parent)
 
-        return nodegraph_tab
+        return nodegraph_widget
 
     @staticmethod
     def displayMenus(value, nodegraph_widget):
@@ -208,18 +212,18 @@ class AbstractNodegraphWidget(QWidget):
         Essentially there is a private class attr on the Node Graph Widget called
         __nodegraphWidgetList which needs to have the nodegraph removed from it,
         or else it will let you know that its been destroyed
+
+        todo:
+            cleanup is causing the NMC context to crash
+            this normally happens on copy/paste
         """
         # get node graph widget
+        # print("clean up nodegraphs")
         nodegraph_widget = self.getWidget()
 
         # clean up
-        # ToDo Somehow this line of code breaks the NMC Context...
-        """ For some reason calling this class method calls it NO MATTER WHAT...
-        and apparently I don't need it... so fuck it"""
-        try:
-            nodegraph_widget.cleanup()
-        except:
-            pass
+        """ Todo disabling cleanup... as its causing the NMC Context to crash"""
+        # nodegraph_widget.cleanup()
 
     def closeEvent(self, event):
         self.destroyNodegraph()
@@ -238,14 +242,14 @@ class AbstractNodegraphWidget(QWidget):
     def getPanel(self):
         return self._nodegraph_panel
 
-    def setTab(self, nodegraph_tab):
-        self.layout().addWidget(nodegraph_tab)
-        self._nodegraph_tab = nodegraph_tab
-        self.setPanel(nodegraph_tab.getWidget())
-        self.setWidget(self.getPanel().getNodeGraphWidget())
-
-    def getTab(self):
-        return self._nodegraph_tab
+    # def setTab(self, nodegraph_tab):
+    #     self.layout().addWidget(nodegraph_tab)
+    #     self._nodegraph_tab = nodegraph_tab
+    #     self.setPanel(nodegraph_tab.getWidget())
+    #     self.setWidget(self.getPanel().getNodeGraphWidget())
+    #
+    # def getTab(self):
+    #     return self._nodegraph_tab
 
     def setWidget(self, nodegraph_widget):
         self._nodegraph_widget = nodegraph_widget
