@@ -47,8 +47,9 @@ class AbstractNodegraphWidget(QWidget):
         self._is_scrolling = False
 
         # create node graph
-        self._nodegraph_panel = self.createNodegraph()
-        self._nodegraph_widget = self._nodegraph_panel.getNodeGraphWidget()
+        self._nodegraph_tab    = self.createNodegraph()
+        self._nodegraph_panel  = self._nodegraph_tab.getWidget()
+        self._nodegraph_widget = self._nodegraph_tab.getWidget().getNodeGraphWidget()
         self.layout().addWidget(self._nodegraph_panel)
 
         # setup nodegraph display
@@ -76,11 +77,14 @@ class AbstractNodegraphWidget(QWidget):
 
         Returns (NodegraphWidget)
         """
-        plugins = Tabs._LoadedTabPluginsByTabTypeName
-        parent = self
-        nodegraph_widget = plugins["Node Graph"].data(parent)
+        # plugins = Tabs._LoadedTabPluginsByTabTypeName
+        # parent = self
+        # nodegraph_widget = plugins["Node Graph"].data(parent)
 
-        return nodegraph_widget
+        nodegraph_tab = UI4.App.Tabs.CreateTab('Node Graph', None)
+        # nodegraph_tab.show()
+
+        return nodegraph_tab
 
     @staticmethod
     def displayMenus(value, nodegraph_widget):
