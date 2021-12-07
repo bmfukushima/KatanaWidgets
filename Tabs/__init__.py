@@ -2,6 +2,7 @@ from .DesiredStuffTab import DesiredStuffTab
 from .PopupBar import PopupBarOrganizerTab
 from MultiTools import GlobalEventsTab, ScriptEditorTab, NodeColorRegistryTab
 from MultiTools.StateManagerTabs import StateManagerTab, GSVManagerTab, IRFManagerTab, BookmarkManagerTab
+from .TXMake import TXConverterTab
 
 # compile list of tabs
 tabs_list = [
@@ -13,7 +14,8 @@ tabs_list = [
     NodeColorRegistryTab.Tab,
     PopupBarOrganizerTab,
     ScriptEditorTab.Tab,
-    StateManagerTab
+    StateManagerTab,
+    TXConverterTab
 ]
 
 # register all tabs
