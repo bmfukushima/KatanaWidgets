@@ -150,16 +150,12 @@ class ParametersMenu(QMenu):
         display_mode_param.setValue(index, 0)
 
         # update display
-
         editor.setDisplayMode(index)
         # get editor here...
         pass
 
     def toggleNodeShapeWidget(self):
-        """
-        Toggles between dispalying and hidnig the shape nodes adjustment
-        widget.
-        """
+        """Toggles between dispalying and hidnig the shape nodes adjustment widget."""
         form_widget = self.parent().parent()
 
         # create widget if it doesnt exist

@@ -77,13 +77,11 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.getDesignWidget().setDelegateTitleIsShown(False)
 
         # create widgets
-        self._user_params_widget = QWidget(self)
         self._params_widget = SimpleToolParamViewWidget(self, node=self.main_node)
         self._events_widget = SimpleToolEventWidget(self, node=self.node())
 
         # setup tabs
-        self.getDesignWidget().insertShojiWidget(
-            0, column_data={'name':"Params (User)"}, widget=self.paramsWidget())
+
         self.getDesignWidget().insertShojiWidget(
             1, column_data={'name':"Params (Group)"}, widget=self.paramsWidget())
         self.getDesignWidget().insertShojiWidget(
@@ -96,7 +94,6 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
         # setup events
 
-
     def showEvent(self, event):
         self.getDesignWidget().show()
         return TwoFacedSuperToolWidget.showEvent(self, event)
@@ -107,7 +104,6 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
     def paramsWidget(self):
         return self._params_widget
-
 
 class SimpleToolViewWidget(AbstractDragDropListView):
     def __init__(self, parent=None):

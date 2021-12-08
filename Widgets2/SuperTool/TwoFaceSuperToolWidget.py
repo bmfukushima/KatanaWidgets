@@ -8,6 +8,7 @@ except ModuleNotFoundError:
 from .AbstractSuperToolEditor import AbstractSuperToolEditor
 
 from cgwidgets.widgets import ShojiModelViewWidget
+from cgwidgets.utils import getWidgetAncestor
 
 
 class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
@@ -52,6 +53,10 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
         self.insertResizeBar()
         self.removeResizeEventFilter()
 
+        self._user_params_widget = UserParametersWidget(self)
+        self.getDesignWidget().insertShojiWidget(
+            0, column_data={'name':"Params (User)"}, widget=self.userParametersWidget())
+
     def showEvent(self, event):
         self.setDisplayMode(self.displayMode())
         return AbstractSuperToolEditor.showEvent(self, event)
@@ -83,6 +88,10 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
             self.getDesignWidget().hide()
             self.resizeBarWidget().hide()
 
+    """ WIDGETS """
+    def userParametersWidget(self):
+        return self._user_params_widget
+
     def getDesignWidget(self):
         return self._design_widget
 
@@ -94,3 +103,25 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
     def setHeaderViewWidget(self, view_widget):
         self._view_widget = view_widget
+
+
+class UserParametersWidget(QWidget):
+    def __init__(self, parent=None):
+        super(UserParametersWidget, self).__init__(parent)
+
+    """ EVENTS """
+    #TODO: copy paste from TwoFacedSuperToolWidget.setDisplayMode
+    def showEvent(self, event):
+        two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
+        two_faced_supertool_widget.setFixedHeight(1)
+        two_faced_supertool_widget.removeResizeEventFilter()
+        two_faced_supertool_widget.resizeBarWidget().hide()
+
+        return QWidget.showEvent(self, event)
+
+    def hideEvent(self, event):
+        two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
+        two_faced_supertool_widget.installResizeEventFilter()
+        two_faced_supertool_widget.resizeBarWidget().show()
+        two_faced_supertool_widget.getDesignWidget().setHeaderWidgetToDefaultSize()
+        return QWidget.hideEvent(self, event)
