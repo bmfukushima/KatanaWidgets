@@ -1,3 +1,12 @@
+"""
+SuperToolFormWidget
+--> NodeGroupFormWidget
+--> HideTitleGroupFormWidget
+--> QT4FormWidgets.GroupFormWidget
+--> QT4FormWidgets.FormWidget
+--> QtWidget
+"""
+
 from qtpy.QtWidgets import (QWidget, QStackedWidget, QVBoxLayout, QLabel, QStackedLayout)
 from qtpy.QtCore import Qt
 
@@ -68,6 +77,11 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
                 return
 
         self.setDisplayMode(self.displayMode())
+
+        for tab in UI4.App.Tabs.GetTabsByType('Parameters'):
+            pointed_widget = tab.getPointedWidget()
+            popdownWidget = pointed_widget.getPopdownWidget()
+            popdownWidget.layout().setAlignment(Qt.AlignTop)
         return AbstractSuperToolEditor.showEvent(self, event)
 
     """ PROPERTIES """
@@ -120,12 +134,6 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
     def setDesignWidget(self, design_widget):
         self._design_widget = design_widget
 
-    # def getViewWidget(self):
-    #     return self._view_widget
-    #
-    # def setHeaderViewWidget(self, view_widget):
-    #     self._view_widget = view_widget
-
 
 class UserParametersWidget(QWidget):
     def __init__(self, parent=None):
@@ -134,7 +142,6 @@ class UserParametersWidget(QWidget):
         two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
         user_param = two_faced_supertool_widget.createKatanaParam("user")
         self.layout().addWidget(user_param)
-        # self.layout().addWidget(QLabel("test"))
 
     """ EVENTS """
     # todo add freeze toggle, so I can just hide this...
@@ -146,17 +153,9 @@ class UserParametersWidget(QWidget):
         two_faced_supertool_widget.resizeBarWidget().hide()
         two_faced_supertool_widget.setFixedHeight(two_faced_supertool_widget.designWidget().header_height)
 
-        # Utils.EventModule.ProcessAllEvents()
-        # QWidget.showEvent(self, event)
-        #
-        # a = UI4.App.Tabs.FindTopTab('Parameters')
-        # pointed_widget = a.getPointedWidget()
-        # pointed_widget.adjustSize()
-        #
-        # Utils.EventModule.ProcessAllEvents()
-
         self._is_frozen = False
-        # return QWidget.showEvent(self, event)
+
+        return QWidget.showEvent(self, event)
 
     def hideEvent(self, event):
         if not self._is_frozen:
@@ -167,4 +166,11 @@ class UserParametersWidget(QWidget):
             two_faced_supertool_widget.resizeBarWidget().show()
             two_faced_supertool_widget.designWidget().setHeaderWidgetToDefaultSize()
 
+            Utils.EventModule.ProcessAllEvents()
+            a = UI4.App.Tabs.FindTopTab('Parameters')
+            pointed_widget = a.getPointedWidget()
+
+            pointed_widget.setMinimumHeight(0)
+            pointed_widget.setMaximumHeight(2000)
+            #pointed_widget.adjustSize()
         return QWidget.hideEvent(self, event)
