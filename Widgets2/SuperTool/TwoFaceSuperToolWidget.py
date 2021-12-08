@@ -10,6 +10,8 @@ from .AbstractSuperToolEditor import AbstractSuperToolEditor
 from cgwidgets.widgets import ShojiModelViewWidget
 from cgwidgets.utils import getWidgetAncestor
 
+from Utils2 import getFontSize
+
 
 class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
     """
@@ -37,6 +39,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
                 --> Edit user parameters toggle?
         *   Wrench Icon | Publish/Edit modes?
                 NodeActionDelegate.UpdateWrenchMenuWithDelegates(menu, node, hints)
+        *   View widget doesn't exist anymore?
     """
     DESIGN = 0
     VIEW = 1
@@ -54,7 +57,7 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
         self.removeResizeEventFilter()
 
         self._user_params_widget = UserParametersWidget(self)
-        self.getDesignWidget().insertShojiWidget(
+        self.designWidget().insertShojiWidget(
             0, column_data={'name':"Params (User)"}, widget=self.userParametersWidget())
 
     def showEvent(self, event):
@@ -78,21 +81,21 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
         """
         self.node().getParameter("display_mode").setValue(display_mode, 0)
         if display_mode == TwoFacedSuperToolWidget.DESIGN:
-            self.getDesignWidget().show()
+            self.designWidget().show()
             self.installResizeEventFilter()
             self.resizeBarWidget().show()
-            self.getDesignWidget().setHeaderWidgetToDefaultSize()
+            self.designWidget().setHeaderWidgetToDefaultSize()
         elif display_mode == TwoFacedSuperToolWidget.VIEW:
             self.setFixedHeight(1)
             self.removeResizeEventFilter()
-            self.getDesignWidget().hide()
+            self.designWidget().hide()
             self.resizeBarWidget().hide()
 
     """ WIDGETS """
     def userParametersWidget(self):
         return self._user_params_widget
 
-    def getDesignWidget(self):
+    def designWidget(self):
         return self._design_widget
 
     def setDesignWidget(self, design_widget):
@@ -113,15 +116,20 @@ class UserParametersWidget(QWidget):
     #TODO: copy paste from TwoFacedSuperToolWidget.setDisplayMode
     def showEvent(self, event):
         two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
-        two_faced_supertool_widget.setFixedHeight(1)
         two_faced_supertool_widget.removeResizeEventFilter()
+        # two_faced_supertool_widget.designWidget().delegateScrollArea().hide()
+        # two_faced_supertool_widget.designWidget().delegateWidget().setFixedHeight(1)
+        two_faced_supertool_widget.setFixedHeight(two_faced_supertool_widget.designWidget().header_height)
         two_faced_supertool_widget.resizeBarWidget().hide()
-
         return QWidget.showEvent(self, event)
 
     def hideEvent(self, event):
         two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
         two_faced_supertool_widget.installResizeEventFilter()
+
+        two_faced_supertool_widget.designWidget().delegateScrollArea().show()
+        two_faced_supertool_widget.designWidget().delegateWidget().show()
         two_faced_supertool_widget.resizeBarWidget().show()
-        two_faced_supertool_widget.getDesignWidget().setHeaderWidgetToDefaultSize()
+
+        two_faced_supertool_widget.designWidget().setHeaderWidgetToDefaultSize()
         return QWidget.hideEvent(self, event)

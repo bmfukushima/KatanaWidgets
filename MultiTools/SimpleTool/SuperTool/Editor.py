@@ -74,7 +74,7 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.main_node = node.getChildByIndex(0)
 
         # self.events_param = self.main_node.getParameters().createChildString("events_data", "")
-        self.getDesignWidget().setDelegateTitleIsShown(False)
+        self.designWidget().setDelegateTitleIsShown(False)
 
         # create widgets
         self._params_widget = SimpleToolParamViewWidget(self, node=self.main_node)
@@ -82,20 +82,20 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
 
         # setup tabs
 
-        self.getDesignWidget().insertShojiWidget(
+        self.designWidget().insertShojiWidget(
             1, column_data={'name':"Params (Group)"}, widget=self.paramsWidget())
-        self.getDesignWidget().insertShojiWidget(
+        self.designWidget().insertShojiWidget(
             2, column_data={'name':'Events'}, widget=self.eventsWidget())
 
         # setup flags
-        self.getDesignWidget().setHeaderItemIsDraggable(False)
-        self.getDesignWidget().setHeaderItemIsDroppable(False)
-        self.getDesignWidget().setHeaderItemIsEditable(False)
+        self.designWidget().setHeaderItemIsDraggable(False)
+        self.designWidget().setHeaderItemIsDroppable(False)
+        self.designWidget().setHeaderItemIsEditable(False)
 
         # setup events
 
     def showEvent(self, event):
-        self.getDesignWidget().show()
+        self.designWidget().show()
         return TwoFacedSuperToolWidget.showEvent(self, event)
 
     """ WIDGETS """
