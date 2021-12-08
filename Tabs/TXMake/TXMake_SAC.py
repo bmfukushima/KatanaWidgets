@@ -74,6 +74,7 @@ These files will be saved in the same directory, and will have the flags set in 
 This will also try and update all of your image paths for every PrmanShadingNode""")
         self._convert_button.clicked.connect(self.convertSelectionAndUpdate)
 
+        conversion_map = {}
         # setup directory
         self._flags_layout = QHBoxLayout()
         self._flags_label = QLabel("Flags")
@@ -110,14 +111,17 @@ This will also try and update all of your image paths for every PrmanShadingNode
         Returns (dict): {old_file_path:new_file_path}
         """
         cwd = self.directory()
+        flags = self.flags()
+        conversion_map = {}
 
         # find txmake
         txmake_dir = os.environ["RMANTREE"] + "/bin"
-        os.chdir(txmake_dir)
+        if platform.system() == 'Windows':
+            os.chdir(txmake_dir)
+            txmake = "txmake"
+        elif platform.system() == "Linux":
+            txmake = txmake_dir + "/txmake"
 
-        flags = self.flags()
-
-        conversion_map = {}
         # open subprocess
         for index in self.filesListWidget().selectedIndexes():
 
@@ -129,7 +133,8 @@ This will also try and update all of your image paths for every PrmanShadingNode
             converted_name = os.path.join(cwd, (file_name + '.tx')).replace("\\", "/")
             conversion_map[orig_name] = converted_name
 
-            cmd = "txmake {FLAGS} {SRC} {DEST}".format(
+            cmd = "{TXMAKE} {FLAGS} {SRC} {DEST}".format(
+                TXMAKE=txmake,
                 FLAGS=flags,
                 SRC=orig_name,
                 DEST=converted_name
@@ -226,4 +231,4 @@ class FileBrowserInputWidget(QLineEdit):
         return QLineEdit.event(self, event, *args, **kwargs)
 
 
-# PluginRegistry = [("KatanaPanel", 2, "TXMake", TXConverterTab)]
+PluginRegistry = [("KatanaPanel", 2, "TXMake", TXConverterTab)]

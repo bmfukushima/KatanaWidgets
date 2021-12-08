@@ -820,6 +820,7 @@ class EventInterface(object):
 
         Returns (bool):
         """
+
         # Get Node
         try:
             node_name = user_data["node"]
@@ -829,13 +830,15 @@ class EventInterface(object):
 
         for key in event_data.keys():
             event_arg_data = event_data[key]
+
             try:
                 user_arg_data = user_data[key]
+
                 #print(key, type(event_data[key]), event_data[key], user_arg_data)
 
                 # Port
                 # if isinstance(event_arg_data, "Port"):
-                if type(event_arg_data) == "Port":
+                if type(event_arg_data) == NodegraphAPI.Port:
                     # output = 0
                     # input = 1
                     port_type = event_arg_data.getType()
@@ -848,7 +851,7 @@ class EventInterface(object):
 
                 # Param
                 # if isinstance(event_arg_data, "Parameter"):
-                elif type(event_arg_data) == "Parameter":
+                elif type(event_arg_data) == NodegraphAPI.Parameter:
                     param = node.getParameter(user_arg_data)
                     if param != event_arg_data:
                         return False

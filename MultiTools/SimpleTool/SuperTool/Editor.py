@@ -77,14 +77,17 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.getDesignWidget().setDelegateTitleIsShown(False)
 
         # create widgets
+        self._user_params_widget = QWidget(self)
         self._params_widget = SimpleToolParamViewWidget(self, node=self.main_node)
         self._events_widget = SimpleToolEventWidget(self, node=self.node())
 
         # setup tabs
         self.getDesignWidget().insertShojiWidget(
-            0, column_data={'name':"Params"}, widget=self.paramsWidget())
+            0, column_data={'name':"Params (User)"}, widget=self.paramsWidget())
         self.getDesignWidget().insertShojiWidget(
-            1, column_data={'name':'Events'}, widget=self.eventsWidget())
+            1, column_data={'name':"Params (Group)"}, widget=self.paramsWidget())
+        self.getDesignWidget().insertShojiWidget(
+            2, column_data={'name':'Events'}, widget=self.eventsWidget())
 
         # setup flags
         self.getDesignWidget().setHeaderItemIsDraggable(False)
@@ -92,6 +95,8 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self.getDesignWidget().setHeaderItemIsEditable(False)
 
         # setup events
+
+
     def showEvent(self, event):
         self.getDesignWidget().show()
         return TwoFacedSuperToolWidget.showEvent(self, event)
