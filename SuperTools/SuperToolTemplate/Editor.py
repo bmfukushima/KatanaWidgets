@@ -58,9 +58,9 @@ class SuperToolEditor(AbstractSuperToolEditor):
 class SuperToolMainWidget(ShojiModelViewWidget):
     def __init__(self, parent=None):
         super(SuperToolMainWidget, self).__init__(parent)
-        view = SuperToolViewWidget(self)
+        # view = SuperToolViewWidget(self)
         # setup header
-        self.setHeaderViewWidget(view)
+        # self.setHeaderViewWidget(view)
         self.setHeaderPosition(attrs.WEST, attrs.NORTH)
         self.setHeaderData(['name', 'test', 'three'])
 
