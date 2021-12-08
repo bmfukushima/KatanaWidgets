@@ -1,5 +1,7 @@
 """
 TODO:
+    *   DesiredStuff
+    *   Save as Macro
     Group Editor:
         Appears to have two levels of Shojis... for some reason...
                 Model Shoji View
@@ -16,32 +18,13 @@ TODO:
         *   SimpleTool --> Live Group --> Contents of group
         *   Can I just completely overwrite group node/ live group functionality?
     Trigger:
-        *   Script Editor
-                - Need to refactor this, and make it work with this...
         *   Event Types
-                -
-        *   --------- Get all args... ---------
-                - Hard coded?
-            Event Dict {
-                event_type: { 'args': [{'arg': argName, 'note': 'description'] , 'note': 'description'},
-                event_type: { 'args': [] , 'description': 'note'},
-            }
-                    [{event_type: {**kwargs}}]
-                - Dynamic?
-                    - Register dummy, get values, destroy dummy?
-                    - Something smarter?
-                    - Ask?
         *   Register all Event Types?
                 - setupEventHandlers
                     event_types = Utils.EventModule.GetAllRegisteredEventTypes()
                     Utils.EventModule.RegisterCollapsedHandler(
                         self.__undoEventUpdate, 'event_idle', enabled=enabled
                     )
-        *   Triggered Function
-                - check conditions on args
-                - if condition is empty/blank don't count it
-                - run python file
-                    --------- Pass args to Python file ---------
         *   Args use of Katana Parameters
                 - Args need to have a syntax to read parameters on the node
                     so that users can use custom parameters.
