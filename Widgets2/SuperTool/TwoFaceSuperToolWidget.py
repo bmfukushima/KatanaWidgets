@@ -20,7 +20,7 @@ from .AbstractSuperToolEditor import AbstractSuperToolEditor
 from cgwidgets.widgets import ShojiModelViewWidget
 from cgwidgets.utils import getWidgetAncestor
 
-from Utils2 import getFontSize
+from Utils2 import paramutils
 
 
 class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
@@ -78,10 +78,12 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
 
         self.setDisplayMode(self.displayMode())
 
-        for tab in UI4.App.Tabs.GetTabsByType('Parameters'):
-            pointed_widget = tab.getPointedWidget()
-            popdownWidget = pointed_widget.getPopdownWidget()
-            popdownWidget.layout().setAlignment(Qt.AlignTop)
+        # update layout
+        form_widget = TwoFacedSuperToolWidget.getFormWidget(self)
+
+        popdownWidget = form_widget.getPopdownWidget()
+        popdownWidget.layout().setAlignment(Qt.AlignTop)
+
         return AbstractSuperToolEditor.showEvent(self, event)
 
     """ PROPERTIES """
@@ -114,8 +116,8 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
                     return
 
             # set design view
-            self.designWidget().show()
             self.installResizeEventFilter()
+            self.designWidget().show()
             self.resizeBarWidget().show()
             self.designWidget().setHeaderWidgetToDefaultSize()
         elif display_mode == TwoFacedSuperToolWidget.VIEW:
@@ -123,6 +125,19 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
             self.removeResizeEventFilter()
             self.designWidget().hide()
             self.resizeBarWidget().hide()
+
+    """ UTILS """
+    @staticmethod
+    def getFormWidget(widget):
+        """ Gets the FormWidget, which is the container widget that holds the parameter
+        title, options, etc
+
+        Args:
+            widget (QWidget): to start recursively searching from
+
+        Returns (SuperToolFormWidget)"""
+        from UI4.FormMaster.Editors import NodeGroup
+        return getWidgetAncestor(widget, NodeGroup.SuperToolFormWidget)
 
     """ WIDGETS """
     def userParametersWidget(self):
@@ -134,24 +149,37 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
     def setDesignWidget(self, design_widget):
         self._design_widget = design_widget
 
+    # def resizeEvent(self, event):
+    #     self.designWidget().resizeEvent(event)
+    #
+    #     return AbstractSuperToolEditor.resizeEvent(self, event)
 
 class UserParametersWidget(QWidget):
     def __init__(self, parent=None):
         super(UserParametersWidget, self).__init__(parent)
         QVBoxLayout(self)
-        two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
-        user_param = two_faced_supertool_widget.createKatanaParam("user")
-        self.layout().addWidget(user_param)
+        # two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
+        #paramutils.createParamAtLocation("user", two_faced_supertool_widget.node(), paramutils.GROUP)
+        #user_param = two_faced_supertool_widget.createKatanaParam("user")
+        #self.layout().addWidget(user_param)
 
     """ EVENTS """
-    # todo add freeze toggle, so I can just hide this...
     def showEvent(self, event):
         self._is_frozen = True
+
+        # hide design area and leave header
         two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
         two_faced_supertool_widget.removeResizeEventFilter()
+        #two_faced_supertool_widget.installEventFilter(self)
+
+        two_faced_supertool_widget.setFixedHeight(two_faced_supertool_widget.designWidget().header_height)
         two_faced_supertool_widget.designWidget().delegateScrollArea().hide()
         two_faced_supertool_widget.resizeBarWidget().hide()
-        two_faced_supertool_widget.setFixedHeight(two_faced_supertool_widget.designWidget().header_height)
+
+        # override width
+        form_widget = TwoFacedSuperToolWidget.getFormWidget(self)
+        form_widget.setMinimumWidth(10)
+        form_widget.setMaximumWidth(2000)
 
         self._is_frozen = False
 
@@ -161,16 +189,51 @@ class UserParametersWidget(QWidget):
         if not self._is_frozen:
             two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
             two_faced_supertool_widget.installResizeEventFilter()
+            #two_faced_supertool_widget.removeEventFilter(self)
 
             two_faced_supertool_widget.designWidget().delegateScrollArea().show()
             two_faced_supertool_widget.resizeBarWidget().show()
             two_faced_supertool_widget.designWidget().setHeaderWidgetToDefaultSize()
 
-            Utils.EventModule.ProcessAllEvents()
-            a = UI4.App.Tabs.FindTopTab('Parameters')
-            pointed_widget = a.getPointedWidget()
-
-            pointed_widget.setMinimumHeight(0)
-            pointed_widget.setMaximumHeight(2000)
-            #pointed_widget.adjustSize()
         return QWidget.hideEvent(self, event)
+
+    # def eventFilter(self, obj, event):
+    #     from qtpy.QtCore import QEvent
+    #     if event.type() == QEvent.Resize:
+    #         """
+    #         Updates the size of the GUI to match that of the parameters pane...
+    #         no more of these random af scroll bars everywhere.
+    #
+    #         # todo automatic size updates
+    #         # horizontal scrollbar disabled in __init__
+    #         # need to track all of these down... hard coded right now
+    #             height =
+    #                 hscrollbar.height()
+    #                 + margins.top()
+    #                 + margins.bottom()
+    #                 + frame.height()
+    #             width =
+    #                 vscrollbar.width()
+    #                 + margins.left()
+    #                 + margins.right()
+    #         """
+    #
+    #         # get attrs
+    #         viewport = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
+    #         scrollarea = viewport.parent()
+    #         vertical_scrollbar = scrollarea.verticalScrollBar()
+    #
+    #         # get dimensions
+    #         margins = 5
+    #         width = viewport.width() - margins
+    #         if vertical_scrollbar.isVisible():
+    #             width -= vertical_scrollbar.width()
+    #         #
+    #         # if horizontal_scrollbar.isVisible():
+    #         #     height -= horizontal_scrollbar.height()
+    #
+    #         # set size
+    #         self.setFixedWidth(width)
+    #         print('setting width to ', width)
+    #
+    #     return False

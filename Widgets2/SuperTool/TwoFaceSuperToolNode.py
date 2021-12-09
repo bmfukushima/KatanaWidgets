@@ -17,4 +17,4 @@ class TwoFaceSuperToolNode(AbstractSuperToolNode):
         # create display param
         self.getParameters().createChildNumber('display_mode', 0)
 
-        self.getParameters().createChildGroup("user")
+        # self.getParameters().createChildGroup("user")

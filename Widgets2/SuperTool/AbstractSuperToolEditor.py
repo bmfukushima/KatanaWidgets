@@ -312,8 +312,9 @@ class ResizeFilter(QWidget):
             """
             # widget below the scroll area...
             self.parent().updateSize()
-            return True
-        return super(ResizeFilter, self).eventFilter(obj, event)
+            # return True
+        return False
+        #return super(ResizeFilter, self).eventFilter(obj, event)
 
 
 class iParameter(object):

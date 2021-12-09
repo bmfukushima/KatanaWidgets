@@ -938,6 +938,7 @@ class CreateNewParameterWidget(ListInputWidget):
         param_types_list = [[param_type] for param_type in sorted(UserParametersMainWidget.BASE_TYPES)]
         self.populate(param_types_list)
 
+
 #if __name__ == "__main__":
 node = NodegraphAPI.GetAllSelectedNodes()[0]
 widget = UserParametersMainWidget(node=node)

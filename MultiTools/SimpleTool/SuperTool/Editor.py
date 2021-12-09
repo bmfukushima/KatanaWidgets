@@ -64,7 +64,6 @@ class SimpleToolEditor(TwoFacedSuperToolWidget):
         self._events_widget = SimpleToolEventWidget(self, node=self.node())
 
         # setup tabs
-
         self.designWidget().insertShojiWidget(
             1, column_data={'name':"Params (Group)"}, widget=self.paramsWidget())
         self.designWidget().insertShojiWidget(

@@ -102,11 +102,13 @@ Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)
 from MonkeyPatches import (
     changeFullscreenHotkey,
     changeMinTabSize,
-    saveLastActiveBookmark)
+    saveLastActiveBookmark,
+    installUserParametersPolicyOverride)
 #, installNodegraphHotkeyOverrides)
 changeFullscreenHotkey(Qt.Key_B)
 changeMinTabSize(50)
 saveLastActiveBookmark()
+installUserParametersPolicyOverride()
 # installNodegraphHotkeyOverrides()
 
 
