@@ -7,8 +7,8 @@ SuperToolFormWidget
 --> QtWidget
 """
 
-from qtpy.QtWidgets import (QWidget, QStackedWidget, QVBoxLayout, QLabel, QStackedLayout)
-from qtpy.QtCore import Qt
+from qtpy.QtWidgets import (QWidget, QVBoxLayout)
+from qtpy.QtCore import Qt, QEvent
 
 try:
     from Katana import UI4, Utils
@@ -64,6 +64,9 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
         # setup resize handlers
         self.insertResizeBar()
         self.removeResizeEventFilter()
+
+        form_widget = TwoFacedSuperToolWidget.getFormWidget(self)
+        form_widget.installEventFilter(self)
 
         self._user_params_widget = UserParametersWidget(self)
         self.designWidget().insertShojiWidget(
@@ -149,10 +152,27 @@ class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
     def setDesignWidget(self, design_widget):
         self._design_widget = design_widget
 
-    # def resizeEvent(self, event):
-    #     self.designWidget().resizeEvent(event)
-    #
-    #     return AbstractSuperToolEditor.resizeEvent(self, event)
+    def eventFilter(self, obj, event):
+        """ Updates the headers width on resize so that they always stay in alignment"""
+        if event.type() == QEvent.Resize:
+            selection = self.designWidget().getAllSelectedItems()
+            if 0 < len(selection):
+                if selection[0].name() == "Params (User)":
+                    # get attrs
+                    viewport = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
+                    scrollarea = viewport.parent()
+                    vertical_scrollbar = scrollarea.verticalScrollBar()
+
+                    # get dimensions
+                    margins = 5
+                    width = viewport.width() - margins
+                    if vertical_scrollbar.isVisible():
+                        width -= vertical_scrollbar.width()
+
+                    # set size
+                    self.setFixedWidth(width)
+
+        return False
 
 class UserParametersWidget(QWidget):
     def __init__(self, parent=None):
@@ -196,7 +216,7 @@ class UserParametersWidget(QWidget):
             two_faced_supertool_widget.designWidget().setHeaderWidgetToDefaultSize()
 
         return QWidget.hideEvent(self, event)
-
+    #
     # def eventFilter(self, obj, event):
     #     from qtpy.QtCore import QEvent
     #     if event.type() == QEvent.Resize:
