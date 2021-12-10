@@ -67,23 +67,6 @@ class AbstractSuperToolEditor(QWidget):
         else:
             return None
 
-    # @staticmethod
-    # def getKatanaWidgetByObjectName(widget, object_name):
-    #     """
-    #     Searchs up the Katana widget hierarchy to find the one with the given name
-    #
-    #     If no widget is found, returns None
-    #
-    #     Args:
-    #         widget (QWidget): to start searching from
-    #         object_name (str): string of widget.objectName() to search for
-    #     """
-    #     if not widget: return
-    #     if widget.objectName() == object_name:
-    #         return widget
-    #     else:
-    #         return AbstractSuperToolEditor.getKatanaWidgetByObjectName(widget.parent(), object_name)
-
     """ UTILS """
     def installResizeEventFilter(self):
         """ Installs the event filter in charge of handling the resize events"""
@@ -129,7 +112,6 @@ class AbstractSuperToolEditor(QWidget):
         viewport = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
         scrollarea = viewport.parent()
         vertical_scrollbar = scrollarea.verticalScrollBar()
-        horizontal_scrollbar = scrollarea.horizontalScrollBar()
 
         # get dimensions
         margins = 5
@@ -137,9 +119,6 @@ class AbstractSuperToolEditor(QWidget):
         height = viewport.height() - margins - 50
         if vertical_scrollbar.isVisible():
             width -= vertical_scrollbar.width()
-        #
-        # if horizontal_scrollbar.isVisible():
-        #     height -= horizontal_scrollbar.height()
 
         # set size
         self.setFixedWidth(width)
@@ -225,37 +204,6 @@ class AbstractSuperToolEditor(QWidget):
 
         return w
 
-    # def __getCurrentParentParamFromLoc(self, location):
-    #     """
-    #     Simple interface to get the current parent parameter group from the location.
-    #     If there is no parent, then it will use the getParameters() in Katana
-    #     to gather the invisible root...
-    #
-    #     This should not include the actual parameter path itself, and if the parameter
-    #     is at the top most level, then it should provide a blank string...
-    #
-    #     Args:
-    #         location (str): path to location of the parameter with . syntax
-    #             ie user.somegroup.param
-    #                 would run .getParameter('user.somegroup')
-    #
-    #     """
-    #     if location:
-    #         param = self.node().getParameter(location)
-    #     else:
-    #         param = self.node().getParameters()
-    #     return param
-    #
-    # def __setParam(self, event_signal):
-    #     # ????
-    #     event_signal()
-    #     self.node().setParameter()
-    #     pass
-
-    # def undoParam(self):
-    #     # ????
-    #     pass
-
     def getCustomParamDict(self):
         return self._custom_param_dict
 
@@ -305,16 +253,12 @@ class ResizeFilter(QWidget):
     """
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Resize:
-            """
-            This is a horrible function that is going to implode later...
+            """This is a horrible function that is going to implode later...
             but removes the horrid fixed size of the params pane which
-            drives me borderline insane.
-            """
+            drives me borderline insane."""
             # widget below the scroll area...
             self.parent().updateSize()
-            # return True
         return False
-        #return super(ResizeFilter, self).eventFilter(obj, event)
 
 
 class iParameter(object):

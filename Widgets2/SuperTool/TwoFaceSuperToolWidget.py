@@ -20,8 +20,6 @@ from .AbstractSuperToolEditor import AbstractSuperToolEditor
 from cgwidgets.widgets import ShojiModelViewWidget
 from cgwidgets.utils import getWidgetAncestor
 
-from Utils2 import paramutils
-
 
 class TwoFacedSuperToolWidget(AbstractSuperToolEditor):
     """
@@ -190,7 +188,6 @@ class UserParametersWidget(QWidget):
         # hide design area and leave header
         two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
         two_faced_supertool_widget.removeResizeEventFilter()
-        #two_faced_supertool_widget.installEventFilter(self)
 
         two_faced_supertool_widget.setFixedHeight(two_faced_supertool_widget.designWidget().header_height)
         two_faced_supertool_widget.designWidget().delegateScrollArea().hide()
@@ -209,51 +206,9 @@ class UserParametersWidget(QWidget):
         if not self._is_frozen:
             two_faced_supertool_widget = getWidgetAncestor(self, TwoFacedSuperToolWidget)
             two_faced_supertool_widget.installResizeEventFilter()
-            #two_faced_supertool_widget.removeEventFilter(self)
 
             two_faced_supertool_widget.designWidget().delegateScrollArea().show()
             two_faced_supertool_widget.resizeBarWidget().show()
             two_faced_supertool_widget.designWidget().setHeaderWidgetToDefaultSize()
 
         return QWidget.hideEvent(self, event)
-    #
-    # def eventFilter(self, obj, event):
-    #     from qtpy.QtCore import QEvent
-    #     if event.type() == QEvent.Resize:
-    #         """
-    #         Updates the size of the GUI to match that of the parameters pane...
-    #         no more of these random af scroll bars everywhere.
-    #
-    #         # todo automatic size updates
-    #         # horizontal scrollbar disabled in __init__
-    #         # need to track all of these down... hard coded right now
-    #             height =
-    #                 hscrollbar.height()
-    #                 + margins.top()
-    #                 + margins.bottom()
-    #                 + frame.height()
-    #             width =
-    #                 vscrollbar.width()
-    #                 + margins.left()
-    #                 + margins.right()
-    #         """
-    #
-    #         # get attrs
-    #         viewport = AbstractSuperToolEditor.getKatanaQtScrollAreaViewport(self)
-    #         scrollarea = viewport.parent()
-    #         vertical_scrollbar = scrollarea.verticalScrollBar()
-    #
-    #         # get dimensions
-    #         margins = 5
-    #         width = viewport.width() - margins
-    #         if vertical_scrollbar.isVisible():
-    #             width -= vertical_scrollbar.width()
-    #         #
-    #         # if horizontal_scrollbar.isVisible():
-    #         #     height -= horizontal_scrollbar.height()
-    #
-    #         # set size
-    #         self.setFixedWidth(width)
-    #         print('setting width to ', width)
-    #
-    #     return False
