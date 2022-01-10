@@ -55,7 +55,7 @@ class BookmarkManagerTab(UI4.Tabs.BaseTab):
         working_sets (list): of strings of the working sets to save
             ["liveRenderUpdates", "render", "scenegraphExpansion", "scenegraphPinning", "scenegraphSelection", "viewerVisibility"]
     """
-    NAME = 'Bookmark Manager'
+    NAME = 'State Managers/Bookmark Manager'
 
     def __init__(self, parent=None):
         super(BookmarkManagerTab, self).__init__(parent)

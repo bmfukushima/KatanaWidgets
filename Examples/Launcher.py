@@ -47,9 +47,9 @@ class KatanaLauncherWidget(QWidget):
             plugins = {}
         self._plugins = plugins
 
-        self.default_katana_version = '5.0v1b2'
+        self.default_katana_version = '5.0v1'
         self.default_render_engine = 'prman'
-        self.default_render_engine_version = '24.1'
+        self.default_render_engine_version = '24.3'
 
         self.katana_dir = '/opt/katana'
         self.render_engine_dir = '/opt/renderEngines'
@@ -368,7 +368,9 @@ class KatanaLauncherWidget(QWidget):
             katana_resources = ['%s' % resources]
             envars = vray()
         elif self.renderEngine() == 'prman':
-            katana_resources = ['%s/RFK/plugins/Resources/PRMan' % resources]
+            # /opt/renderEngines/prman/24.2/RFK/plugins/katana4.5
+            #katana_resources = ['%s/RFK/plugins/Resources/PRMan' % resources]
+            katana_resources = ['%s/RFK/plugins/katana5.0' % resources]
             envars = prman()
         elif self.renderEngine() == 'redshift':
             katana_resources = ['%s/redshift4katana/katana4.0v1' % resources]

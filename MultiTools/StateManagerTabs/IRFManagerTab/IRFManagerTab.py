@@ -74,7 +74,7 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         edit_widget:
         view_widget
     """
-    NAME = 'IRF Manager'
+    NAME = 'State Managers/IRF Manager'
 
     def __init__(self, parent=None):
         super(IRFManagerTab, self).__init__(parent)

@@ -526,4 +526,5 @@ def updateGSVOptionForAllViewTabs(gsv, option):
     view_widgets = getAllGSVViewWidgets()
 
     for view_widget in view_widgets:
+        # print(view_widget)
         view_widget.updateGSVOptionDisplayText(gsv, option)

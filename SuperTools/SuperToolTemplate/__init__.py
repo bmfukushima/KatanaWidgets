@@ -9,7 +9,6 @@ ToDo:
     Params
         - Input types?
 """
-
 from .Node import SuperToolNode as NODE
 def EDITOR():
     from .Editor import SuperToolEditor

@@ -118,7 +118,7 @@ class StateManagerUtils(object):
 
 
 class StateManagerTab(UI4.Tabs.BaseTab):
-    NAME = "State Manager"
+    NAME = "State Managers/State Manager"
     def __init__(self, parent=None):
         super(StateManagerTab, self).__init__(parent)
 
@@ -290,9 +290,9 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 NodegraphAPI.SetNodeEdited(edit_node, True, exclusive=False)
 
         # set up gsv
-        gsv = item.getArg("gsv")
+        gsv_dict = item.getArg("gsv")
 
-        for gsv, option in gsv.items():
+        for gsv, option in gsv_dict.items():
             gsvutils.setGSVOption(gsv, option)
 
         # irf

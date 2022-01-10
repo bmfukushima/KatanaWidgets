@@ -117,7 +117,7 @@ from Utils2 import gsvutils, getFontSize, paramutils, widgetutils
 
 class GSVManagerTab(UI4.Tabs.BaseTab):
     """Main convenience widget for displaying GSV manipulators to the user."""
-    NAME = "GSV Manager"
+    NAME = "State Managers/GSV Manager"
 
     def __init__(self, parent=None):
         super(GSVManagerTab, self).__init__(parent)
@@ -967,11 +967,16 @@ class GSVEventWidget(AbstractEventWidget):
 
         Note: The script must be a valid file in order for it to cache
         """
-        # update script
-        self.paramScripts().getChild(self.pythonWidget().filepath()).setValue(str(script), 0)
+        scripts_param = self.paramScripts().getChild(self.pythonWidget().filepath())
+        if scripts_param:
+            # update script
+            scripts_param.setValue(str(script), 0)
 
-        # save
-        self.saveEventsData()
+            # save
+            self.saveEventsData()
+            return
+
+        print("{name} is invalid.  Enter a valid name to save".format(name=self.pythonWidget().filepath()))
 
     def deleteGSVEvent(self, item):
         """When the user deletes a GSV event, this will remove the meta data."""

@@ -31,6 +31,8 @@ import inspect
 CURRENT_DIR = (
     os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 )
+CURRENT_DIR = "/".join(CURRENT_DIR.split("/")[:-1])
+
 sys.path.append(CURRENT_DIR)
 os.environ["KATANABEBOP"] = CURRENT_DIR
 
