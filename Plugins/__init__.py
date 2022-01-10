@@ -1,3 +1,7 @@
+""" Every file in Plugins will automatically be run when Katana is opened """
+# todo why does __register_python_path__ automatically get called?
+# for some reason I don't need to register this here... and it auto runs the __register_python_path__.py
+"""
 import os
 import inspect
 
@@ -13,4 +17,4 @@ with open(__register_python_path__, "rb") as source_file:
 exec(code)
 
 #print('==>    2')
-
+"""
