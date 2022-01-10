@@ -41,5 +41,5 @@ for superdooper_tool in superdooper_tools_list:
 # LOG
 print("""\t|____  SUPERTOOLS""")
 for superdooper_tool in superdooper_tools_list:
-    print("\t|\t|__  Loading...  {supertool_name}".format(supertool_name=superdooper_tool.NAME))
+    print("\t|\t|__  {supertool_name}".format(supertool_name=superdooper_tool.NAME))
 print("""\t|""")
