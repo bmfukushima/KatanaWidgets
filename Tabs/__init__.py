@@ -5,7 +5,6 @@ from MultiTools.StateManagerTabs import StateManagerTab, GSVManagerTab, IRFManag
 from .TXMake import TXConverterTab
 
 # compile list of tabs
-
 tabs_list = [
     DesiredStuffTab,
     GlobalEventsTab.Tab,
@@ -39,18 +38,18 @@ print("""\t|____  TABS""")
 for tab in tabs_list:
     # popupbar organizer
     if tab == PopupBarOrganizerTab:
-        print("\t|\t|__  {tab_name}".format(tab_name=tab.NAME))
+        print("\t \t|__  {tab_name}".format(tab_name=tab.NAME))
         for popup_bar_tab in popup_bar_tabs:
             tab_name = "/".join([popup_bar_tab["filename"], popup_bar_tab["popup_bar_widget_name"]])
-            print("\t|\t|\t|__  {tab_name}".format(tab_name=tab_name))
+            print("\t \t|\t|__  {tab_name}".format(tab_name=tab_name))
 
     # state managers
     elif tab in [BookmarkManagerTab.Tab, GSVManagerTab.Tab, IRFManagerTab.Tab, StateManagerTab]:
         if tab == BookmarkManagerTab.Tab:
-            print("\t|\t|__  State Managers")
-        print("\t|\t|\t|__  {tab_name}".format(tab_name=tab.NAME))
+            print("\t \t|__  State Managers")
+        print("\t \t|\t|__  {tab_name}".format(tab_name=tab.NAME.split("/")[1]))
 
     else:
-        print("\t|\t|__  {tab_name}".format(tab_name=tab.NAME))
+        print("\t \t|__  {tab_name}".format(tab_name=tab.NAME))
 
 

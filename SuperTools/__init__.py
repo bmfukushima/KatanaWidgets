@@ -7,17 +7,24 @@ Register a new sooperdooper tool...
 import Katana
 
 # import super tools
-from . import Constraint
-from . import IsolateCEL
-from . import NodeTree
+from . import (
+    Constraint,
+    IsolateCEL,
+    NodeTree,
+    AOVManager
+)
+# from . import IsolateCEL
+# from . import NodeTree
 from . import SuperToolTemplate
 from . import SuperToolBasicTemplate
+# from . import AOVManager
 
 
 from MultiTools import VariableManager, SimpleTool
 
 # compile list of super tools
 superdooper_tools_list = [
+    AOVManager,
     Constraint,
     IsolateCEL,
     NodeTree,
