@@ -3,14 +3,16 @@ Todo:
     *   Item Parameter displays
             Need to create this for the different item types, and connect the signals
     *   Item type storage Group vs AOV
+            - Populate | Expand on startup
     *   Item set name/disable/delete (AOVManagerWidget)
-            aov delete event
-            aov enabled/disabled
-            aov name changed event
+            - Update nodes (enable / delete / name change)
     *   Store hierarchical data
-            export model to json?
-            - Populate model
-            - Drag/Drop
+            export model (AbstractAOVManagerEditor --> saveData)
+    *   Setup Node
+    *   Change items from
+            CUSTOM | GROUP | LIGHT | LPE | PREDEFINED
+                to
+            LIGHT | LPE | GROUP | PREDEFINED... | DIFF | SPEC | SPECR
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -18,7 +20,6 @@ Items
     AOV Item
         * AOVItems will hold all of the necessary parameters the user needs to create a new AOV
         * Presets / LPE's / Lights
-
 
 Hierarchy
 AOVManagerEditor --> (AbstractSuperToolEditor)
@@ -37,14 +38,20 @@ AOVManagerEditor --> (AbstractSuperToolEditor)
 Data:
     type : TYPE (CUSTOM | GROUP | LIGHT | LPE | PREDEFINED)
     name : str()
+    children : list()
+    enabled : bool
+    expanded : bool
 
 
 """
 
+import json
+
 from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt, QModelIndex
 
 from cgwidgets.widgets import (
+
     ShojiModelViewWidget,
     ButtonInputWidget,
     ListInputWidget,
@@ -52,8 +59,8 @@ from cgwidgets.widgets import (
     ModelViewWidget
 )
 from cgwidgets.settings import attrs
-from cgwidgets.utils import getFontSize
-
+from cgwidgets.utils import getFontSize, getJSONData
+from cgwidgets.views import AbstractDragDropModelDelegate
 # from Widgets2 import AbstractSuperToolEditor
 #
 
@@ -68,6 +75,8 @@ from cgwidgets.utils import getFontSize
 #             self.layout().addWidget(QLabel(str(x)))
 #         self.layout().setAlignment(Qt.AlignTop)
 #         #self.insertResizeBar()
+
+save_location = "/media/ssd01/dev/sandbox/aovManager.json"
 
 LPE = "lpe"
 LIGHT = "light"
@@ -88,20 +97,38 @@ class AbstractAOVManagerEditor(QWidget):
         self._aov_manager = AOVManagerWidget()
         self.layout().addWidget(self._aov_manager)
 
+    """ WIDGETS """
+    def aovManager(self):
+        return self._aov_manager
+
+    """ UTILS """
+    def exportAOVData(self):
+        return self.aovManager().exportAOVData()
+
+    def keyPressEvent(self, event):
+        modifiers = event.modifiers()
+        if modifiers == Qt.AltModifier:
+            if event.key() == Qt.Key_A:
+                print(self.exportAOVData())
+
 
 class AOVManagerWidget(ShojiModelViewWidget):
     """ Main display for showing the user the current AOV's available to them."""
-    AOV = 0
-    GROUP = 1
     def __init__(self, parent=None):
         super(AOVManagerWidget, self).__init__(parent)
+        # setup attrs
+        self._save_location = save_location
+
         self.setHeaderViewType(ModelViewWidget.TREE_VIEW)
+        self._delegate = AOVManagerItemDelegate(parent=self)
+        self.headerViewWidget().setItemDelegate(self._delegate)
         self.setHeaderPosition(attrs.WEST, attrs.SOUTH)
         self.setDelegateTitleIsShown(True)
+        self.setHeaderData(["name", "type"])
 
         # create new item button
         self._createNewItemWidget = ButtonInputWidget(
-            title="Create New Item", user_clicked_event=self.createNewItem)
+            title="Create New Item", user_clicked_event=self.createNewIndex)
         self.addHeaderDelegateWidget([], self._createNewItemWidget, modifier=Qt.NoModifier, focus=True)
         self._createNewItemWidget.setFixedHeight(getFontSize() * 3)
         self._createNewItemWidget.show()
@@ -116,33 +143,94 @@ class AOVManagerWidget(ShojiModelViewWidget):
         # setup events
         self.setHeaderItemTextChangedEvent(self.aovNameChangedEvent)
         self.setHeaderItemEnabledEvent(self.aovEnabledEvent)
-        self.setHeaderItemDeleteEvent(self.aovDeleteEvent)
+        self.setHeaderItemDeleteEvent(self.aovDeleteEvent, update_first=False)
+        self.setItemExportDataFunction(self.exportAOVItem)
+
+        self.populate(getJSONData(save_location, ordered=False)["data"])
+
+    """ UTILS """
+    def populate(self, children, parent=QModelIndex()):
+        """ Populates the user defined AOV's on load"""
+        for child in children:
+            new_index = self.createNewIndex(None, parent=parent, column_data=child)
+
+            #
+            new_index.internalPointer().setIsEnabled(child["enabled"])
+
+            #
+            if 0 < len(child["children"]):
+                self.populate(reversed(child["children"]), parent=new_index)
+
+            # todo expand on populate
+            # if child["expanded"]:
+            #     self.headerViewWidget().setExpanded(new_index, True)
+
+    def exportAOVItem(self, item):
+        """ Individual items dictionary when exported.
+
+        Note:
+            node has to come first.  This is due to how the item.name() function is called.
+            As if no "name" arg is found, it will return the first key in the dict"""
+
+        return {
+            "name": item.getArg("name"),
+            "children": [],
+            "enabled": item.isEnabled(),
+            "type": item.getArg("type"),
+            "expanded": item.isExpanded(),
+        }
+
+    def exportAOVData(self):
+        save_data = self.exportModelToDict(self.rootItem())
+
+        # todo save_location
+        with open(self.saveLocation(), "w") as file:
+            json.dump(save_data, file)
+
+        return save_data
+
+    """ PROPERTIES """
+    def saveLocation(self):
+        return self._save_location
+
+    def setSaveLocation(self, save_location):
+        self._save_location = save_location
 
     """ EVENTS """
     def aovNameChangedEvent(self, item, old_value, new_value):
-        # todo aov name changed event
-        pass
+        # todo aov name changed event | update node name
+        self.exportAOVData()
+        self.updateDelegateDisplay()
 
     def aovEnabledEvent(self, item, enabled):
-        # todo aov enabled/disabled
-        pass
+        # todo aov enabled/disabled | disable node
+        self.exportAOVData()
 
     def aovDeleteEvent(self, item):
-        # todo aov delete event
-        pass
+        # todo aov delete event | delete node
+        self.exportAOVData()
 
-    def createNewItem(self, widget):
-        self.createNewAOV()
+    def createNewIndex(self, widget, column_data=None, parent=QModelIndex()):
+        """ Creates a new AOV Index.
 
-    def createNewAOV(self):
-        aov_name = "NEW AOV"
-        column_data = {"name": aov_name, "type": ""}
-        widget = QLabel("new aov")
+        Args:
+            widget (QWidget): button pressed (if applicable)
+            column_data (dict): of data to be used for this item
+            parent (QModelIndex): Parent index of item being created"""
+        if not column_data:
+            column_data = {"name": "NEW AOV", "type": ""}
+        # todo add node to item
         new_index = self.insertShojiWidget(
-            self.rootItem().childCount(),
+            0,
             column_data=column_data,
-            widget=widget,
-            is_draggable=True)
+            is_draggable=True,
+            is_droppable=False,
+            parent=parent)
+
+        if column_data["type"] == AOVGROUP:
+            item = new_index.internalPointer()
+            item.setIsDroppable(True)
+        return new_index
 
 
 """ AOV DELEGATE WIDGETS"""
@@ -242,7 +330,7 @@ class AOVManagerItemWidget(QWidget):
         if aov_type == AOVGROUP:
             self.currentItem().setIsDroppable(True)
         else:
-            self.currentItem().setIsDroppable(True)
+            self.currentItem().setIsDroppable(False)
 
     def currentItem(self):
         return self._current_item
@@ -303,6 +391,38 @@ class AOVManagerItemWidget(QWidget):
         # print(name)
 
         self.setIsFrozen(False)
+
+
+class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
+    """ Item delegate used for the main header view
+
+    This will show different delegates for the name change, and the AOV type change."""
+    def __init__(self, parent=None):
+        super(AOVManagerItemDelegate, self).__init__(parent)
+        self.setDelegateWidget(ListInputWidget)
+        self._parent = parent
+
+    def setModelData(self, editor, model, index):
+        # illegal value
+        if index.column() == 1:
+            new_value = editor.text()
+            if new_value not in aovTypes():
+                editor.setText(self._aov_type)
+                return
+        # todo update display
+        """ When the user finishes editing an item in the view, this will be run"""
+        return AbstractDragDropModelDelegate.setModelData(self, editor, model, index)
+
+    def createEditor(self, parent, option, index):
+        """ Creates a custom editor for the "type" column """
+        if index.column() == 1:
+            delegate_widget = self.delegateWidget(parent)
+            delegate_widget.filter_results = False
+            delegate_widget.populate([[item] for item in sorted(aovTypes())])
+            self._aov_type = delegate_widget.text()
+            return delegate_widget
+
+        return AbstractDragDropModelDelegate.createEditor(self, parent, option, index)
 
 
 class AbstractParametersWidget(QWidget):
