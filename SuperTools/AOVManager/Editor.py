@@ -1,7 +1,5 @@
 """
 Todo:
-    *   Item Parameter displays
-            Need to create this for the different item types, and connect the signals
     *   Item type storage Group vs AOV
             - Populate | Expand on startup
     *   Item set name/disable/delete (AOVManagerWidget)
@@ -91,6 +89,7 @@ def aovTypes():
 
 def renderEngines():
     return [ARNOLD, DELIGHT, PRMAN, REDSHIFT]
+
 
 class AbstractAOVManagerEditor(QWidget):
     def __init__(self, parent=None):
@@ -321,20 +320,25 @@ class AOVManagerItemWidget(QWidget):
         self._type_widget.filter_results = False
         self._type_widget.populate([[aov] for aov in aovTypes()])
 
-        # add lpe
-        self._lpe_widget = StringInputWidget(self._parameters_widget)
+
 
         # setup layout
         QVBoxLayout(self)
         self.addParameterWidget("type", self._type_widget, self.aovTypeChangedEvent)
-        self.addParameterWidget("lpe", self._lpe_widget, self.lpeChangedEvent)
+        #self.addParameterWidget("lpe", self._lpe_widget, self.lpeChangedEvent)
 
         self.layout().addWidget(self._parameters_widget)
         self.layout().setContentsMargins(0, 0, 0, 0)
 
-    def addParameterWidget(self, name, delegate_widget, finished_editing_function):
+    def __name__(self):
+        return "abstract"
 
+    """ UTILS """
+    def addParameterWidget(self, name, delegate_widget, finished_editing_function):
+        """ Adds a parameter widget to the current display"""
+        # create input widget
         input_widget = LabelledInputWidget(name=name, delegate_widget=delegate_widget)
+        input_widget.setDefaultLabelLength(getFontSize() * 7)
 
         # set widget orientation
         input_widget.setDirection(Qt.Horizontal)
@@ -344,21 +348,9 @@ class AOVManagerItemWidget(QWidget):
 
     def clearNonAbstractParameterWidget(self):
         """ Sets the parametersWidget to a blank slate"""
-        for widget in self.parametersWidget().delegateWidgets()[2:]:
+        for widget in self.parametersWidget().delegateWidgets()[1:]:
             widget.setParent(None)
             widget.deleteLater()
-
-    def __name__(self):
-        return "abstract"
-    #
-    # def parametersWidget(self):
-    #     return self._parameters_widget
-
-    def item(self):
-        return self._item
-
-    def setItem(self, item):
-        self._item = item
 
     """ WIDGETS """
     def parametersWidget(self):
@@ -383,29 +375,22 @@ class AOVManagerItemWidget(QWidget):
         # update display
         # todo update parameter display's
         self.clearNonAbstractParameterWidget()
-        def updateFunction(widget, value):
-            """ temp update function"""
-            #print("update")
-            pass
 
         if aov_type in aovTypes():
             if aov_type == AOVGROUP:
-                widget = StringInputWidget("AOVGROUP")
-                self.addParameterWidget("AOVGROUP", widget, updateFunction)
+                pass
 
             if aov_type == LPE:
-                widget = StringInputWidget("LPE")
-                self.addParameterWidget("LPE", widget, updateFunction)
+                self._lpe_widget = StringInputWidget(self._parameters_widget)
+                self.addParameterWidget("LPE", self._lpe_widget, self.lpeChangedEvent)
 
             if aov_type == LIGHT:
                 widget = StringInputWidget("LIGHT")
-                self.addParameterWidget("LIGHT", widget, updateFunction)
+                self.addParameterWidget("LIGHT", widget, self.tempUpdateFunction)
 
             if aov_type == PREDEFINED:
                 widget = StringInputWidget("PREDEFINED")
-                self.addParameterWidget("PREDEFINED", widget, updateFunction)
-
-        self.setItem(self.currentItem())
+                self.addParameterWidget("PREDEFINED", widget, self.tempUpdateFunction)
 
         # update drag/drop
         if aov_type == AOVGROUP:
@@ -426,6 +411,12 @@ class AOVManagerItemWidget(QWidget):
         self._is_frozen = enabled
 
     """ EVENTS """
+    def tempUpdateFunction(self, widget, value):
+        """ temp update function"""
+        print('temp update function')
+        # print("update")
+        pass
+
     def lpeChangedEvent(self, widget, value):
         self.currentItem().setArg("lpe", value)
 
@@ -474,18 +465,30 @@ class AOVManagerItemWidget(QWidget):
         self.setCurrentItem(item)
 
         # set type
-        item_type = item.getArg("type")
-        if item_type in aovTypes():
-            self.typeWidget().setText(str(item_type))
-            self.setAOVType(item_type)
+        aov_type = item.getArg("type")
+        if aov_type in aovTypes():
+            self.typeWidget().setText(str(aov_type))
+            self.setAOVType(aov_type)
 
         # set name
         item_name = item.getArg("name")
         self.parametersWidget().setTitle(item_name)
 
-        # set lpe
-        lpe = item.getArg("lpe")
-        self.lpeWidget().setText(str(lpe))
+        # todo | update parameters on selection change
+        if aov_type in aovTypes():
+            if aov_type == AOVGROUP:
+                pass
+
+            if aov_type == LPE:
+                # set lpe
+                lpe = item.getArg("lpe")
+                self.lpeWidget().setText(str(lpe))
+
+            if aov_type == LIGHT:
+                pass
+
+            if aov_type == PREDEFINED:
+                pass
 
         self.setIsFrozen(False)
 
