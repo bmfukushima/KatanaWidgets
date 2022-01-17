@@ -12,7 +12,8 @@ Todo:
     *   Change items from
             CUSTOM | GROUP | LIGHT | LPE | PREDEFINED
                 to
-            LIGHT | LPE | GROUP | PREDEFINED... | DIFF | SPEC | SPECR
+            LIGHT | LPE | GROUP | PRESET... | DIFF | SPEC | SPECR
+        Need an add preset option
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -29,12 +30,9 @@ AOVManagerEditor --> (AbstractSuperToolEditor)
                 |- QVBoxLayout
                     |- type_labelled_widget --> (LabelledInputWidget)
                     |    |- type_widget --> (ListInputWidget)
-                    |- parametersWidget ( one of the following )
-                        |- CustomParametersWidget --> (QWidget)
-                        |- GroupParametersWidget --> (QWidget)
-                        |- LightParametersWidget --> (QWidget)
-                        |- LPEParametersWidget --> (QWidget)
-                        |- PredefinedParametersWidget --> (QWidget)
+                    |- parametersWidget ( QWidget )
+                         |- FrameInputWidgetContainer
+
 Data:
     type : TYPE (CUSTOM | GROUP | LIGHT | LPE | PREDEFINED)
     name : str()
@@ -51,15 +49,16 @@ from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget
 from qtpy.QtCore import Qt, QModelIndex
 
 from cgwidgets.widgets import (
-
-    ShojiModelViewWidget,
     ButtonInputWidget,
+    FrameInputWidgetContainer,
     ListInputWidget,
     LabelledInputWidget,
-    ModelViewWidget
+    ModelViewWidget,
+    ShojiModelViewWidget,
+    StringInputWidget
 )
 from cgwidgets.settings import attrs
-from cgwidgets.utils import getFontSize, getJSONData
+from cgwidgets.utils import getFontSize, getJSONData, getWidgetAncestor
 from cgwidgets.views import AbstractDragDropModelDelegate
 # from Widgets2 import AbstractSuperToolEditor
 #
@@ -81,11 +80,10 @@ save_location = "/media/ssd01/dev/sandbox/aovManager.json"
 LPE = "lpe"
 LIGHT = "light"
 AOVGROUP = "group"
-CUSTOM = "custom"
 PREDEFINED = "predefined"
 
 def aovTypes():
-    return [LPE, LIGHT, AOVGROUP, CUSTOM, PREDEFINED]
+    return [LPE, LIGHT, AOVGROUP, PREDEFINED]
 
 
 class AbstractAOVManagerEditor(QWidget):
@@ -123,8 +121,8 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self._delegate = AOVManagerItemDelegate(parent=self)
         self.headerViewWidget().setItemDelegate(self._delegate)
         self.setHeaderPosition(attrs.WEST, attrs.SOUTH)
-        self.setDelegateTitleIsShown(True)
-        self.setHeaderData(["name", "type"])
+        self.setDelegateTitleIsShown(False)
+        self.setHeaderData(["name", "type", "lpe"])
 
         # create new item button
         self._createNewItemWidget = ButtonInputWidget(
@@ -146,7 +144,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self.setHeaderItemDeleteEvent(self.aovDeleteEvent, update_first=False)
         self.setItemExportDataFunction(self.exportAOVItem)
 
-        self.populate(getJSONData(save_location, ordered=False)["data"])
+        self.populate(reversed(getJSONData(save_location, ordered=False)["data"]))
 
     """ UTILS """
     def populate(self, children, parent=QModelIndex()):
@@ -176,6 +174,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
             "name": item.getArg("name"),
             "children": [],
             "enabled": item.isEnabled(),
+            "lpe": item.getArg("lpe"),
             "type": item.getArg("type"),
             "expanded": item.isExpanded(),
         }
@@ -218,7 +217,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
             column_data (dict): of data to be used for this item
             parent (QModelIndex): Parent index of item being created"""
         if not column_data:
-            column_data = {"name": "NEW AOV", "type": ""}
+            column_data = {"name": "NEW AOV", "type": "", "lpe":""}
         # todo add node to item
         new_index = self.insertShojiWidget(
             0,
@@ -249,11 +248,6 @@ class AOVManagerItemWidget(QWidget):
             |- type_labelled_widget --> (LabelledInputWidget)
             |    |- type_widget --> (ListInputWidget)
             |- parametersWidget ( one of the following )
-                |- CustomParametersWidget --> (QWidget)
-                |- GroupParametersWidget --> (QWidget)
-                |- LightParametersWidget --> (QWidget)
-                |- LPEParametersWidget --> (QWidget)
-                |- PredefinedParametersWidget --> (QWidget)
     """
 
     def __init__(self, parent=None):
@@ -261,44 +255,64 @@ class AOVManagerItemWidget(QWidget):
         # attrs
         self._is_frozen = False
 
-        # create type widget
+        # create main widget
+        self._parameters_widget = FrameInputWidgetContainer(self, direction=Qt.Vertical)
+        self._parameters_widget.setIsHeaderShown(True)
+        # self._parameters_widget.setIsHeaderEditable(False)
+        self._parameters_widget.setHeaderTextChangedEvent(self.aovNameChangedEvent)
+        # add type
         self._type_widget = ListInputWidget(self)
         self._type_widget.filter_results = False
-        self._type_widget.setUserFinishedEditingEvent(self.aovTypeChangedEvent)
         self._type_widget.populate([[aov] for aov in aovTypes()])
-        self._type_labelled_widget = LabelledInputWidget(name="type", delegate_widget=self._type_widget)
 
-        # create type parameters
-        self._parameters_widget = None
+        # add lpe
+        self._lpe_widget = StringInputWidget(self._parameters_widget)
 
         # setup layout
         QVBoxLayout(self)
-        self.layout().addWidget(self._type_labelled_widget)
+        self.addParameterWidget("type", self._type_widget, self.aovTypeChangedEvent)
+        self.addParameterWidget("lpe", self._lpe_widget, self.lpeChangedEvent)
+
+        self.layout().addWidget(self._parameters_widget)
+        self.layout().setContentsMargins(0, 0, 0, 0)
+
+    def addParameterWidget(self, name, delegate_widget, finished_editing_function):
+
+        input_widget = LabelledInputWidget(name=name, delegate_widget=delegate_widget)
+
+        # set widget orientation
+        input_widget.setDirection(Qt.Horizontal)
+
+        # add to group layout
+        self._parameters_widget.addInputWidget(input_widget, finished_editing_function=finished_editing_function)
+
+    def clearNonAbstractParameterWidget(self):
+        """ Sets the parametersWidget to a blank slate"""
+        for widget in self.parametersWidget().delegateWidgets()[2:]:
+            widget.setParent(None)
+            widget.deleteLater()
+
+    def __name__(self):
+        return "abstract"
+    #
+    # def parametersWidget(self):
+    #     return self._parameters_widget
+
+    def item(self):
+        return self._item
+
+    def setItem(self, item):
+        self._item = item
 
     """ WIDGETS """
     def parametersWidget(self):
         return self._parameters_widget
 
-    def setParametersWidget(self, widget):
-        """ Sets the parameters widget to the one provided.
-
-        This will also delete/remove the old parameters widget
-
-        Args:
-            widget (QWidget): Widget to use as parameters widget"""
-        # remove old widget
-        if self.parametersWidget():
-            self.layout().removeWidget(self.parametersWidget())
-            self.parametersWidget().deleteLater()
-            # todo for some reason this seg faults...
-            # self.parametersWidget().setParent(None)
-
-        # add
-        self.layout().addWidget(widget)
-        self._parameters_widget = widget
-
     def typeWidget(self):
         return self._type_widget
+
+    def lpeWidget(self):
+        return self._lpe_widget
 
     """ PROPERTIES """
     def aovType(self):
@@ -311,20 +325,31 @@ class AOVManagerItemWidget(QWidget):
         self.currentItem().setArg("type", aov_type)
 
         # update display
-        if aov_type in aovTypes():
-            if aov_type == CUSTOM:
-                parameter_widget = CustomParametersWidget()
-            if aov_type == AOVGROUP:
-                parameter_widget = AOVGroupParametersWidget()
-            if aov_type == LPE:
-                parameter_widget = LPEParametersWidget()
-            if aov_type == LIGHT:
-                parameter_widget = LightParametersWidget()
-            if aov_type == PREDEFINED:
-                parameter_widget = PredefinedParametersWidget()
+        # todo update parameter display's
+        self.clearNonAbstractParameterWidget()
+        def updateFunction(widget, value):
+            """ temp update function"""
+            #print("update")
+            pass
 
-            parameter_widget.setItem(self.currentItem())
-            self.setParametersWidget(parameter_widget)
+        if aov_type in aovTypes():
+            if aov_type == AOVGROUP:
+                widget = StringInputWidget("AOVGROUP")
+                self.addParameterWidget("AOVGROUP", widget, updateFunction)
+
+            if aov_type == LPE:
+                widget = StringInputWidget("LPE")
+                self.addParameterWidget("LPE", widget, updateFunction)
+
+            if aov_type == LIGHT:
+                widget = StringInputWidget("LIGHT")
+                self.addParameterWidget("LIGHT", widget, updateFunction)
+
+            if aov_type == PREDEFINED:
+                widget = StringInputWidget("PREDEFINED")
+                self.addParameterWidget("PREDEFINED", widget, updateFunction)
+
+        self.setItem(self.currentItem())
 
         # update drag/drop
         if aov_type == AOVGROUP:
@@ -345,6 +370,13 @@ class AOVManagerItemWidget(QWidget):
         self._is_frozen = enabled
 
     """ EVENTS """
+    def lpeChangedEvent(self, widget, value):
+        self.currentItem().setArg("lpe", value)
+
+        aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+        aov_manager.exportAOVData()
+        return
+
     def aovTypeChangedEvent(self, widget, value):
         """ Called when the user changes the AOV type using the "typeWidget" """
         # preflight
@@ -357,6 +389,18 @@ class AOVManagerItemWidget(QWidget):
 
         # set AOV type
         self.setAOVType(value)
+        aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+        aov_manager.exportAOVData()
+
+    def aovNameChangedEvent(self, widget, value):
+        """ Updates the AOV's name """
+        self.currentItem().setArg("name", value)
+
+        self.parametersWidget().setTitle(value)
+
+        aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+        aov_manager.exportAOVData()
+        return
 
     @staticmethod
     def updateGUI(parent, widget, item):
@@ -375,20 +419,19 @@ class AOVManagerItemWidget(QWidget):
 
         # update widgets
 
-        # set item type
+        # type
         item_type = item.getArg("type")
         if item_type in aovTypes():
             self.typeWidget().setText(str(item_type))
             self.setAOVType(item_type)
 
-        # name = item.name()
-        # name = parent.model().getItemName(item)
-        # # self.testWidget().setText(name)
-        #
-        # print("===============")
-        # print(item.getArg("type"))
-        # print(widget)
-        # print(name)
+        # name
+        item_name = item.getArg("name")
+        self.parametersWidget().setTitle(item_name)
+
+        # lpe
+        lpe = item.getArg("lpe")
+        self.lpeWidget().setText(str(lpe))
 
         self.setIsFrozen(False)
 
@@ -403,12 +446,21 @@ class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
         self._parent = parent
 
     def setModelData(self, editor, model, index):
-        # illegal value
+        """ Create custom delegate for the type popup"""
+
+        # check TYPE set
         if index.column() == 1:
             new_value = editor.text()
             if new_value not in aovTypes():
                 editor.setText(self._aov_type)
                 return
+
+        # update LPE display
+        if index.column() == 2:
+            aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+            aov_manager.exportAOVData()
+            aov_manager.updateDelegateDisplay()
+
         # todo update display
         """ When the user finishes editing an item in the view, this will be run"""
         return AbstractDragDropModelDelegate.setModelData(self, editor, model, index)
@@ -422,63 +474,10 @@ class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
             self._aov_type = delegate_widget.text()
             return delegate_widget
 
+        if index.column() == 2:
+            if index.internalPointer().getArg("type") == AOVGROUP:
+                return
         return AbstractDragDropModelDelegate.createEditor(self, parent, option, index)
-
-
-class AbstractParametersWidget(QWidget):
-    def __init__(self, parent=None):
-        super(AbstractParametersWidget, self).__init__(parent)
-        QVBoxLayout(self)
-        self.layout().addWidget(QLabel(self.__name__()))
-
-    def __name__(self):
-        return "abstract"
-
-    def item(self):
-        return self._item
-
-    def setItem(self, item):
-        self._item = item
-
-
-class CustomParametersWidget(AbstractParametersWidget):
-    def __init__(self, parent=None):
-        super(CustomParametersWidget, self).__init__(parent)
-
-    def __name__(self):
-        return CUSTOM
-
-
-class AOVGroupParametersWidget(AbstractParametersWidget):
-    def __init__(self, parent=None):
-        super(AOVGroupParametersWidget, self).__init__(parent)
-
-    def __name__(self):
-        return AOVGROUP
-
-
-class LightParametersWidget(AbstractParametersWidget):
-    def __init__(self, parent=None):
-        super(LightParametersWidget, self).__init__(parent)
-
-    def __name__(self):
-        return LIGHT
-
-
-class LPEParametersWidget(AbstractParametersWidget):
-    def __init__(self, parent=None):
-        super(LPEParametersWidget, self).__init__(parent)
-
-    def __name__(self):
-        return LPE
-
-
-class PredefinedParametersWidget(AbstractParametersWidget):
-    def __init__(self, parent=None):
-        super(PredefinedParametersWidget, self).__init__(parent)
-
-    def __name__(self):
-        return PREDEFINED
 
 
 if __name__ == "__main__":
@@ -489,5 +488,6 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
     widget = AbstractAOVManagerEditor()
     widget.show()
+    widget.resize(512, 512)
     centerWidgetOnScreen(widget)
     sys.exit(app.exec_())
