@@ -28,13 +28,12 @@ AOVManagerEditor --> (AbstractSuperToolEditor)
         |- aovManager --> (ShojiModelViewWidget)
             |- AOVManagerItemWidget --> (AOVManagerItemWidget)
                 |- QVBoxLayout
-                    |- type_labelled_widget --> (LabelledInputWidget)
-                    |    |- type_widget --> (ListInputWidget)
-                    |- parametersWidget ( QWidget )
-                         |- FrameInputWidgetContainer
+                    |- parametersWidget
+                        |- typeWidget
+                        |- lpeWidget
 
 Data:
-    type : TYPE (CUSTOM | GROUP | LIGHT | LPE | PREDEFINED)
+    type : TYPE (GROUP | LIGHT | LPE | PREDEFINED)
     name : str()
     children : list()
     enabled : bool
@@ -82,26 +81,68 @@ LIGHT = "light"
 AOVGROUP = "group"
 PREDEFINED = "predefined"
 
+ARNOLD = "arnold"
+PRMAN = "prman"
+DELIGHT = "delight"
+REDSHIFT = "redshift"
+
 def aovTypes():
     return [LPE, LIGHT, AOVGROUP, PREDEFINED]
 
+def renderEngines():
+    return [ARNOLD, DELIGHT, PRMAN, REDSHIFT]
 
 class AbstractAOVManagerEditor(QWidget):
     def __init__(self, parent=None):
         super(AbstractAOVManagerEditor, self).__init__(parent)
 
+        # setup attrs
+        self._renderer = ""
+
+        # setup widgets
+        self._renderer_widget = ListInputWidget(self)
+        self._renderer_widget.filter_results = False
+        self._renderer_widget.populate([[renderer] for renderer in renderEngines()])
+        self._renderer_widget.setUserFinishedEditingEvent(self.rendererChangedEvent)
+        renderer_labelled_widget = LabelledInputWidget(
+            name="Renderer", delegate_widget=self._renderer_widget)
+        renderer_labelled_widget.setFixedHeight(getFontSize() * 3)
+        renderer_labelled_widget.setDefaultLabelLength(getFontSize() * 10)
+
+        self._aov_manager = AOVManagerWidget()
+
         # create layout
         QVBoxLayout(self)
-        self._aov_manager = AOVManagerWidget()
+        self.layout().addWidget(renderer_labelled_widget)
         self.layout().addWidget(self._aov_manager)
+
+    """ PROPERTIES """
+    def saveLocation(self):
+        return self.aovManager().saveLocation()
+
+    def setSaveLocation(self, save_location):
+        return self.aovManager().setSaveLocation(save_location)
+
+    def renderer(self):
+        return self.aovManager().renderer()
+
+    def setRenderer(self, renderer):
+        self.aovManager().setRenderer(renderer)
 
     """ WIDGETS """
     def aovManager(self):
         return self._aov_manager
 
+    def rendererWidget(self):
+        return self._renderer_widget
+
     """ UTILS """
     def exportAOVData(self):
         return self.aovManager().exportAOVData()
+
+    """ EVENTS """
+    def rendererChangedEvent(self, widget, value):
+        self.setRenderer(value)
 
     def keyPressEvent(self, event):
         modifiers = event.modifiers()
@@ -111,10 +152,19 @@ class AbstractAOVManagerEditor(QWidget):
 
 
 class AOVManagerWidget(ShojiModelViewWidget):
-    """ Main display for showing the user the current AOV's available to them."""
+    """ Main display for showing the user the current AOV's available to them.
+
+    Attributes:
+        renderer (string): render engine being used
+            arnold | delight | prman | redshift
+        saveLocation (string): path on disk to save to.
+            # todo this will eventually be updated to a parameter
+
+    """
     def __init__(self, parent=None):
         super(AOVManagerWidget, self).__init__(parent)
         # setup attrs
+        self._renderer = ""
         self._save_location = save_location
 
         self.setHeaderViewType(ModelViewWidget.TREE_VIEW)
@@ -195,6 +245,12 @@ class AOVManagerWidget(ShojiModelViewWidget):
     def setSaveLocation(self, save_location):
         self._save_location = save_location
 
+    def renderer(self):
+        return self._renderer
+
+    def setRenderer(self, renderer):
+        self._renderer = renderer
+
     """ EVENTS """
     def aovNameChangedEvent(self, item, old_value, new_value):
         # todo aov name changed event | update node name
@@ -245,9 +301,9 @@ class AOVManagerItemWidget(QWidget):
     Hierarchy
     QWidget
         |- QVBoxLayout
-            |- type_labelled_widget --> (LabelledInputWidget)
-            |    |- type_widget --> (ListInputWidget)
-            |- parametersWidget ( one of the following )
+            |- parametersWidget
+                |- typeWidget
+                |- lpeWidget
     """
 
     def __init__(self, parent=None):
@@ -258,8 +314,8 @@ class AOVManagerItemWidget(QWidget):
         # create main widget
         self._parameters_widget = FrameInputWidgetContainer(self, direction=Qt.Vertical)
         self._parameters_widget.setIsHeaderShown(True)
-        # self._parameters_widget.setIsHeaderEditable(False)
         self._parameters_widget.setHeaderTextChangedEvent(self.aovNameChangedEvent)
+
         # add type
         self._type_widget = ListInputWidget(self)
         self._type_widget.filter_results = False
@@ -414,22 +470,20 @@ class AOVManagerItemWidget(QWidget):
         self = widget.getMainWidget()
         self.setIsFrozen(True)
 
-        # update attrs
+        # set item
         self.setCurrentItem(item)
 
-        # update widgets
-
-        # type
+        # set type
         item_type = item.getArg("type")
         if item_type in aovTypes():
             self.typeWidget().setText(str(item_type))
             self.setAOVType(item_type)
 
-        # name
+        # set name
         item_name = item.getArg("name")
         self.parametersWidget().setTitle(item_name)
 
-        # lpe
+        # set lpe
         lpe = item.getArg("lpe")
         self.lpeWidget().setText(str(lpe))
 
