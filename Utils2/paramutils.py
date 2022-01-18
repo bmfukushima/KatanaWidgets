@@ -10,6 +10,7 @@ GROUP = 2
 NUMBER_ARRAY = 3
 STRING_ARRAY = 4
 TELEPARAM = 5
+
 def createParamAtLocation(param_location, node, param_type, param=None, initial_value=0):
     """Creates a parameter of the supplied type at the location provided.
 
@@ -73,7 +74,6 @@ def createParamAtLocation(param_location, node, param_type, param=None, initial_
     except TypeError:
         print(current_param.getFullName(), "already exists")
 
-
 def createTeleparamWidget(node_name, hide_title=False):
     """
     Creates a teledrop parameter widget
@@ -113,3 +113,17 @@ def createNodeReference(name, node, parent):
     param.setExpressionFlag(True)
     param.setExpression("@{node}".format(node=node.getName()))
     return param
+
+def getParameterMapFromNode(node):
+        """ Returns a dictionary of the parameter map for each parameter on the node
+
+        Args:
+            node (Node):
+
+        Returns (dict):
+            str(param_name): (value)"""
+        column_data = {"node": node.getName()}
+        for param in node.getParameters().getChildren():
+            column_data[param.getName()] = param.getValue(0)
+
+        return column_data

@@ -51,6 +51,7 @@ from Katana import NodegraphAPI
 from cgwidgets.widgets import (
     ButtonInputWidget,
     FrameInputWidgetContainer,
+    FloatInputWidget,
     ListInputWidget,
     LabelledInputWidget,
     ModelViewWidget,
@@ -251,14 +252,9 @@ class AOVManagerWidget(ShojiModelViewWidget):
         # Todo populate from children, and not from data
         """
         for node in nodes:
-            # get item data
-            column_data = {"node":node.getName()}
-            for param in node.getParameters().getChildren():
-                column_data[param.getName()] = param.getValue(0)
-
             # create new item
+            column_data = paramutils.getParameterMapFromNode(node)
             new_index = self.createNewIndex(None, parent=parent, column_data=column_data)
-
             new_index.internalPointer().setIsEnabled(not node.isBypassed())
 
             # populate children
@@ -391,10 +387,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         node.delete()
 
     def createNewAOVGroupNode(self):
-        node = NodegraphAPI.CreateNode("Group", self.node())
-        node.getParameters().createChildString("type", AOVGROUP)
-        node.getParameters().createChildString("name", node.getName())
-        nodeutils.createIOPorts(node)
+        node = NodegraphAPI.CreateNode("__aovGroup", self.node())
         nodeutils.insertNode(node, self.node())
         return node
 
@@ -407,8 +400,8 @@ class AOVManagerWidget(ShojiModelViewWidget):
             parent (QModelIndex): Parent index of item being created"""
         if not column_data:
             node = self.createNewAOVGroupNode()
-            column_data = {"name": node.getName(), "type": AOVGROUP, "node":node.getName()}
-        # todo add node to item
+            column_data = paramutils.getParameterMapFromNode(node)
+
         new_index = self.insertShojiWidget(
             0,
             column_data=column_data,
@@ -460,13 +453,9 @@ class AOVManagerItemWidget(QWidget):
         self._parameters_widget.setHeaderTextChangedEvent(self.aovNameChangedEvent)
 
         # add type
-        self._type_widget = ListInputWidget(self)
-        self._type_widget.filter_results = False
-        self._type_widget.populate([[aov] for aov in aovTypes()])
 
         # setup layout
         QVBoxLayout(self)
-        self.addParameterWidget("type", self._type_widget, self.aovTypeChangedEvent)
 
         self.layout().addWidget(self._parameters_widget)
         self.layout().setContentsMargins(0, 0, 0, 0)
@@ -486,27 +475,46 @@ class AOVManagerItemWidget(QWidget):
 
         # add to group layout
         self._parameters_widget.addInputWidget(input_widget, finished_editing_function=finished_editing_function)
+        delegate_widget.setObjectName(name)
+        self.widgets()[name] = delegate_widget
+
+        if self.node().getParameter(name):
+            delegate_widget.setText(self.node().getParameter(name).getValue(0))
 
     def clearNonAbstractParameterWidget(self):
         """ Sets the parametersWidget to a blank slate"""
-        for widget in self.parametersWidget().delegateWidgets()[1:]:
+        for widget in self.parametersWidget().delegateWidgets():
             widget.setParent(None)
             widget.deleteLater()
+
+    def populateParameterWidgets(self):
+        """ Populates all of the parameters from the node"""
+        node = NodegraphAPI.GetNode(self.currentItem().getArg("node"))
+        parameter_map = paramutils.getParameterMapFromNode(node)
+        for param_name, param_value in parameter_map.items():
+            if param_name == "type":
+                delegate_widget = ListInputWidget(self)
+                delegate_widget.filter_results = False
+                delegate_widget.populate([[aov] for aov in aovTypes()])
+                self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent)
+            else:
+                if isinstance(param_value, str):
+                    delegate_widget = StringInputWidget()
+                elif isinstance(param_value, float):
+                    delegate_widget = FloatInputWidget()
+                self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent)
+
+        pass
 
     """ WIDGETS """
     def parametersWidget(self):
         return self._parameters_widget
 
-    def typeWidget(self):
-        return self._type_widget
-
     def widgets(self):
         return self._widgets
 
     def clearWidgets(self):
-        for widget in self.widgets():
-            widget.setParent(None)
-            widget.deleteLater()
+        self.clearNonAbstractParameterWidget()
         self._widgets = {}
 
     """ PROPERTIES """
@@ -515,46 +523,22 @@ class AOVManagerItemWidget(QWidget):
 
     def setAOVType(self, aov_type):
         """ Sets the current items AOV type and updates the display """
+        # update item type
+        self.currentItem().setArg("type", aov_type)
 
-        # set items aov type
-        # update display
-        # todo update parameter display's
-        self.clearNonAbstractParameterWidget()
-
+        # update AOV Parameter Widgets
         if aov_type in aovTypes():
             if aov_type == self.aovType() and not self.isFrozen():
-                # bypass if setting the same type
                 pass
-            elif aov_type == AOVGROUP:
-                pass
-            elif aov_type == LPE:
-                if not self.currentItem().hasArg("lpe"):
-                    self.currentItem().setArg("lpe", "")
-                self.widgets()["lpe"] = StringInputWidget(self._parameters_widget)
-                self.addParameterWidget("lpe", self.widgets()["lpe"], self.lpeChangedEvent)
-
-                # # delete old node
-                # self.deleteNode()
-                #
-                # # create node
-                # node = self.__createPrmanLPENode()
-
-            elif aov_type == LIGHT:
-                widget = StringInputWidget("LIGHT")
-                self.addParameterWidget("LIGHT", widget, self.tempUpdateFunction)
-
-            elif aov_type == PREDEFINED:
-                widget = StringInputWidget("PREDEFINED")
-                self.addParameterWidget("PREDEFINED", widget, self.tempUpdateFunction)
+            else:
+                self.clearWidgets()
+                self.populateParameterWidgets()
 
         # update drag/drop
         if aov_type == AOVGROUP:
             self.currentItem().setIsDroppable(True)
         else:
             self.currentItem().setIsDroppable(False)
-
-        # update item type
-        self.currentItem().setArg("type", aov_type)
 
     def currentItem(self):
         return self._current_item
@@ -569,6 +553,9 @@ class AOVManagerItemWidget(QWidget):
         self._is_frozen = enabled
 
     """ NODE"""
+    def node(self):
+        return NodegraphAPI.GetNode(self.currentItem().getArg("node"))
+
     def deleteNode(self):
         node = self.currentItem().getArg("node")
         if node:
@@ -578,18 +565,20 @@ class AOVManagerItemWidget(QWidget):
         return
 
     """ EVENTS """
-    def tempUpdateFunction(self, widget, value):
-        """ temp update function"""
-        print('temp update function')
-        # print("update")
-        pass
+    def updateNodeName(self, old_name, new_name):
+        """ Updates a nodes name and returns the new name
 
-    def lpeChangedEvent(self, widget, value):
-        self.currentItem().setArg("lpe", value)
-
-        aov_manager = getWidgetAncestor(self, AOVManagerWidget)
-        aov_manager.exportAOVData()
-        return
+        Args:
+            old_name (str):
+            new_name (str):
+        """
+        node = NodegraphAPI.GetNode(old_name)
+        node.setName(new_name)
+        self.currentItem().setArg("node", node.getName())
+        if self.aovType() == AOVGROUP:
+            self.currentItem().setArg("name", node.getName())
+        self.widgets()["node"].setText(node.getName())
+        return node.getName()
 
     def aovTypeChangedEvent(self, widget, value):
         """ Called when the user changes the AOV type using the "typeWidget" """
@@ -603,18 +592,48 @@ class AOVManagerItemWidget(QWidget):
 
         # set AOV type
         self.setAOVType(value)
-        aov_manager = getWidgetAncestor(self, AOVManagerWidget)
-        aov_manager.exportAOVData()
+        # aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+        # aov_manager.exportAOVData()
 
     def aovNameChangedEvent(self, widget, value):
-        """ Updates the AOV's name """
+        """ When the user updates the name from the header title, this will run"""
         self.currentItem().setArg("name", value)
 
         self.parametersWidget().setTitle(value)
+        self.widgets()["name"].setText(value)
+        if self.aovType() == AOVGROUP:
+            self.updateNodeName(self.currentItem().getArg("node"), value)
 
-        aov_manager = getWidgetAncestor(self, AOVManagerWidget)
-        aov_manager.exportAOVData()
         return
+
+    def parameterChangedEvent(self, widget, value):
+        """ User has changed a dynamic parameter"""
+        param_name = widget.objectName()
+        if not self.isFrozen():
+            self.setIsFrozen(True)
+            # update node name
+            """ Special case is needed here as the node name may change when set"""
+            if param_name in "node":
+                new_node_name = self.updateNodeName(self.currentItem().getArg("node"), value)
+                if self.aovType() == AOVGROUP:
+                    self.parametersWidget().setTitle(new_node_name)
+                    self.widgets()["name"].setText(new_node_name)
+
+            else:
+                if param_name == "name":
+                    self.parametersWidget().setTitle(value)
+                    if self.aovType() == AOVGROUP:
+                        self.updateNodeName(self.currentItem().getArg("node"), value)
+                        """ Need to freeze/exit here to ensure the node name stays synchronized"""
+                        self.setIsFrozen(False)
+                        return
+
+                self.currentItem().setArg(param_name, value)
+
+            self.setIsFrozen(False)
+
+    def asdf(self):
+        self.parametersWidget().setHeaderTextChangedEvent()
 
     @staticmethod
     def updateGUI(parent, widget, item):
@@ -635,9 +654,13 @@ class AOVManagerItemWidget(QWidget):
         aov_type = item.getArg("type")
         if aov_type in aovTypes():
             self.setAOVType(aov_type)
-            self.typeWidget().setText(str(aov_type))
+            self.widgets()["type"].setText(str(aov_type))
 
-        # set name
+        # populate parameters
+        for arg in item.args():
+            if arg != "type":
+                self.widgets()[arg].setText(item.getArg(arg))
+        # # set name
         item_name = item.getArg("name")
         self.parametersWidget().setTitle(item_name)
 
@@ -648,8 +671,9 @@ class AOVManagerItemWidget(QWidget):
 
             if aov_type == LPE:
                 # set lpe
-                lpe = item.getArg("lpe")
-                self.widgets()["lpe"].setText(str(lpe))
+                pass
+                #lpe = item.getArg("lpe")
+                #self.widgets()["lpe"].setText(str(lpe))
 
             if aov_type == LIGHT:
                 pass
