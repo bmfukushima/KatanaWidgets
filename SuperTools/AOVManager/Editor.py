@@ -344,7 +344,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         node.getParameter("name").setValue(node.getName(), 0)
 
         # export data
-        self.exportAOVData()
+        # self.exportAOVData()
         self.updateDelegateDisplay()
 
     def aovDroppedEvent(self, data, items_dropped, model, row, parent):
@@ -385,7 +385,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         node_list = self.getChildNodeListFromItem(parent)
         nodeutils.connectInsideGroup(node_list, parent_node)
 
-        self.exportAOVData()
+        # self.exportAOVData()
 
     def aovEnabledEvent(self, item, enabled):
         # todo aov enabled/disabled | disable node
@@ -395,7 +395,10 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
     def aovDeleteEvent(self, item):
         # todo aov delete event | delete node
-        self.exportAOVData()
+        node = NodegraphAPI.GetNode(item.getArg("node"))
+        nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
+        node.delete()
+        # self.exportAOVData()
 
     def createNewAOVGroupNode(self):
         node = NodegraphAPI.CreateNode("Group", self.node())
