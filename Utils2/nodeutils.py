@@ -135,15 +135,14 @@ def insertNode(node, parent_node):
     wires the node into that position.
 
     Note:
-        When this happens, the node has already been connected..
-        Thus the awesome -2
+        *   When this happens, the node has already been connected.. Thus the awesome -2
+        *   Needs to have the "nodeReference" parameter
 
     Args:
         node (node): Current node to be inserted
         parent_node (node): The current nodes parent
     """
     # get previous port / position
-
     if len(parent_node.getChildren()) == 1:
         # previous port
         previous_port = parent_node.getSendPort('in')
@@ -152,18 +151,35 @@ def insertNode(node, parent_node):
         pos = (0, 0)
     else:
         # get previous node
-        node_references = parent_node.getParameter('nodeReference')
-        previous_node_name = node_references.getChildByIndex(node_references.getNumChildren() - 2)
-        previous_node = NodegraphAPI.GetNode(previous_node_name.getValue(0))
+        # node_references = parent_node.getParameter('nodeReference')
+        # previous_node_name = node_references.getChildByIndex(node_references.getNumChildren() - 2)
+        # previous_node = NodegraphAPI.GetNode(previous_node_name.getValue(0))
+        #
+        # # previous port
+        # previous_port = previous_node.getOutputPortByIndex(0)
+        #
+        # # setup pos
+        # current_pos = NodegraphAPI.GetNodePosition(previous_node)
+        # xpos = current_pos[0]
+        # ypos = current_pos[1] - 100
+        # pos = (xpos, ypos)
 
-        # previous port
-        previous_port = previous_node.getOutputPortByIndex(0)
+        return_port_name = parent_node.getOutputPortByIndex(0).getName()
+        return_port = parent_node.getReturnPort(return_port_name)
+        if 0 < len(return_port.getConnectedPorts()):
+            previous_port = return_port.getConnectedPorts()[0]
+            previous_node = previous_port.getNode()
 
-        # setup pos
-        current_pos = NodegraphAPI.GetNodePosition(previous_node)
-        xpos = current_pos[0]
-        ypos = current_pos[1] - 100
-        pos = (xpos, ypos)
+            # setup pos
+            current_pos = NodegraphAPI.GetNodePosition(previous_node)
+            xpos = current_pos[0]
+            ypos = current_pos[1] - 100
+            pos = (xpos, ypos)
+
+        else:
+            send_port_name = parent_node.getInputPortByIndex(0).getName()
+            previous_port = parent_node.getSendPort(send_port_name)
+            pos = (0, 0)
 
     # wire node
     previous_port.connect(node.getInputPortByIndex(0))

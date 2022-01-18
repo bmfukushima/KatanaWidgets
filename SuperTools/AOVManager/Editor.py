@@ -8,14 +8,14 @@ Todo:
         -   Store hierarchical data
                 export model (AbstractAOVManagerEditor --> saveData)
         -   Create Node data
-            AOVManagerItemWidget --> setAOVType
-                                 --> updateGUI
+                AOVManagerItemWidget --> setAOVType
+                                     --> updateGUI
 Todo ( BUGS ):
     *   Drag/Drop update delegate
 
 Use a ShojiMVW to create an interface for AOV's
 Items
-    CUSTOM | GROUP | LIGHT | LPE | PREDEFINED
+    GROUP | LIGHT | LPE | PRESET
     AOV Item
         * AOVItems will hold all of the necessary parameters the user needs to create a new AOV
         * Presets / LPE's / Lights
@@ -31,7 +31,7 @@ AOVManagerEditor --> (AbstractSuperToolEditor)
                         |- lpeWidget
 
 Data:
-    type : TYPE (GROUP | LIGHT | LPE | PREDEFINED)
+    type : TYPE (GROUP | LIGHT | LPE | PRESET)
     name : str()
     children : list()
     enabled : bool
@@ -45,6 +45,8 @@ import json
 from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget
 from qtpy.QtCore import Qt, QModelIndex
 
+from Katana import NodegraphAPI
+
 from cgwidgets.widgets import (
     ButtonInputWidget,
     FrameInputWidgetContainer,
@@ -57,21 +59,9 @@ from cgwidgets.widgets import (
 from cgwidgets.settings import attrs
 from cgwidgets.utils import getFontSize, getJSONData, getWidgetAncestor
 from cgwidgets.views import AbstractDragDropModelDelegate
-from Widgets2 import AbstractSuperToolEditor, iParameter
-from Utils2 import paramutils
-#
 
-# # class AOVManagerEditor(AbstractSuperToolEditor):
-# class AOVManagerEditor(AbstractSuperToolEditor):
-#     def __init__(self, parent, node):
-#         super(AOVManagerEditor, self).__init__(parent, node)
-#
-#         # setup layout
-#         QVBoxLayout(self)
-#         for x in range(5):
-#             self.layout().addWidget(QLabel(str(x)))
-#         self.layout().setAlignment(Qt.AlignTop)
-#         #self.insertResizeBar()
+from Widgets2 import AbstractSuperToolEditor, iParameter
+from Utils2 import paramutils, nodeutils
 
 save_location = "/media/ssd01/dev/sandbox/aovManager.json"
 
@@ -95,11 +85,11 @@ def renderEngines():
 class AOVManagerEditor(AbstractSuperToolEditor):
     def __init__(self, parent, node):
         super(AOVManagerEditor, self).__init__(parent, node)
-
+        self.__initializing = True
         self._renderer = ""
 
         # setup widgets
-        self._renderer_widget = AbstractParameterListInputWidget(self)
+        self._renderer_widget = self.createCustomParameterWidget(ListInputWidget)
         self.createCustomParam(
             self._renderer_widget,
             'renderer',
@@ -108,8 +98,8 @@ class AOVManagerEditor(AbstractSuperToolEditor):
             self.rendererChangedEvent,
             initial_value=""
         )
-        if self.node().getParameter("renderer"):
-            self._renderer_widget.setText(self.node().getParameter("renderer").getValue(0))
+        # if self.node().getParameter("renderer"):
+        #     self._renderer_widget.setText(self.node().getParameter("renderer").getValue(0))
         self._renderer_widget.filter_results = False
         self._renderer_widget.populate([[renderer] for renderer in renderEngines()])
         #self._renderer_widget.setUserFinishedEditingEvent(self.rendererChangedEvent)
@@ -118,7 +108,7 @@ class AOVManagerEditor(AbstractSuperToolEditor):
         self._renderer_labelled_widget.setFixedHeight(getFontSize() * 3)
         self._renderer_labelled_widget.setDefaultLabelLength(getFontSize() * 10)
 
-        self._render_location_widget = AbstractParameterStringInputWidget(self)
+        self._render_location_widget = self.createCustomParameterWidget(StringInputWidget)
         self.createCustomParam(
             self._render_location_widget,
             'renderLocation',
@@ -127,8 +117,8 @@ class AOVManagerEditor(AbstractSuperToolEditor):
             self.renderLocationChangedEvent,
             initial_value=""
         )
-        if self.node().getParameter("renderLocation"):
-            self._render_location_widget.setText(self.node().getParameter("renderLocation").getValue(0))
+        # if self.node().getParameter("renderLocation"):
+        #     self._render_location_widget.setText(self.node().getParameter("renderLocation").getValue(0))
 
         # self._render_location_widget.setUserFinishedEditingEvent(self.renderLocationChangedEvent)
         self._render_location_labelled_widget = LabelledInputWidget(
@@ -136,7 +126,7 @@ class AOVManagerEditor(AbstractSuperToolEditor):
         self._render_location_labelled_widget.setFixedHeight(getFontSize() * 3)
         self._render_location_labelled_widget.setDefaultLabelLength(getFontSize() * 10)
 
-        self._aov_manager = AOVManagerWidget()
+        self._aov_manager = AOVManagerWidget(self, node)
 
         # create layout
         QVBoxLayout(self)
@@ -189,24 +179,37 @@ class AOVManagerEditor(AbstractSuperToolEditor):
                 print(self.exportAOVData())
 
     def showEvent(self, event):
-        self._renderer_labelled_widget.resetSliderPositionToDefault()
-        self._render_location_labelled_widget.resetSliderPositionToDefault()
-        return AbstractSuperToolEditor.showEvent(self, event)
+        """ Set all of the default widget sizes on show"""
+        return_val = AbstractSuperToolEditor.showEvent(self, event)
+        if self.__initializing:
+            self._renderer_labelled_widget.resetSliderPositionToDefault()
+            self._render_location_labelled_widget.resetSliderPositionToDefault()
+
+            min_width = 300
+            if min_width < self.width() * 0.5:
+                self._aov_manager.setHeaderDefaultLength(self.width() * 0.5)
+            else:
+                self._aov_manager.setHeaderDefaultLength(min_width)
+            self._aov_manager.setHeaderWidgetToDefaultSize()
+            self.__initializing = False
+        return return_val
 
 
 class AOVManagerWidget(ShojiModelViewWidget):
     """ Main display for showing the user the current AOV's available to them.
 
     Attributes:
+        node (Node): current node
         renderer (string): render engine being used
             arnold | delight | prman | redshift
         saveLocation (string): path on disk to save to.
             # todo this will eventually be updated to a parameter
 
     """
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, node=None):
         super(AOVManagerWidget, self).__init__(parent)
         # setup attrs
+        self._node = node
         self._renderer = ""
         self._save_location = save_location
 
@@ -216,7 +219,6 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self.setHeaderPosition(attrs.WEST, attrs.SOUTH)
         self.setDelegateTitleIsShown(False)
         self.setHeaderData(["name", "type", "lpe"])
-        self.setHeaderDefaultLength(self.width() * 0.5)
 
         # create new item button
         self._createNewItemWidget = ButtonInputWidget(
@@ -242,7 +244,10 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
     """ UTILS """
     def populate(self, children, parent=QModelIndex()):
-        """ Populates the user defined AOV's on load"""
+        """ Populates the user defined AOV's on load
+
+        # Todo populate from children, and not from data
+        """
         for child in children:
             new_index = self.createNewIndex(None, parent=parent, column_data=child)
 
@@ -283,11 +288,11 @@ class AOVManagerWidget(ShojiModelViewWidget):
         return save_data
 
     """ PROPERTIES """
-    def saveLocation(self):
-        return self._save_location
+    def node(self):
+        return self._node
 
-    def setSaveLocation(self, save_location):
-        self._save_location = save_location
+    def setNode(self, node):
+        self._node = node
 
     def renderer(self):
         return self._renderer
@@ -295,9 +300,22 @@ class AOVManagerWidget(ShojiModelViewWidget):
     def setRenderer(self, renderer):
         self._renderer = renderer
 
+    def saveLocation(self):
+        return self._save_location
+
+    def setSaveLocation(self, save_location):
+        self._save_location = save_location
+
     """ EVENTS """
     def aovNameChangedEvent(self, item, old_value, new_value):
         # todo aov name changed event | update node name
+        # set node name
+        if item.getArg("type") == AOVGROUP:
+            node = NodegraphAPI.GetNode(item.getArg("node"))
+            node.setName(old_value)
+            item.setArg("name", node.getName())
+
+        # export data
         self.exportAOVData()
         self.updateDelegateDisplay()
 
@@ -309,6 +327,12 @@ class AOVManagerWidget(ShojiModelViewWidget):
         # todo aov delete event | delete node
         self.exportAOVData()
 
+    def createNewAOVGroupNode(self):
+        node = NodegraphAPI.CreateNode("Group", self.node())
+        nodeutils.createIOPorts(node)
+        nodeutils.insertNode(node, self.node())
+        return node
+
     def createNewIndex(self, widget, column_data=None, parent=QModelIndex()):
         """ Creates a new AOV Index.
 
@@ -317,7 +341,8 @@ class AOVManagerWidget(ShojiModelViewWidget):
             column_data (dict): of data to be used for this item
             parent (QModelIndex): Parent index of item being created"""
         if not column_data:
-            column_data = {"name": "NEW AOV", "type": "", "node":None}
+            node = self.createNewAOVGroupNode()
+            column_data = {"name": node.getName(), "type": AOVGROUP, "node":node.getName()}
         # todo add node to item
         new_index = self.insertShojiWidget(
             0,
@@ -332,9 +357,10 @@ class AOVManagerWidget(ShojiModelViewWidget):
         return new_index
 
     def showEvent(self, event):
-        return_val = super(ShojiModelViewWidget, self).showEvent(event)
+        #return_val = super(ShojiModelViewWidget, self).showEvent(event)
         self.setHeaderWidgetToDefaultSize()
-        return return_val
+        return ShojiModelViewWidget.showEvent(self, event)
+        #return return_val
 
 
 class AbstractParameterListInputWidget(ListInputWidget, iParameter):
