@@ -10,6 +10,8 @@ Todo:
         -   Create Node data
             AOVManagerItemWidget --> setAOVType
                                  --> updateGUI
+Todo ( BUGS ):
+    *   Drag/Drop update delegate
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -55,7 +57,8 @@ from cgwidgets.widgets import (
 from cgwidgets.settings import attrs
 from cgwidgets.utils import getFontSize, getJSONData, getWidgetAncestor
 from cgwidgets.views import AbstractDragDropModelDelegate
-# from Widgets2 import AbstractSuperToolEditor
+from Widgets2 import AbstractSuperToolEditor, iParameter
+from Utils2 import paramutils
 #
 
 # # class AOVManagerEditor(AbstractSuperToolEditor):
@@ -89,37 +92,58 @@ def renderEngines():
     return [ARNOLD, DELIGHT, PRMAN, REDSHIFT]
 
 
-class AbstractAOVManagerEditor(QWidget):
-    def __init__(self, parent=None):
-        super(AbstractAOVManagerEditor, self).__init__(parent)
+class AOVManagerEditor(AbstractSuperToolEditor):
+    def __init__(self, parent, node):
+        super(AOVManagerEditor, self).__init__(parent, node)
 
-        # setup attrs
         self._renderer = ""
 
         # setup widgets
-        self._renderer_widget = ListInputWidget(self)
+        self._renderer_widget = AbstractParameterListInputWidget(self)
+        self.createCustomParam(
+            self._renderer_widget,
+            'renderer',
+            paramutils.STRING,
+            self._renderer_widget.text,
+            self.rendererChangedEvent,
+            initial_value=""
+        )
+        if self.node().getParameter("renderer"):
+            self._renderer_widget.setText(self.node().getParameter("renderer").getValue(0))
         self._renderer_widget.filter_results = False
         self._renderer_widget.populate([[renderer] for renderer in renderEngines()])
-        self._renderer_widget.setUserFinishedEditingEvent(self.rendererChangedEvent)
-        renderer_labelled_widget = LabelledInputWidget(
+        #self._renderer_widget.setUserFinishedEditingEvent(self.rendererChangedEvent)
+        self._renderer_labelled_widget = LabelledInputWidget(
             name="Renderer", delegate_widget=self._renderer_widget)
-        renderer_labelled_widget.setFixedHeight(getFontSize() * 3)
-        renderer_labelled_widget.setDefaultLabelLength(getFontSize() * 10)
+        self._renderer_labelled_widget.setFixedHeight(getFontSize() * 3)
+        self._renderer_labelled_widget.setDefaultLabelLength(getFontSize() * 10)
 
-        self._render_location_widget = StringInputWidget(self)
-        self._render_location_widget.setUserFinishedEditingEvent(self.renderLocationChangedEvent)
-        render_location_labelled_widget = LabelledInputWidget(
+        self._render_location_widget = AbstractParameterStringInputWidget(self)
+        self.createCustomParam(
+            self._render_location_widget,
+            'renderLocation',
+            paramutils.STRING,
+            self._render_location_widget.text,
+            self.renderLocationChangedEvent,
+            initial_value=""
+        )
+        if self.node().getParameter("renderLocation"):
+            self._render_location_widget.setText(self.node().getParameter("renderLocation").getValue(0))
+
+        # self._render_location_widget.setUserFinishedEditingEvent(self.renderLocationChangedEvent)
+        self._render_location_labelled_widget = LabelledInputWidget(
             name="Location", delegate_widget=self._render_location_widget)
-        render_location_labelled_widget.setFixedHeight(getFontSize() * 3)
-        render_location_labelled_widget.setDefaultLabelLength(getFontSize() * 10)
+        self._render_location_labelled_widget.setFixedHeight(getFontSize() * 3)
+        self._render_location_labelled_widget.setDefaultLabelLength(getFontSize() * 10)
 
         self._aov_manager = AOVManagerWidget()
 
         # create layout
         QVBoxLayout(self)
-        self.layout().addWidget(renderer_labelled_widget)
-        self.layout().addWidget(render_location_labelled_widget)
+        self.layout().addWidget(self._renderer_labelled_widget)
+        self.layout().addWidget(self._render_location_labelled_widget)
         self.layout().addWidget(self._aov_manager)
+        self.insertResizeBar()
 
     """ PROPERTIES """
     def saveLocation(self):
@@ -149,18 +173,25 @@ class AbstractAOVManagerEditor(QWidget):
     def rendererChangedEvent(self, widget, value):
         """ User has changed the renderer """
         self.setRenderer(value)
+        self.node().getParameter("renderer").setValue(value, 0)
+        # todo update renderer parameter
         # todo remove/flag all bad nodes?
 
     def renderLocationChangedEvent(self, widget, value):
         """ User has changed the renderer """
-        print("render location changed... ", value)
-        pass
+        # todo update render location changed parameters
+        self.node().getParameter("renderLocation").setValue(value, 0)
 
     def keyPressEvent(self, event):
         modifiers = event.modifiers()
         if modifiers == Qt.AltModifier:
             if event.key() == Qt.Key_A:
                 print(self.exportAOVData())
+
+    def showEvent(self, event):
+        self._renderer_labelled_widget.resetSliderPositionToDefault()
+        self._render_location_labelled_widget.resetSliderPositionToDefault()
+        return AbstractSuperToolEditor.showEvent(self, event)
 
 
 class AOVManagerWidget(ShojiModelViewWidget):
@@ -185,6 +216,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self.setHeaderPosition(attrs.WEST, attrs.SOUTH)
         self.setDelegateTitleIsShown(False)
         self.setHeaderData(["name", "type", "lpe"])
+        self.setHeaderDefaultLength(self.width() * 0.5)
 
         # create new item button
         self._createNewItemWidget = ButtonInputWidget(
@@ -299,9 +331,23 @@ class AOVManagerWidget(ShojiModelViewWidget):
             item.setIsDroppable(True)
         return new_index
 
+    def showEvent(self, event):
+        return_val = super(ShojiModelViewWidget, self).showEvent(event)
+        self.setHeaderWidgetToDefaultSize()
+        return return_val
+
+
+class AbstractParameterListInputWidget(ListInputWidget, iParameter):
+    def __init__(self, parent=None):
+        super(AbstractParameterListInputWidget, self).__init__(parent)
+
+
+class AbstractParameterStringInputWidget(StringInputWidget, iParameter):
+    def __init__(self, parent=None):
+        super(AbstractParameterStringInputWidget, self).__init__(parent)
+
 
 """ AOV DELEGATE WIDGETS"""
-
 class AOVManagerItemWidget(QWidget):
     """ The widget displayed when a user selects an item in the AOVManagerWidget
 
@@ -583,7 +629,7 @@ if __name__ == "__main__":
     from cgwidgets.utils import centerWidgetOnScreen
 
     app = QApplication(sys.argv)
-    widget = AbstractAOVManagerEditor()
+    widget = AOVManagerEditor()
     widget.show()
     widget.resize(512, 512)
     centerWidgetOnScreen(widget)

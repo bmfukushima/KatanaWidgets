@@ -13,3 +13,6 @@ class AOVManagerNode(AbstractSuperToolNode):
         self.setGroupDisplay(False)
         nodeutils.createIOPorts(self)
 
+        # create parameters
+        #self.getParameters().createChildString("renderLocation", "")
+        #self.getParameters().createChildString("renderer", "")
