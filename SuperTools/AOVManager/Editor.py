@@ -2,16 +2,14 @@
 Todo:
     *   Item type storage Group vs AOV
             - Populate | Expand on startup
-    *   Item set name/disable/delete (AOVManagerWidget)
-            - Update nodes (enable / delete / name change)
-    *   Store hierarchical data
-            export model (AbstractAOVManagerEditor --> saveData)
     *   Setup Node
-    *   Change items from
-            CUSTOM | GROUP | LIGHT | LPE | PREDEFINED
-                to
-            LIGHT | LPE | GROUP | PRESET... | DIFF | SPEC | SPECR
-        Need an add preset option
+        -   Item set name/disable/delete (AOVManagerWidget)
+                Update nodes (enable / delete / name change)
+        -   Store hierarchical data
+                export model (AbstractAOVManagerEditor --> saveData)
+        -   Create Node data
+            AOVManagerItemWidget --> setAOVType
+                                 --> updateGUI
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -108,11 +106,19 @@ class AbstractAOVManagerEditor(QWidget):
         renderer_labelled_widget.setFixedHeight(getFontSize() * 3)
         renderer_labelled_widget.setDefaultLabelLength(getFontSize() * 10)
 
+        self._render_location_widget = StringInputWidget(self)
+        self._render_location_widget.setUserFinishedEditingEvent(self.renderLocationChangedEvent)
+        render_location_labelled_widget = LabelledInputWidget(
+            name="Location", delegate_widget=self._render_location_widget)
+        render_location_labelled_widget.setFixedHeight(getFontSize() * 3)
+        render_location_labelled_widget.setDefaultLabelLength(getFontSize() * 10)
+
         self._aov_manager = AOVManagerWidget()
 
         # create layout
         QVBoxLayout(self)
         self.layout().addWidget(renderer_labelled_widget)
+        self.layout().addWidget(render_location_labelled_widget)
         self.layout().addWidget(self._aov_manager)
 
     """ PROPERTIES """
@@ -141,7 +147,14 @@ class AbstractAOVManagerEditor(QWidget):
 
     """ EVENTS """
     def rendererChangedEvent(self, widget, value):
+        """ User has changed the renderer """
         self.setRenderer(value)
+        # todo remove/flag all bad nodes?
+
+    def renderLocationChangedEvent(self, widget, value):
+        """ User has changed the renderer """
+        print("render location changed... ", value)
+        pass
 
     def keyPressEvent(self, event):
         modifiers = event.modifiers()
@@ -219,14 +232,14 @@ class AOVManagerWidget(ShojiModelViewWidget):
             node has to come first.  This is due to how the item.name() function is called.
             As if no "name" arg is found, it will return the first key in the dict"""
 
-        return {
-            "name": item.getArg("name"),
+        args = {
             "children": [],
             "enabled": item.isEnabled(),
-            "lpe": item.getArg("lpe"),
-            "type": item.getArg("type"),
             "expanded": item.isExpanded(),
         }
+        for arg_name, arg in item.args().items():
+            args[arg_name] = arg
+        return args
 
     def exportAOVData(self):
         save_data = self.exportModelToDict(self.rootItem())
@@ -272,7 +285,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
             column_data (dict): of data to be used for this item
             parent (QModelIndex): Parent index of item being created"""
         if not column_data:
-            column_data = {"name": "NEW AOV", "type": "", "lpe":""}
+            column_data = {"name": "NEW AOV", "type": "", "node":None}
         # todo add node to item
         new_index = self.insertShojiWidget(
             0,
@@ -288,6 +301,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
 
 """ AOV DELEGATE WIDGETS"""
+
 class AOVManagerItemWidget(QWidget):
     """ The widget displayed when a user selects an item in the AOVManagerWidget
 
@@ -296,6 +310,8 @@ class AOVManagerItemWidget(QWidget):
             CUSTOM | GROUP | LIGHT | LPE | PREDEFINED
         currentItem (AbstractShojiModelItem):
         isFrozen (bool):
+        widgets (dict): of parameters widgets.  Each key is an arg's name, and the value
+            is the widget.
 
     Hierarchy
     QWidget
@@ -309,6 +325,7 @@ class AOVManagerItemWidget(QWidget):
         super(AOVManagerItemWidget, self).__init__(parent)
         # attrs
         self._is_frozen = False
+        self._widgets = {}
 
         # create main widget
         self._parameters_widget = FrameInputWidgetContainer(self, direction=Qt.Vertical)
@@ -320,12 +337,9 @@ class AOVManagerItemWidget(QWidget):
         self._type_widget.filter_results = False
         self._type_widget.populate([[aov] for aov in aovTypes()])
 
-
-
         # setup layout
         QVBoxLayout(self)
         self.addParameterWidget("type", self._type_widget, self.aovTypeChangedEvent)
-        #self.addParameterWidget("lpe", self._lpe_widget, self.lpeChangedEvent)
 
         self.layout().addWidget(self._parameters_widget)
         self.layout().setContentsMargins(0, 0, 0, 0)
@@ -359,8 +373,14 @@ class AOVManagerItemWidget(QWidget):
     def typeWidget(self):
         return self._type_widget
 
-    def lpeWidget(self):
-        return self._lpe_widget
+    def widgets(self):
+        return self._widgets
+
+    def clearWidgets(self):
+        for widget in self.widgets():
+            widget.setParent(None)
+            widget.deleteLater()
+        self._widgets = {}
 
     """ PROPERTIES """
     def aovType(self):
@@ -370,25 +390,33 @@ class AOVManagerItemWidget(QWidget):
         """ Sets the current items AOV type and updates the display """
 
         # set items aov type
-        self.currentItem().setArg("type", aov_type)
-
         # update display
         # todo update parameter display's
         self.clearNonAbstractParameterWidget()
 
         if aov_type in aovTypes():
-            if aov_type == AOVGROUP:
+            if aov_type == self.aovType() and not self.isFrozen():
+                # bypass if setting the same type
                 pass
+            elif aov_type == AOVGROUP:
+                pass
+            elif aov_type == LPE:
+                if not self.currentItem().hasArg("lpe"):
+                    self.currentItem().setArg("lpe", "")
+                self.widgets()["lpe"] = StringInputWidget(self._parameters_widget)
+                self.addParameterWidget("lpe", self.widgets()["lpe"], self.lpeChangedEvent)
 
-            if aov_type == LPE:
-                self._lpe_widget = StringInputWidget(self._parameters_widget)
-                self.addParameterWidget("LPE", self._lpe_widget, self.lpeChangedEvent)
+                # # delete old node
+                # self.deleteNode()
+                #
+                # # create node
+                # node = self.__createPrmanLPENode()
 
-            if aov_type == LIGHT:
+            elif aov_type == LIGHT:
                 widget = StringInputWidget("LIGHT")
                 self.addParameterWidget("LIGHT", widget, self.tempUpdateFunction)
 
-            if aov_type == PREDEFINED:
+            elif aov_type == PREDEFINED:
                 widget = StringInputWidget("PREDEFINED")
                 self.addParameterWidget("PREDEFINED", widget, self.tempUpdateFunction)
 
@@ -397,6 +425,9 @@ class AOVManagerItemWidget(QWidget):
             self.currentItem().setIsDroppable(True)
         else:
             self.currentItem().setIsDroppable(False)
+
+        # update item type
+        self.currentItem().setArg("type", aov_type)
 
     def currentItem(self):
         return self._current_item
@@ -409,6 +440,15 @@ class AOVManagerItemWidget(QWidget):
 
     def setIsFrozen(self, enabled):
         self._is_frozen = enabled
+
+    """ NODE"""
+    def deleteNode(self):
+        node = self.currentItem().getArg("node")
+        if node:
+            node.delete()
+
+    def __createPrmanLPENode(self):
+        return
 
     """ EVENTS """
     def tempUpdateFunction(self, widget, value):
@@ -467,8 +507,8 @@ class AOVManagerItemWidget(QWidget):
         # set type
         aov_type = item.getArg("type")
         if aov_type in aovTypes():
-            self.typeWidget().setText(str(aov_type))
             self.setAOVType(aov_type)
+            self.typeWidget().setText(str(aov_type))
 
         # set name
         item_name = item.getArg("name")
@@ -482,7 +522,7 @@ class AOVManagerItemWidget(QWidget):
             if aov_type == LPE:
                 # set lpe
                 lpe = item.getArg("lpe")
-                self.lpeWidget().setText(str(lpe))
+                self.widgets()["lpe"].setText(str(lpe))
 
             if aov_type == LIGHT:
                 pass

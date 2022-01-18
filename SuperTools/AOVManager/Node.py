@@ -12,3 +12,4 @@ class AOVManagerNode(AbstractSuperToolNode):
         # initialize base node
         self.setGroupDisplay(False)
         nodeutils.createIOPorts(self)
+
