@@ -3,15 +3,13 @@ Todo:
     *   Item type storage Group vs AOV
             - Populate | Expand on startup
     *   Setup Node
-        -   Item set name/disable/delete (AOVManagerWidget)
-                Update nodes (enable / delete / name change)
+        -   Swap nodes in/out when the type has changed
         -   Store hierarchical data
                 export model (AbstractAOVManagerEditor --> saveData)
+                remove the export data
         -   Create Node data
                 AOVManagerItemWidget --> setAOVType
                                      --> updateGUI
-Todo ( BUGS ):
-    *   Drag/Drop update delegate
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -333,7 +331,6 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
     """ EVENTS """
     def aovNameChangedEvent(self, item, old_value, new_value):
-        # todo aov name changed event | update node name
         # set node name
         node = NodegraphAPI.GetNode(item.getArg("node"))
         if item.getArg("type") == AOVGROUP:
@@ -344,18 +341,15 @@ class AOVManagerWidget(ShojiModelViewWidget):
         node.getParameter("name").setValue(node.getName(), 0)
 
         # export data
-        # self.exportAOVData()
         self.updateDelegateDisplay()
 
     def aovDroppedEvent(self, data, items_dropped, model, row, parent):
-        """
-        Run when the user does a drop.  This is triggered on the dropMimeData funciton
+        """Run when the user does a drop.  This is triggered on the dropMimeData funciton
         in the model.
 
         Args:
             indexes (list): of ShojiModelItems
             parent (ShojiModelItem): parent item that was dropped on
-
         """
         # get parent node
         try:
@@ -385,20 +379,16 @@ class AOVManagerWidget(ShojiModelViewWidget):
         node_list = self.getChildNodeListFromItem(parent)
         nodeutils.connectInsideGroup(node_list, parent_node)
 
-        # self.exportAOVData()
-
     def aovEnabledEvent(self, item, enabled):
-        # todo aov enabled/disabled | disable node
+        """ On enable/disable set the args"""
         node = NodegraphAPI.GetNode(item.getArg("node"))
         node.setBypassed(not enabled)
-        # self.exportAOVData()
 
     def aovDeleteEvent(self, item):
-        # todo aov delete event | delete node
+        """ On delete, removes the node"""
         node = NodegraphAPI.GetNode(item.getArg("node"))
         nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
         node.delete()
-        # self.exportAOVData()
 
     def createNewAOVGroupNode(self):
         node = NodegraphAPI.CreateNode("Group", self.node())
