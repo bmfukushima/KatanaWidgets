@@ -102,7 +102,6 @@ class AOVManagerEditor(AbstractSuperToolEditor):
         #     self._renderer_widget.setText(self.node().getParameter("renderer").getValue(0))
         self._renderer_widget.filter_results = False
         self._renderer_widget.populate([[renderer] for renderer in renderEngines()])
-        #self._renderer_widget.setUserFinishedEditingEvent(self.rendererChangedEvent)
         self._renderer_labelled_widget = LabelledInputWidget(
             name="Renderer", delegate_widget=self._renderer_widget)
         self._renderer_labelled_widget.setFixedHeight(getFontSize() * 3)
@@ -117,10 +116,7 @@ class AOVManagerEditor(AbstractSuperToolEditor):
             self.renderLocationChangedEvent,
             initial_value=""
         )
-        # if self.node().getParameter("renderLocation"):
-        #     self._render_location_widget.setText(self.node().getParameter("renderLocation").getValue(0))
 
-        # self._render_location_widget.setUserFinishedEditingEvent(self.renderLocationChangedEvent)
         self._render_location_labelled_widget = LabelledInputWidget(
             name="Location", delegate_widget=self._render_location_widget)
         self._render_location_labelled_widget.setFixedHeight(getFontSize() * 3)
@@ -210,6 +206,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         super(AOVManagerWidget, self).__init__(parent)
         # setup attrs
         self._node = node
+        self.rootItem().setArg("node", node.getName())
         self._renderer = ""
         self._save_location = save_location
 
@@ -238,6 +235,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self.setHeaderItemTextChangedEvent(self.aovNameChangedEvent)
         self.setHeaderItemEnabledEvent(self.aovEnabledEvent)
         self.setHeaderItemDeleteEvent(self.aovDeleteEvent, update_first=False)
+        self.setHeaderItemDropEvent(self.aovDroppedEvent)
         self.setItemExportDataFunction(self.exportAOVItem)
 
         self.populate(reversed(getJSONData(save_location, ordered=False)["data"]))
@@ -287,6 +285,21 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
         return save_data
 
+    def getChildNodeListFromItem(self, item):
+        """
+        Gets all of the node children from the specified item
+
+        Returns (list) of nodes
+
+        Todo: duplicate from NodeTree/Editor
+        """
+        # get node list
+        children = item.children()
+        node_name_list = [child.columnData()['node'] for child in children]
+        node_list = [NodegraphAPI.GetNode(node) for node in node_name_list]
+
+        return node_list
+
     """ PROPERTIES """
     def node(self):
         return self._node
@@ -318,6 +331,46 @@ class AOVManagerWidget(ShojiModelViewWidget):
         # export data
         self.exportAOVData()
         self.updateDelegateDisplay()
+
+    def aovDroppedEvent(self, data, items_dropped, model, row, parent):
+        """
+        Run when the user does a drop.  This is triggered on the dropMimeData funciton
+        in the model.
+
+        Args:
+            indexes (list): of ShojiModelItems
+            parent (ShojiModelItem): parent item that was dropped on
+
+        """
+        # get parent node
+        try:
+            parent_node = NodegraphAPI.GetNode(parent.getArg("node"))
+        except KeyError:
+            parent_node = self.node()
+
+        # if root
+        if parent.getArg("name") == 'root':
+            parent_node = self.node()
+
+        # drop items
+        for item in items_dropped:
+            # get node
+            node = NodegraphAPI.GetNode(item.getArg("node"))
+
+            # disconnect node
+            nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
+
+            # create ports
+            nodeutils.createIOPorts(node, force_create=False, connect=True)
+
+            # reparent
+            node.setParent(parent_node)
+
+        # reconnect node to new parent
+        node_list = self.getChildNodeListFromItem(parent)
+        nodeutils.connectInsideGroup(node_list, parent_node)
+
+        self.exportAOVData()
 
     def aovEnabledEvent(self, item, enabled):
         # todo aov enabled/disabled | disable node
