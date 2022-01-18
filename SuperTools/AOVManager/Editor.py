@@ -19,6 +19,8 @@ Items
     AOV Item
         * AOVItems will hold all of the necessary parameters the user needs to create a new AOV
         * Presets / LPE's / Lights
+    - Each item is linked to a node via the nodes name
+    - Each node's parameters are linked to the column data of the item
 
 Hierarchy
 AOVManagerEditor --> (AbstractSuperToolEditor)
@@ -36,6 +38,7 @@ Data:
     children : list()
     enabled : bool
     expanded : bool
+
 
 
 """
@@ -238,23 +241,32 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self.setHeaderItemDropEvent(self.aovDroppedEvent)
         self.setItemExportDataFunction(self.exportAOVItem)
 
-        self.populate(reversed(getJSONData(save_location, ordered=False)["data"]))
+        #self.populate(reversed(getJSONData(save_location, ordered=False)["data"]))
+        render_settings_node = None
+        nodes = [node for node in self.node().getChildren() if node != render_settings_node]
+        self.populate(nodes)
 
     """ UTILS """
-    def populate(self, children, parent=QModelIndex()):
+    def populate(self, nodes, parent=QModelIndex()):
         """ Populates the user defined AOV's on load
 
         # Todo populate from children, and not from data
         """
-        for child in children:
-            new_index = self.createNewIndex(None, parent=parent, column_data=child)
+        for node in nodes:
+            # get item data
+            column_data = {"name": node.getName()}
+            for param in node.getParameters().getChildren():
+                column_data[param.getName()] = param.getValue(0)
 
-            #
-            new_index.internalPointer().setIsEnabled(child["enabled"])
+            # create new item
+            new_index = self.createNewIndex(None, parent=parent, column_data=column_data)
 
-            #
-            if 0 < len(child["children"]):
-                self.populate(reversed(child["children"]), parent=new_index)
+            new_index.internalPointer().setIsEnabled(not node.isBypassed())
+
+            # populate children
+            if hasattr(node, "getChildren"):
+                if 0 < len(node.getChildren()):
+                    self.populate(reversed(node.getChildren()), parent=new_index)
 
             # todo expand on populate
             # if child["expanded"]:
@@ -374,7 +386,9 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
     def aovEnabledEvent(self, item, enabled):
         # todo aov enabled/disabled | disable node
-        self.exportAOVData()
+        node = NodegraphAPI.GetNode(item.getArg("node"))
+        node.setBypassed(not enabled)
+        # self.exportAOVData()
 
     def aovDeleteEvent(self, item):
         # todo aov delete event | delete node
@@ -382,6 +396,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
     def createNewAOVGroupNode(self):
         node = NodegraphAPI.CreateNode("Group", self.node())
+        node.getParameters().createChildString("type", AOVGROUP)
         nodeutils.createIOPorts(node)
         nodeutils.insertNode(node, self.node())
         return node
@@ -414,16 +429,6 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self.setHeaderWidgetToDefaultSize()
         return ShojiModelViewWidget.showEvent(self, event)
         #return return_val
-
-
-class AbstractParameterListInputWidget(ListInputWidget, iParameter):
-    def __init__(self, parent=None):
-        super(AbstractParameterListInputWidget, self).__init__(parent)
-
-
-class AbstractParameterStringInputWidget(StringInputWidget, iParameter):
-    def __init__(self, parent=None):
-        super(AbstractParameterStringInputWidget, self).__init__(parent)
 
 
 """ AOV DELEGATE WIDGETS"""
