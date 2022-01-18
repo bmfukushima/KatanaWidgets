@@ -254,7 +254,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         """
         for node in nodes:
             # get item data
-            column_data = {"name": node.getName()}
+            column_data = {"node":node.getName()}
             for param in node.getParameters().getChildren():
                 column_data[param.getName()] = param.getValue(0)
 
@@ -335,10 +335,13 @@ class AOVManagerWidget(ShojiModelViewWidget):
     def aovNameChangedEvent(self, item, old_value, new_value):
         # todo aov name changed event | update node name
         # set node name
+        node = NodegraphAPI.GetNode(item.getArg("node"))
         if item.getArg("type") == AOVGROUP:
-            node = NodegraphAPI.GetNode(item.getArg("node"))
-            node.setName(old_value)
-            item.setArg("name", node.getName())
+            node.setName(new_value)
+            item.setArg("node", node.getName())
+
+        item.setArg("name", node.getName())
+        node.getParameter("name").setValue(node.getName(), 0)
 
         # export data
         self.exportAOVData()
@@ -397,6 +400,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
     def createNewAOVGroupNode(self):
         node = NodegraphAPI.CreateNode("Group", self.node())
         node.getParameters().createChildString("type", AOVGROUP)
+        node.getParameters().createChildString("name", node.getName())
         nodeutils.createIOPorts(node)
         nodeutils.insertNode(node, self.node())
         return node
