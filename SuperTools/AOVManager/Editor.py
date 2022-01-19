@@ -36,6 +36,8 @@ Data:
     enabled : bool
     expanded : bool
 
+AOVMAP
+    Needs to have the same items in the dictionary as the parameters on the nodes
 
 
 """
@@ -81,8 +83,8 @@ SPEC = "SPEC"
 
 AOVMAP = {
     "Prman": {
-        "LPE": {"type": LPE, "lpe": "", "name": ""},
-        SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR}
+        "LPE": {"type": LPE, "lpe": "", "name": "", "rendererType": "color"},
+        SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "rendererType": "color"}
     },
     "Arnold": {},
     "Redshift": {},
@@ -100,6 +102,8 @@ def renderEngines():
 
 
 class AOVManagerEditor(AbstractSuperToolEditor):
+    """ Top level SuperTool Widget"""
+
     def __init__(self, parent, node):
         super(AOVManagerEditor, self).__init__(parent, node)
         self.__initializing = True
@@ -462,8 +466,17 @@ class AOVManagerItemWidget(QWidget):
         delegate_widget.setObjectName(name)
         self.widgets()[name] = delegate_widget
 
+        # # setup default parameter
         if self.node().getParameter(name):
-            delegate_widget.setText(self.node().getParameter(name).getValue(0))
+            value = self.getDefaultArg(self.aovType(), name)
+            """ If no value, then only set the display text from the parameter"""
+            if value:
+                delegate_widget.setText(value)
+                self.node().getParameter(name).setValue(value, 0)
+            else:
+                delegate_widget.setText(self.node().getParameter(name).getValue(0))
+        # if self.node().getParameter(name):
+        #     delegate_widget.setText(self.node().getParameter(name).getValue(0))
 
     def aovTypes(self):
         aov_manager_widget = getWidgetAncestor(self, AOVManagerWidget)
@@ -487,7 +500,20 @@ class AOVManagerItemWidget(QWidget):
                     delegate_widget = FloatInputWidget()
                 self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent)
 
-        pass
+    def getDefaultArg(self, aov_type, arg_name):
+        """ Gets the default AOV value from the mapping table
+
+        Note:
+            Need the try/except in case an arg doesnt exist such as "node"
+
+        Args:
+            aov_type (str): base type of AOV to be found in the mapping table
+            arg_name (str): arg name found in the mapping table
+            """
+        try:
+            return AOVMAP[self.renderer()][aov_type][arg_name]
+        except KeyError:
+            return None
 
     """ WIDGETS """
     def clearNonAbstractParameterWidget(self):
@@ -521,7 +547,8 @@ class AOVManagerItemWidget(QWidget):
         if aov_type == AOVGROUP:
             node_name = "__aovGroup"
         else:
-            node_name = "__aov{RENDERER}{TYPE}".format(RENDERER=renderer, TYPE=aov_type)
+            base_aov_type = AOVMAP[renderer][aov_type]["type"]
+            node_name = "__aov{RENDERER}{TYPE}".format(RENDERER=renderer, TYPE=base_aov_type)
 
         # create node
         old_node = self.node()
