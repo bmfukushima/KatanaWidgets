@@ -280,7 +280,44 @@ def setNodeColor(node, color):
     DrawingModule.SetCustomNodeColor(node, color[0], color[1], color[2])
     UI4.App.Tabs.FindTopTab("Node Graph").update()
 
+
 def removeNodeColor(node):
     from Katana import DrawingModule, UI4
     DrawingModule.RemoveCustomNodeColor(node)
     UI4.App.Tabs.FindTopTab("Node Graph").update()
+
+
+def replaceNode(node_to_be_replaced, replacement_node, delete=True, place=True):
+    """ Replaces the node with a new one
+
+    Note:
+        Both nodes must have the same amount of input ports, and the same number
+        of output ports.
+
+    Args:
+        node_to_be_replaced (Node): node to remove
+        replacement_node (Node): node to insert
+        delete (bool): determines if the old node should be deleted
+        place (bool): determines if the node should be placed over the old node
+
+    """
+
+    # disconnect ports
+    for index, input_port in enumerate(node_to_be_replaced.getInputPorts()):
+        connected_ports = input_port.getConnectedPorts()
+        for connected_port in connected_ports:
+            replacement_node.getInputPortByIndex(index).connect(connected_port)
+
+    for index, output_port in enumerate(node_to_be_replaced.getOutputPorts()):
+        connected_ports = output_port.getConnectedPorts()
+        for connected_port in connected_ports:
+            replacement_node.getOutputPortByIndex(index).connect(connected_port)
+
+    # place node
+    if place:
+        pos = NodegraphAPI.GetNodePosition(node_to_be_replaced)
+        NodegraphAPI.SetNodePosition(replacement_node, pos)
+
+    # delete old node
+    if delete:
+        node_to_be_replaced.delete()

@@ -67,18 +67,20 @@ from Utils2 import paramutils, nodeutils
 
 save_location = "/media/ssd01/dev/sandbox/aovManager.json"
 
-LPE = "lpe"
-LIGHT = "light"
-AOVGROUP = "group"
-PREDEFINED = "predefined"
+# MAPPING TABLES
+LPE = "LPE"
+LIGHT = "Light"
+AOVGROUP = "Group"
+PRESET = "PRESET"
+SPEC = "SPEC"
 
-ARNOLD = "arnold"
-PRMAN = "prman"
-DELIGHT = "delight"
-REDSHIFT = "redshift"
+ARNOLD = "Arnold"
+PRMAN = "Prman"
+DELIGHT = "Delight"
+REDSHIFT = "Redshift"
 
 def aovTypes():
-    return [LPE, LIGHT, AOVGROUP, PREDEFINED]
+    return [LPE, LIGHT, AOVGROUP, PRESET]
 
 def renderEngines():
     return [ARNOLD, DELIGHT, PRMAN, REDSHIFT]
@@ -153,10 +155,6 @@ class AOVManagerEditor(AbstractSuperToolEditor):
     def rendererWidget(self):
         return self._renderer_widget
 
-    """ UTILS """
-    def exportAOVData(self):
-        return self.aovManager().exportAOVData()
-
     """ EVENTS """
     def rendererChangedEvent(self, widget, value):
         """ User has changed the renderer """
@@ -169,12 +167,6 @@ class AOVManagerEditor(AbstractSuperToolEditor):
         """ User has changed the renderer """
         # todo update render location changed parameters
         self.node().getParameter("renderLocation").setValue(value, 0)
-
-    def keyPressEvent(self, event):
-        modifiers = event.modifiers()
-        if modifiers == Qt.AltModifier:
-            if event.key() == Qt.Key_A:
-                print(self.exportAOVData())
 
     def showEvent(self, event):
         """ Set all of the default widget sizes on show"""
@@ -238,9 +230,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self.setHeaderItemEnabledEvent(self.aovEnabledEvent)
         self.setHeaderItemDeleteEvent(self.aovDeleteEvent, update_first=False)
         self.setHeaderItemDropEvent(self.aovDroppedEvent)
-        self.setItemExportDataFunction(self.exportAOVItem)
 
-        #self.populate(reversed(getJSONData(save_location, ordered=False)["data"]))
         render_settings_node = None
         nodes = [node for node in self.node().getChildren() if node != render_settings_node]
         self.populate(nodes)
@@ -265,31 +255,6 @@ class AOVManagerWidget(ShojiModelViewWidget):
             # todo expand on populate
             # if child["expanded"]:
             #     self.headerViewWidget().setExpanded(new_index, True)
-
-    def exportAOVItem(self, item):
-        """ Individual items dictionary when exported.
-
-        Note:
-            node has to come first.  This is due to how the item.name() function is called.
-            As if no "name" arg is found, it will return the first key in the dict"""
-
-        args = {
-            "children": [],
-            "enabled": item.isEnabled(),
-            "expanded": item.isExpanded(),
-        }
-        for arg_name, arg in item.args().items():
-            args[arg_name] = arg
-        return args
-
-    def exportAOVData(self):
-        save_data = self.exportModelToDict(self.rootItem())
-
-        # todo save_location
-        with open(self.saveLocation(), "w") as file:
-            json.dump(save_data, file)
-
-        return save_data
 
     def getChildNodeListFromItem(self, item):
         """
@@ -427,7 +392,7 @@ class AOVManagerItemWidget(QWidget):
 
     Attributes:
         aovType (str(TYPE)): the current type of AOV this is valid options are
-            CUSTOM | GROUP | LIGHT | LPE | PREDEFINED
+            CUSTOM | GROUP | LIGHT | LPE | PRESET
         currentItem (AbstractShojiModelItem):
         isFrozen (bool):
         widgets (dict): of parameters widgets.  Each key is an arg's name, and the value
@@ -481,16 +446,11 @@ class AOVManagerItemWidget(QWidget):
         if self.node().getParameter(name):
             delegate_widget.setText(self.node().getParameter(name).getValue(0))
 
-    def clearNonAbstractParameterWidget(self):
-        """ Sets the parametersWidget to a blank slate"""
-        for widget in self.parametersWidget().delegateWidgets():
-            widget.setParent(None)
-            widget.deleteLater()
-
     def populateParameterWidgets(self):
         """ Populates all of the parameters from the node"""
         node = NodegraphAPI.GetNode(self.currentItem().getArg("node"))
         parameter_map = paramutils.getParameterMapFromNode(node)
+        self.clearNonAbstractParameterWidget()
         for param_name, param_value in parameter_map.items():
             if param_name == "type":
                 delegate_widget = ListInputWidget(self)
@@ -507,24 +467,57 @@ class AOVManagerItemWidget(QWidget):
         pass
 
     """ WIDGETS """
+    def clearNonAbstractParameterWidget(self):
+        """ Sets the parametersWidget to a blank slate"""
+        for widget in self.parametersWidget().delegateWidgets():
+            widget.setParent(None)
+            widget.deleteLater()
+
+    def clearWidgets(self):
+        """ Clears all of the widgets from the display, and resets the widgets attr"""
+        self.clearNonAbstractParameterWidget()
+        self._widgets = {}
+
     def parametersWidget(self):
         return self._parameters_widget
 
     def widgets(self):
         return self._widgets
 
-    def clearWidgets(self):
-        self.clearNonAbstractParameterWidget()
-        self._widgets = {}
-
     """ PROPERTIES """
     def aovType(self):
         return self.currentItem().getArg("type")
 
+    def createAOVMacro(self, renderer, aov_type):
+        """ Creates the Macro/Group node associated with the selected AOV/Engine
+
+        Args:
+            renderer (str):
+            aov_type (str):
+        """
+        if aov_type == AOVGROUP:
+            node_name = "__aovGroup"
+        else:
+            node_name = "__aov{RENDERER}{TYPE}".format(RENDERER=renderer, TYPE=aov_type)
+
+        # create node
+        old_node = self.node()
+        new_node = NodegraphAPI.CreateNode(node_name, self.node().getParent())
+        nodeutils.replaceNode(old_node, new_node)
+
+        return new_node
+
     def setAOVType(self, aov_type):
         """ Sets the current items AOV type and updates the display """
-        # update item type
-        self.currentItem().setArg("type", aov_type)
+        # preflight
+        renderer = self.renderer()
+        if renderer not in renderEngines(): return
+
+        # Create new node if needed
+        if self.node().getParameter("type").getValue(0) != aov_type:
+            self.currentItem().setArg("type", aov_type)
+            node = self.createAOVMacro(renderer, aov_type)
+            self.currentItem().setArg("node", node.getName())
 
         # update AOV Parameter Widgets
         if aov_type in aovTypes():
@@ -551,6 +544,14 @@ class AOVManagerItemWidget(QWidget):
 
     def setIsFrozen(self, enabled):
         self._is_frozen = enabled
+
+    def renderer(self):
+        aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+        return aov_manager.renderer()
+
+    def setRenderer(self, renderer):
+        aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+        aov_manager.setRenderer(renderer)
 
     """ NODE"""
     def node(self):
@@ -581,7 +582,7 @@ class AOVManagerItemWidget(QWidget):
         return node.getName()
 
     def aovTypeChangedEvent(self, widget, value):
-        """ Called when the user changes the AOV type using the "typeWidget" """
+        """ Called when the user changes the AOV type using the "type" """
         # preflight
         if self.isFrozen(): return
 
@@ -592,8 +593,8 @@ class AOVManagerItemWidget(QWidget):
 
         # set AOV type
         self.setAOVType(value)
-        # aov_manager = getWidgetAncestor(self, AOVManagerWidget)
-        # aov_manager.exportAOVData()
+        aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+        aov_manager.updateDelegateDisplay()
 
     def aovNameChangedEvent(self, widget, value):
         """ When the user updates the name from the header title, this will run"""
@@ -613,7 +614,7 @@ class AOVManagerItemWidget(QWidget):
             self.setIsFrozen(True)
             # update node name
             """ Special case is needed here as the node name may change when set"""
-            if param_name in "node":
+            if param_name == "node":
                 new_node_name = self.updateNodeName(self.currentItem().getArg("node"), value)
                 if self.aovType() == AOVGROUP:
                     self.parametersWidget().setTitle(new_node_name)
@@ -628,12 +629,11 @@ class AOVManagerItemWidget(QWidget):
                         self.setIsFrozen(False)
                         return
 
+                # update metadata
+                self.node().getParameter(param_name).setValue(value, 0)
                 self.currentItem().setArg(param_name, value)
 
             self.setIsFrozen(False)
-
-    def asdf(self):
-        self.parametersWidget().setHeaderTextChangedEvent()
 
     @staticmethod
     def updateGUI(parent, widget, item):
@@ -645,10 +645,14 @@ class AOVManagerItemWidget(QWidget):
         """
         # get attrs
         self = widget.getMainWidget()
-        self.setIsFrozen(True)
+
+        # preflight
+        renderer = self.renderer()
+        if renderer not in renderEngines(): return
 
         # set item
         self.setCurrentItem(item)
+        self.setIsFrozen(True)
 
         # set type
         aov_type = item.getArg("type")
@@ -660,6 +664,7 @@ class AOVManagerItemWidget(QWidget):
         for arg in item.args():
             if arg != "type":
                 self.widgets()[arg].setText(item.getArg(arg))
+
         # # set name
         item_name = item.getArg("name")
         self.parametersWidget().setTitle(item_name)
@@ -672,13 +677,11 @@ class AOVManagerItemWidget(QWidget):
             if aov_type == LPE:
                 # set lpe
                 pass
-                #lpe = item.getArg("lpe")
-                #self.widgets()["lpe"].setText(str(lpe))
 
             if aov_type == LIGHT:
                 pass
 
-            if aov_type == PREDEFINED:
+            if aov_type == PRESET:
                 pass
 
         self.setIsFrozen(False)
@@ -706,7 +709,6 @@ class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
         # update LPE display
         if index.column() == 2:
             aov_manager = getWidgetAncestor(self, AOVManagerWidget)
-            aov_manager.exportAOVData()
             aov_manager.updateDelegateDisplay()
 
         # todo update display
