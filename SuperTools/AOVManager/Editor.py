@@ -67,19 +67,33 @@ from Utils2 import paramutils, nodeutils
 save_location = "/media/ssd01/dev/sandbox/aovManager.json"
 
 # MAPPING TABLES
+
+SPECULAR = "SPEC"
+SPECULAR_ROUGHNESS = "SPECR"
+DIFFUSE = "DIFF"
+
+
 LPE = "LPE"
 LIGHT = "Light"
 AOVGROUP = "Group"
 PRESET = "PRESET"
 SPEC = "SPEC"
 
+AOVMAP = {
+    "Prman": {
+        "LPE": {"type": LPE, "lpe": "", "name": ""},
+        SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR}
+    },
+    "Arnold": {},
+    "Redshift": {},
+    "Delight": {}
+}
+
 ARNOLD = "Arnold"
 PRMAN = "Prman"
 DELIGHT = "Delight"
 REDSHIFT = "Redshift"
 
-def aovTypes():
-    return [LPE, LIGHT, AOVGROUP, PRESET]
 
 def renderEngines():
     return [ARNOLD, DELIGHT, PRMAN, REDSHIFT]
@@ -384,6 +398,12 @@ class AOVManagerWidget(ShojiModelViewWidget):
         return ShojiModelViewWidget.showEvent(self, event)
         #return return_val
 
+    def aovTypes(self):
+        # renderer = self.renderer()
+        aovs = AOVMAP[self.renderer()]
+        aovs[AOVGROUP] = {"type": AOVGROUP, "name": AOVGROUP}
+        return aovs.keys()
+
 
 """ AOV DELEGATE WIDGETS"""
 class AOVManagerItemWidget(QWidget):
@@ -445,6 +465,10 @@ class AOVManagerItemWidget(QWidget):
         if self.node().getParameter(name):
             delegate_widget.setText(self.node().getParameter(name).getValue(0))
 
+    def aovTypes(self):
+        aov_manager_widget = getWidgetAncestor(self, AOVManagerWidget)
+        return aov_manager_widget.aovTypes()
+
     def populateParameterWidgets(self):
         """ Populates all of the parameters from the node"""
         node = NodegraphAPI.GetNode(self.currentItem().getArg("node"))
@@ -454,7 +478,7 @@ class AOVManagerItemWidget(QWidget):
             if param_name == "type":
                 delegate_widget = ListInputWidget(self)
                 delegate_widget.filter_results = False
-                delegate_widget.populate([[aov] for aov in aovTypes()])
+                delegate_widget.populate([[aov] for aov in self.aovTypes()])
                 self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent)
             else:
                 if isinstance(param_value, str):
@@ -519,7 +543,7 @@ class AOVManagerItemWidget(QWidget):
             self.currentItem().setArg("node", node.getName())
 
         # update AOV Parameter Widgets
-        if aov_type in aovTypes():
+        if aov_type in self.aovTypes():
             if aov_type == self.aovType() and not self.isFrozen():
                 pass
             else:
@@ -586,7 +610,7 @@ class AOVManagerItemWidget(QWidget):
         if self.isFrozen(): return
 
         # illegal value
-        if value not in aovTypes():
+        if value not in self.aovTypes():
             widget.setText(self.aovType())
             return
 
@@ -655,7 +679,7 @@ class AOVManagerItemWidget(QWidget):
 
         # set type
         aov_type = item.getArg("type")
-        if aov_type in aovTypes():
+        if aov_type in self.aovTypes():
             self.setAOVType(aov_type)
             self.widgets()["type"].setText(str(aov_type))
 
@@ -669,7 +693,7 @@ class AOVManagerItemWidget(QWidget):
         self.parametersWidget().setTitle(item_name)
 
         # todo | update parameters on selection change
-        if aov_type in aovTypes():
+        if aov_type in self.aovTypes():
             if aov_type == AOVGROUP:
                 pass
 
@@ -701,7 +725,8 @@ class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
         # check TYPE set
         if index.column() == 1:
             new_value = editor.text()
-            if new_value not in aovTypes():
+            aov_manager_item_widget = getWidgetAncestor(self, AOVManagerWidget)
+            if new_value not in aov_manager_item_widget.aovTypes():
                 editor.setText(self._aov_type)
                 return
 
@@ -719,7 +744,8 @@ class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
         if index.column() == 1:
             delegate_widget = self.delegateWidget(parent)
             delegate_widget.filter_results = False
-            delegate_widget.populate([[item] for item in sorted(aovTypes())])
+            aov_manager_item_widget = getWidgetAncestor(parent, AOVManagerWidget)
+            delegate_widget.populate([[item] for item in sorted(aov_manager_item_widget.aovTypes())])
             self._aov_type = delegate_widget.text()
             return delegate_widget
 
