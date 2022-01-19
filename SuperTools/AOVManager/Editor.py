@@ -3,13 +3,12 @@ Todo:
     *   Item type storage Group vs AOV
             - Populate | Expand on startup
     *   Setup Node
-        -   Swap nodes in/out when the type has changed
-        -   Store hierarchical data
-                export model (AbstractAOVManagerEditor --> saveData)
-                remove the export data
+        -   Presets, Lights, Custom, Denoise
         -   Create Node data
                 AOVManagerItemWidget --> setAOVType
                                      --> updateGUI
+        -   RenderSettings node
+                enable/disable update
 
 Use a ShojiMVW to create an interface for AOV's
 Items
