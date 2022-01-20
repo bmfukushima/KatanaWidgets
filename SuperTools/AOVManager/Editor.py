@@ -14,6 +14,7 @@ Todo:
     *   Setup Advanced Parameters
 Todo (Bugs)
     *   Setting Name via view does not work
+            - only works for groups?
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -216,7 +217,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
     """ Main display for showing the user the current AOV's available to them.
 
     Attributes:
-        node (Node): current node
+        node (Node): AOVManager node
         renderer (string): render engine being used
             arnold | delight | prman | redshift
         saveLocation (string): path on disk to save to.
@@ -320,8 +321,9 @@ class AOVManagerWidget(ShojiModelViewWidget):
             node.setName(new_value)
             item.setArg("node", node.getName())
 
-        item.setArg("name", node.getName())
-        node.getParameter("name").setValue(node.getName(), 0)
+        print("setting ndoe name", new_value)
+        item.setArg("name", new_value)
+        node.getParameter("name").setValue(new_value, 0)
 
         # export data
         self.updateDelegateDisplay()
@@ -421,6 +423,7 @@ class AOVManagerItemWidget(QWidget):
             CUSTOM | GROUP | LIGHT | LPE
         currentItem (AbstractShojiModelItem):
         isFrozen (bool):
+        node (Node): current node being manipulated
         widgets (dict): of parameters widgets.  Each key is an arg's name, and the value
             is the widget.
 
@@ -455,7 +458,7 @@ class AOVManagerItemWidget(QWidget):
         return "abstract"
 
     """ UTILS """
-    def addParameterWidget(self, name, delegate_widget, finished_editing_function):
+    def addParameterWidget(self, name, delegate_widget, finished_editing_function, new=True):
         """ Adds a parameter widget to the current display
 
         Args:
@@ -463,6 +466,7 @@ class AOVManagerItemWidget(QWidget):
             delegate_widget (QWidget): Widget for user to input values
             finished_editing_function (func): Function to be run when the user
                 has finished editing.  This function should take the args (widget, value)
+            new (bool): determines if this is a new parameter, or updating an existing one
         """
 
         # create input widget
@@ -479,7 +483,12 @@ class AOVManagerItemWidget(QWidget):
 
         # setup default parameter
         if self.node().getParameter(name):
-            value = self.getDefaultArg(self.aovType(), name)
+            # # get default value
+            if new:
+                value = self.getDefaultArg(self.aovType(), name)
+            else:
+                value = self.node().getParameter(name).getValue(0)
+
             """ If no value, then only set the display text from the parameter
             Need to bypass "type" or else it will query from the wrong mapping table"""
             if name != "type":
@@ -493,6 +502,8 @@ class AOVManagerItemWidget(QWidget):
                 else:
                     # mainly used for setting the node
                     delegate_widget.setText(self.node().getParameter(name).getValue(0))
+            else:
+                delegate_widget.setText(self.getItemArg("type"))
 
     def createAOVMacro(self, renderer, aov_type):
         """ Creates the Macro/Group node associated with the selected AOV/Engine
@@ -535,23 +546,31 @@ class AOVManagerItemWidget(QWidget):
         except KeyError:
             return ""
 
-    def populateParameterWidgets(self):
-        """ Populates all of the parameters from the node"""
+    def populateParameterWidgets(self, new=True):
+        """ Populates all of the parameters from the node
+
+        Args:
+            new (bool): determines if these are new parameters, or existing ones"""
+        # get attrs
         node = NodegraphAPI.GetNode(self.currentItem().getArg("node"))
         parameter_map = paramutils.getParameterMapFromNode(node)
+
+        # cleanup old widgets
         self.clearNonAbstractParameterWidget()
+
+        # populate parameters
         for param_name, param_value in parameter_map.items():
             if param_name == "type":
                 delegate_widget = ListInputWidget(self)
                 delegate_widget.filter_results = False
                 delegate_widget.populate([[aov] for aov in self.aovTypes()])
-                self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent)
+                self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent, new=new)
             else:
                 if isinstance(param_value, str):
                     delegate_widget = StringInputWidget()
                 elif isinstance(param_value, float):
                     delegate_widget = FloatInputWidget()
-                self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent)
+                self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent, new=new)
 
     """ WIDGETS """
     def clearNonAbstractParameterWidget(self):
@@ -607,13 +626,17 @@ class AOVManagerItemWidget(QWidget):
         if new:
             node = self.createAOVMacro(renderer, aov_type)
             self.currentItem().setArg("node", node.getName())
-
-        # update AOV Parameter Widgets
-        if aov_type == self.aovType() and not self.isFrozen():
-            pass
-        else:
             self.clearWidgets()
-            self.populateParameterWidgets()
+            self.populateParameterWidgets(new=new)
+
+        # existing node
+        else:
+            # update AOV Parameter Widgets
+            if aov_type == self.aovType() and not self.isFrozen():
+                pass
+            else:
+                self.clearWidgets()
+                self.populateParameterWidgets(new=new)
 
         # update drag/drop
         if aov_type == AOVGROUP:
@@ -686,8 +709,8 @@ class AOVManagerItemWidget(QWidget):
 
         # set AOV type
         self.setAOVType(value)
-        aov_manager = getWidgetAncestor(self, AOVManagerWidget)
-        aov_manager.updateDelegateDisplay()
+        #aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+        #aov_manager.updateDelegateDisplay()
 
     def aovNameChangedEvent(self, widget, value):
         """ When the user updates the name from the header title, this will run"""
@@ -749,6 +772,7 @@ class AOVManagerItemWidget(QWidget):
 
         # set item
         self.setCurrentItem(item)
+        # print(item.columnData())
         self.setIsFrozen(True)
 
         # set type
@@ -760,6 +784,10 @@ class AOVManagerItemWidget(QWidget):
         # set name
         item_name = item.getArg("name")
         self.parametersWidget().setTitle(item_name)
+
+        for arg, value in item.args().items():
+            if arg != "type":
+                self.widgets()[arg].setText(value)
 
         self.setIsFrozen(False)
 
