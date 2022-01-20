@@ -11,8 +11,9 @@ Todo:
         -   RenderSettings node
                 enable/disable update
 Todo (Bugs)
-    *   GROUP type has wrong default parameters
-            - GROUP TYPE is also updating to the wrong parameters
+    *   Set default parameters on init
+            - renderer
+            - saveLocation
     *   Node is renaming on selection ( 593 )
             - sets name when selecting
             - sets name when creating
@@ -96,7 +97,6 @@ AOVMAP = {
         SUBSURFACE: {"type": LPE, "lpe": "C<TD>.*[<L.>O]", "name": SUBSURFACE, "rendererType": "color"},
         TRANSMISSIVE: {"type": LPE, "lpe": "C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "rendererType": "color"},
         DIFFUSE: {"type": LPE, "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "rendererType": "color"}
-
     },
     "Arnold": {},
     "Redshift": {},
@@ -410,15 +410,13 @@ class AOVManagerWidget(ShojiModelViewWidget):
         return new_index
 
     def showEvent(self, event):
-        #return_val = super(ShojiModelViewWidget, self).showEvent(event)
         self.setHeaderWidgetToDefaultSize()
         return ShojiModelViewWidget.showEvent(self, event)
-        #return return_val
 
     def aovTypes(self):
-        # renderer = self.renderer()
+        """ Returns a list of the different AOV types available"""
         aovs = AOVMAP[self.renderer()]
-        aovs[AOVGROUP] = {"type": AOVGROUP, "name": AOVGROUP}
+        aovs[AOVGROUP] = {"type": AOVGROUP}
         return aovs.keys()
 
 
@@ -490,10 +488,12 @@ class AOVManagerItemWidget(QWidget):
         # setup default parameter
         if self.node().getParameter(name):
             value = self.getDefaultArg(self.aovType(), name)
-
             """ If no value, then only set the display text from the parameter
             Need to bypass "type" or else it will query from the wrong mapping table"""
             if name != "type":
+                if name == "name" and self.aovType() == AOVGROUP:
+                    value = self.node().getParameter(name).getValue(0)
+
                 if name != "node":
                     delegate_widget.setText(value)
                     self.node().getParameter(name).setValue(value, 0)
@@ -538,7 +538,7 @@ class AOVManagerItemWidget(QWidget):
         try:
             return AOVMAP[self.renderer()][aov_type][arg_name]
         except KeyError:
-            return None
+            return ""
 
     def populateParameterWidgets(self):
         """ Populates all of the parameters from the node"""
@@ -741,6 +741,7 @@ class AOVManagerItemWidget(QWidget):
         if renderer not in renderEngines(): return
 
         # set item
+        # print(item.columnData())
         self.setCurrentItem(item)
         self.setIsFrozen(True)
 
