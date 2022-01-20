@@ -11,8 +11,9 @@ Todo:
         -   RenderSettings node
                 enable/disable update
 Todo (Bugs)
-    *   Node is renaming on selection
-    *   Can't change to LPE for some reason?
+    *   Node is renaming on selection ( 593 )
+            - sets name when selecting
+            - sets name when creating
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -81,12 +82,12 @@ SUBSURFACE = "SSS"
 TRANSMISSIVE = "TRANS"
 
 LPE = "LPE"
-AOVGROUP = "Group"
-LIGHT = "Light"
+AOVGROUP = "GROUP"
+LIGHT = "LIGHT"
 
 AOVMAP = {
     "Prman": {
-        "LPE": {"type": LPE, "lpe": "", "name": "", "rendererType": "color"},
+        LPE: {"type": LPE, "lpe": "<INSERT LPE HERE>", "name": "LPE", "rendererType": "color"},
         SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "rendererType": "color"},
         INDIRECT_SPECULAR: {"type": LPE, "lpe": "C<RS>.+[<L.>O]", "name": INDIRECT_SPECULAR, "rendererType": "color"},
         INDIRECT_DIFFUSE: {"type": LPE, "lpe": "C<RD>.+[<L.>O]", "name": INDIRECT_DIFFUSE, "rendererType": "color"},
@@ -491,17 +492,13 @@ class AOVManagerItemWidget(QWidget):
             """ If no value, then only set the display text from the parameter
             Need to bypass "type" or else it will query from the wrong mapping table"""
             if name != "type":
-                if value:
+                if name != "node":
                     delegate_widget.setText(value)
                     self.node().getParameter(name).setValue(value, 0)
                     self.currentItem().setArg(name, value)
                 else:
                     # mainly used for setting the node
                     delegate_widget.setText(self.node().getParameter(name).getValue(0))
-
-    def aovTypes(self):
-        aov_manager_widget = getWidgetAncestor(self, AOVManagerWidget)
-        return aov_manager_widget.aovTypes()
 
     def populateParameterWidgets(self):
         """ Populates all of the parameters from the node"""
@@ -559,7 +556,13 @@ class AOVManagerItemWidget(QWidget):
 
     """ PROPERTIES """
     def aovType(self):
+        """ The currenet AOV type that is set"""
         return self.currentItem().getArg("type")
+
+    def aovTypes(self):
+        """ Returns a list of all of the potential AOV types available"""
+        aov_manager_widget = getWidgetAncestor(self, AOVManagerWidget)
+        return aov_manager_widget.aovTypes()
 
     def createAOVMacro(self, renderer, aov_type):
         """ Creates the Macro/Group node associated with the selected AOV/Engine
@@ -586,20 +589,19 @@ class AOVManagerItemWidget(QWidget):
         # preflight
         renderer = self.renderer()
         if renderer not in renderEngines(): return
+        if aov_type not in self.aovTypes(): return
 
-        # Create new node if needed
-        if self.node().getParameter("type").getValue(0) != aov_type:
-            self.currentItem().setArg("type", aov_type)
-            node = self.createAOVMacro(renderer, aov_type)
-            self.currentItem().setArg("node", node.getName())
+        # Create new node
+        self.currentItem().setArg("type", aov_type)
+        node = self.createAOVMacro(renderer, aov_type)
+        self.currentItem().setArg("node", node.getName())
 
         # update AOV Parameter Widgets
-        if aov_type in self.aovTypes():
-            if aov_type == self.aovType() and not self.isFrozen():
-                pass
-            else:
-                self.clearWidgets()
-                self.populateParameterWidgets()
+        if aov_type == self.aovType() and not self.isFrozen():
+            pass
+        else:
+            self.clearWidgets()
+            self.populateParameterWidgets()
 
         # update drag/drop
         if aov_type == AOVGROUP:
@@ -659,7 +661,11 @@ class AOVManagerItemWidget(QWidget):
     def aovTypeChangedEvent(self, widget, value):
         """ Called when the user changes the AOV type using the "type" """
         # preflight
+        # todo aov type changed event
+
         if self.isFrozen(): return
+
+        if value == self.aovType(): return
 
         # illegal value
         if value not in self.aovTypes():
@@ -704,14 +710,11 @@ class AOVManagerItemWidget(QWidget):
                     if self.aovType() == AOVGROUP:
                         self.updateNodeName(self.currentItem().getArg("node"), value)
                         """ Need to freeze/exit here to ensure the node name stays synchronized"""
-                        self.setIsFrozen(False)
                         return
 
                 # update metadata
                 self.node().getParameter(param_name).setValue(value, 0)
                 self.currentItem().setArg(param_name, value)
-
-            #self.setIsFrozen(False)
 
     @staticmethod
     def updateGUI(parent, widget, item):
@@ -738,12 +741,7 @@ class AOVManagerItemWidget(QWidget):
             self.setAOVType(aov_type)
             self.widgets()["type"].setText(str(aov_type))
 
-        # # populate parameters
-        # for arg in item.args():
-        #     if arg != "type":
-        #         self.widgets()[arg].setText(item.getArg(arg))
-
-        # # set name
+        # set name
         item_name = item.getArg("name")
         self.parametersWidget().setTitle(item_name)
 
