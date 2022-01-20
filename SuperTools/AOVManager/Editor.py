@@ -11,6 +11,8 @@ Todo:
         -   RenderSettings node
                 enable/disable update
 Todo (Bugs)
+    *   GROUP type has wrong default parameters
+            - GROUP TYPE is also updating to the wrong parameters
     *   Node is renaming on selection ( 593 )
             - sets name when selecting
             - sets name when creating
@@ -500,23 +502,25 @@ class AOVManagerItemWidget(QWidget):
                     # mainly used for setting the node
                     delegate_widget.setText(self.node().getParameter(name).getValue(0))
 
-    def populateParameterWidgets(self):
-        """ Populates all of the parameters from the node"""
-        node = NodegraphAPI.GetNode(self.currentItem().getArg("node"))
-        parameter_map = paramutils.getParameterMapFromNode(node)
-        self.clearNonAbstractParameterWidget()
-        for param_name, param_value in parameter_map.items():
-            if param_name == "type":
-                delegate_widget = ListInputWidget(self)
-                delegate_widget.filter_results = False
-                delegate_widget.populate([[aov] for aov in self.aovTypes()])
-                self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent)
-            else:
-                if isinstance(param_value, str):
-                    delegate_widget = StringInputWidget()
-                elif isinstance(param_value, float):
-                    delegate_widget = FloatInputWidget()
-                self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent)
+    def createAOVMacro(self, renderer, aov_type):
+        """ Creates the Macro/Group node associated with the selected AOV/Engine
+
+        Args:
+            renderer (str):
+            aov_type (str):
+        """
+        if aov_type == AOVGROUP:
+            node_name = "__aovGroup"
+        else:
+            base_aov_type = AOVMAP[renderer][aov_type]["type"]
+            node_name = "__aov{RENDERER}{TYPE}".format(RENDERER=renderer, TYPE=base_aov_type)
+
+        # create node
+        old_node = self.node()
+        new_node = NodegraphAPI.CreateNode(node_name, self.node().getParent())
+        nodeutils.replaceNode(old_node, new_node)
+
+        return new_node
 
     def getItemArg(self, arg_name):
         return self.currentItem().getArg(arg_name)
@@ -535,6 +539,24 @@ class AOVManagerItemWidget(QWidget):
             return AOVMAP[self.renderer()][aov_type][arg_name]
         except KeyError:
             return None
+
+    def populateParameterWidgets(self):
+        """ Populates all of the parameters from the node"""
+        node = NodegraphAPI.GetNode(self.currentItem().getArg("node"))
+        parameter_map = paramutils.getParameterMapFromNode(node)
+        self.clearNonAbstractParameterWidget()
+        for param_name, param_value in parameter_map.items():
+            if param_name == "type":
+                delegate_widget = ListInputWidget(self)
+                delegate_widget.filter_results = False
+                delegate_widget.populate([[aov] for aov in self.aovTypes()])
+                self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent)
+            else:
+                if isinstance(param_value, str):
+                    delegate_widget = StringInputWidget()
+                elif isinstance(param_value, float):
+                    delegate_widget = FloatInputWidget()
+                self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent)
 
     """ WIDGETS """
     def clearNonAbstractParameterWidget(self):
@@ -564,32 +586,19 @@ class AOVManagerItemWidget(QWidget):
         aov_manager_widget = getWidgetAncestor(self, AOVManagerWidget)
         return aov_manager_widget.aovTypes()
 
-    def createAOVMacro(self, renderer, aov_type):
-        """ Creates the Macro/Group node associated with the selected AOV/Engine
-
-        Args:
-            renderer (str):
-            aov_type (str):
-        """
-        if aov_type == AOVGROUP:
-            node_name = "__aovGroup"
-        else:
-            base_aov_type = AOVMAP[renderer][aov_type]["type"]
-            node_name = "__aov{RENDERER}{TYPE}".format(RENDERER=renderer, TYPE=base_aov_type)
-
-        # create node
-        old_node = self.node()
-        new_node = NodegraphAPI.CreateNode(node_name, self.node().getParent())
-        nodeutils.replaceNode(old_node, new_node)
-
-        return new_node
-
     def setAOVType(self, aov_type):
         """ Sets the current items AOV type and updates the display """
         # preflight
         renderer = self.renderer()
         if renderer not in renderEngines(): return
         if aov_type not in self.aovTypes(): return
+
+        # clear args
+        """ Note need to set node here so that the parent node can be found in
+        the call to "createAOVMacro()" """
+        node = self.node()
+        self.currentItem().clearArgsList()
+        self.currentItem().setArg("node", node.getName())
 
         # Create new node
         self.currentItem().setArg("type", aov_type)
