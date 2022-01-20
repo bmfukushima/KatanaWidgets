@@ -11,9 +11,6 @@ Todo:
         -   RenderSettings node
                 enable/disable update
 Todo (Bugs)
-    *   Set default parameters on init
-            - renderer
-            - saveLocation
     *   Node is renaming on selection ( 593 )
             - sets name when selecting
             - sets name when creating
@@ -90,12 +87,12 @@ LIGHT = "LIGHT"
 
 AOVMAP = {
     "Prman": {
-        LPE: {"type": LPE, "lpe": "<INSERT LPE HERE>", "name": "LPE", "rendererType": "color"},
+        LPE: {"type": LPE, "lpe": "lpe:", "name": "LPE", "rendererType": "color"},
         SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "rendererType": "color"},
-        INDIRECT_SPECULAR: {"type": LPE, "lpe": "C<RS>.+[<L.>O]", "name": INDIRECT_SPECULAR, "rendererType": "color"},
-        INDIRECT_DIFFUSE: {"type": LPE, "lpe": "C<RD>.+[<L.>O]", "name": INDIRECT_DIFFUSE, "rendererType": "color"},
-        SUBSURFACE: {"type": LPE, "lpe": "C<TD>.*[<L.>O]", "name": SUBSURFACE, "rendererType": "color"},
-        TRANSMISSIVE: {"type": LPE, "lpe": "C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "rendererType": "color"},
+        INDIRECT_SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>.+[<L.>O]", "name": INDIRECT_SPECULAR, "rendererType": "color"},
+        INDIRECT_DIFFUSE: {"type": LPE, "lpe": "lpe:C<RD>.+[<L.>O]", "name": INDIRECT_DIFFUSE, "rendererType": "color"},
+        SUBSURFACE: {"type": LPE, "lpe": "lpe:C<TD>.*[<L.>O]", "name": SUBSURFACE, "rendererType": "color"},
+        TRANSMISSIVE: {"type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "rendererType": "color"},
         DIFFUSE: {"type": LPE, "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "rendererType": "color"}
     },
     "Arnold": {},
@@ -168,7 +165,7 @@ class AOVManagerEditor(AbstractSuperToolEditor):
     def renderLocation(self):
         return self.aovManager().renderLocation()
 
-    def renderLocation(self, render_location):
+    def setRenderLocation(self, render_location):
         return self.aovManager().setRenderLocation(render_location)
 
     def renderer(self):
@@ -231,8 +228,6 @@ class AOVManagerWidget(ShojiModelViewWidget):
         # setup attrs
         self._node = node
         self.rootItem().setArg("node", node.getName())
-        self._renderer = ""
-        self._render_location = ""
 
         self.setHeaderViewType(ModelViewWidget.TREE_VIEW)
         self._delegate = AOVManagerItemDelegate(parent=self)
@@ -309,16 +304,16 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self._node = node
 
     def renderer(self):
-        return self._renderer
+        return self.node().getParameter("renderer").getValue(0)
 
     def setRenderer(self, renderer):
-        self._renderer = renderer
+        self.node().getParameter("renderer").setValue(renderer, 0)
 
     def renderLocation(self):
-        return self._render_location
+        return self.node().getParameter("renderLocation").getValue(0)
 
     def renderLocation(self, render_location):
-        self._render_location = render_location
+        self.node().getParameter("renderLocation").setValue(render_location, 0)
 
     """ EVENTS """
     def aovNameChangedEvent(self, item, old_value, new_value):
@@ -523,7 +518,10 @@ class AOVManagerItemWidget(QWidget):
         return new_node
 
     def getItemArg(self, arg_name):
-        return self.currentItem().getArg(arg_name)
+        try:
+            return self.currentItem().getArg(arg_name)
+        except KeyError:
+            return None
 
     def getDefaultArg(self, aov_type, arg_name):
         """ Gets the default AOV value from the mapping table
@@ -701,29 +699,33 @@ class AOVManagerItemWidget(QWidget):
     def parameterChangedEvent(self, widget, value):
         """ User has changed a dynamic parameter"""
         param_name = widget.objectName()
-        if value == self.getItemArg(param_name): return
 
-        if not self.isFrozen():
-            #self.setIsFrozen(True)
-            # update node name
-            """ Special case is needed here as the node name may change when set"""
-            if param_name == "node":
-                new_node_name = self.updateNodeName(self.currentItem().getArg("node"), value)
+        # preflight
+        if self.getItemArg(param_name):
+            if value == self.getItemArg(param_name): return
+        if self.isFrozen(): return
+
+        # update parameter
+        #self.setIsFrozen(True)
+        # update node name
+        """ Special case is needed here as the node name may change when set"""
+        if param_name == "node":
+            new_node_name = self.updateNodeName(self.currentItem().getArg("node"), value)
+            if self.aovType() == AOVGROUP:
+                self.parametersWidget().setTitle(new_node_name)
+                self.widgets()["name"].setText(new_node_name)
+
+        else:
+            if param_name == "name":
+                self.parametersWidget().setTitle(value)
                 if self.aovType() == AOVGROUP:
-                    self.parametersWidget().setTitle(new_node_name)
-                    self.widgets()["name"].setText(new_node_name)
+                    self.updateNodeName(self.currentItem().getArg("node"), value)
+                    """ Need to freeze/exit here to ensure the node name stays synchronized"""
+                    return
 
-            else:
-                if param_name == "name":
-                    self.parametersWidget().setTitle(value)
-                    if self.aovType() == AOVGROUP:
-                        self.updateNodeName(self.currentItem().getArg("node"), value)
-                        """ Need to freeze/exit here to ensure the node name stays synchronized"""
-                        return
-
-                # update metadata
-                self.node().getParameter(param_name).setValue(value, 0)
-                self.currentItem().setArg(param_name, value)
+            # update metadata
+            self.node().getParameter(param_name).setValue(value, 0)
+            self.currentItem().setArg(param_name, value)
 
     @staticmethod
     def updateGUI(parent, widget, item):
