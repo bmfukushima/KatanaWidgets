@@ -13,8 +13,8 @@ Todo:
     *   Setup save location
     *   Setup Advanced Parameters
 Todo (Bugs)
-    *   Setting Name via view does not work
-            - only works for groups?
+    *   Setting TYPE from view
+
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -265,19 +265,28 @@ class AOVManagerWidget(ShojiModelViewWidget):
     def populate(self, nodes, parent=QModelIndex()):
         """ Populates the user defined AOV's on load"""
         for node in nodes:
-            # create new item
-            column_data = paramutils.getParameterMapFromNode(node)
-            new_index = self.createNewIndex(None, parent=parent, column_data=column_data)
-            new_index.internalPointer().setIsEnabled(not node.isBypassed())
+            if self.isAOVManagerNode(node):
+                # create new item
+                column_data = paramutils.getParameterMapFromNode(node)
+                new_index = self.createNewIndex(None, parent=parent, column_data=column_data)
+                new_index.internalPointer().setIsEnabled(not node.isBypassed())
 
-            # populate children
-            if hasattr(node, "getChildren"):
-                if 0 < len(node.getChildren()):
-                    self.populate(reversed(node.getChildren()), parent=new_index)
+                # populate children
+                if hasattr(node, "getChildren"):
+                    if 0 < len(node.getChildren()):
+                        self.populate(reversed(node.getChildren()), parent=new_index)
 
-            # todo expand on populate
-            # if child["expanded"]:
-            #     self.headerViewWidget().setExpanded(new_index, True)
+                # todo expand on populate
+                # if child["expanded"]:
+                #     self.headerViewWidget().setExpanded(new_index, True)
+
+    def isAOVManagerNode(self, node):
+        if not node.getParameter("type"): return False
+        if not node.getParameter("name"): return False
+        if not node.getParameter("node"): return False
+        if node.getParameter("node").getValue(0) != node.getName(): return False
+
+        return True
 
     def getChildNodeListFromItem(self, item):
         """
@@ -321,7 +330,6 @@ class AOVManagerWidget(ShojiModelViewWidget):
             node.setName(new_value)
             item.setArg("node", node.getName())
 
-        print("setting ndoe name", new_value)
         item.setArg("name", new_value)
         node.getParameter("name").setValue(new_value, 0)
 
@@ -502,7 +510,9 @@ class AOVManagerItemWidget(QWidget):
                 else:
                     # mainly used for setting the node
                     delegate_widget.setText(self.node().getParameter(name).getValue(0))
+            # set type
             else:
+                self.node().getParameter(name).setValue(self.getItemArg("type"), 0)
                 delegate_widget.setText(self.getItemArg("type"))
 
     def createAOVMacro(self, renderer, aov_type):
