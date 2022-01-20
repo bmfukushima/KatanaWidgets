@@ -10,10 +10,10 @@ Todo:
                                      --> updateGUI
         -   RenderSettings node
                 enable/disable update
+    *   Setup save location
+    *   Setup Advanced Parameters
 Todo (Bugs)
-    *   Node is renaming on selection ( 593 )
-            - sets name when selecting
-            - sets name when creating
+    *   Setting Name via view does not work
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -262,10 +262,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
     """ UTILS """
     def populate(self, nodes, parent=QModelIndex()):
-        """ Populates the user defined AOV's on load
-
-        # Todo populate from children, and not from data
-        """
+        """ Populates the user defined AOV's on load"""
         for node in nodes:
             # create new item
             column_data = paramutils.getParameterMapFromNode(node)
@@ -584,8 +581,15 @@ class AOVManagerItemWidget(QWidget):
         aov_manager_widget = getWidgetAncestor(self, AOVManagerWidget)
         return aov_manager_widget.aovTypes()
 
-    def setAOVType(self, aov_type):
-        """ Sets the current items AOV type and updates the display """
+    def setAOVType(self, aov_type, new=True):
+        """ Sets the current items AOV type and updates the display
+
+        Args:
+            aov_type (str): name of aov to be set
+            new (bool): determines if a new node should be created or not.
+                This is needed as this function is called by multiple functions
+                (updateGUI & aovTypeChangedEvent).  Default value is True.
+            """
         # preflight
         renderer = self.renderer()
         if renderer not in renderEngines(): return
@@ -600,8 +604,9 @@ class AOVManagerItemWidget(QWidget):
 
         # Create new node
         self.currentItem().setArg("type", aov_type)
-        node = self.createAOVMacro(renderer, aov_type)
-        self.currentItem().setArg("node", node.getName())
+        if new:
+            node = self.createAOVMacro(renderer, aov_type)
+            self.currentItem().setArg("node", node.getName())
 
         # update AOV Parameter Widgets
         if aov_type == self.aovType() and not self.isFrozen():
@@ -743,14 +748,13 @@ class AOVManagerItemWidget(QWidget):
         if renderer not in renderEngines(): return
 
         # set item
-        # print(item.columnData())
         self.setCurrentItem(item)
         self.setIsFrozen(True)
 
         # set type
         aov_type = item.getArg("type")
         if aov_type in self.aovTypes():
-            self.setAOVType(aov_type)
+            self.setAOVType(aov_type, new=False)
             self.widgets()["type"].setText(str(aov_type))
 
         # set name
