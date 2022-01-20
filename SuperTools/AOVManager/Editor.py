@@ -3,16 +3,20 @@ Todo:
     *   Item type storage Group vs AOV
             - Populate | Expand on startup
     *   Setup Node
-        -   Presets, Lights, Custom, Denoise
+        -   Lights, Custom, Denoise
         -   Create Node data
+                PRMAN | ARNOLD | REDSHIFT | DELIGHT
                 AOVManagerItemWidget --> setAOVType
                                      --> updateGUI
         -   RenderSettings node
                 enable/disable update
+Todo (Bugs)
+    *   Node is renaming on selection
+    *   Can't change to LPE for some reason?
 
 Use a ShojiMVW to create an interface for AOV's
 Items
-    GROUP | LIGHT | LPE | PRESET
+    GROUP | LIGHT | LPE | CUSTOM
     AOV Item
         * AOVItems will hold all of the necessary parameters the user needs to create a new AOV
         * Presets / LPE's / Lights
@@ -30,7 +34,7 @@ AOVManagerEditor --> (AbstractSuperToolEditor)
                         |- lpeWidget
 
 Data:
-    type : TYPE (GROUP | LIGHT | LPE | PRESET)
+    type : TYPE (GROUP | LIGHT | LPE)
     name : str()
     children : list()
     enabled : bool
@@ -66,25 +70,30 @@ from cgwidgets.views import AbstractDragDropModelDelegate
 from Widgets2 import AbstractSuperToolEditor, iParameter
 from Utils2 import paramutils, nodeutils
 
-save_location = "/media/ssd01/dev/sandbox/aovManager.json"
-
 # MAPPING TABLES
-
 SPECULAR = "SPEC"
+INDIRECT_SPECULAR = "iSPEC"
 SPECULAR_ROUGHNESS = "SPECR"
 DIFFUSE = "DIFF"
-
+INDIRECT_DIFFUSE = "iDIFF"
+EMISSIVE = "GLOW"
+SUBSURFACE = "SSS"
+TRANSMISSIVE = "TRANS"
 
 LPE = "LPE"
-LIGHT = "Light"
 AOVGROUP = "Group"
-PRESET = "PRESET"
-SPEC = "SPEC"
+LIGHT = "Light"
 
 AOVMAP = {
     "Prman": {
         "LPE": {"type": LPE, "lpe": "", "name": "", "rendererType": "color"},
-        SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "rendererType": "color"}
+        SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "rendererType": "color"},
+        INDIRECT_SPECULAR: {"type": LPE, "lpe": "C<RS>.+[<L.>O]", "name": INDIRECT_SPECULAR, "rendererType": "color"},
+        INDIRECT_DIFFUSE: {"type": LPE, "lpe": "C<RD>.+[<L.>O]", "name": INDIRECT_DIFFUSE, "rendererType": "color"},
+        SUBSURFACE: {"type": LPE, "lpe": "C<TD>.*[<L.>O]", "name": SUBSURFACE, "rendererType": "color"},
+        TRANSMISSIVE: {"type": LPE, "lpe": "C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "rendererType": "color"},
+        DIFFUSE: {"type": LPE, "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "rendererType": "color"}
+
     },
     "Arnold": {},
     "Redshift": {},
@@ -153,11 +162,11 @@ class AOVManagerEditor(AbstractSuperToolEditor):
         self.insertResizeBar()
 
     """ PROPERTIES """
-    def saveLocation(self):
-        return self.aovManager().saveLocation()
+    def renderLocation(self):
+        return self.aovManager().renderLocation()
 
-    def setSaveLocation(self, save_location):
-        return self.aovManager().setSaveLocation(save_location)
+    def renderLocation(self, render_location):
+        return self.aovManager().setRenderLocation(render_location)
 
     def renderer(self):
         return self.aovManager().renderer()
@@ -184,6 +193,7 @@ class AOVManagerEditor(AbstractSuperToolEditor):
         """ User has changed the renderer """
         # todo update render location changed parameters
         self.node().getParameter("renderLocation").setValue(value, 0)
+        self.setRenderLocation(value)
 
     def showEvent(self, event):
         """ Set all of the default widget sizes on show"""
@@ -219,7 +229,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self._node = node
         self.rootItem().setArg("node", node.getName())
         self._renderer = ""
-        self._save_location = save_location
+        self._render_location = ""
 
         self.setHeaderViewType(ModelViewWidget.TREE_VIEW)
         self._delegate = AOVManagerItemDelegate(parent=self)
@@ -249,7 +259,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self.setHeaderItemDropEvent(self.aovDroppedEvent)
 
         render_settings_node = None
-        nodes = [node for node in self.node().getChildren() if node != render_settings_node]
+        nodes = [node for node in reversed(self.node().getChildren()) if node != render_settings_node]
         self.populate(nodes)
 
     """ UTILS """
@@ -301,11 +311,11 @@ class AOVManagerWidget(ShojiModelViewWidget):
     def setRenderer(self, renderer):
         self._renderer = renderer
 
-    def saveLocation(self):
-        return self._save_location
+    def renderLocation(self):
+        return self._render_location
 
-    def setSaveLocation(self, save_location):
-        self._save_location = save_location
+    def renderLocation(self, render_location):
+        self._render_location = render_location
 
     """ EVENTS """
     def aovNameChangedEvent(self, item, old_value, new_value):
@@ -415,7 +425,7 @@ class AOVManagerItemWidget(QWidget):
 
     Attributes:
         aovType (str(TYPE)): the current type of AOV this is valid options are
-            CUSTOM | GROUP | LIGHT | LPE | PRESET
+            CUSTOM | GROUP | LIGHT | LPE
         currentItem (AbstractShojiModelItem):
         isFrozen (bool):
         widgets (dict): of parameters widgets.  Each key is an arg's name, and the value
@@ -453,7 +463,15 @@ class AOVManagerItemWidget(QWidget):
 
     """ UTILS """
     def addParameterWidget(self, name, delegate_widget, finished_editing_function):
-        """ Adds a parameter widget to the current display"""
+        """ Adds a parameter widget to the current display
+
+        Args:
+            name (str): name of arg
+            delegate_widget (QWidget): Widget for user to input values
+            finished_editing_function (func): Function to be run when the user
+                has finished editing.  This function should take the args (widget, value)
+        """
+
         # create input widget
         input_widget = LabelledInputWidget(name=name, delegate_widget=delegate_widget)
         input_widget.setDefaultLabelLength(getFontSize() * 7)
@@ -466,17 +484,20 @@ class AOVManagerItemWidget(QWidget):
         delegate_widget.setObjectName(name)
         self.widgets()[name] = delegate_widget
 
-        # # setup default parameter
+        # setup default parameter
         if self.node().getParameter(name):
             value = self.getDefaultArg(self.aovType(), name)
-            """ If no value, then only set the display text from the parameter"""
-            if value:
-                delegate_widget.setText(value)
-                self.node().getParameter(name).setValue(value, 0)
-            else:
-                delegate_widget.setText(self.node().getParameter(name).getValue(0))
-        # if self.node().getParameter(name):
-        #     delegate_widget.setText(self.node().getParameter(name).getValue(0))
+
+            """ If no value, then only set the display text from the parameter
+            Need to bypass "type" or else it will query from the wrong mapping table"""
+            if name != "type":
+                if value:
+                    delegate_widget.setText(value)
+                    self.node().getParameter(name).setValue(value, 0)
+                    self.currentItem().setArg(name, value)
+                else:
+                    # mainly used for setting the node
+                    delegate_widget.setText(self.node().getParameter(name).getValue(0))
 
     def aovTypes(self):
         aov_manager_widget = getWidgetAncestor(self, AOVManagerWidget)
@@ -499,6 +520,9 @@ class AOVManagerItemWidget(QWidget):
                 elif isinstance(param_value, float):
                     delegate_widget = FloatInputWidget()
                 self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent)
+
+    def getItemArg(self, arg_name):
+        return self.currentItem().getArg(arg_name)
 
     def getDefaultArg(self, aov_type, arg_name):
         """ Gets the default AOV value from the mapping table
@@ -623,13 +647,14 @@ class AOVManagerItemWidget(QWidget):
             old_name (str):
             new_name (str):
         """
-        node = NodegraphAPI.GetNode(old_name)
-        node.setName(new_name)
-        self.currentItem().setArg("node", node.getName())
-        if self.aovType() == AOVGROUP:
-            self.currentItem().setArg("name", node.getName())
-        self.widgets()["node"].setText(node.getName())
-        return node.getName()
+        if not self.isFrozen():
+            node = NodegraphAPI.GetNode(old_name)
+            node.setName(new_name)
+            self.currentItem().setArg("node", node.getName())
+            if self.aovType() == AOVGROUP:
+                self.currentItem().setArg("name", node.getName())
+            self.widgets()["node"].setText(node.getName())
+            return node.getName()
 
     def aovTypeChangedEvent(self, widget, value):
         """ Called when the user changes the AOV type using the "type" """
@@ -648,20 +673,23 @@ class AOVManagerItemWidget(QWidget):
 
     def aovNameChangedEvent(self, widget, value):
         """ When the user updates the name from the header title, this will run"""
-        self.currentItem().setArg("name", value)
+        if not self.isFrozen():
+            self.currentItem().setArg("name", value)
 
-        self.parametersWidget().setTitle(value)
-        self.widgets()["name"].setText(value)
-        if self.aovType() == AOVGROUP:
-            self.updateNodeName(self.currentItem().getArg("node"), value)
+            self.parametersWidget().setTitle(value)
+            self.widgets()["name"].setText(value)
+            if self.aovType() == AOVGROUP:
+                self.updateNodeName(self.currentItem().getArg("node"), value)
 
         return
 
     def parameterChangedEvent(self, widget, value):
         """ User has changed a dynamic parameter"""
         param_name = widget.objectName()
+        if value == self.getItemArg(param_name): return
+
         if not self.isFrozen():
-            self.setIsFrozen(True)
+            #self.setIsFrozen(True)
             # update node name
             """ Special case is needed here as the node name may change when set"""
             if param_name == "node":
@@ -683,7 +711,7 @@ class AOVManagerItemWidget(QWidget):
                 self.node().getParameter(param_name).setValue(value, 0)
                 self.currentItem().setArg(param_name, value)
 
-            self.setIsFrozen(False)
+            #self.setIsFrozen(False)
 
     @staticmethod
     def updateGUI(parent, widget, item):
@@ -710,29 +738,14 @@ class AOVManagerItemWidget(QWidget):
             self.setAOVType(aov_type)
             self.widgets()["type"].setText(str(aov_type))
 
-        # populate parameters
-        for arg in item.args():
-            if arg != "type":
-                self.widgets()[arg].setText(item.getArg(arg))
+        # # populate parameters
+        # for arg in item.args():
+        #     if arg != "type":
+        #         self.widgets()[arg].setText(item.getArg(arg))
 
         # # set name
         item_name = item.getArg("name")
         self.parametersWidget().setTitle(item_name)
-
-        # todo | update parameters on selection change
-        if aov_type in self.aovTypes():
-            if aov_type == AOVGROUP:
-                pass
-
-            if aov_type == LPE:
-                # set lpe
-                pass
-
-            if aov_type == LIGHT:
-                pass
-
-            if aov_type == PRESET:
-                pass
 
         self.setIsFrozen(False)
 
