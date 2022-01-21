@@ -252,7 +252,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         )
 
         # setup events
-        self.setHeaderItemTextChangedEvent(self.aovNameChangedEvent)
+        self.setHeaderItemTextChangedEvent(self.aovTextChangedEvent)
         self.setHeaderItemEnabledEvent(self.aovEnabledEvent)
         self.setHeaderItemDeleteEvent(self.aovDeleteEvent, update_first=False)
         self.setHeaderItemDropEvent(self.aovDroppedEvent)
@@ -323,15 +323,24 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self.node().getParameter("renderLocation").setValue(render_location, 0)
 
     """ EVENTS """
-    def aovNameChangedEvent(self, item, old_value, new_value):
-        # set node name
-        node = NodegraphAPI.GetNode(item.getArg("node"))
-        if item.getArg("type") == AOVGROUP:
-            node.setName(new_value)
-            item.setArg("node", node.getName())
+    def aovTextChangedEvent(self, item, old_value, new_value, column):
+        # name changed
+        if column == 0:
+            # set node name
+            node = NodegraphAPI.GetNode(item.getArg("node"))
+            if item.getArg("type") == AOVGROUP:
+                node.setName(new_value)
+                item.setArg("node", node.getName())
 
-        item.setArg("name", new_value)
-        node.getParameter("name").setValue(new_value, 0)
+            item.setArg("name", new_value)
+            node.getParameter("name").setValue(new_value, 0)
+
+        # type changed
+        if column == 1:
+            aov_type = new_value
+            delegate_widget = self.activeDelegateWidgets()[0]
+            delegate_widget.widgets()["type"].setText(aov_type)
+            delegate_widget.setAOVType(aov_type, new=True)
 
         # export data
         self.updateDelegateDisplay()
@@ -522,6 +531,7 @@ class AOVManagerItemWidget(QWidget):
             renderer (str):
             aov_type (str):
         """
+
         if aov_type == AOVGROUP:
             node_name = "__aovGroup"
         else:
@@ -707,18 +717,19 @@ class AOVManagerItemWidget(QWidget):
         """ Called when the user changes the AOV type using the "type" """
         # preflight
         # todo aov type changed event
-
+        print("aov type changed")
         if self.isFrozen(): return
-
+        print('1')
         if value == self.aovType(): return
-
+        print('2')
         # illegal value
         if value not in self.aovTypes():
             widget.setText(self.aovType())
             return
-
+        print('3')
         # set AOV type
         self.setAOVType(value)
+        print('end')
         #aov_manager = getWidgetAncestor(self, AOVManagerWidget)
         #aov_manager.updateDelegateDisplay()
 
@@ -811,16 +822,25 @@ class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
         self.setDelegateWidget(ListInputWidget)
         self._parent = parent
 
+    # def setAOVType(self, widget, value):
+    #     aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+    #     selected_items = aov_manager.self.getAllSelectedItems()
+    #     if 0 < len(selected_items):
+    #         current_item = selected_items[0]
+    #         current_item.
+
     def setModelData(self, editor, model, index):
         """ Create custom delegate for the type popup"""
-
         # check TYPE set
-        if index.column() == 1:
-            new_value = editor.text()
-            aov_manager_item_widget = getWidgetAncestor(self, AOVManagerWidget)
-            if new_value not in aov_manager_item_widget.aovTypes():
-                editor.setText(self._aov_type)
-                return
+        # if index.column() == 1:
+        #     new_value = editor.text()
+        #     aov_manager = getWidgetAncestor(self, AOVManagerWidget)
+        #     if new_value not in aov_manager.aovTypes():
+        #         editor.setText(self._aov_type)
+        #         return
+        #     AbstractDragDropModelDelegate.setModelData(self, editor, model, index)
+        #     aov_manager.updateDelegateDisplay()
+        #     return
 
         # update LPE display
         if index.column() == 2:
@@ -836,8 +856,10 @@ class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
         if index.column() == 1:
             delegate_widget = self.delegateWidget(parent)
             delegate_widget.filter_results = False
-            aov_manager_item_widget = getWidgetAncestor(parent, AOVManagerWidget)
-            delegate_widget.populate([[item] for item in sorted(aov_manager_item_widget.aovTypes())])
+            #delegate_widget.setUserFinishedEditingEvent()
+            aov_manager_widget = getWidgetAncestor(parent, AOVManagerWidget)
+            delegate_widget.populate([[item] for item in sorted(aov_manager_widget.aovTypes())])
+
             self._aov_type = delegate_widget.text()
             return delegate_widget
 
