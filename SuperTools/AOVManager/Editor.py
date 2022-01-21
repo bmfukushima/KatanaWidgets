@@ -70,6 +70,14 @@ from Widgets2 import AbstractSuperToolEditor, iParameter
 from Utils2 import paramutils, nodeutils
 
 # MAPPING TABLES
+
+# Renderers
+ARNOLD = "Arnold"
+PRMAN = "Prman"
+DELIGHT = "Delight"
+REDSHIFT = "Redshift"
+
+# AOVS
 SPECULAR = "SPEC"
 SPECULAR_INDIRECT = "iSPEC"
 SPECULAR_ROUGHNESS = "SPECR"
@@ -109,27 +117,35 @@ AOVMAP = {
     "Redshift": {},
     "Delight": {}
 }
+TYPESMAP = {
+    "Arnold": [
+        "BYTE",
+        "INT",
+        "UINT",
+        "BOOL",
+        "FLOAT",
+        "RGB",
+        "RGBA",
+        "VECTOR",
+        "VECTOR2",
+        "STRING",
+        "POINTER",
+        "NODE",
+        "ARRAY",
+        "MATRIX"
+    ],
+    "Prman": [
+        "color",
+        "float",
+        "point",
+        "normal",
+        "vector",
+        "int"
+    ],
+    "Redshift": [],
+    "Delight": []
+}
 
-ARNOLD = "Arnold"
-ARNOLD_RENDERER_TYPES = [
-    "BYTE",
-    "INT",
-    "UINT",
-    "BOOL",
-    "FLOAT",
-    "RGB",
-    "RGBA",
-    "VECTOR",
-    "VECTOR2",
-    "STRING",
-    "POINTER",
-    "NODE",
-    "ARRAY",
-    "MATRIX"
-]
-PRMAN = "Prman"
-DELIGHT = "Delight"
-REDSHIFT = "Redshift"
 
 def renderEngines():
     return [ARNOLD, DELIGHT, PRMAN, REDSHIFT]
@@ -394,9 +410,6 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
             # disconnect node
             nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
-
-            # # create ports
-            # nodeutils.createIOPorts(node, force_create=False, connect=True)
 
             # reparent
             node.setParent(parent_node)
