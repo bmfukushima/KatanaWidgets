@@ -12,9 +12,6 @@ Todo:
                 enable/disable update
     *   Setup save location
     *   Setup Advanced Parameters
-Todo (Bugs)
-    *   Setting TYPE from view
-
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -74,10 +71,11 @@ from Utils2 import paramutils, nodeutils
 
 # MAPPING TABLES
 SPECULAR = "SPEC"
-INDIRECT_SPECULAR = "iSPEC"
+SPECULAR_INDIRECT = "iSPEC"
 SPECULAR_ROUGHNESS = "SPECR"
+DIFFUSE_RAW = "rDIFF"
 DIFFUSE = "DIFF"
-INDIRECT_DIFFUSE = "iDIFF"
+DIFFUSE_INDIRECT = "iDIFF"
 EMISSIVE = "GLOW"
 SUBSURFACE = "SSS"
 TRANSMISSIVE = "TRANS"
@@ -88,24 +86,50 @@ LIGHT = "LIGHT"
 
 AOVMAP = {
     "Prman": {
-        LPE: {"type": LPE, "lpe": "lpe:", "name": "LPE", "rendererType": "color"},
+        LPE: {"type": LPE, "lpe": "lpe:", "name": "<NewAOV>", "rendererType": "color"},
         SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "rendererType": "color"},
-        INDIRECT_SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>.+[<L.>O]", "name": INDIRECT_SPECULAR, "rendererType": "color"},
-        INDIRECT_DIFFUSE: {"type": LPE, "lpe": "lpe:C<RD>.+[<L.>O]", "name": INDIRECT_DIFFUSE, "rendererType": "color"},
+        SPECULAR_INDIRECT: {"type": LPE, "lpe": "lpe:C<RS>.+[<L.>O]", "name": SPECULAR_INDIRECT, "rendererType": "color"},
+        DIFFUSE: {"type": LPE, "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "rendererType": "color"},
+        DIFFUSE_INDIRECT: {"type": LPE, "lpe": "lpe:C<RD>.+[<L.>O]", "name": DIFFUSE_INDIRECT, "rendererType": "color"},
+        DIFFUSE_RAW: {"type": LPE, "lpe": "lpe:CU2[<L.>O]", "name": DIFFUSE_RAW, "rendererType": "color"},
         SUBSURFACE: {"type": LPE, "lpe": "lpe:C<TD>.*[<L.>O]", "name": SUBSURFACE, "rendererType": "color"},
-        TRANSMISSIVE: {"type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "rendererType": "color"},
-        DIFFUSE: {"type": LPE, "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "rendererType": "color"}
+        TRANSMISSIVE: {"type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "rendererType": "color"}
     },
-    "Arnold": {},
+    "Arnold": {
+        LPE: {"type": LPE, "lpe": "", "name": "<NewAOV>", "rendererType": "RGB"},
+        SPECULAR: {"type": LPE, "lpe": "C<RS>L", "name": SPECULAR, "rendererType": "RGB"},
+        SPECULAR_INDIRECT: {"type": LPE, "lpe": "C<RS>[DSVOB].*", "name": SPECULAR_INDIRECT, "rendererType": "RGB"},
+        DIFFUSE: {"type": LPE, "lpe": "C<RD>L", "name": DIFFUSE, "rendererType": "RGB"},
+        DIFFUSE_INDIRECT: {"type": LPE, "lpe": "C<RD>[DSVOB].*", "name": DIFFUSE_INDIRECT, "rendererType": "RGB"},
+        DIFFUSE_RAW: {"type": LPE, "lpe": "C<RD>A", "name": DIFFUSE_RAW, "rendererType": "RGB"},
+        SUBSURFACE: {"type": LPE, "lpe": "C<TD>.*", "name": SUBSURFACE, "rendererType": "RGB"},
+        TRANSMISSIVE: {"type": LPE, "lpe": "C<TS>.*", "name": TRANSMISSIVE, "rendererType": "RGB"},
+
+    },
     "Redshift": {},
     "Delight": {}
 }
 
 ARNOLD = "Arnold"
+ARNOLD_RENDERER_TYPES = [
+    "BYTE",
+    "INT",
+    "UINT",
+    "BOOL",
+    "FLOAT",
+    "RGB",
+    "RGBA",
+    "VECTOR",
+    "VECTOR2",
+    "STRING",
+    "POINTER",
+    "NODE",
+    "ARRAY",
+    "MATRIX"
+]
 PRMAN = "Prman"
 DELIGHT = "Delight"
 REDSHIFT = "Redshift"
-
 
 def renderEngines():
     return [ARNOLD, DELIGHT, PRMAN, REDSHIFT]
@@ -371,8 +395,8 @@ class AOVManagerWidget(ShojiModelViewWidget):
             # disconnect node
             nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
 
-            # create ports
-            nodeutils.createIOPorts(node, force_create=False, connect=True)
+            # # create ports
+            # nodeutils.createIOPorts(node, force_create=False, connect=True)
 
             # reparent
             node.setParent(parent_node)
@@ -716,22 +740,16 @@ class AOVManagerItemWidget(QWidget):
     def aovTypeChangedEvent(self, widget, value):
         """ Called when the user changes the AOV type using the "type" """
         # preflight
-        # todo aov type changed event
-        print("aov type changed")
         if self.isFrozen(): return
-        print('1')
         if value == self.aovType(): return
-        print('2')
+
         # illegal value
         if value not in self.aovTypes():
             widget.setText(self.aovType())
             return
-        print('3')
+
         # set AOV type
         self.setAOVType(value)
-        print('end')
-        #aov_manager = getWidgetAncestor(self, AOVManagerWidget)
-        #aov_manager.updateDelegateDisplay()
 
     def aovNameChangedEvent(self, widget, value):
         """ When the user updates the name from the header title, this will run"""
