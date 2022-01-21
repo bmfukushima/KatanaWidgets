@@ -20,8 +20,8 @@ class NodeTreeEditor(AbstractSuperToolEditor):
         NodeTreeEditor --|> AbstractSuperToolEditor
             | --
         """
+        self.__initializing = True
 
-        # self._node_type = "<multi>"
         # setup layout
         QVBoxLayout(self)
 
@@ -36,6 +36,19 @@ class NodeTreeEditor(AbstractSuperToolEditor):
     def nodeTree(self):
         return self._node_tree
 
+    def showEvent(self, event):
+        """ Set all of the default widget sizes on show"""
+        return_val = AbstractSuperToolEditor.showEvent(self, event)
+        if self.__initializing:
+
+            min_width = 300
+            if min_width < self.width() * 0.5:
+                self._node_tree.setHeaderDefaultLength(self.width() * 0.5)
+            else:
+                self._node_tree.setHeaderDefaultLength(min_width)
+            self._node_tree.setHeaderWidgetToDefaultSize()
+            self.__initializing = False
+        return return_val
 
 class NodeTreeMainWidget(NodeViewWidget):
     """
