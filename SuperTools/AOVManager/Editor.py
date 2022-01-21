@@ -11,7 +11,9 @@ Todo:
         -   RenderSettings node
                 enable/disable update
     *   Setup save location
-    *   Setup Advanced Parameters
+
+Todo (BUGS):
+    *   Renderer changed and updating from view causes conflicts
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -29,8 +31,13 @@ AOVManagerEditor --> (AbstractSuperToolEditor)
             |- AOVManagerItemWidget --> (AOVManagerItemWidget)
                 |- QVBoxLayout
                     |- parametersWidget
-                        |- typeWidget
-                        |- lpeWidget
+                        |* parameter_widgets --> (LabelledInputWidget (LIST | STRING | FLOAT)
+                        |- advanced_button_scroll_area_widget --> (QScrollArea)
+                            |- advanced_button_main_widget --> (QWidget)
+                                |- advanced_button_layout --> (QVBoxLayout)
+                                    |- advanced_button_widget --> (ButtonInputWidget)
+                                    |- teleparam_widget
+                                    |- teleparam_widget
 
 Data:
     type : TYPE (GROUP | LIGHT | LPE)
@@ -47,7 +54,7 @@ AOVMAP
 
 import json
 
-from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget
+from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget, QScrollArea
 from qtpy.QtCore import Qt, QModelIndex
 
 from Katana import NodegraphAPI
@@ -526,6 +533,7 @@ class AOVManagerItemWidget(QWidget):
         # create input widget
         input_widget = LabelledInputWidget(name=name, delegate_widget=delegate_widget)
         input_widget.setDefaultLabelLength(getFontSize() * 7)
+        input_widget.setFixedHeight(getFontSize() * 3)
 
         # set widget orientation
         input_widget.setDirection(Qt.Horizontal)
@@ -629,6 +637,54 @@ class AOVManagerItemWidget(QWidget):
                     delegate_widget = FloatInputWidget()
                 self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent, new=new)
 
+        self.__createAdvancedButtonWidget()
+
+    def __createAdvancedButtonWidget(self):
+        """ Creates the advanced button display
+        advanced_button_scroll_area_widget --> (QScrollArea)
+            |- advanced_button_main_widget --> (QWidget)
+                |- advanced_button_layout --> (QVBoxLayout)
+                    |- advanced_button_widget --> (ButtonInputWidget)
+                    |- teleparam_widget
+                    |- teleparam_widget
+        """
+        # create widgets
+        self._advanced_button_main_widget = QWidget()
+        self._advanced_button_scroll_area = QScrollArea()
+        self._advanced_button_scroll_area.setWidgetResizable(True)
+
+        self._advanced_button_scroll_area.setWidget(self._advanced_button_main_widget)
+
+        self._advanced_button_layout = QVBoxLayout(self._advanced_button_main_widget)
+        self._advanced_button_layout.setAlignment(Qt.AlignTop)
+
+        self._advanced_button_widget = ButtonInputWidget(
+            title="Advanced", is_toggleable=True, user_clicked_event=self.__advancedButtonPressed)
+
+        # setup layout
+        self._advanced_button_widget.setFixedHeight(getFontSize() * 3)
+        self._advanced_button_layout.addWidget(self._advanced_button_widget)
+        self.parametersWidget().addInputWidget(self._advanced_button_scroll_area)
+
+    def __advancedButtonPressed(self, widget):
+        if widget.is_selected:
+            # create tele param widgets
+            for node in self.node().getChildren():
+                param_widget = paramutils.createTeleparamWidget(node.getName(), open=str(False))
+                self._advanced_button_layout.addWidget(param_widget)
+                param_widget.show()
+
+            # update text
+            widget.setText("simple")
+
+        else:
+            # remove tele param widgets
+            for i in reversed(range(1, 3)):
+                self._advanced_button_layout.itemAt(i).widget().setParent(None)
+
+            # set text to advanced
+            widget.setText("advanced")
+
     """ WIDGETS """
     def clearNonAbstractParameterWidget(self):
         """ Sets the parametersWidget to a blank slate"""
@@ -646,6 +702,9 @@ class AOVManagerItemWidget(QWidget):
 
     def widgets(self):
         return self._widgets
+
+    def advancedButtonWidget(self):
+        return self._advanced_button_widget
 
     """ PROPERTIES """
     def aovType(self):
