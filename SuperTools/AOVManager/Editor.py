@@ -14,6 +14,7 @@ Todo:
 
 Todo (BUGS):
     *   Renderer changed and updating from view causes conflicts
+    *   LPE Changed in view not updating
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -52,8 +53,6 @@ AOVMAP
 
 """
 
-import json
-
 from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget, QScrollArea
 from qtpy.QtCore import Qt, QModelIndex
 
@@ -70,7 +69,7 @@ from cgwidgets.widgets import (
     StringInputWidget
 )
 from cgwidgets.settings import attrs
-from cgwidgets.utils import getFontSize, getJSONData, getWidgetAncestor
+from cgwidgets.utils import getFontSize, getWidgetAncestor
 from cgwidgets.views import AbstractDragDropModelDelegate
 
 from Widgets2 import AbstractSuperToolEditor, iParameter
@@ -84,7 +83,7 @@ PRMAN = "Prman"
 DELIGHT = "Delight"
 REDSHIFT = "Redshift"
 
-# AOVS
+# LPE AOVS
 SPECULAR = "SPEC"
 SPECULAR_INDIRECT = "iSPEC"
 SPECULAR_ROUGHNESS = "SPECR"
@@ -98,6 +97,7 @@ TRANSMISSIVE = "TRANS"
 LPE = "LPE"
 AOVGROUP = "GROUP"
 LIGHT = "LIGHT"
+CUSTOM = "CUSTOM"
 
 AOVMAP = {
     "Prman": {
@@ -152,10 +152,19 @@ TYPESMAP = {
     "Redshift": [],
     "Delight": []
 }
-
-
-def renderEngines():
-    return [ARNOLD, DELIGHT, PRMAN, REDSHIFT]
+LPEAOVS = [
+    SPECULAR,
+    SPECULAR_INDIRECT,
+    SPECULAR_ROUGHNESS,
+    DIFFUSE_RAW,
+    DIFFUSE,
+    DIFFUSE_INDIRECT,
+    EMISSIVE,
+    SUBSURFACE,
+    TRANSMISSIVE,
+    LPE
+]
+RENDERENGINES = [ARNOLD, DELIGHT, PRMAN, REDSHIFT]
 
 
 class AOVManagerEditor(AbstractSuperToolEditor):
@@ -179,7 +188,7 @@ class AOVManagerEditor(AbstractSuperToolEditor):
         # if self.node().getParameter("renderer"):
         #     self._renderer_widget.setText(self.node().getParameter("renderer").getValue(0))
         self._renderer_widget.filter_results = False
-        self._renderer_widget.populate([[renderer] for renderer in renderEngines()])
+        self._renderer_widget.populate([[renderer] for renderer in RENDERENGINES])
         self._renderer_labelled_widget = LabelledInputWidget(
             name="Renderer", delegate_widget=self._renderer_widget)
         self._renderer_labelled_widget.setFixedHeight(getFontSize() * 3)
@@ -350,6 +359,12 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
         return node_list
 
+    def aovTypes(self):
+        """ Returns a list of the different AOV types available"""
+        aovs = AOVMAP[self.renderer()]
+        aovs[AOVGROUP] = {"type": AOVGROUP}
+        return aovs.keys()
+
     """ PROPERTIES """
     def node(self):
         return self._node
@@ -388,6 +403,13 @@ class AOVManagerWidget(ShojiModelViewWidget):
             delegate_widget = self.activeDelegateWidgets()[0]
             delegate_widget.widgets()["type"].setText(aov_type)
             delegate_widget.setAOVType(aov_type, new=True)
+
+        if column == 2:
+            #if item.getArg("type") == LPE:
+            lpe = new_value
+            delegate_widget = self.activeDelegateWidgets()[0]
+            delegate_widget.widgets()["lpe"].setText(lpe)
+            item.setArg("lpe", lpe)
 
         # export data
         self.updateDelegateDisplay()
@@ -467,12 +489,6 @@ class AOVManagerWidget(ShojiModelViewWidget):
     def showEvent(self, event):
         self.setHeaderWidgetToDefaultSize()
         return ShojiModelViewWidget.showEvent(self, event)
-
-    def aovTypes(self):
-        """ Returns a list of the different AOV types available"""
-        aovs = AOVMAP[self.renderer()]
-        aovs[AOVGROUP] = {"type": AOVGROUP}
-        return aovs.keys()
 
 
 """ AOV DELEGATE WIDGETS"""
@@ -727,7 +743,7 @@ class AOVManagerItemWidget(QWidget):
             """
         # preflight
         renderer = self.renderer()
-        if renderer not in renderEngines(): return
+        if renderer not in RENDERENGINES: return
         if aov_type not in self.aovTypes(): return
 
         # clear args
@@ -879,7 +895,7 @@ class AOVManagerItemWidget(QWidget):
 
         # preflight
         renderer = self.renderer()
-        if renderer not in renderEngines(): return
+        if renderer not in RENDERENGINES: return
 
         # set item
         self.setCurrentItem(item)
@@ -943,10 +959,16 @@ class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
 
     def createEditor(self, parent, option, index):
         """ Creates a custom editor for the "type" column """
+        # preflight
+        aov_manager_widget = getWidgetAncestor(parent, AOVManagerWidget)
+
         if index.column() == 1:
+            # preflight
+            if aov_manager_widget.renderer() not in RENDERENGINES: return
+
+            # create delegate
             delegate_widget = self.delegateWidget(parent)
             delegate_widget.filter_results = False
-            #delegate_widget.setUserFinishedEditingEvent()
             aov_manager_widget = getWidgetAncestor(parent, AOVManagerWidget)
             delegate_widget.populate([[item] for item in sorted(aov_manager_widget.aovTypes())])
 
@@ -954,8 +976,10 @@ class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
             return delegate_widget
 
         if index.column() == 2:
-            if index.internalPointer().getArg("type") == AOVGROUP:
-                return
+            # preflight
+            if aov_manager_widget.renderer() not in RENDERENGINES: return
+            if index.internalPointer().getArg("type") not in LPEAOVS: return
+
         return AbstractDragDropModelDelegate.createEditor(self, parent, option, index)
 
 
