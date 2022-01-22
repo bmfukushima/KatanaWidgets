@@ -14,7 +14,6 @@ Todo:
 
 Todo (BUGS):
     *   Renderer changed and updating from view causes conflicts
-    *   LPE Changed in view not updating
 
 Use a ShojiMVW to create an interface for AOV's
 Items
@@ -386,6 +385,11 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
     """ EVENTS """
     def aovTextChangedEvent(self, item, old_value, new_value, column):
+        """ Run when the user updates an item in the view
+
+        Note:
+            Only need to set the widget for the AOVType change as that is the
+            only arg that needs to dynamically repopulate parameters"""
         # name changed
         if column == 0:
             # set node name
@@ -404,12 +408,13 @@ class AOVManagerWidget(ShojiModelViewWidget):
             delegate_widget.widgets()["type"].setText(aov_type)
             delegate_widget.setAOVType(aov_type, new=True)
 
+        # lpe
         if column == 2:
-            #if item.getArg("type") == LPE:
             lpe = new_value
-            delegate_widget = self.activeDelegateWidgets()[0]
-            delegate_widget.widgets()["lpe"].setText(lpe)
+            node = NodegraphAPI.GetNode(item.getArg("node"))
+
             item.setArg("lpe", lpe)
+            node.getParameter("lpe").setValue(lpe, 0)
 
         # export data
         self.updateDelegateDisplay()
