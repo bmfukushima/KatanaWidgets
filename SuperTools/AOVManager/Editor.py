@@ -15,6 +15,13 @@ Todo:
 Todo (BUGS):
     *   Renderer changed and updating from view causes conflicts
 
+
+ToDo (LightGroups)
+    *   Get all Light Groups list
+    *   updateGUI
+    *   light_group update
+    *   Light Group Type update
+
 Use a ShojiMVW to create an interface for AOV"s
 Items
     GROUP | LIGHT | LPE | CUSTOM
@@ -59,6 +66,7 @@ from Katana import NodegraphAPI
 
 from cgwidgets.widgets import (
     ButtonInputWidget,
+    ButtonInputWidgetContainer,
     FrameInputWidgetContainer,
     FloatInputWidget,
     ListInputWidget,
@@ -107,7 +115,9 @@ AOVMAP = {
         DIFFUSE_INDIRECT: {"base_type": LPE, "lpe": "lpe:C<RD>.+[<L.>O]", "name": DIFFUSE_INDIRECT, "renderer_type": "color"},
         DIFFUSE_RAW: {"base_type": LPE, "lpe": "lpe:CU2[<L.>O]", "name": DIFFUSE_RAW, "renderer_type": "color"},
         SUBSURFACE: {"base_type": LPE, "lpe": "lpe:C<TD>.*[<L.>O]", "name": SUBSURFACE, "renderer_type": "color"},
-        TRANSMISSIVE: {"base_type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "renderer_type": "color"}
+        TRANSMISSIVE: {"base_type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "renderer_type": "color"},
+        LIGHT: {"base_type": LIGHT, "lpe": "lpe:C<TS>.*[<L.>O]", "name": LIGHT, "renderer_type": "color", "light_group":"", "light_group_type":"BOTH"}
+
     },
     "Arnold": {
         LPE: {"base_type": LPE, "lpe": "", "name": "<NewAOV>", "renderer_type": "RGB"},
@@ -151,6 +161,10 @@ TYPESMAP = {
     "Redshift": [],
     "Delight": []
 }
+LIGHT_TYPE_DIFF = DIFFUSE
+LIGHT_TYPE_SPEC = SPECULAR
+LIGHT_TYPE_BOTH = "BOTH"
+
 LPEAOVS = [
     SPECULAR,
     SPECULAR_INDIRECT,
@@ -541,7 +555,7 @@ class AOVManagerItemWidget(QWidget):
         return "abstract"
 
     """ UTILS """
-    def addParameterWidget(self, name, delegate_widget, finished_editing_function, new=True):
+    def addParameterWidget(self, name, delegate_widget, finished_editing_function=None, new=True):
         """ Adds a parameter widget to the current display
 
         Args:
@@ -642,20 +656,57 @@ class AOVManagerItemWidget(QWidget):
 
         Args:
             new (bool): determines if these are new parameters, or existing ones"""
-        # get attrs
-        node = NodegraphAPI.GetNode(self.currentItem().getArg("node"))
-        parameter_map = paramutils.getParameterMapFromNode(node)
-
         # cleanup old widgets
         self.clearNonAbstractParameterWidget()
 
         # populate parameters
+        if (self.aovType() in LPEAOVS) or (self.aovType() == AOVGROUP):
+            self.__createLPEParameterWidgets(new=new)
+
+        # todo LIGHT GROUPS
+        if self.aovType() == LIGHT:
+            self.__createTypeParameterWidget(new)
+
+            light_group_widget = StringInputWidget()
+            self.addParameterWidget("light_group", light_group_widget, self.parameterChangedEvent, new=new)
+
+            self.widgets()["light_group_type"] = ButtonInputWidgetContainer()
+            self.widgets()["light_group_type"].addButton(LIGHT_TYPE_DIFF, LIGHT_TYPE_DIFF, self.lightButtonEvent, False)
+            self.widgets()["light_group_type"].addButton(LIGHT_TYPE_SPEC, LIGHT_TYPE_SPEC, self.lightButtonEvent, False)
+            self.widgets()["light_group_type"].addButton(LIGHT_TYPE_BOTH, LIGHT_TYPE_BOTH, self.lightButtonEvent, True)
+            self.widgets()["light_group_type"].setIsMultiSelect(False)
+            self._parameters_widget.addInputWidget(self.widgets()["light_group_type"])
+
+            # update default item args
+            self.currentItem().setArg("name", self.node().getParameter("name").getValue(0))
+            self.currentItem().setArg("light_group_type", self.node().getParameter("light_group_type").getValue(0))
+            self.currentItem().setArg("light_group", self.node().getParameter("light_group").getValue(0))
+
+    def lightButtonEvent(self, widget):
+        """ Updates the LPE to catch the correct lights
+
+        lpe:C[DS]<L.'test'>
+        """
+        light_group_type = widget.flag()
+        self.currentItem().setArg("light_group_type", light_group_type)
+        self.node().getParameter("light_group_type").setValue(light_group_type, 0)
+
+    def __createTypeParameterWidget(self, new=True):
+        delegate_widget = ListInputWidget(self)
+        delegate_widget.filter_results = False
+        delegate_widget.populate([[aov] for aov in self.aovTypes()])
+        input_widget = self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent, new=new)
+        return input_widget
+
+    def __createLPEParameterWidgets(self, new=True):
+        """ Creates all of the parameter widgets associated with an LPE aov"""
+        # get attrs
+        node = NodegraphAPI.GetNode(self.currentItem().getArg("node"))
+        parameter_map = paramutils.getParameterMapFromNode(node)
+
         for param_name, param_value in parameter_map.items():
             if param_name == "type":
-                delegate_widget = ListInputWidget(self)
-                delegate_widget.filter_results = False
-                delegate_widget.populate([[aov] for aov in self.aovTypes()])
-                input_widget = self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent, new=new)
+                input_widget = self.__createTypeParameterWidget(new)
             else:
                 if isinstance(param_value, str):
                     delegate_widget = StringInputWidget()
@@ -859,7 +910,8 @@ class AOVManagerItemWidget(QWidget):
             self.currentItem().setArg("name", value)
 
             self.parametersWidget().setTitle(value)
-            self.widgets()["name"].setText(value)
+            self.node().getParameter("name").setValue(value, 0)
+            # self.widgets()["name"].setText(value)
             if self.aovType() == AOVGROUP:
                 self.updateNodeName(self.currentItem().getArg("node"), value)
 
@@ -882,7 +934,7 @@ class AOVManagerItemWidget(QWidget):
             new_node_name = self.updateNodeName(self.currentItem().getArg("node"), value)
             if self.aovType() == AOVGROUP:
                 self.parametersWidget().setTitle(new_node_name)
-                self.widgets()["name"].setText(new_node_name)
+                #self.widgets()["name"].setText(new_node_name)
 
         else:
             if param_name == "name":
@@ -895,6 +947,7 @@ class AOVManagerItemWidget(QWidget):
             # update metadata
             self.node().getParameter(param_name).setValue(value, 0)
             self.currentItem().setArg(param_name, value)
+            # print("setting ", param_name, "to", value)
 
     @staticmethod
     def updateGUI(parent, widget, item):
@@ -926,10 +979,22 @@ class AOVManagerItemWidget(QWidget):
         item_name = item.getArg("name")
         self.parametersWidget().setTitle(item_name)
 
-        for arg, value in item.args().items():
-            if arg != "type":
-                self.widgets()[arg].setText(value)
+        # Update LPE / GROUP
+        # if (self.aovType() in LPEAOVS) or (self.aovType() == AOVGROUP):
+        #     for arg, value in item.args().items():
+        #         if arg != "type":
+        #             self.widgets()[arg].setText(value)
 
+        # Update Light
+        if self.aovType() == LIGHT:
+            # update light group type
+            self.widgets()["light_group_type"].setButtonAsCurrent(
+                self.widgets()["light_group_type"].buttons()[item.getArg("light_group_type")], True
+            )
+
+            # update light group name
+            # self.widgets()["light_group"].setText(item.getArg("light_group"))
+        # unfreeze
         self.setIsFrozen(False)
 
 
