@@ -11,16 +11,14 @@ Todo:
         -   RenderSettings node
                 enable/disable update
     *   Setup save location
+    *   Populate rendererType
 
 Todo (BUGS):
     *   Renderer changed and updating from view causes conflicts
 
-
-ToDo (LightGroups)
-    *   Get all Light Groups list
-    *   updateGUI
-    *   light_group update
-    *   Light Group Type update
+ToDo (Light Groups)
+    *   Get all Light Groups list (getLightGroups)
+    *   Add Arnold
 
 Use a ShojiMVW to create an interface for AOV"s
 Items
@@ -116,7 +114,7 @@ AOVMAP = {
         DIFFUSE_RAW: {"base_type": LPE, "lpe": "lpe:CU2[<L.>O]", "name": DIFFUSE_RAW, "renderer_type": "color"},
         SUBSURFACE: {"base_type": LPE, "lpe": "lpe:C<TD>.*[<L.>O]", "name": SUBSURFACE, "renderer_type": "color"},
         TRANSMISSIVE: {"base_type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "renderer_type": "color"},
-        LIGHT: {"base_type": LIGHT, "lpe": "lpe:C<TS>.*[<L.>O]", "name": LIGHT, "renderer_type": "color", "light_group":"", "light_group_type":"BOTH"}
+        LIGHT: {"base_type": LIGHT, "lpe": "", "name": LIGHT, "renderer_type": "color", "light_group":"", "light_group_type":"BOTH"}
 
     },
     "Arnold": {
@@ -555,6 +553,53 @@ class AOVManagerItemWidget(QWidget):
         return "abstract"
 
     """ UTILS """
+    def createAOVMacro(self, renderer, aov_type):
+        """ Creates the Macro/Group node associated with the selected AOV/Engine
+
+        Args:
+            renderer (str):
+            aov_type (str):
+        """
+
+        if aov_type == AOVGROUP:
+            node_name = "__aovGroup"
+        else:
+            base_aov_type = AOVMAP[renderer][aov_type]["base_type"]
+            node_name = "__aov{RENDERER}{TYPE}".format(RENDERER=renderer, TYPE=base_aov_type)
+
+        # create node
+        old_node = self.node()
+        new_node = NodegraphAPI.CreateNode(node_name, self.node().getParent())
+        nodeutils.replaceNode(old_node, new_node)
+
+        return new_node
+
+    def getItemArg(self, arg_name):
+        try:
+            return self.currentItem().getArg(arg_name)
+        except KeyError:
+            return None
+
+    def getDefaultArg(self, aov_type, arg_name):
+        """ Gets the default AOV value from the mapping table
+
+        Note:
+            Need the try/except in case an arg doesnt exist such as "node"
+
+        Args:
+            aov_type (str): base type of AOV to be found in the mapping table
+            arg_name (str): arg name found in the mapping table
+            """
+        try:
+            return AOVMAP[self.renderer()][aov_type][arg_name]
+        except KeyError:
+            return ""
+
+    def getLightGroups(self):
+        # todo get light groups
+        return []
+
+    """ WIDGETS ( INIT )"""
     def addParameterWidget(self, name, delegate_widget, finished_editing_function=None, new=True):
         """ Adds a parameter widget to the current display
 
@@ -602,54 +647,13 @@ class AOVManagerItemWidget(QWidget):
                 else:
                     # mainly used for setting the node
                     delegate_widget.setText(self.node().getParameter(name).getValue(0))
+
             # set type
             else:
                 self.node().getParameter(name).setValue(self.getItemArg("type"), 0)
                 delegate_widget.setText(self.getItemArg("type"))
 
         return input_widget
-
-    def createAOVMacro(self, renderer, aov_type):
-        """ Creates the Macro/Group node associated with the selected AOV/Engine
-
-        Args:
-            renderer (str):
-            aov_type (str):
-        """
-
-        if aov_type == AOVGROUP:
-            node_name = "__aovGroup"
-        else:
-            base_aov_type = AOVMAP[renderer][aov_type]["base_type"]
-            node_name = "__aov{RENDERER}{TYPE}".format(RENDERER=renderer, TYPE=base_aov_type)
-
-        # create node
-        old_node = self.node()
-        new_node = NodegraphAPI.CreateNode(node_name, self.node().getParent())
-        nodeutils.replaceNode(old_node, new_node)
-
-        return new_node
-
-    def getItemArg(self, arg_name):
-        try:
-            return self.currentItem().getArg(arg_name)
-        except KeyError:
-            return None
-
-    def getDefaultArg(self, aov_type, arg_name):
-        """ Gets the default AOV value from the mapping table
-
-        Note:
-            Need the try/except in case an arg doesnt exist such as "node"
-
-        Args:
-            aov_type (str): base type of AOV to be found in the mapping table
-            arg_name (str): arg name found in the mapping table
-            """
-        try:
-            return AOVMAP[self.renderer()][aov_type][arg_name]
-        except KeyError:
-            return ""
 
     def populateParameterWidgets(self, new=True):
         """ Populates all of the parameters from the node
@@ -665,38 +669,36 @@ class AOVManagerItemWidget(QWidget):
 
         # todo LIGHT GROUPS
         if self.aovType() == LIGHT:
-            self.__createTypeParameterWidget(new)
-
-            light_group_widget = StringInputWidget()
-            self.addParameterWidget("light_group", light_group_widget, self.parameterChangedEvent, new=new)
-
-            self.widgets()["light_group_type"] = ButtonInputWidgetContainer()
-            self.widgets()["light_group_type"].addButton(LIGHT_TYPE_DIFF, LIGHT_TYPE_DIFF, self.lightButtonEvent, False)
-            self.widgets()["light_group_type"].addButton(LIGHT_TYPE_SPEC, LIGHT_TYPE_SPEC, self.lightButtonEvent, False)
-            self.widgets()["light_group_type"].addButton(LIGHT_TYPE_BOTH, LIGHT_TYPE_BOTH, self.lightButtonEvent, True)
-            self.widgets()["light_group_type"].setIsMultiSelect(False)
-            self._parameters_widget.addInputWidget(self.widgets()["light_group_type"])
-
-            # update default item args
-            self.currentItem().setArg("name", self.node().getParameter("name").getValue(0))
-            self.currentItem().setArg("light_group_type", self.node().getParameter("light_group_type").getValue(0))
-            self.currentItem().setArg("light_group", self.node().getParameter("light_group").getValue(0))
-
-    def lightButtonEvent(self, widget):
-        """ Updates the LPE to catch the correct lights
-
-        lpe:C[DS]<L.'test'>
-        """
-        light_group_type = widget.flag()
-        self.currentItem().setArg("light_group_type", light_group_type)
-        self.node().getParameter("light_group_type").setValue(light_group_type, 0)
+            self.__createLightGroupParameterWidgets(new)
 
     def __createTypeParameterWidget(self, new=True):
+        """ Creates the type parameter widget"""
         delegate_widget = ListInputWidget(self)
         delegate_widget.filter_results = False
         delegate_widget.populate([[aov] for aov in self.aovTypes()])
         input_widget = self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent, new=new)
         return input_widget
+
+    def __createLightGroupParameterWidgets(self, new=True):
+        """ Creates all of the necessary widgets for the Light Group type"""
+        self.__createTypeParameterWidget(new)
+
+        light_group_widget = ListInputWidget()
+        self.addParameterWidget("light_group", light_group_widget, self.lightGroupChangedEvent, new=new)
+        self.widgets()["light_group"].setPopulateFunction(self.getLightGroups)
+
+        self.widgets()["light_group_type"] = ButtonInputWidgetContainer()
+        self.widgets()["light_group_type"].addButton(LIGHT_TYPE_DIFF, LIGHT_TYPE_DIFF, self.lightGroupTypeChangedEvent, False)
+        self.widgets()["light_group_type"].addButton(LIGHT_TYPE_SPEC, LIGHT_TYPE_SPEC, self.lightGroupTypeChangedEvent, False)
+        self.widgets()["light_group_type"].addButton(LIGHT_TYPE_BOTH, LIGHT_TYPE_BOTH, self.lightGroupTypeChangedEvent, True)
+        self.widgets()["light_group_type"].setIsMultiSelect(False)
+        self._parameters_widget.addInputWidget(self.widgets()["light_group_type"])
+
+        # update default item args
+        self.currentItem().setArg("name", self.node().getParameter("name").getValue(0))
+        self.currentItem().setArg("light_group_type", self.node().getParameter("light_group_type").getValue(0))
+        self.currentItem().setArg("light_group", self.node().getParameter("light_group").getValue(0))
+        self.currentItem().setArg("lpe", self.node().getParameter("lpe").getValue(0))
 
     def __createLPEParameterWidgets(self, new=True):
         """ Creates all of the parameter widgets associated with an LPE aov"""
@@ -740,31 +742,12 @@ class AOVManagerItemWidget(QWidget):
         self._advanced_button_layout.setAlignment(Qt.AlignTop)
 
         self._advanced_button_widget = ButtonInputWidget(
-            title="Advanced", is_toggleable=True, user_clicked_event=self.__advancedButtonPressed)
+            title="Advanced", is_toggleable=True, user_clicked_event=self.advancedButtonPressedEvent)
 
         # setup layout
         self._advanced_button_widget.setFixedHeight(getFontSize() * 3)
         self._advanced_button_layout.addWidget(self._advanced_button_widget)
         self.parametersWidget().addInputWidget(self._advanced_button_scroll_area)
-
-    def __advancedButtonPressed(self, widget):
-        if widget.is_selected:
-            # create tele param widgets
-            for node in self.node().getChildren():
-                param_widget = paramutils.createTeleparamWidget(node.getName(), open=str(False))
-                self._advanced_button_layout.addWidget(param_widget)
-                param_widget.show()
-
-            # update text
-            widget.setText("simple")
-
-        else:
-            # remove tele param widgets
-            for i in reversed(range(1, 3)):
-                self._advanced_button_layout.itemAt(i).widget().setParent(None)
-
-            # set text to advanced
-            widget.setText("advanced")
 
     """ WIDGETS """
     def clearNonAbstractParameterWidget(self):
@@ -874,22 +857,6 @@ class AOVManagerItemWidget(QWidget):
         return
 
     """ EVENTS """
-    def updateNodeName(self, old_name, new_name):
-        """ Updates a nodes name and returns the new name
-
-        Args:
-            old_name (str):
-            new_name (str):
-        """
-        if not self.isFrozen():
-            node = NodegraphAPI.GetNode(old_name)
-            node.setName(new_name)
-            self.currentItem().setArg("node", node.getName())
-            if self.aovType() == AOVGROUP:
-                self.currentItem().setArg("name", node.getName())
-            self.widgets()["node"].setText(node.getName())
-            return node.getName()
-
     def aovTypeChangedEvent(self, widget, value):
         """ Called when the user changes the AOV type using the "type" """
         # preflight
@@ -913,9 +880,56 @@ class AOVManagerItemWidget(QWidget):
             self.node().getParameter("name").setValue(value, 0)
             # self.widgets()["name"].setText(value)
             if self.aovType() == AOVGROUP:
-                self.updateNodeName(self.currentItem().getArg("node"), value)
+                self.nodeNameChangedEvent(self.currentItem().getArg("node"), value)
 
         return
+
+    def advancedButtonPressedEvent(self, widget):
+        if widget.is_selected:
+            # create tele param widgets
+            for node in self.node().getChildren():
+                param_widget = paramutils.createTeleparamWidget(node.getName(), open=str(False))
+                self._advanced_button_layout.addWidget(param_widget)
+                param_widget.show()
+
+            # update text
+            widget.setText("simple")
+
+        else:
+            # remove tele param widgets
+            for i in reversed(range(1, 3)):
+                self._advanced_button_layout.itemAt(i).widget().setParent(None)
+
+            # set text to advanced
+            widget.setText("advanced")
+
+    def lightGroupChangedEvent(self, widget, value):
+        self.parameterChangedEvent(widget, value)
+        self.currentItem().setArg("lpe", self.node().getParameter("lpe").getValue(0))
+
+    def lightGroupTypeChangedEvent(self, widget):
+        """ Updates the LPE to catch the correct lights"""
+        light_group_type = widget.flag()
+        self.currentItem().setArg("light_group_type", light_group_type)
+        self.node().getParameter("light_group_type").setValue(light_group_type, 0)
+
+        self.currentItem().setArg("lpe", self.node().getParameter("lpe").getValue(0))
+
+    def nodeNameChangedEvent(self, old_name, new_name):
+        """ Updates a nodes name and returns the new name
+
+        Args:
+            old_name (str):
+            new_name (str):
+        """
+        if not self.isFrozen():
+            node = NodegraphAPI.GetNode(old_name)
+            node.setName(new_name)
+            self.currentItem().setArg("node", node.getName())
+            if self.aovType() == AOVGROUP:
+                self.currentItem().setArg("name", node.getName())
+            self.widgets()["node"].setText(node.getName())
+            return node.getName()
 
     def parameterChangedEvent(self, widget, value):
         """ User has changed a dynamic parameter"""
@@ -931,7 +945,7 @@ class AOVManagerItemWidget(QWidget):
         # update node name
         """ Special case is needed here as the node name may change when set"""
         if param_name == "node":
-            new_node_name = self.updateNodeName(self.currentItem().getArg("node"), value)
+            new_node_name = self.nodeNameChangedEvent(self.currentItem().getArg("node"), value)
             if self.aovType() == AOVGROUP:
                 self.parametersWidget().setTitle(new_node_name)
                 #self.widgets()["name"].setText(new_node_name)
@@ -940,7 +954,7 @@ class AOVManagerItemWidget(QWidget):
             if param_name == "name":
                 self.parametersWidget().setTitle(value)
                 if self.aovType() == AOVGROUP:
-                    self.updateNodeName(self.currentItem().getArg("node"), value)
+                    self.nodeNameChangedEvent(self.currentItem().getArg("node"), value)
                     """ Need to freeze/exit here to ensure the node name stays synchronized"""
                     return
 
