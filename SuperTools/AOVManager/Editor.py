@@ -15,14 +15,14 @@ Todo:
 Todo (BUGS):
     *   Renderer changed and updating from view causes conflicts
 
-Use a ShojiMVW to create an interface for AOV's
+Use a ShojiMVW to create an interface for AOV"s
 Items
     GROUP | LIGHT | LPE | CUSTOM
     AOV Item
         * AOVItems will hold all of the necessary parameters the user needs to create a new AOV
-        * Presets / LPE's / Lights
+        * Presets / LPE"s / Lights
     - Each item is linked to a node via the nodes name
-    - Each node's parameters are linked to the column data of the item
+    - Each node"s parameters are linked to the column data of the item
 
 Hierarchy
 AOVManagerEditor --> (AbstractSuperToolEditor)
@@ -100,24 +100,24 @@ CUSTOM = "CUSTOM"
 
 AOVMAP = {
     "Prman": {
-        LPE: {"type": LPE, "lpe": "lpe:", "name": "<NewAOV>", "rendererType": "color"},
-        SPECULAR: {"type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "rendererType": "color"},
-        SPECULAR_INDIRECT: {"type": LPE, "lpe": "lpe:C<RS>.+[<L.>O]", "name": SPECULAR_INDIRECT, "rendererType": "color"},
-        DIFFUSE: {"type": LPE, "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "rendererType": "color"},
-        DIFFUSE_INDIRECT: {"type": LPE, "lpe": "lpe:C<RD>.+[<L.>O]", "name": DIFFUSE_INDIRECT, "rendererType": "color"},
-        DIFFUSE_RAW: {"type": LPE, "lpe": "lpe:CU2[<L.>O]", "name": DIFFUSE_RAW, "rendererType": "color"},
-        SUBSURFACE: {"type": LPE, "lpe": "lpe:C<TD>.*[<L.>O]", "name": SUBSURFACE, "rendererType": "color"},
-        TRANSMISSIVE: {"type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "rendererType": "color"}
+        LPE: {"base_type": LPE, "lpe": "lpe:", "name": "<NewAOV>", "renderer_type": "color"},
+        SPECULAR: {"base_type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "renderer_type": "color"},
+        SPECULAR_INDIRECT: {"base_type": LPE, "lpe": "lpe:C<RS>.+[<L.>O]", "name": SPECULAR_INDIRECT, "renderer_type": "color"},
+        DIFFUSE: {"base_type": LPE, "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "renderer_type": "color"},
+        DIFFUSE_INDIRECT: {"base_type": LPE, "lpe": "lpe:C<RD>.+[<L.>O]", "name": DIFFUSE_INDIRECT, "renderer_type": "color"},
+        DIFFUSE_RAW: {"base_type": LPE, "lpe": "lpe:CU2[<L.>O]", "name": DIFFUSE_RAW, "renderer_type": "color"},
+        SUBSURFACE: {"base_type": LPE, "lpe": "lpe:C<TD>.*[<L.>O]", "name": SUBSURFACE, "renderer_type": "color"},
+        TRANSMISSIVE: {"base_type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "renderer_type": "color"}
     },
     "Arnold": {
-        LPE: {"type": LPE, "lpe": "", "name": "<NewAOV>", "rendererType": "RGB"},
-        SPECULAR: {"type": LPE, "lpe": "C<RS>L", "name": SPECULAR, "rendererType": "RGB"},
-        SPECULAR_INDIRECT: {"type": LPE, "lpe": "C<RS>[DSVOB].*", "name": SPECULAR_INDIRECT, "rendererType": "RGB"},
-        DIFFUSE: {"type": LPE, "lpe": "C<RD>L", "name": DIFFUSE, "rendererType": "RGB"},
-        DIFFUSE_INDIRECT: {"type": LPE, "lpe": "C<RD>[DSVOB].*", "name": DIFFUSE_INDIRECT, "rendererType": "RGB"},
-        DIFFUSE_RAW: {"type": LPE, "lpe": "C<RD>A", "name": DIFFUSE_RAW, "rendererType": "RGB"},
-        SUBSURFACE: {"type": LPE, "lpe": "C<TD>.*", "name": SUBSURFACE, "rendererType": "RGB"},
-        TRANSMISSIVE: {"type": LPE, "lpe": "C<TS>.*", "name": TRANSMISSIVE, "rendererType": "RGB"},
+        LPE: {"base_type": LPE, "lpe": "", "name": "<NewAOV>", "renderer_type": "RGB"},
+        SPECULAR: {"base_type": LPE, "lpe": "C<RS>L", "name": SPECULAR, "renderer_type": "RGB"},
+        SPECULAR_INDIRECT: {"base_type": LPE, "lpe": "C<RS>[DSVOB].*", "name": SPECULAR_INDIRECT, "renderer_type": "RGB"},
+        DIFFUSE: {"base_type": LPE, "lpe": "C<RD>L", "name": DIFFUSE, "renderer_type": "RGB"},
+        DIFFUSE_INDIRECT: {"base_type": LPE, "lpe": "C<RD>[DSVOB].*", "name": DIFFUSE_INDIRECT, "renderer_type": "RGB"},
+        DIFFUSE_RAW: {"base_type": LPE, "lpe": "C<RD>A", "name": DIFFUSE_RAW, "renderer_type": "RGB"},
+        SUBSURFACE: {"base_type": LPE, "lpe": "C<TD>.*", "name": SUBSURFACE, "renderer_type": "RGB"},
+        TRANSMISSIVE: {"base_type": LPE, "lpe": "C<TS>.*", "name": TRANSMISSIVE, "renderer_type": "RGB"},
 
     },
     "Redshift": {},
@@ -178,7 +178,7 @@ class AOVManagerEditor(AbstractSuperToolEditor):
         self._renderer_widget = self.createCustomParameterWidget(ListInputWidget)
         self.createCustomParam(
             self._renderer_widget,
-            'renderer',
+            "renderer",
             paramutils.STRING,
             self._renderer_widget.text,
             self.rendererChangedEvent,
@@ -196,7 +196,7 @@ class AOVManagerEditor(AbstractSuperToolEditor):
         self._render_location_widget = self.createCustomParameterWidget(StringInputWidget)
         self.createCustomParam(
             self._render_location_widget,
-            'renderLocation',
+            "renderLocation",
             paramutils.STRING,
             self._render_location_widget.text,
             self.renderLocationChangedEvent,
@@ -269,7 +269,7 @@ class AOVManagerEditor(AbstractSuperToolEditor):
 
 
 class AOVManagerWidget(ShojiModelViewWidget):
-    """ Main display for showing the user the current AOV's available to them.
+    """ Main display for showing the user the current AOV"s available to them.
 
     Attributes:
         node (Node): AOVManager node
@@ -318,7 +318,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
     """ UTILS """
     def populate(self, nodes, parent=QModelIndex()):
-        """ Populates the user defined AOV's on load"""
+        """ Populates the user defined AOV"s on load"""
         for node in nodes:
             if self.isAOVManagerNode(node):
                 # create new item
@@ -353,7 +353,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         """
         # get node list
         children = item.children()
-        node_name_list = [child.columnData()['node'] for child in children]
+        node_name_list = [child.columnData()["node"] for child in children]
         node_list = [NodegraphAPI.GetNode(node) for node in node_name_list]
 
         return node_list
@@ -434,7 +434,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
             parent_node = self.node()
 
         # if root
-        if parent.getArg("name") == 'root':
+        if parent.getArg("name") == "root":
             parent_node = self.node()
 
         # drop items
@@ -506,7 +506,7 @@ class AOVManagerItemWidget(QWidget):
         currentItem (AbstractShojiModelItem):
         isFrozen (bool):
         node (Node): current node being manipulated
-        widgets (dict): of parameters widgets.  Each key is an arg's name, and the value
+        widgets (dict): of parameters widgets.  Each key is an arg"s name, and the value
             is the widget.
 
     Hierarchy
@@ -516,6 +516,7 @@ class AOVManagerItemWidget(QWidget):
                 |- typeWidget
                 |- lpeWidget
     """
+    NON_DISPLAYABLE_PARAMETERS = ["node", "name"]
 
     def __init__(self, parent=None):
         super(AOVManagerItemWidget, self).__init__(parent)
@@ -549,6 +550,8 @@ class AOVManagerItemWidget(QWidget):
             finished_editing_function (func): Function to be run when the user
                 has finished editing.  This function should take the args (widget, value)
             new (bool): determines if this is a new parameter, or updating an existing one
+
+        Returns (LabelledInputWidget)
         """
 
         # create input widget
@@ -590,6 +593,8 @@ class AOVManagerItemWidget(QWidget):
                 self.node().getParameter(name).setValue(self.getItemArg("type"), 0)
                 delegate_widget.setText(self.getItemArg("type"))
 
+        return input_widget
+
     def createAOVMacro(self, renderer, aov_type):
         """ Creates the Macro/Group node associated with the selected AOV/Engine
 
@@ -601,7 +606,7 @@ class AOVManagerItemWidget(QWidget):
         if aov_type == AOVGROUP:
             node_name = "__aovGroup"
         else:
-            base_aov_type = AOVMAP[renderer][aov_type]["type"]
+            base_aov_type = AOVMAP[renderer][aov_type]["base_type"]
             node_name = "__aov{RENDERER}{TYPE}".format(RENDERER=renderer, TYPE=base_aov_type)
 
         # create node
@@ -650,13 +655,17 @@ class AOVManagerItemWidget(QWidget):
                 delegate_widget = ListInputWidget(self)
                 delegate_widget.filter_results = False
                 delegate_widget.populate([[aov] for aov in self.aovTypes()])
-                self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent, new=new)
+                input_widget = self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent, new=new)
             else:
                 if isinstance(param_value, str):
                     delegate_widget = StringInputWidget()
                 elif isinstance(param_value, float):
                     delegate_widget = FloatInputWidget()
-                self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent, new=new)
+                input_widget = self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent, new=new)
+
+            # hide non displayable parameters
+            if param_name in AOVManagerItemWidget.NON_DISPLAYABLE_PARAMETERS:
+                input_widget.hide()
 
         self.__createAdvancedButtonWidget()
 

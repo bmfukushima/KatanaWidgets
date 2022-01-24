@@ -410,7 +410,7 @@ class KatanaLauncherWidget(QWidget):
         """
         # nuke executable
         os.environ["PATH"] += "{KATANA_ROOT}/plugins/Resources/Nuke/bin".format(KATANA_ROOT=self.katanaRoot())
-        os.environ["NUKE_PATH"] = "{KATANA_ROOT}/plugins/Resources/Nuke".format(KATANA_ROOT=self.katanaRoot())
+        os.environ["NUKE_PATH"] = "{KATANA_ROOT}/plugins/Resources/Nuke/13.1".format(KATANA_ROOT=self.katanaRoot())
         #os.environ["KATANA_NUKE_EXECUTABLE"] = "/opt/nuke/13.0v6/Nuke13.0"
         os.environ["KATANA_NUKE_EXECUTABLE"] = "/opt/nuke/13.1v1/Nuke13.1"
         # # launch katana instance
