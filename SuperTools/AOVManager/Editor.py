@@ -106,27 +106,27 @@ CUSTOM = "CUSTOM"
 
 AOVMAP = {
     "Prman": {
-        LPE: {"base_type": LPE, "lpe": "lpe:", "name": "<NewAOV>", "renderer_type": "color"},
-        SPECULAR: {"base_type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "renderer_type": "color"},
-        SPECULAR_INDIRECT: {"base_type": LPE, "lpe": "lpe:C<RS>.+[<L.>O]", "name": SPECULAR_INDIRECT, "renderer_type": "color"},
-        DIFFUSE: {"base_type": LPE, "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "renderer_type": "color"},
-        DIFFUSE_INDIRECT: {"base_type": LPE, "lpe": "lpe:C<RD>.+[<L.>O]", "name": DIFFUSE_INDIRECT, "renderer_type": "color"},
-        DIFFUSE_RAW: {"base_type": LPE, "lpe": "lpe:CU2[<L.>O]", "name": DIFFUSE_RAW, "renderer_type": "color"},
-        SUBSURFACE: {"base_type": LPE, "lpe": "lpe:C<TD>.*[<L.>O]", "name": SUBSURFACE, "renderer_type": "color"},
-        TRANSMISSIVE: {"base_type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "renderer_type": "color"},
-        LIGHT: {"base_type": LIGHT, "lpe": "", "name": LIGHT, "renderer_type": "color", "light_group":"", "light_group_type":"BOTH"}
+        LPE                 : {"base_type": LPE, "lpe": "lpe:", "name": "<NewAOV>", "renderer_type": "color"},
+        SPECULAR            : {"base_type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "renderer_type": "color"},
+        SPECULAR_INDIRECT   : {"base_type": LPE, "lpe": "lpe:C<RS>.+[<L.>O]", "name": SPECULAR_INDIRECT, "renderer_type": "color"},
+        DIFFUSE             : {"base_type": LPE, "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "renderer_type": "color"},
+        DIFFUSE_INDIRECT    : {"base_type": LPE, "lpe": "lpe:C<RD>.+[<L.>O]", "name": DIFFUSE_INDIRECT, "renderer_type": "color"},
+        DIFFUSE_RAW         : {"base_type": LPE, "lpe": "lpe:CU2[<L.>O]", "name": DIFFUSE_RAW, "renderer_type": "color"},
+        SUBSURFACE          : {"base_type": LPE, "lpe": "lpe:C<TD>.*[<L.>O]", "name": SUBSURFACE, "renderer_type": "color"},
+        TRANSMISSIVE        : {"base_type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "renderer_type": "color"},
+        LIGHT               : {"base_type": LIGHT, "lpe": "", "name": LIGHT, "renderer_type": "color", "light_group":"", "light_group_type":"BOTH"}
 
     },
     "Arnold": {
-        LPE: {"base_type": LPE, "lpe": "", "name": "<NewAOV>", "renderer_type": "RGB"},
-        SPECULAR: {"base_type": LPE, "lpe": "C<RS>L", "name": SPECULAR, "renderer_type": "RGB"},
-        SPECULAR_INDIRECT: {"base_type": LPE, "lpe": "C<RS>[DSVOB].*", "name": SPECULAR_INDIRECT, "renderer_type": "RGB"},
-        DIFFUSE: {"base_type": LPE, "lpe": "C<RD>L", "name": DIFFUSE, "renderer_type": "RGB"},
-        DIFFUSE_INDIRECT: {"base_type": LPE, "lpe": "C<RD>[DSVOB].*", "name": DIFFUSE_INDIRECT, "renderer_type": "RGB"},
-        DIFFUSE_RAW: {"base_type": LPE, "lpe": "C<RD>A", "name": DIFFUSE_RAW, "renderer_type": "RGB"},
-        SUBSURFACE: {"base_type": LPE, "lpe": "C<TD>.*", "name": SUBSURFACE, "renderer_type": "RGB"},
-        TRANSMISSIVE: {"base_type": LPE, "lpe": "C<TS>.*", "name": TRANSMISSIVE, "renderer_type": "RGB"},
-        LIGHT: {"base_type": LIGHT, "lpe": "", "name": LIGHT, "renderer_type": "RGB", "light_group": "", "light_group_type": "BOTH"}
+        LPE                 : {"base_type": LPE, "lpe": "", "name": "<NewAOV>", "renderer_type": "RGB"},
+        SPECULAR            : {"base_type": LPE, "lpe": "C<RS>L", "name": SPECULAR, "renderer_type": "RGB"},
+        SPECULAR_INDIRECT   : {"base_type": LPE, "lpe": "C<RS>[DSVOB].*", "name": SPECULAR_INDIRECT, "renderer_type": "RGB"},
+        DIFFUSE             : {"base_type": LPE, "lpe": "C<RD>L", "name": DIFFUSE, "renderer_type": "RGB"},
+        DIFFUSE_INDIRECT    : {"base_type": LPE, "lpe": "C<RD>[DSVOB].*", "name": DIFFUSE_INDIRECT, "renderer_type": "RGB"},
+        DIFFUSE_RAW         : {"base_type": LPE, "lpe": "C<RD>A", "name": DIFFUSE_RAW, "renderer_type": "RGB"},
+        SUBSURFACE          : {"base_type": LPE, "lpe": "C<TD>.*", "name": SUBSURFACE, "renderer_type": "RGB"},
+        TRANSMISSIVE        : {"base_type": LPE, "lpe": "C<TS>.*", "name": TRANSMISSIVE, "renderer_type": "RGB"},
+        LIGHT               : {"base_type": LIGHT, "lpe": "", "name": LIGHT, "renderer_type": "RGB", "light_group": "", "light_group_type": "BOTH"}
     },
     "Redshift": {},
     "Delight": {}
