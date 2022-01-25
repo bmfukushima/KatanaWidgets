@@ -296,6 +296,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         # setup attrs
         self._node = node
         self.rootItem().setArg("node", node.getName())
+        self._aov_type = None
 
         self.setHeaderViewType(ModelViewWidget.TREE_VIEW)
         self._delegate = AOVManagerItemDelegate(parent=self)
@@ -395,10 +396,11 @@ class AOVManagerWidget(ShojiModelViewWidget):
     def renderLocation(self, render_location):
         self.node().getParameter("renderLocation").setValue(render_location, 0)
 
-    def aovType(self):
-        if 0 < len(self.activeDelegateWidgets()):
-            return self.activeDelegateWidgets()[0].aovType()
-        return None
+    def currentAOVType(self):
+        return self._current_aov_type
+
+    def setCurrentAOVType(self, current_aov_type):
+        self._current_aov_type = current_aov_type
 
     """ EVENTS """
     def aovTextChangedEvent(self, item, old_value, new_value, column):
@@ -421,12 +423,10 @@ class AOVManagerWidget(ShojiModelViewWidget):
         # type changed
         if column == 1:
             aov_type = new_value
-            if aov_type != self.aovType():
-                print('1')
+            if aov_type != self.currentAOVType():
                 delegate_widget = self.activeDelegateWidgets()[0]
                 delegate_widget.widgets()["type"].setText(aov_type)
                 delegate_widget.setAOVType(aov_type, new=True)
-                print('2')
 
         # lpe
         if column == 2:
@@ -805,15 +805,17 @@ class AOVManagerItemWidget(QWidget):
         if renderer not in RENDERENGINES: return
         if aov_type not in self.aovTypes(): return
 
-        # clear args
+        # update attrs
         """ Note need to set node here so that the parent node can be found in
         the call to "createAOVMacro()" """
         node = self.node()
         self.currentItem().clearArgsList()
         self.currentItem().setArg("node", node.getName())
+        self.currentItem().setArg("type", aov_type)
+        aov_manager_widget = getWidgetAncestor(self, AOVManagerWidget)
+        aov_manager_widget.setCurrentAOVType(aov_type)
 
         # Create new node
-        self.currentItem().setArg("type", aov_type)
         if new:
             node = self.createAOVMacro(renderer, aov_type)
             self.currentItem().setArg("node", node.getName())
