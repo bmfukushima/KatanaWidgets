@@ -395,6 +395,11 @@ class AOVManagerWidget(ShojiModelViewWidget):
     def renderLocation(self, render_location):
         self.node().getParameter("renderLocation").setValue(render_location, 0)
 
+    def aovType(self):
+        if 0 < len(self.activeDelegateWidgets()):
+            return self.activeDelegateWidgets()[0].aovType()
+        return None
+
     """ EVENTS """
     def aovTextChangedEvent(self, item, old_value, new_value, column):
         """ Run when the user updates an item in the view
@@ -416,9 +421,12 @@ class AOVManagerWidget(ShojiModelViewWidget):
         # type changed
         if column == 1:
             aov_type = new_value
-            delegate_widget = self.activeDelegateWidgets()[0]
-            delegate_widget.widgets()["type"].setText(aov_type)
-            delegate_widget.setAOVType(aov_type, new=True)
+            if aov_type != self.aovType():
+                print('1')
+                delegate_widget = self.activeDelegateWidgets()[0]
+                delegate_widget.widgets()["type"].setText(aov_type)
+                delegate_widget.setAOVType(aov_type, new=True)
+                print('2')
 
         # lpe
         if column == 2:

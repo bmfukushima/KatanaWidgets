@@ -121,7 +121,7 @@ class NodeViewWidget(ShojiModelViewWidget):
             # todo param disable
             pass
 
-    def objectNameChangedEvent(self, item, old_value, new_value):
+    def objectNameChangedEvent(self, item, old_value, new_value, column=None):
 
         if item.objectType() == NODE:
             node = NodegraphAPI.GetNode(old_value)

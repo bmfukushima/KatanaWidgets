@@ -1046,7 +1046,7 @@ class EventWidget(AbstractEventWidget):
                 # save
                 self.saveEventsData()
 
-    def eventTypeChanged(self, item, old_value, new_value):
+    def eventTypeChanged(self, item, old_value, new_value, column=None):
         """
         When the user updates the event_type by editing the views
         header.  This will set the event type on the item so that it

@@ -1001,7 +1001,7 @@ class GSVEventWidget(AbstractEventWidget):
         self.eventsData()[gsv]["enabled"] = enabled
         self.saveEventsData()
 
-    def gsvChangedEvent(self, item, old_value, new_value):
+    def gsvChangedEvent(self, item, old_value, new_value, column=None):
         """ When the user changes the GSV"""
 
         """ Create a new event item"""
