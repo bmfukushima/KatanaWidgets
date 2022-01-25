@@ -182,7 +182,10 @@ class KatanaLauncherWidget(QWidget):
         # setup envars
         self._envars = self.envars(envars)
         for var in self._envars:
-            os.environ[var] = self._envars[var].format(katana_root=self.katanaRoot())
+            try:
+                os.environ[var] = os.environ[var] + ":" + self._envars[var].format(katana_root=self.katanaRoot())
+            except KeyError:
+                os.environ[var] = self._envars[var].format(katana_root=self.katanaRoot())
 
     def plugins(self):
         return self._plugins
@@ -492,18 +495,21 @@ if __name__ == "__main__":
 
     plugins = {
         'Foundry': {
-            'KATANA_RESOURCES':'/media/ssd01/dev/katana/KatanaResources_foundry/',
-            '__ENABLED__': False},
+            'KATANA_RESOURCES'  :'/media/ssd01/dev/katana/KatanaResources_foundry/',
+            '__ENABLED__'       : False},
         'Katana Widgets': {
-            'KATANA_RESOURCES': '/media/ssd01/dev/katana/KatanaWidgets',
-            '__ENABLED__': True},
+            'KATANA_RESOURCES'  : '/media/ssd01/dev/katana/KatanaWidgets',
+            '__ENABLED__'       : True},
         'USD': {
-            'KATANA_RESOURCES': '{katana_root}/plugins/Resources/Usd/plugin',
-            'LD_LIBRARY_PATH': '{katana_root}/plugins/Resources/Usd/lib',
-            '__ENABLED__': True},
+            'KATANA_RESOURCES'  : '{katana_root}/plugins/Resources/Usd/plugin',
+            'LD_LIBRARY_PATH'   : '{katana_root}/plugins/Resources/Usd/lib',
+            'PATH'              : '{katana_root}/plugins/Resources/Usd/lib',
+            "PYTHONPATH"        : '{katana_root}/plugins/Resources/Usd/lib/python',
+            "FNPXR_PLUGINPATH"  :  '{katana_root}/plugins/Resources/Usd/lib/resources',
+            '__ENABLED__'       : True},
         'Katana Examples': {
-            'KATANA_RESOURCES': '{katana_root}/plugins/Src/Resources/Examples',
-            '__ENABLED__': False},
+            'KATANA_RESOURCES'  : '{katana_root}/plugins/Src/Resources/Examples',
+            '__ENABLED__'       : False},
         'Old Crap': {
             'KATANA_RESOURCES': '/media/ssd01/dev/katana/KatanaResources_old/',
             '__ENABLED__': False}

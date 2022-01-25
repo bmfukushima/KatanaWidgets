@@ -683,6 +683,9 @@ class AOVManagerItemWidget(QWidget):
         """ Creates all of the necessary widgets for the Light Group type"""
         self.__createTypeParameterWidget(new)
 
+        self.widgets()["cel"] = paramutils.createParamWidget(self.node().getParameter("cel"))
+        self.parametersWidget().addInputWidget(self.widgets()["cel"])
+
         light_group_widget = ListInputWidget()
         self.addParameterWidget("light_group", light_group_widget, self.lightGroupChangedEvent, new=new)
         self.widgets()["light_group"].setPopulateFunction(self.getLightGroups)

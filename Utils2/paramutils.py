@@ -74,6 +74,22 @@ def createParamAtLocation(param_location, node, param_type, param=None, initial_
     except TypeError:
         print(current_param.getFullName(), "already exists")
 
+
+def createParamWidget(param):
+    """ Creates a widget for the provided parameter
+
+    Args:
+        param (param): Katana parameter to create widget for
+    """
+    from Katana import UI4
+
+    locationPolicy = UI4.FormMaster.CreateParameterPolicy(None, param)
+    factory = UI4.FormMaster.KatanaFactory.ParameterWidgetFactory
+    widget = factory.buildWidget(None, locationPolicy)
+
+    return widget
+
+
 def createTeleparamWidget(node_name, hide_title=False, open="True"):
     """
     Creates a teledrop parameter widget
@@ -101,6 +117,7 @@ def createTeleparamWidget(node_name, hide_title=False, open="True"):
     params_policy.setValue(node_name, 0)
     return param_widget
 
+
 def createNodeReference(name, node, parent):
     """ Creates a parameter reference to the node provided
 
@@ -114,6 +131,7 @@ def createNodeReference(name, node, parent):
     param.setExpressionFlag(True)
     param.setExpression("@{node}".format(node=node.getName()))
     return param
+
 
 def getParameterMapFromNode(node):
         """ Returns a dictionary of the parameter map for each parameter on the node

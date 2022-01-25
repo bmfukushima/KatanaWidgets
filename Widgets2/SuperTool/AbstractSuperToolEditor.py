@@ -212,45 +212,6 @@ class AbstractSuperToolEditor(QWidget):
 
         return param
 
-    # def createCustomParam(self, widget, param_loc, data_type, get_new_value_function, editing_finished_function, initial_value=0):
-    #     """
-    #     Creates a custom parameter based off of a custom PyQt widget.
-    #
-    #     Args:
-    #         param_loc (str): path to location of the parameter with . syntax
-    #             ie user.some_group.param
-    #         data_type (iParameter.TYPE): Data type from the iParameter
-    #             class.
-    #         widget (AbstractBaseInputWidget): The widget type to be converted into a "param"
-    #             This does not really support a lot right now... working on getting
-    #             the triggers working....
-    #             Note:
-    #                 This needs to be of the BaseInputType from CGWidgets
-    #         get_new_value_function (function): function that should return the new
-    #             value that the parameter should be set to.
-    #         editing_finished_function (function): function that is run when the user
-    #             has finished editing the widget...
-    #             Note:
-    #                 This function should take the args (widget, value)
-    #         initial_value: initial value to set the param to
-    #
-    #     """
-    #
-    #     # check to see if parameter exists
-    #     if self.node().getParameter(param_loc):
-    #         param = self.node().getParameter(param_loc)
-    #     else:
-    #         param = paramutils.createParamAtLocation(param_loc, self.node(), data_type, initial_value=initial_value)
-    #
-    #     # set widget attrs
-    #     widget.setLocation(param_loc)
-    #     widget.setDataType(data_type)
-    #     widget.setParameter(param)
-    #     widget.setGetNewValueFunction(get_new_value_function)
-    #     widget.setUserFinishedEditingEvent(editing_finished_function)
-    #
-    #     return param
-
     def createKatanaParam(self, name, parent=None):
         if not parent:
             parent = self.node().getParameters()
