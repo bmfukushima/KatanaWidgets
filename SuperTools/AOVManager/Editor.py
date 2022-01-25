@@ -16,10 +16,6 @@ Todo:
 Todo (BUGS):
     *   Renderer changed and updating from view causes conflicts
 
-ToDo (Light Groups)
-    *   Get all Light Groups list (getLightGroups)
-    *   Add Arnold
-
 Use a ShojiMVW to create an interface for AOV"s
 Items
     GROUP | LIGHT | LPE | CUSTOM
@@ -567,8 +563,6 @@ class AOVManagerItemWidget(QWidget):
         self._parameters_widget.setIsHeaderShown(True)
         self._parameters_widget.setHeaderTextChangedEvent(self.aovNameChangedEvent)
 
-        # add type
-
         # setup layout
         QVBoxLayout(self)
 
@@ -749,7 +743,8 @@ class AOVManagerItemWidget(QWidget):
             if param_name in AOVManagerItemWidget.NON_DISPLAYABLE_PARAMETERS:
                 input_widget.hide()
 
-        self.__createAdvancedButtonWidget()
+        if self.aovType() != AOVGROUP:
+            self.__createAdvancedButtonWidget()
 
     def __createAdvancedButtonWidget(self):
         """ Creates the advanced button display
