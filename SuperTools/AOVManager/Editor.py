@@ -1,9 +1,7 @@
 """
 Todo:
-    *   Item type storage Group vs AOV
-            - Populate | Expand on startup
     *   Setup Node
-        -   Lights, Custom, Denoise
+        -   Custom, Denoise
         -   Create Node data
                 PRMAN | ARNOLD | REDSHIFT | DELIGHT
                 AOVManagerItemWidget --> setAOVType
@@ -11,10 +9,18 @@ Todo:
         -   RenderSettings node
                 enable/disable update
     *   Setup save location
-    *   Populate rendererType
 
 Todo (BUGS):
     *   Renderer changed and updating from view causes conflicts
+    *   Item type storage Group vs AOV
+            - Populate | Expand on startup
+"""
+"""
+The AOVManager is a SuperTool that will allow for the easier creation of AOV's for any
+render engine that supports LPE's inside of Katana.
+
+This works by creating custom macros with the name "__aov<render_engine><base_type>" which
+are created and a custom GUI is displayed to the user for updating these macros.
 
 Use a ShojiMVW to create an interface for AOV"s
 Items
@@ -41,15 +47,20 @@ AOVManagerEditor --> (AbstractSuperToolEditor)
                                     |- teleparam_widget
 
 Data:
-    type : TYPE (GROUP | LIGHT | LPE)
+    base_type : TYPE (GROUP | LIGHT | LPE | CUSTOM)
     name : str()
     children : list()
     enabled : bool
     expanded : bool
+    renderer_type : str()
 
 AOVMAP
-    Needs to have the same items in the dictionary as the parameters on the nodes
+    All items in this dictionary must exist as parameters on the node
 
+Create New Item:
+    AOVManagerItemWidget --> setAOVType
+                         --> populateParameterWidgets
+                         --> updateGUI (only if there are custom args)
 
 """
 
@@ -127,7 +138,7 @@ AOVMAP = {
     "Redshift": {},
     "Delight": {}
 }
-TYPESMAP = {
+RENDERER_TYPES_MAP = {
     "Arnold": [
         "BYTE",
         "INT",
@@ -687,7 +698,6 @@ class AOVManagerItemWidget(QWidget):
         if (self.aovType() in LPEAOVS) or (self.aovType() == AOVGROUP):
             self.__createLPEParameterWidgets(new=new)
 
-        # todo LIGHT GROUPS
         if self.aovType() == LIGHT:
             self.__createLightGroupParameterWidgets(new)
 
@@ -732,6 +742,15 @@ class AOVManagerItemWidget(QWidget):
         for param_name, param_value in parameter_map.items():
             if param_name == "type":
                 input_widget = self.__createTypeParameterWidget(new)
+
+            elif param_name == "renderer_type":
+                delegate_widget = ListInputWidget()
+                delegate_widget.filter_results = False
+                if self.renderer():
+                    renderer_types = [[item] for item in RENDERER_TYPES_MAP[self.renderer()]]
+                    delegate_widget.populate(renderer_types)
+                input_widget = self.addParameterWidget(param_name, delegate_widget, self.parameterChangedEvent, new=new)
+
             else:
                 if isinstance(param_value, str):
                     delegate_widget = StringInputWidget()
@@ -878,9 +897,6 @@ class AOVManagerItemWidget(QWidget):
         node = self.currentItem().getArg("node")
         if node:
             node.delete()
-
-    def __createPrmanLPENode(self):
-        return
 
     """ EVENTS """
     def aovTypeChangedEvent(self, widget, value):
