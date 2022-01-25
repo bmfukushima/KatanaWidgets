@@ -285,6 +285,8 @@ class AOVManagerWidget(ShojiModelViewWidget):
 
     Attributes:
         node (Node): AOVManager node
+        current_node (Node): The current macro node being manipulated
+            This is the same as the "node" property on the AOVManagerItemWidget
         renderer (string): render engine being used
             arnold | delight | prman | redshift
         saveLocation (string): path on disk to save to.
@@ -324,6 +326,7 @@ class AOVManagerWidget(ShojiModelViewWidget):
         self.setHeaderItemEnabledEvent(self.aovEnabledEvent)
         self.setHeaderItemDeleteEvent(self.aovDeleteEvent, update_first=False)
         self.setHeaderItemDropEvent(self.aovDroppedEvent)
+        self.addContextMenuEvent("Go To Node", self.goToNode)
 
         render_settings_node = None
         nodes = [node for node in reversed(self.node().getChildren()) if node != render_settings_node]
@@ -378,6 +381,16 @@ class AOVManagerWidget(ShojiModelViewWidget):
         return aovs.keys()
 
     """ PROPERTIES """
+    def currentItem(self):
+        if 0 < len(self.getAllSelectedItems()):
+            return self.getAllSelectedItems()[0]
+        return None
+
+    def currentNode(self):
+        if self.currentItem():
+            return NodegraphAPI.GetNode(self.currentItem().getArg("node"))
+        return None
+
     def node(self):
         return self._node
 
@@ -510,6 +523,11 @@ class AOVManagerWidget(ShojiModelViewWidget):
             item = new_index.internalPointer()
             item.setIsDroppable(True)
         return new_index
+
+    def goToNode(self, index, indexes):
+        node = self.currentNode()
+        if node:
+            nodeutils.goToNode(node)
 
     def showEvent(self, event):
         self.setHeaderWidgetToDefaultSize()
