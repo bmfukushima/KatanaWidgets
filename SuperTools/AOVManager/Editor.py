@@ -126,7 +126,7 @@ AOVMAP = {
         DIFFUSE_RAW: {"base_type": LPE, "lpe": "C<RD>A", "name": DIFFUSE_RAW, "renderer_type": "RGB"},
         SUBSURFACE: {"base_type": LPE, "lpe": "C<TD>.*", "name": SUBSURFACE, "renderer_type": "RGB"},
         TRANSMISSIVE: {"base_type": LPE, "lpe": "C<TS>.*", "name": TRANSMISSIVE, "renderer_type": "RGB"},
-
+        LIGHT: {"base_type": LIGHT, "lpe": "", "name": LIGHT, "renderer_type": "RGB", "light_group": "", "light_group_type": "BOTH"}
     },
     "Redshift": {},
     "Delight": {}
