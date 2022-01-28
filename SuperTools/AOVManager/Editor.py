@@ -1,6 +1,7 @@
 """
 Todo:
     *   Setup Node
+        -   Check float vs rgb (prman) opscript --> inputRGB
         -   Populate input widgets
                 CUSTOM
                     nodes / ports
@@ -662,14 +663,69 @@ class AOVManagerItemWidget(QWidget):
             if nodes:
                 # Search through nodes attribute and update the connected ports string
                 for node_data in nodes.childList():
-                    node_name = [node_data[0]]
+                    node_name = node_data[0]
                     shading_nodes.append(node_name)
 
         return shading_nodes
 
     def getOutputPorts(self):
-        # todo get output ports
-        return []
+        """ Returns a list of all of the available output ports on the current node"""
+        # get attrs
+        node = self.node()
+        aov_output_node = self.getItemArg("aov_output_node")
+        location = self.getItemArg("location")
+
+        # create client
+        runtime = FnGeolib.GetRegisteredRuntimeInstance()
+        txn = runtime.createTransaction()
+        client = txn.createClient()
+        op = Nodes3DAPI.GetOp(txn, node)
+        txn.setClientOp(client, op)
+        runtime.commit(txn)
+        location = client.cookLocation(location)
+
+        # get output ports
+        attrs = location.getAttrs()
+        output_ports = []
+        if attrs:
+            node_attr = attrs.getChildByName("material.nodes.{node_name}".format(node_name=aov_output_node))
+            if node_attr:
+                node_type = node_attr.getChildByName("type").getValue()
+                _temp_node = NodegraphAPI.CreateNode("PrmanShadingNode", NodegraphAPI.GetRootNode())
+                _temp_node.getParameter("nodeType").setValue(node_type, 0)
+                _temp_node.checkDynamicParameters()
+                output_ports = [port.getName() for port in _temp_node.getOutputPorts()]
+                _temp_node.delete()
+
+        return output_ports
+
+    def hasValidMaterialAttr(self, location):
+        """ Determines if the location provide has a valid Network Material attr
+
+        Args:
+            location (str): Scenegraph location to check
+        """
+        # get attrs
+        node = self.node()
+
+        # create client
+        runtime = FnGeolib.GetRegisteredRuntimeInstance()
+        txn = runtime.createTransaction()
+        client = txn.createClient()
+        op = Nodes3DAPI.GetOp(txn, node)
+        txn.setClientOp(client, op)
+        runtime.commit(txn)
+        location = client.cookLocation(location)
+
+        # get output ports
+        attrs = location.getAttrs()
+        if not attrs: return False
+        material_attr = attrs.getChildByName("material")
+        if not material_attr: return False
+        nodes_attr = material_attr.getChildByName("nodes")
+        if not nodes_attr: return False
+
+        return True
 
     def __updateConnectedNodesParam(self):
         """ Gets all of the ports connected to the output port/node provided
@@ -682,6 +738,14 @@ class AOVManagerItemWidget(QWidget):
         Returns:
 
         """
+        # update connected ports
+        location = self.getItemArg("location")
+        if not scenegraphutils.hasAttr(self.aovManagerWidget().node(), location, "material"): return
+
+        # check aov node
+        aov_output_node = scenegraphutils.hasAttr(self.node(), location, "material.nodes.{node_name}".format(node_name=self.getItemArg("aov_output_node")))
+        if not aov_output_node: return
+
         node = self.node()
         aov_output_port = self.getItemArg("aov_output_port")
         aov_output_node = self.getItemArg("aov_output_node")
@@ -806,15 +870,25 @@ class AOVManagerItemWidget(QWidget):
         return input_widget
 
     def __createCustomParameterWidget(self, new=True):
+        """ Creates all of the parameters for the CUSTOM AOV type
+
+        Parameters:
+            type (list)
+            location (str): Scenegraph Location to get material from
+            aov_output_node (list): List of nodes
+            aov_output_port (list): List of ports
+        """
         self.__createTypeParameterWidget(new)
 
-        material_widget = ListInputWidget(self)
-        self.addParameterWidget("location", material_widget, self.customAOVChangedEvent, new=new)
+        location_widget = StringInputWidget(self)
+        self.addParameterWidget("location", location_widget, self.customAOVChangedEvent, new=new)
+
         node_widget = ListInputWidget(self)
-        node_widget.populate(self.getShadingNodes())
+        node_widget.populate([[node] for node in self.getShadingNodes()])
         self.addParameterWidget("aov_output_node", node_widget, self.customAOVChangedEvent, new=new)
+
         output_port_widget = ListInputWidget(self)
-        output_port_widget.populate(self.getOutputPorts())
+        output_port_widget.populate([[port] for port in self.getOutputPorts()])
         self.addParameterWidget("aov_output_port", output_port_widget, self.customAOVChangedEvent, new=new)
 
         # setup default parameters
@@ -1071,20 +1145,59 @@ class AOVManagerItemWidget(QWidget):
         if self.isFrozen(): return
 
         # set data
-        self.parameterChangedEvent(widget, value)
+        if param_name == "location":
+            self.customAOVLocationChangedEvent(widget, value)
         if param_name == "aov_output_node":
-            self.node().getParameter("aov_output_node").setExpression(
-                "@{aov_output_node}".format(aov_output_node=value))
+            self.customAOVNodeChangedEvent(widget, value)
+        if param_name == "aov_output_port":
+            self.customAOVPortChangedEvent(widget, value)
 
-        # check location
-        location = self.getItemArg("location")
-        if not scenegraphutils.hasAttr(self.aovManagerWidget().node(), location, "material"): return
-
-        # check aov node
-        aov_output_node = scenegraphutils.hasAttr(self.node(), location, "material.nodes.{node_name}".format(node_name=self.getItemArg("aov_output_node")))
-        if not aov_output_node: return
-
+        # update connected ports
         self.__updateConnectedNodesParam()
+
+    def customAOVLocationChangedEvent(self, widget, location):
+        """ During a CUSTOM AOV location change event, this will update the nodes available
+
+        Args:
+            location (str): Scenegraph location to be used
+        """
+        has_material_attr = self.hasValidMaterialAttr(location)
+        if has_material_attr:
+            # update data
+            self.parameterChangedEvent(widget, location)
+            self.parameterChangedEvent(self.widgets()["aov_output_node"], "")
+            self.node().getParameter("aov_output_node").setExpression("")
+            self.parameterChangedEvent(self.widgets()["aov_output_port"], "")
+            self.widgets()["aov_output_node"].setText("")
+            self.widgets()["aov_output_port"].setText("")
+            self.node().getParameter("connected_ports").setValue("", 0)
+
+            self.widgets()["aov_output_node"].populate([[node] for node in self.getShadingNodes()])
+
+        else:
+            print(location, "does not have a valid \"material\" attribute")
+            widget.setText(self.getItemArg("location"))
+
+    def customAOVNodeChangedEvent(self, widget, node_name):
+        """ During a CUSTOM AOV node change event, this will update the ports available
+
+        Args:
+            node_name (str): name of node to be used
+        """
+
+        if node_name in self.getShadingNodes() or node_name == "":
+            self.parameterChangedEvent(widget, node_name)
+            self.node().getParameter("aov_output_node").setExpression(
+                "@{aov_output_node}".format(aov_output_node=node_name))
+            self.widgets()["aov_output_port"].populate([[port] for port in self.getOutputPorts()])
+        else:
+            widget.setText(self.getItemArg("aov_output_node"))
+
+    def customAOVPortChangedEvent(self, widget, port_name):
+        if port_name in self.getOutputPorts() or port_name == "":
+            self.parameterChangedEvent(widget, port_name)
+        else:
+            widget.setText(self.getItemArg("aov_output_port"))
 
     def lightGroupChangedEvent(self, widget, value):
         self.parameterChangedEvent(widget, value)
