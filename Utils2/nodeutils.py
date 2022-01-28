@@ -34,6 +34,7 @@ def disconnectNode(node, input=False, output=False, reconnect=False):
         reconnect (bool): If true, will rewire the node graphs input/output ports
             will only work if input and output are true
     """
+    # disconnect node: Reconnection needs to be updated to handle more than the first ports
     if reconnect is True:
         if input is True and output is True:
             try:
@@ -287,7 +288,29 @@ def removeNodeColor(node):
     UI4.App.Tabs.FindTopTab("Node Graph").update()
 
 
-def replaceNode(node_to_be_replaced, replacement_node, delete=True, place=True):
+def reconnectNode(node_to_be_replaced, replacement_node, input=True, output=True):
+    """ Reconnects a node's input/output ports to a new node
+
+    Args:
+        node_to_be_replaced (Node): node to remove
+        replacement_node (Node): node to insert
+        input (bool): determines if the nodes input ports should be reconnected
+        output (bool): determines if the nodes output ports should be reconnected
+    """
+    if input:
+        for index, input_port in enumerate(node_to_be_replaced.getInputPorts()):
+            connected_ports = input_port.getConnectedPorts()
+            for connected_port in connected_ports:
+                replacement_node.getInputPortByIndex(index).connect(connected_port)
+
+    if output:
+        for index, output_port in enumerate(node_to_be_replaced.getOutputPorts()):
+            connected_ports = output_port.getConnectedPorts()
+            for connected_port in connected_ports:
+                replacement_node.getOutputPortByIndex(index).connect(connected_port)
+
+
+def replaceNode(node_to_be_replaced, replacement_node, delete=True, place=True, input=True, output=True):
     """ Replaces the node with a new one
 
     Note:
@@ -299,19 +322,22 @@ def replaceNode(node_to_be_replaced, replacement_node, delete=True, place=True):
         replacement_node (Node): node to insert
         delete (bool): determines if the old node should be deleted
         place (bool): determines if the node should be placed over the old node
+        input (bool): determines if the nodes input ports should be reconnected
+        output (bool): determines if the nodes output ports should be reconnected
 
     """
 
     # disconnect ports
-    for index, input_port in enumerate(node_to_be_replaced.getInputPorts()):
-        connected_ports = input_port.getConnectedPorts()
-        for connected_port in connected_ports:
-            replacement_node.getInputPortByIndex(index).connect(connected_port)
-
-    for index, output_port in enumerate(node_to_be_replaced.getOutputPorts()):
-        connected_ports = output_port.getConnectedPorts()
-        for connected_port in connected_ports:
-            replacement_node.getOutputPortByIndex(index).connect(connected_port)
+    reconnectNode(node_to_be_replaced, replacement_node, input=input, output=output)
+    # for index, input_port in enumerate(node_to_be_replaced.getInputPorts()):
+    #     connected_ports = input_port.getConnectedPorts()
+    #     for connected_port in connected_ports:
+    #         replacement_node.getInputPortByIndex(index).connect(connected_port)
+    #
+    # for index, output_port in enumerate(node_to_be_replaced.getOutputPorts()):
+    #     connected_ports = output_port.getConnectedPorts()
+    #     for connected_port in connected_ports:
+    #         replacement_node.getOutputPortByIndex(index).connect(connected_port)
 
     # place node
     if place:

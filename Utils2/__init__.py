@@ -6,4 +6,5 @@ from . import nodeutils
 from . import paramutils
 from . import colors
 from . import widgetutils
+from . import scenegraphutils
 

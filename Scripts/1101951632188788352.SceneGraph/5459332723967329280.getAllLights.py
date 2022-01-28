@@ -1,17 +1,7 @@
 node = NodegraphAPI.GetNode('GafferThree')
 
-# We first need to get a hold of the runtime the UI is using
 runtime = FnGeolib.GetRegisteredRuntimeInstance()
- 
-# Transactions are used to batch together actions
 txn = runtime.createTransaction()
- 
-# Make a client, and attach it to an Op in the tree,
-# We get the Op from a reference to a Node. 'node' is
-# available automatically in a script attached to a button,
-# otherwise you would need to use NodegraphAPI.GetNode('MyNodeName')
-# or similar to get the node you're interested in.
-# The client will see the Scenegraph as it *leaves* this node.
 client = txn.createClient()
 op = Nodes3DAPI.GetOp(txn, node)
 txn.setClientOp(client, op)

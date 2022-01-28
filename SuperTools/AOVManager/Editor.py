@@ -1,6 +1,11 @@
 """
 Todo:
     *   Setup Node
+        -   Populate input widgets
+                CUSTOM
+                    nodes / ports
+                LIGHT
+                    getLightGroups (getLightGroups)
         -   Custom, Denoise
         -   Create Node data
                 PRMAN | ARNOLD | REDSHIFT | DELIGHT
@@ -14,6 +19,7 @@ Todo (BUGS):
     *   Renderer changed and updating from view causes conflicts
     *   Item type storage Group vs AOV
             - Populate | Expand on startup
+
 """
 """
 The AOVManager is a SuperTool that will allow for the easier creation of AOV's for any
@@ -21,6 +27,10 @@ render engine that supports LPE's inside of Katana.
 
 This works by creating custom macros with the name "__aov<render_engine><base_type>" which
 are created and a custom GUI is displayed to the user for updating these macros.
+
+LPE Docs
+https://docs.arnoldrenderer.com/display/A5ARP/Light+Path+Expression+AOVs
+https://rmanwiki.pixar.com/display/REN24/Light+Path+Expressions
 
 Use a ShojiMVW to create an interface for AOV"s
 Items
@@ -67,7 +77,7 @@ Create New Item:
 from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget, QScrollArea
 from qtpy.QtCore import Qt, QModelIndex
 
-from Katana import NodegraphAPI
+from Katana import NodegraphAPI, Utils, FnGeolib, Nodes3DAPI
 
 from cgwidgets.widgets import (
     ButtonInputWidget,
@@ -85,7 +95,7 @@ from cgwidgets.utils import getFontSize, getWidgetAncestor
 from cgwidgets.views import AbstractDragDropModelDelegate
 
 from Widgets2 import AbstractSuperToolEditor, iParameter
-from Utils2 import paramutils, nodeutils
+from Utils2 import paramutils, nodeutils, scenegraphutils
 
 # MAPPING TABLES
 
@@ -113,27 +123,27 @@ CUSTOM = "CUSTOM"
 
 AOVMAP = {
     "Prman": {
-        LPE                 : {"base_type": LPE, "lpe": "lpe:", "name": "<NewAOV>", "renderer_type": "color"},
-        SPECULAR            : {"base_type": LPE, "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "renderer_type": "color"},
-        SPECULAR_INDIRECT   : {"base_type": LPE, "lpe": "lpe:C<RS>.+[<L.>O]", "name": SPECULAR_INDIRECT, "renderer_type": "color"},
-        DIFFUSE             : {"base_type": LPE, "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "renderer_type": "color"},
-        DIFFUSE_INDIRECT    : {"base_type": LPE, "lpe": "lpe:C<RD>.+[<L.>O]", "name": DIFFUSE_INDIRECT, "renderer_type": "color"},
-        DIFFUSE_RAW         : {"base_type": LPE, "lpe": "lpe:CU2[<L.>O]", "name": DIFFUSE_RAW, "renderer_type": "color"},
-        SUBSURFACE          : {"base_type": LPE, "lpe": "lpe:C<TD>.*[<L.>O]", "name": SUBSURFACE, "renderer_type": "color"},
-        TRANSMISSIVE        : {"base_type": LPE, "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "renderer_type": "color"},
-        LIGHT               : {"base_type": LIGHT, "lpe": "", "name": LIGHT, "renderer_type": "color", "light_group":"", "light_group_type":"BOTH"}
-
+        LPE                 : {"base_type": LPE,    "lpe": "lpe:", "name": "<NewAOV>", "renderer_type": "color"},
+        LIGHT               : {"base_type": LIGHT,  "lpe": "", "name": LIGHT, "renderer_type": "color", "light_group":"", "light_group_type":"BOTH"},
+        CUSTOM              : {"base_type": CUSTOM, "lpe": "", "name": CUSTOM, "renderer_type": "color", "location":"", "aov_output_port":"", "aov_output_node":"", "connected_ports":""},
+        SPECULAR            : {"base_type": LPE,    "lpe": "lpe:C<RS>[<L.>O]", "name": SPECULAR, "renderer_type": "color"},
+        SPECULAR_INDIRECT   : {"base_type": LPE,    "lpe": "lpe:C<RS>.+[<L.>O]", "name": SPECULAR_INDIRECT, "renderer_type": "color"},
+        DIFFUSE             : {"base_type": LPE,    "lpe": "lpe:C<RD>[<L.>O]", "name": DIFFUSE, "renderer_type": "color"},
+        DIFFUSE_INDIRECT    : {"base_type": LPE,    "lpe": "lpe:C<RD>.+[<L.>O]", "name": DIFFUSE_INDIRECT, "renderer_type": "color"},
+        DIFFUSE_RAW         : {"base_type": LPE,    "lpe": "lpe:CU2[<L.>O]", "name": DIFFUSE_RAW, "renderer_type": "color"},
+        SUBSURFACE          : {"base_type": LPE,    "lpe": "lpe:C<TD>.*[<L.>O]", "name": SUBSURFACE, "renderer_type": "color"},
+        TRANSMISSIVE        : {"base_type": LPE,    "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "renderer_type": "color"}
     },
     "Arnold": {
-        LPE                 : {"base_type": LPE, "lpe": "", "name": "<NewAOV>", "renderer_type": "RGB"},
-        SPECULAR            : {"base_type": LPE, "lpe": "C<RS>L", "name": SPECULAR, "renderer_type": "RGB"},
-        SPECULAR_INDIRECT   : {"base_type": LPE, "lpe": "C<RS>[DSVOB].*", "name": SPECULAR_INDIRECT, "renderer_type": "RGB"},
-        DIFFUSE             : {"base_type": LPE, "lpe": "C<RD>L", "name": DIFFUSE, "renderer_type": "RGB"},
-        DIFFUSE_INDIRECT    : {"base_type": LPE, "lpe": "C<RD>[DSVOB].*", "name": DIFFUSE_INDIRECT, "renderer_type": "RGB"},
-        DIFFUSE_RAW         : {"base_type": LPE, "lpe": "C<RD>A", "name": DIFFUSE_RAW, "renderer_type": "RGB"},
-        SUBSURFACE          : {"base_type": LPE, "lpe": "C<TD>.*", "name": SUBSURFACE, "renderer_type": "RGB"},
-        TRANSMISSIVE        : {"base_type": LPE, "lpe": "C<TS>.*", "name": TRANSMISSIVE, "renderer_type": "RGB"},
-        LIGHT               : {"base_type": LIGHT, "lpe": "", "name": LIGHT, "renderer_type": "RGB", "light_group": "", "light_group_type": "BOTH"}
+        LPE                 : {"base_type": LPE,    "lpe": "", "name": "<NewAOV>", "renderer_type": "RGB"},
+        SPECULAR            : {"base_type": LPE,    "lpe": "C<RS>L", "name": SPECULAR, "renderer_type": "RGB"},
+        SPECULAR_INDIRECT   : {"base_type": LPE,    "lpe": "C<RS>[DSVOB].*", "name": SPECULAR_INDIRECT, "renderer_type": "RGB"},
+        DIFFUSE             : {"base_type": LPE,    "lpe": "C<RD>L", "name": DIFFUSE, "renderer_type": "RGB"},
+        DIFFUSE_INDIRECT    : {"base_type": LPE,    "lpe": "C<RD>[DSVOB].*", "name": DIFFUSE_INDIRECT, "renderer_type": "RGB"},
+        DIFFUSE_RAW         : {"base_type": LPE,    "lpe": "C<RD>A", "name": DIFFUSE_RAW, "renderer_type": "RGB"},
+        SUBSURFACE          : {"base_type": LPE,    "lpe": "C<TD>.*", "name": SUBSURFACE, "renderer_type": "RGB"},
+        TRANSMISSIVE        : {"base_type": LPE,    "lpe": "C<TS>.*", "name": TRANSMISSIVE, "renderer_type": "RGB"},
+        LIGHT               : {"base_type": LIGHT,  "lpe": "", "name": LIGHT, "renderer_type": "RGB", "light_group": "", "light_group_type": "BOTH"}
     },
     "Redshift": {},
     "Delight": {}
@@ -630,6 +640,89 @@ class AOVManagerItemWidget(QWidget):
         # todo get light groups
         return []
 
+    def getShadingNodes(self):
+        """ Returns a list of all available shading nodes"""
+        node = self.node()
+        location = self.getItemArg("location")
+
+        # build runtime client
+        runtime = FnGeolib.GetRegisteredRuntimeInstance()
+        txn = runtime.createTransaction()
+        client = txn.createClient()
+        op = Nodes3DAPI.GetOp(txn, node)
+        txn.setClientOp(client, op)
+        runtime.commit(txn)
+        location = client.cookLocation(location)
+
+        # start getting attrs
+        attrs = location.getAttrs()
+        shading_nodes = []
+        if attrs:
+            nodes = attrs.getChildByName("material.nodes")
+            if nodes:
+                # Search through nodes attribute and update the connected ports string
+                for node_data in nodes.childList():
+                    node_name = [node_data[0]]
+                    shading_nodes.append(node_name)
+
+        return shading_nodes
+
+    def getOutputPorts(self):
+        # todo get output ports
+        return []
+
+    def __updateConnectedNodesParam(self):
+        """ Gets all of the ports connected to the output port/node provided
+
+        Args:
+            location (str):
+            aov_output_node (str):
+            aov_output_port (str):
+
+        Returns:
+
+        """
+        node = self.node()
+        aov_output_port = self.getItemArg("aov_output_port")
+        aov_output_node = self.getItemArg("aov_output_node")
+        location = self.getItemArg("location")
+
+        # build runtime client
+        runtime = FnGeolib.GetRegisteredRuntimeInstance()
+        txn = runtime.createTransaction()
+        client = txn.createClient()
+        op = Nodes3DAPI.GetOp(txn, node)
+        txn.setClientOp(client, op)
+        runtime.commit(txn)
+        location = client.cookLocation(location)
+
+        # start getting attrs
+        attrs = location.getAttrs()
+        connected_ports = ""
+        if attrs:
+            nodes = attrs.getChildByName("material.nodes")
+
+            # Search through nodes attribute and update the connected ports string
+            if nodes:
+                for node_data in nodes.childList():
+                    node_name = node_data[0]
+                    node_attr = node_data[1]
+
+                    connections = node_attr.getChildByName("connections")
+                    if connections:
+                        for connection in connections.childList():
+                            input_port_name = connection[0]
+                            connection_data = connection[1].getValue()
+                            output_port_name, connected_node_name = connection_data.split("@")
+                            if connected_node_name == aov_output_node and output_port_name == aov_output_port:
+                                _ports = connected_ports.split(",")
+                                _ports.append(input_port_name + "@" + node_name)
+                                _ports = filter(None, _ports)
+                                connected_ports = ",".join(_ports)
+
+        self.node().getParameter("connected_ports").setValue(connected_ports, 0)
+        return connected_ports
+
     """ WIDGETS ( INIT )"""
     def addParameterWidget(self, name, delegate_widget, finished_editing_function=None, new=True):
         """ Adds a parameter widget to the current display
@@ -699,7 +792,10 @@ class AOVManagerItemWidget(QWidget):
             self.__createLPEParameterWidgets(new=new)
 
         if self.aovType() == LIGHT:
-            self.__createLightGroupParameterWidgets(new)
+            self.__createLightGroupParameterWidgets(new=new)
+
+        if self.aovType() == CUSTOM:
+            self.__createCustomParameterWidget(new=new)
 
     def __createTypeParameterWidget(self, new=True):
         """ Creates the type parameter widget"""
@@ -708,6 +804,23 @@ class AOVManagerItemWidget(QWidget):
         delegate_widget.populate([[aov] for aov in self.aovTypes()])
         input_widget = self.addParameterWidget("type", delegate_widget, self.aovTypeChangedEvent, new=new)
         return input_widget
+
+    def __createCustomParameterWidget(self, new=True):
+        self.__createTypeParameterWidget(new)
+
+        material_widget = ListInputWidget(self)
+        self.addParameterWidget("location", material_widget, self.customAOVChangedEvent, new=new)
+        node_widget = ListInputWidget(self)
+        node_widget.populate(self.getShadingNodes())
+        self.addParameterWidget("aov_output_node", node_widget, self.customAOVChangedEvent, new=new)
+        output_port_widget = ListInputWidget(self)
+        output_port_widget.populate(self.getOutputPorts())
+        self.addParameterWidget("aov_output_port", output_port_widget, self.customAOVChangedEvent, new=new)
+
+        # setup default parameters
+        self.currentItem().setArg("name", self.node().getParameter("name").getValue(0))
+        self.currentItem().setArg("aov_output_node", self.node().getParameter("aov_output_node").getValue(0))
+        self.currentItem().setArg("aov_output_port", self.node().getParameter("aov_output_port").getValue(0))
 
     def __createLightGroupParameterWidgets(self, new=True):
         """ Creates all of the necessary widgets for the Light Group type"""
@@ -793,6 +906,9 @@ class AOVManagerItemWidget(QWidget):
         self.parametersWidget().addInputWidget(self._advanced_button_scroll_area)
 
     """ WIDGETS """
+    def aovManagerWidget(self):
+        return getWidgetAncestor(self, AOVManagerWidget)
+
     def clearNonAbstractParameterWidget(self):
         """ Sets the parametersWidget to a blank slate"""
         for widget in self.parametersWidget().delegateWidgets():
@@ -944,6 +1060,31 @@ class AOVManagerItemWidget(QWidget):
 
             # set text to advanced
             widget.setText("advanced")
+
+    def customAOVChangedEvent(self, widget, value):
+        """ Whenever a parameter on a CUSTOM aov type is changed."""
+        param_name = widget.objectName()
+
+        # preflight
+        if self.getItemArg(param_name):
+            if value == self.getItemArg(param_name): return
+        if self.isFrozen(): return
+
+        # set data
+        self.parameterChangedEvent(widget, value)
+        if param_name == "aov_output_node":
+            self.node().getParameter("aov_output_node").setExpression(
+                "@{aov_output_node}".format(aov_output_node=value))
+
+        # check location
+        location = self.getItemArg("location")
+        if not scenegraphutils.hasAttr(self.aovManagerWidget().node(), location, "material"): return
+
+        # check aov node
+        aov_output_node = scenegraphutils.hasAttr(self.node(), location, "material.nodes.{node_name}".format(node_name=self.getItemArg("aov_output_node")))
+        if not aov_output_node: return
+
+        self.__updateConnectedNodesParam()
 
     def lightGroupChangedEvent(self, widget, value):
         self.parameterChangedEvent(widget, value)
