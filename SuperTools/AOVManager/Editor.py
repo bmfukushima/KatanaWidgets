@@ -752,6 +752,7 @@ class AOVManagerItemWidget(QWidget):
         """
         # get attrs
         node = self.node()
+        if location == "": return True
 
         # create client
         runtime = FnGeolib.GetRegisteredRuntimeInstance()
@@ -929,11 +930,13 @@ class AOVManagerItemWidget(QWidget):
         self.addParameterWidget("location", location_widget, self.customAOVChangedEvent, new=new)
 
         node_widget = ListInputWidget(self)
-        node_widget.populate([[node] for node in self.getShadingNodes()])
+        if self.getItemArg("location") != "":
+            node_widget.populate([[node] for node in self.getShadingNodes()])
         self.addParameterWidget("aov_output_node", node_widget, self.customAOVChangedEvent, new=new)
 
         output_port_widget = ListInputWidget(self)
-        output_port_widget.populate([[port] for port in self.getOutputPorts()])
+        if self.getItemArg("location") != "":
+            output_port_widget.populate([[port] for port in self.getOutputPorts()])
         self.addParameterWidget("aov_output_port", output_port_widget, self.customAOVChangedEvent, new=new)
 
         # setup default parameters
@@ -1188,6 +1191,9 @@ class AOVManagerItemWidget(QWidget):
         if self.getItemArg(param_name):
             if value == self.getItemArg(param_name): return
         if self.isFrozen(): return
+        # if value == "":
+        #     self.parameterChangedEvent(widget, value)
+        #     return
 
         # set data
         if param_name == "location":
@@ -1207,6 +1213,7 @@ class AOVManagerItemWidget(QWidget):
             location (str): Scenegraph location to be used
         """
         has_material_attr = self.hasValidMaterialAttr(location)
+        # hasValidMaterialAttr() will return True if the location == ""
         if has_material_attr or location == "":
             # update data
             self.parameterChangedEvent(widget, location)
@@ -1214,7 +1221,8 @@ class AOVManagerItemWidget(QWidget):
             self.parameterChangedEvent(self.widgets()["aov_output_node"], "")
             self.node().getParameter("aov_output_node").setExpression("")
             self.widgets()["aov_output_node"].setText("")
-            self.widgets()["aov_output_node"].populate([[node] for node in self.getShadingNodes()])
+            if self.getItemArg("location") != "":
+                self.widgets()["aov_output_node"].populate([[node] for node in self.getShadingNodes()])
 
             self.parameterChangedEvent(self.widgets()["aov_output_port"], "")
             self.widgets()["aov_output_port"].setText("")
@@ -1232,17 +1240,29 @@ class AOVManagerItemWidget(QWidget):
         Args:
             node_name (str): name of node to be used
         """
+        # no location
+        if self.getItemArg("location") == "":
+            self.parameterChangedEvent(widget, node_name)
+            return
 
+        # location is valid, update
         if node_name in self.getShadingNodes() or node_name == "":
             self.parameterChangedEvent(widget, node_name)
             self.node().getParameter("aov_output_node").setExpression(
                 "@{aov_output_node}".format(aov_output_node=node_name))
+
             self.widgets()["aov_output_port"].populate([[port] for port in self.getOutputPorts()])
         else:
             widget.setText(self.getItemArg("aov_output_node"))
 
     def customAOVPortChangedEvent(self, widget, port_name):
         """ During a CUSTOM AOV port selection event, this will update the attrs and set the correct renderer type"""
+        # no location
+        if self.getItemArg("location") == "":
+            self.parameterChangedEvent(widget, port_name)
+            return
+
+        # location is valid, update
         if port_name in self.getOutputPorts() or port_name == "":
             self.parameterChangedEvent(widget, port_name)
             self.node().getParameter("renderer_type").setValue(self.getOutputPortType(), 0)
