@@ -664,6 +664,7 @@ class AOVManagerItemWidget(QWidget):
                     node_name = node_data[0]
                     shading_nodes.append(node_name)
 
+        shading_nodes.insert(0, "")
         return shading_nodes
 
     def getOutputPorts(self):
@@ -695,6 +696,7 @@ class AOVManagerItemWidget(QWidget):
                 output_ports = [port.getName() for port in _temp_node.getOutputPorts()]
                 _temp_node.delete()
 
+        output_ports.insert(0, "")
         return output_ports
 
     def getOutputPortType(self):
@@ -1191,9 +1193,6 @@ class AOVManagerItemWidget(QWidget):
         if self.getItemArg(param_name):
             if value == self.getItemArg(param_name): return
         if self.isFrozen(): return
-        # if value == "":
-        #     self.parameterChangedEvent(widget, value)
-        #     return
 
         # set data
         if param_name == "location":
@@ -1218,8 +1217,9 @@ class AOVManagerItemWidget(QWidget):
             # update data
             self.parameterChangedEvent(widget, location)
 
+            # clear port/node data
             self.parameterChangedEvent(self.widgets()["aov_output_node"], "")
-            self.node().getParameter("aov_output_node").setExpression("")
+            self.node().getParameter("aov_output_node").setExpression("\"\"")
             self.widgets()["aov_output_node"].setText("")
             if self.getItemArg("location") != "":
                 self.widgets()["aov_output_node"].populate([[node] for node in self.getShadingNodes()])
@@ -1251,7 +1251,12 @@ class AOVManagerItemWidget(QWidget):
             self.node().getParameter("aov_output_node").setExpression(
                 "@{aov_output_node}".format(aov_output_node=node_name))
 
+            # clear output port data
             self.widgets()["aov_output_port"].populate([[port] for port in self.getOutputPorts()])
+            self.widgets()["aov_output_port"].setText("")
+            self.customAOVPortChangedEvent(self.widgets()["aov_output_port"], "")
+
+            self.node().getParameter("connected_ports").setValue("", 0)
         else:
             widget.setText(self.getItemArg("aov_output_node"))
 
