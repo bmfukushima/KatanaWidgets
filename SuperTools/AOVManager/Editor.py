@@ -3,8 +3,6 @@ Todo:
     *   Setup Node
         -   Check float vs rgb (prman) opscript --> inputRGB
         -   Populate input widgets
-                CUSTOM
-                    nodes / ports
                 LIGHT
                     getLightGroups (getLightGroups)
         -   Custom, Denoise
@@ -699,6 +697,53 @@ class AOVManagerItemWidget(QWidget):
 
         return output_ports
 
+    def getOutputPortType(self):
+        """ Gets the type of port
+
+        Args:
+            node_type (str):
+            output_port_name (str):
+
+        Returns (str): "float" or "color"
+
+        """
+        # get attrs
+        node = self.node()
+        aov_output_node = self.getItemArg("aov_output_node")
+        aov_output_port = self.getItemArg("aov_output_port")
+        location = self.getItemArg("location")
+
+        # create client
+        runtime = FnGeolib.GetRegisteredRuntimeInstance()
+        txn = runtime.createTransaction()
+        client = txn.createClient()
+        op = Nodes3DAPI.GetOp(txn, node)
+        txn.setClientOp(client, op)
+        runtime.commit(txn)
+        location = client.cookLocation(location)
+
+        # get output ports
+        attrs = location.getAttrs()
+        port_type = ""
+        if attrs:
+            node_attr = attrs.getChildByName("material.nodes.{node_name}".format(node_name=aov_output_node))
+            if node_attr:
+                node_type = node_attr.getChildByName("type").getValue()
+                _temp_node = NodegraphAPI.CreateNode("PrmanShadingNode", NodegraphAPI.GetRootNode())
+                _temp_node.getParameter("nodeType").setValue(node_type, 0)
+                _temp_node.checkDynamicParameters()
+                output_port = _temp_node.getOutputPort(aov_output_port)
+
+                if output_port:
+                    if "float" in output_port.getTags():
+                        port_type = "float"
+                    elif "color" in output_port.getTags():
+                        port_type = "color"
+
+                _temp_node.delete()
+
+        return port_type
+
     def hasValidMaterialAttr(self, location):
         """ Determines if the location provide has a valid Network Material attr
 
@@ -1162,17 +1207,20 @@ class AOVManagerItemWidget(QWidget):
             location (str): Scenegraph location to be used
         """
         has_material_attr = self.hasValidMaterialAttr(location)
-        if has_material_attr:
+        if has_material_attr or location == "":
             # update data
             self.parameterChangedEvent(widget, location)
+
             self.parameterChangedEvent(self.widgets()["aov_output_node"], "")
             self.node().getParameter("aov_output_node").setExpression("")
-            self.parameterChangedEvent(self.widgets()["aov_output_port"], "")
             self.widgets()["aov_output_node"].setText("")
-            self.widgets()["aov_output_port"].setText("")
-            self.node().getParameter("connected_ports").setValue("", 0)
-
             self.widgets()["aov_output_node"].populate([[node] for node in self.getShadingNodes()])
+
+            self.parameterChangedEvent(self.widgets()["aov_output_port"], "")
+            self.widgets()["aov_output_port"].setText("")
+            self.node().getParameter("aov_output_port_type").setValue("", 0)
+
+            self.node().getParameter("connected_ports").setValue("", 0)
 
         else:
             print(location, "does not have a valid \"material\" attribute")
@@ -1194,8 +1242,10 @@ class AOVManagerItemWidget(QWidget):
             widget.setText(self.getItemArg("aov_output_node"))
 
     def customAOVPortChangedEvent(self, widget, port_name):
+        """ During a CUSTOM AOV port selection event, this will update the attrs and set the correct renderer type"""
         if port_name in self.getOutputPorts() or port_name == "":
             self.parameterChangedEvent(widget, port_name)
+            self.node().getParameter("renderer_type").setValue(self.getOutputPortType(), 0)
         else:
             widget.setText(self.getItemArg("aov_output_port"))
 
