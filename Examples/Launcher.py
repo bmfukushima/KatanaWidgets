@@ -373,7 +373,11 @@ class KatanaLauncherWidget(QWidget):
         elif self.renderEngine() == 'prman':
             # /opt/renderEngines/prman/24.2/RFK/plugins/katana4.5
             #katana_resources = ['%s/RFK/plugins/Resources/PRMan' % resources]
-            katana_resources = ['%s/RFK/plugins/katana5.0' % resources]
+            # todo fix this for previous versions of katana
+            if int(self.katanaVersion()[0]) == 5:
+                katana_resources = ['%s/RFK/plugins/katana5.0' % resources]
+            else:
+                katana_resources = ['%s/RFK/plugins/katana4.0' % resources]
             envars = prman()
         elif self.renderEngine() == 'redshift':
             katana_resources = ['%s/redshift4katana/katana4.0v1' % resources]

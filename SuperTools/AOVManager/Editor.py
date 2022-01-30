@@ -1,10 +1,10 @@
 """
 Todo:
     *   Setup Node
-        -   Check float vs rgb (prman) opscript --> inputRGB
         -   Populate input widgets
                 LIGHT
                     getLightGroups (getLightGroups)
+                    is this even valid? do I even want to allow the user to create light group names?
         -   Custom, Denoise
         -   Create Node data
                 PRMAN | ARNOLD | REDSHIFT | DELIGHT
