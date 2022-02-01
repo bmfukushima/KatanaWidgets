@@ -1,5 +1,10 @@
 """
 Todo:
+    *   Custom
+            - Arnold
+            - Reconnect Button (in case something has moved)
+            - Layout Attrs
+                - OpScript Generator
     *   Setup Node
         -   Populate input widgets
                 LIGHT
@@ -71,6 +76,9 @@ Create New Item:
                          --> populateParameterWidgets
                          --> updateGUI (only if there are custom args)
 
+
+
+
 """
 
 from qtpy.QtWidgets import QVBoxLayout, QLabel, QWidget, QScrollArea
@@ -134,15 +142,16 @@ AOVMAP = {
         TRANSMISSIVE        : {"base_type": LPE,    "lpe": "lpe:C<TS>.*[<L.>O]", "name": TRANSMISSIVE, "renderer_type": "color"}
     },
     "Arnold": {
-        LPE                 : {"base_type": LPE,    "lpe": "", "name": "<NewAOV>", "renderer_type": "RGB"},
-        SPECULAR            : {"base_type": LPE,    "lpe": "C<RS>L", "name": SPECULAR, "renderer_type": "RGB"},
-        SPECULAR_INDIRECT   : {"base_type": LPE,    "lpe": "C<RS>[DSVOB].*", "name": SPECULAR_INDIRECT, "renderer_type": "RGB"},
-        DIFFUSE             : {"base_type": LPE,    "lpe": "C<RD>L", "name": DIFFUSE, "renderer_type": "RGB"},
-        DIFFUSE_INDIRECT    : {"base_type": LPE,    "lpe": "C<RD>[DSVOB].*", "name": DIFFUSE_INDIRECT, "renderer_type": "RGB"},
-        DIFFUSE_RAW         : {"base_type": LPE,    "lpe": "C<RD>A", "name": DIFFUSE_RAW, "renderer_type": "RGB"},
-        SUBSURFACE          : {"base_type": LPE,    "lpe": "C<TD>.*", "name": SUBSURFACE, "renderer_type": "RGB"},
-        TRANSMISSIVE        : {"base_type": LPE,    "lpe": "C<TS>.*", "name": TRANSMISSIVE, "renderer_type": "RGB"},
-        LIGHT               : {"base_type": LIGHT,  "lpe": "", "name": LIGHT, "renderer_type": "RGB", "light_group": "", "light_group_type": "BOTH"}
+        LPE                 : {"base_type": LPE,    "lpe": "", "name": "<NewAOV>", "renderer_type": "RGBA"},
+        LIGHT               : {"base_type": LIGHT,  "lpe": "", "name": LIGHT, "renderer_type": "RGBA", "light_group": "", "light_group_type": "BOTH"},
+        CUSTOM              : {"base_type": CUSTOM, "lpe": "", "name": CUSTOM, "renderer_type": "RGBA", "location": "", "aov_output_port": "", "aov_output_node": "", "connected_ports": ""},
+        SPECULAR            : {"base_type": LPE,    "lpe": "C<RS>L", "name": SPECULAR, "renderer_type": "RGBA"},
+        SPECULAR_INDIRECT   : {"base_type": LPE,    "lpe": "C<RS>[DSVOB].*", "name": SPECULAR_INDIRECT, "renderer_type": "RGBA"},
+        DIFFUSE             : {"base_type": LPE,    "lpe": "C<RD>L", "name": DIFFUSE, "renderer_type": "RGBA"},
+        DIFFUSE_INDIRECT    : {"base_type": LPE,    "lpe": "C<RD>[DSVOB].*", "name": DIFFUSE_INDIRECT, "renderer_type": "RGBA"},
+        DIFFUSE_RAW         : {"base_type": LPE,    "lpe": "C<RD>A", "name": DIFFUSE_RAW, "renderer_type": "RGBA"},
+        SUBSURFACE          : {"base_type": LPE,    "lpe": "C<TD>.*", "name": SUBSURFACE, "renderer_type": "RGBA"},
+        TRANSMISSIVE        : {"base_type": LPE,    "lpe": "C<TS>.*", "name": TRANSMISSIVE, "renderer_type": "RGBA"},
     },
     "Redshift": {},
     "Delight": {}
@@ -192,6 +201,101 @@ LPEAOVS = [
     LPE
 ]
 RENDERENGINES = [ARNOLD, DELIGHT, PRMAN, REDSHIFT]
+
+def getAttrMap():
+    """ Gets the attr map from the inputs provided
+
+    Todo:
+        - Update node name
+        - Update node connections
+        - Parent (node parent)
+        """
+    import PyFnAttribute
+
+    GROUP = "group"
+    STRING = "string"
+    FLOAT = "float"
+    DOUBLE = "double"
+    INT = "int"
+
+    node = NodegraphAPI.GetNode('NetworkMaterialCreate')
+    location = '/root/materials/NetworkMaterial'
+    attr_name = "material.layout.PxrTee"
+
+    # create client
+    runtime = FnGeolib.GetRegisteredRuntimeInstance()
+    txn = runtime.createTransaction()
+    client = txn.createClient()
+    op = Nodes3DAPI.GetOp(txn, node)
+    txn.setClientOp(client, op)
+    runtime.commit(txn)
+    location = client.cookLocation(location)
+
+    # get output ports
+    attrs = location.getAttrs()
+    group_attr = attrs.getChildByName(attr_name)
+
+    def getAttrType(attr):
+        if type(attr) == PyFnAttribute.GroupAttribute:
+            return GROUP
+        if type(attr) == PyFnAttribute.StringAttribute:
+            return STRING
+        if type(attr) == PyFnAttribute.FloatAttribute:
+            return FLOAT
+        if type(attr) == PyFnAttribute.DoubleAttribute:
+            return DOUBLE
+        if type(attr) == PyFnAttribute.IntAttribute:
+            return INT
+
+    def recursiveSearchChild(attr, parent="", attrs_list=None):
+        """ Recursively searches the location provided, and returns a map that can
+        reproduce the attrs in an OpScript
+
+        Args:
+            attr (str)
+            parent (str): current location being searched from
+            values (list): of the current attrs
+                [{"path":"", "type":"", "value":"", {...}]
+        """
+        if not attrs_list:
+            attrs_list = []
+        for child in attr.childList():
+            child_name = child[0]
+            child_attr = child[1]
+            attr_type = getAttrType(child_attr)
+            attr_path = f"{parent}.{child_name}"
+            if attr_type != GROUP:
+                attrs_list.append({
+                    "path": attr_path,
+                    "type": attr_type,
+                    "value": child_attr.getValue()
+                })
+                print(attr_path, attr_type, child_attr.getValue())
+            if hasattr(child[1], "childList"):
+                print('============' * 5)
+                # print(values)
+                attrs_list += recursiveSearchChild(child[1], f"{parent}.{child_name}")
+
+        return attrs_list
+
+    # create OpScript
+    attr_list = recursiveSearchChild(group_attr, parent=attr_name)
+    op_script_lua = ""
+    print('============' * 5)
+    for attr in attr_list:
+        path = attr["path"]
+        value = attr["value"]
+        if attr["type"] == STRING:
+            op_script_lua += f"\nInterface.SetAttr(\"{path}\", StringAttribute(\"{value}\"))"
+        if attr["type"] == FLOAT:
+            op_script_lua += f"\nInterface.SetAttr(\"{path}\", FloatAttribute({value}))"
+        if attr["type"] == DOUBLE:
+            op_script_lua += f"\nInterface.SetAttr(\"{path}\", DoubleAttribute({value}))"
+        if attr["type"] == INT:
+            op_script_lua += f"\nInterface.SetAttr(\"{path}\", IntAttribute({value}))"
+
+    return op_script_lua
+    # print(op_script_lua)
 
 
 class AOVManagerEditor(AbstractSuperToolEditor):
@@ -690,7 +794,11 @@ class AOVManagerItemWidget(QWidget):
             node_attr = attrs.getChildByName("material.nodes.{node_name}".format(node_name=aov_output_node))
             if node_attr:
                 node_type = node_attr.getChildByName("type").getValue()
-                _temp_node = NodegraphAPI.CreateNode("PrmanShadingNode", NodegraphAPI.GetRootNode())
+                # todo get output ports for CUSTOM AOVs
+                if self.renderer() == PRMAN:
+                    _temp_node = NodegraphAPI.CreateNode("PrmanShadingNode", NodegraphAPI.GetRootNode())
+                elif self.renderer() == ARNOLD:
+                    _temp_node = NodegraphAPI.CreateNode("ArnoldShadingNode", NodegraphAPI.GetRootNode())
                 _temp_node.getParameter("nodeType").setValue(node_type, 0)
                 _temp_node.checkDynamicParameters()
                 output_ports = [port.getName() for port in _temp_node.getOutputPorts()]
@@ -731,7 +839,11 @@ class AOVManagerItemWidget(QWidget):
             node_attr = attrs.getChildByName("material.nodes.{node_name}".format(node_name=aov_output_node))
             if node_attr:
                 node_type = node_attr.getChildByName("type").getValue()
-                _temp_node = NodegraphAPI.CreateNode("PrmanShadingNode", NodegraphAPI.GetRootNode())
+                # todo get output ports for CUSTOM AOVs
+                if self.renderer() == PRMAN:
+                    _temp_node = NodegraphAPI.CreateNode("PrmanShadingNode", NodegraphAPI.GetRootNode())
+                elif self.renderer() == ARNOLD:
+                    _temp_node = NodegraphAPI.CreateNode("ArnoldShadingNode", NodegraphAPI.GetRootNode())
                 _temp_node.getParameter("nodeType").setValue(node_type, 0)
                 _temp_node.checkDynamicParameters()
                 output_port = _temp_node.getOutputPort(aov_output_port)
@@ -739,7 +851,7 @@ class AOVManagerItemWidget(QWidget):
                 if output_port:
                     if "float" in output_port.getTags():
                         port_type = "float"
-                    elif "color" in output_port.getTags():
+                    elif "color" in output_port.getTags() or "rgb" in output_port.getTags():
                         port_type = "color"
 
                 _temp_node.delete()
@@ -1445,6 +1557,8 @@ class AOVManagerItemDelegate(AbstractDragDropModelDelegate):
             if index.internalPointer().getArg("type") not in LPEAOVS: return
 
         return AbstractDragDropModelDelegate.createEditor(self, parent, option, index)
+
+
 
 
 if __name__ == "__main__":
