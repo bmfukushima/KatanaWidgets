@@ -416,7 +416,7 @@ def getAllGSVViewWidgets():
     for tab in UI4.App.Tabs.GetTabsByType("State Managers/GSV Manager"):
         widgets.append(tab.viewWidget())
 
-    for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+    for tab in UI4.App.Tabs.GetTabsByType("State Managers/State Manager"):
         widgets.append(tab.viewWidget().gsvViewWidget())
 
     for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
@@ -430,7 +430,7 @@ def getAllGSVViewWidgets():
                 if popup_widget.__name__() in ("State Managers/GSV Manager", "State Manager"):
                     if popup_widget.__name__() == "State Managers/GSV Manager":
                         widgets.append(popup_widget.viewWidget())
-                    if popup_widget.__name__() == "State Manager":
+                    if popup_widget.__name__() == "State Managers/State Manager":
                         widgets.append(popup_widget.viewWidget().gsvViewWidget())
 
     # todo custom handler for custom user popup bar widgets

@@ -318,7 +318,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
         # set last active
         last_active_state = self.getItemFullName(item)
-        for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+        for tab in UI4.App.Tabs.GetTabsByType("State Managers/State Manager"):
             tab.setLastActive(last_active_state)
 
         # todo update popup bar widgets
@@ -329,7 +329,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
             for widget in popup_widgets:
                 popup_widget = widget.popupWidget()
                 if hasattr(popup_widget, "__name__"):
-                    if popup_widget.__name__() == "State Manager":
+                    if popup_widget.__name__() == "State Managers/State Manager":
                         popup_widget.setLastActive(last_active_state)
 
         return True
