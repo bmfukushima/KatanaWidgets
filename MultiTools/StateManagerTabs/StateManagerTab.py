@@ -473,7 +473,7 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
         if load_state:
             Utils.EventModule.ProcessAllEvents()
             # Update all tabs
-            for tab_type in ["GSV Manager", "IRF Manager", "State Manager", "Bookmark Manager"]:
+            for tab_type in ["State Managers/GSV Manager", "State Managers/IRF Manager", "State Managers/State Manager", "State Managers/Bookmark Manager"]:
                 tabs = UI4.App.Tabs.GetTabsByType(tab_type)
                 for tab in tabs:
                     tab.update()

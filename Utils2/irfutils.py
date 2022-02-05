@@ -90,7 +90,7 @@ def getAllIRFTabs():
 
     widgets = []
     # update GUIs
-    for tab in UI4.App.Tabs.GetTabsByType("IRF Manager"):
+    for tab in UI4.App.Tabs.GetTabsByType("State Managers/IRF Manager"):
         widgets.append(tab)
 
     # todo update popup bar widgets
@@ -100,7 +100,7 @@ def getAllIRFTabs():
         for widget in popup_widgets:
             popup_widget = widget.popupWidget()
             if hasattr(popup_widget, "__name__"):
-                if popup_widget.__name__() == "IRF Manager":
+                if popup_widget.__name__() == "State Managers/IRF Manager":
                     widgets.append(popup_widget)
 
     # todo custom handler for custom user popup bar widgets

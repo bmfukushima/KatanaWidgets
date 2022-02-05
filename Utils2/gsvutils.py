@@ -413,7 +413,7 @@ def getAllGSVViewWidgets():
 
     widgets = []
     # update GUIs
-    for tab in UI4.App.Tabs.GetTabsByType("GSV Manager"):
+    for tab in UI4.App.Tabs.GetTabsByType("State Managers/GSV Manager"):
         widgets.append(tab.viewWidget())
 
     for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
@@ -427,8 +427,8 @@ def getAllGSVViewWidgets():
         for widget in popup_widgets:
             popup_widget = widget.popupWidget()
             if hasattr(popup_widget, "__name__"):
-                if popup_widget.__name__() in ("GSV Manager", "State Manager"):
-                    if popup_widget.__name__() == "GSV Manager":
+                if popup_widget.__name__() in ("State Managers/GSV Manager", "State Manager"):
+                    if popup_widget.__name__() == "State Managers/GSV Manager":
                         widgets.append(popup_widget.viewWidget())
                     if popup_widget.__name__() == "State Manager":
                         widgets.append(popup_widget.viewWidget().gsvViewWidget())
@@ -443,7 +443,7 @@ def getAllGSVEventsWidgets():
 
     widgets = []
     # update GUIs
-    for tab in UI4.App.Tabs.GetTabsByType("GSV Manager"):
+    for tab in UI4.App.Tabs.GetTabsByType("State Managers/GSV Manager"):
         widgets.append(tab.eventsWidget())
     # todo update popup bar widgets
     for tab in UI4.App.Tabs.GetTabsByType('Popup Bar Displays/KatanaBebop/State Manager'):
@@ -452,8 +452,8 @@ def getAllGSVEventsWidgets():
         for widget in popup_widgets:
             popup_widget = widget.popupWidget()
             if hasattr(popup_widget, "__name__"):
-                if popup_widget.__name__() in ("GSV Manager", "State Manager"):
-                    if popup_widget.__name__() == "GSV Manager":
+                if popup_widget.__name__() in ("State Managers/GSV Manager", "State Managers/State Manager"):
+                    if popup_widget.__name__() == "State Managers/GSV Manager":
                         widgets.append(popup_widget.eventsWidget())
 
     # todo custom handler for custom user popup bar widgets
@@ -509,7 +509,7 @@ def updateAllGSVEventsTabs():
 def updateAllGSVViewTabs():
     """ Updates the View Widgets of all of the GSV Manager tabs"""
     from Katana import UI4
-    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSV Manager")
+    gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("State Managers/GSV Manager")
 
     # # for each tab, update tab data
     for gsv_manager in gsv_manager_tabs:
