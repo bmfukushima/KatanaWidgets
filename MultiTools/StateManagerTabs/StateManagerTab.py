@@ -341,7 +341,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 if editor_widget:
                     editor_widget.showItemDetails(item)
 
-    def __stateRenameEvent(self, item, old_name, new_name):
+    def __stateRenameEvent(self, item, old_name, new_name, column=None):
         """ When a user renames a state, this will update the states/folder associated with the rename"""
         # preflight
         if old_name == new_name: return

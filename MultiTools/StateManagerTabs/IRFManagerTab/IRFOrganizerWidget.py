@@ -224,7 +224,7 @@ class CreateAvailableFiltersOrganizerWidget(AbstractIRFAvailableOrganizerWidget)
             else:
                 item.getArg("node").getParameter("category").setValue(parent.name(), 0)
 
-    def __nameChanged(self, item, old_value, new_value):
+    def __nameChanged(self, item, old_value, new_value, column=0):
         """ When the user changes a name:
                 if it is a FILTER, update the filters name
                 if it is a CATEGORY, update all categories to that new name"""

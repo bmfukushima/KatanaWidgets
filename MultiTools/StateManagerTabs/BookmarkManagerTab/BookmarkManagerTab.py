@@ -244,7 +244,7 @@ class BookmarkOrganizerWidget(AbstractStateManagerOrganizerWidget):
         parent_index = self.getIndexFromItem(folder_item)
         AbstractStateManagerOrganizerWidget.createNewStateItem(self, state, folder_name, data=data, parent=parent_index)
 
-    def __bookmarkRenameEvent(self, item, old_name, new_name):
+    def __bookmarkRenameEvent(self, item, old_name, new_name, column=None):
         """ When a user renames a bookmark, this will update the bookmarks/folder associated with the rename"""
         # preflight
         if old_name == new_name: return
