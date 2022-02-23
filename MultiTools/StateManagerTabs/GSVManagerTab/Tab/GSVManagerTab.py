@@ -829,7 +829,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
                 for item in events_widget.eventsWidget().model().findItems(gsv):
                     events_widget.eventsWidget().model().deleteItem(item.internalPointer(), event_update=True)
 
-    def renameSelectedItem(self, item, old_value, new_value):
+    def renameSelectedItem(self, item, old_value, new_value, column=None):
         """
         Changes the GSV/Option name to the values provided
 
