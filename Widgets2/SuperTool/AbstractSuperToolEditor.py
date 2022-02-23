@@ -198,8 +198,9 @@ class AbstractSuperToolEditor(QWidget):
             # set default values if they exist
             try:
                 widget.setText(param.getValue(0))
-            except AttributeError:
+            except (AttributeError, TypeError) as error:
                 pass
+
         else:
             param = paramutils.createParamAtLocation(param_loc, self.node(), data_type, initial_value=initial_value)
 
