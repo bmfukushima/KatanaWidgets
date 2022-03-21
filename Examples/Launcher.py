@@ -337,9 +337,12 @@ class KatanaLauncherWidget(QWidget):
 
         def redshift():
             envars = {
-                "LD_LIBRARY_PATH":"%s/bin" % resources,
-                "REDSHIFT_HOME": "{resources}/bin".format(resources=resources),
-                "REDSHIFT4KATANA_HOME":"{resources}/redshift4katana/katana4.0v1".format(resources=resources),
+                #"LD_LIBRARY_PATH":"%s/bin" % resources,
+                #"REDSHIFT_HOME": "{resources}/bin".format(resources=resources),
+                "LD_LIBRARY_PATH":"/usr/redshift/bin",
+                "REDSHIFT_HOME": "/usr/redshift/bin",
+                "REDSHIFT4KATANA_HOME":"/usr/redshift/redshift4katana/katana5.0v1",
+                #"REDSHIFT4KATANA_HOME":"/usr/redshift/katana5.0v1".format(resources=resources),
                 'DEFAULT_RENDERER': 'Redshift',
             }
             # envars = {
@@ -375,12 +378,17 @@ class KatanaLauncherWidget(QWidget):
             #katana_resources = ['%s/RFK/plugins/Resources/PRMan' % resources]
             # todo fix this for previous versions of katana
             if int(self.katanaVersion()[0]) == 5:
-                katana_resources = ['%s/RFK/plugins/katana5.0' % resources]
+                katana_resources = [f'{resources}/RFK/plugins/katana5.0']
             else:
-                katana_resources = ['%s/RFK/plugins/katana4.0' % resources]
+                katana_resources = [f'{resources}/RFK/plugins/katana4.0']
             envars = prman()
         elif self.renderEngine() == 'redshift':
-            katana_resources = ['%s/redshift4katana/katana4.0v1' % resources]
+
+            if int(self.katanaVersion()[0]) == 5:
+                katana_resources = [f'{resources}/katana5.0v1']
+            else:
+                katana_resources = [f'{resources}/katana4.0v1']
+
             envars = redshift()
 
         # return dicts
