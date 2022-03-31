@@ -506,7 +506,7 @@ class UserParametersWidget(ShojiModelViewWidget):
                 item.columnData()['name'] = param_name
                 item.columnData()['parameter'] = new_param
 
-    def paramNameChangedEvent(self, item, old_value, new_value):
+    def paramNameChangedEvent(self, item, old_value, new_value, column=None):
         param = item.columnData()['parameter']
         param_name = UniqueName.GetUniqueName(new_value, param.getParent().getChild)
         param.setName(param_name)

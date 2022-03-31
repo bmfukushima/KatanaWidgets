@@ -140,6 +140,7 @@ This will also try and update all of your image paths for every PrmanShadingNode
                 DEST=converted_name
             )
             os.popen(cmd)
+            print(cmd)
             print("Converting {FILEPATH} to .tx".format(FILEPATH=orig_name))
 
         return conversion_map

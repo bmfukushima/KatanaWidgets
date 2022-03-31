@@ -183,7 +183,7 @@ class DesirableStuffFrame(ShojiModelViewWidget):
         child_param = desirable_param.getChild(items_dropped[0].name())
         desirable_param.reorderChild(child_param, row)
 
-    def desirableGroupNameChanged(self, item, old_value, new_value):
+    def desirableGroupNameChanged(self, item, old_value, new_value, column=None):
         """ Updates the desirable groups name """
         # preflight
         if new_value == "": return

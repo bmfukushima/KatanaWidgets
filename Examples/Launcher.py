@@ -182,7 +182,10 @@ class KatanaLauncherWidget(QWidget):
         # setup envars
         self._envars = self.envars(envars)
         for var in self._envars:
-            os.environ[var] = self._envars[var].format(katana_root=self.katanaRoot())
+            try:
+                os.environ[var] = os.environ[var] + ":" + self._envars[var].format(katana_root=self.katanaRoot())
+            except KeyError:
+                os.environ[var] = self._envars[var].format(katana_root=self.katanaRoot())
 
     def plugins(self):
         return self._plugins
@@ -334,9 +337,12 @@ class KatanaLauncherWidget(QWidget):
 
         def redshift():
             envars = {
-                "LD_LIBRARY_PATH":"%s/bin" % resources,
-                "REDSHIFT_HOME": "{resources}/bin".format(resources=resources),
-                "REDSHIFT4KATANA_HOME":"{resources}/redshift4katana/katana4.0v1".format(resources=resources),
+                #"LD_LIBRARY_PATH":"%s/bin" % resources,
+                #"REDSHIFT_HOME": "{resources}/bin".format(resources=resources),
+                "LD_LIBRARY_PATH":"/usr/redshift/bin",
+                "REDSHIFT_HOME": "/usr/redshift/bin",
+                "REDSHIFT4KATANA_HOME":"/usr/redshift/redshift4katana/katana5.0v1",
+                #"REDSHIFT4KATANA_HOME":"/usr/redshift/katana5.0v1".format(resources=resources),
                 'DEFAULT_RENDERER': 'Redshift',
             }
             # envars = {
@@ -370,10 +376,19 @@ class KatanaLauncherWidget(QWidget):
         elif self.renderEngine() == 'prman':
             # /opt/renderEngines/prman/24.2/RFK/plugins/katana4.5
             #katana_resources = ['%s/RFK/plugins/Resources/PRMan' % resources]
-            katana_resources = ['%s/RFK/plugins/katana5.0' % resources]
+            # todo fix this for previous versions of katana
+            if int(self.katanaVersion()[0]) == 5:
+                katana_resources = [f'{resources}/RFK/plugins/katana5.0']
+            else:
+                katana_resources = [f'{resources}/RFK/plugins/katana4.0']
             envars = prman()
         elif self.renderEngine() == 'redshift':
-            katana_resources = ['%s/redshift4katana/katana4.0v1' % resources]
+
+            if int(self.katanaVersion()[0]) == 5:
+                katana_resources = [f'{resources}/katana5.0v1']
+            else:
+                katana_resources = [f'{resources}/katana4.0v1']
+
             envars = redshift()
 
         # return dicts
@@ -410,7 +425,7 @@ class KatanaLauncherWidget(QWidget):
         """
         # nuke executable
         os.environ["PATH"] += "{KATANA_ROOT}/plugins/Resources/Nuke/bin".format(KATANA_ROOT=self.katanaRoot())
-        os.environ["NUKE_PATH"] = "{KATANA_ROOT}/plugins/Resources/Nuke".format(KATANA_ROOT=self.katanaRoot())
+        os.environ["NUKE_PATH"] = "{KATANA_ROOT}/plugins/Resources/Nuke/13.1".format(KATANA_ROOT=self.katanaRoot())
         #os.environ["KATANA_NUKE_EXECUTABLE"] = "/opt/nuke/13.0v6/Nuke13.0"
         os.environ["KATANA_NUKE_EXECUTABLE"] = "/opt/nuke/13.1v1/Nuke13.1"
         # # launch katana instance
@@ -492,18 +507,21 @@ if __name__ == "__main__":
 
     plugins = {
         'Foundry': {
-            'KATANA_RESOURCES':'/media/ssd01/dev/katana/KatanaResources_foundry/',
-            '__ENABLED__': False},
+            'KATANA_RESOURCES'  :'/media/ssd01/dev/katana/KatanaResources_foundry/',
+            '__ENABLED__'       : False},
         'Katana Widgets': {
-            'KATANA_RESOURCES': '/media/ssd01/dev/katana/KatanaWidgets',
-            '__ENABLED__': True},
+            'KATANA_RESOURCES'  : '/media/ssd01/dev/katana/KatanaWidgets',
+            '__ENABLED__'       : True},
         'USD': {
-            'KATANA_RESOURCES': '{katana_root}/plugins/Resources/Usd/plugin',
-            'LD_LIBRARY_PATH': '{katana_root}/plugins/Resources/Usd/lib',
-            '__ENABLED__': True},
+            'KATANA_RESOURCES'  : '{katana_root}/plugins/Resources/Usd/plugin',
+            'LD_LIBRARY_PATH'   : '{katana_root}/plugins/Resources/Usd/lib',
+            'PATH'              : '{katana_root}/plugins/Resources/Usd/lib',
+            "PYTHONPATH"        : '{katana_root}/plugins/Resources/Usd/lib/python',
+            "FNPXR_PLUGINPATH"  :  '{katana_root}/plugins/Resources/Usd/lib/resources',
+            '__ENABLED__'       : True},
         'Katana Examples': {
-            'KATANA_RESOURCES': '{katana_root}/plugins/Src/Resources/Examples',
-            '__ENABLED__': False},
+            'KATANA_RESOURCES'  : '{katana_root}/plugins/Src/Resources/Examples',
+            '__ENABLED__'       : False},
         'Old Crap': {
             'KATANA_RESOURCES': '/media/ssd01/dev/katana/KatanaResources_old/',
             '__ENABLED__': False}

@@ -19,7 +19,7 @@ txn.setClientOp(client, op)
 runtime.commit(txn)
 Cooking a Location
 '''
-Once we have a client, we can ask it for data from any particular location. To keep this example simple, we’re going to use the synchronous cook call, that blocks the UI until it is done. There other ways of doing this, but we’ll save those for another day.
+Once we have a client, we can ask it for data from any particular location. To keep this example simple, were going to use the synchronous cook call, that blocks the UI until it is done. There other ways of doing this, but well save those for another day.
 '''
 location = client.cookLocation('/root/world')
 # We now have a location, there are a could of useful things we can do:
@@ -59,7 +59,7 @@ materials = {}
 collectAttrValues(client, '/root/world/geo', 'materialAssign', materials)
 print(materials)
 '''
-It’s worth noting, that `location.getAttrs()` only returns local attributes. If you want to get an inherited attribute, there are a couple of ways, but a simple one for now is to go and look at the parents (they’ll most likely be in cache anyway).
+Its worth noting, that `location.getAttrs()` only returns local attributes. If you want to get an inherited attribute, there are a couple of ways, but a simple one for now is to go and look at the parents (theyll most likely be in cache anyway).
 '''
 
 def getGlobalAttr(client, path, attrName):

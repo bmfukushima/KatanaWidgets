@@ -1,7 +1,7 @@
 import math
 #from cgwidgets.interface.AbstractUtilsInterfaceAPI import disconnectNode, connectInsideGroup
 try:
-    import NodegraphAPI
+    import NodegraphAPI, UI4, Utils
 except ModuleNotFoundError:
     pass
 
@@ -20,6 +20,33 @@ def getNodeAndAllDescendants(node, node_list=None):
     return list(set(node_list))
 
 
+def getClosestNode():
+    """ Returns the closest node to the cursor """
+    nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
+    nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+
+    node_list = nodegraph_widget.getCurrentNodeView().getChildren()
+    cursor_pos = nodegraph_widget.getMousePos()
+
+    closest_node = None
+    mag = None
+    for node in node_list:
+        # compare vector distance...
+        node_pos = NodegraphAPI.GetNodePosition(node)
+        node_pos = nodegraph_widget.mapFromWorldToQTLocal(node_pos[0], node_pos[1])
+        x = node_pos[0] - cursor_pos.x()
+        y = node_pos[1] - cursor_pos.y()
+        new_mag = math.sqrt(x*x + y*y)
+        if mag == None:
+            mag = new_mag
+            closest_node = node
+        elif new_mag < mag:
+            mag = new_mag
+            closest_node = node
+
+    return closest_node
+
+
 def disconnectNode(node, input=False, output=False, reconnect=False):
     """
     Disconnects the node provide from all other nodes.  The same
@@ -34,6 +61,7 @@ def disconnectNode(node, input=False, output=False, reconnect=False):
         reconnect (bool): If true, will rewire the node graphs input/output ports
             will only work if input and output are true
     """
+    # disconnect node: Reconnection needs to be updated to handle more than the first ports
     if reconnect is True:
         if input is True and output is True:
             try:
@@ -135,15 +163,14 @@ def insertNode(node, parent_node):
     wires the node into that position.
 
     Note:
-        When this happens, the node has already been connected..
-        Thus the awesome -2
+        *   When this happens, the node has already been connected.. Thus the awesome -2
+        *   Needs to have the "nodeReference" parameter
 
     Args:
         node (node): Current node to be inserted
         parent_node (node): The current nodes parent
     """
     # get previous port / position
-
     if len(parent_node.getChildren()) == 1:
         # previous port
         previous_port = parent_node.getSendPort('in')
@@ -152,18 +179,35 @@ def insertNode(node, parent_node):
         pos = (0, 0)
     else:
         # get previous node
-        node_references = parent_node.getParameter('nodeReference')
-        previous_node_name = node_references.getChildByIndex(node_references.getNumChildren() - 2)
-        previous_node = NodegraphAPI.GetNode(previous_node_name.getValue(0))
+        # node_references = parent_node.getParameter('nodeReference')
+        # previous_node_name = node_references.getChildByIndex(node_references.getNumChildren() - 2)
+        # previous_node = NodegraphAPI.GetNode(previous_node_name.getValue(0))
+        #
+        # # previous port
+        # previous_port = previous_node.getOutputPortByIndex(0)
+        #
+        # # setup pos
+        # current_pos = NodegraphAPI.GetNodePosition(previous_node)
+        # xpos = current_pos[0]
+        # ypos = current_pos[1] - 100
+        # pos = (xpos, ypos)
 
-        # previous port
-        previous_port = previous_node.getOutputPortByIndex(0)
+        return_port_name = parent_node.getOutputPortByIndex(0).getName()
+        return_port = parent_node.getReturnPort(return_port_name)
+        if 0 < len(return_port.getConnectedPorts()):
+            previous_port = return_port.getConnectedPorts()[0]
+            previous_node = previous_port.getNode()
 
-        # setup pos
-        current_pos = NodegraphAPI.GetNodePosition(previous_node)
-        xpos = current_pos[0]
-        ypos = current_pos[1] - 100
-        pos = (xpos, ypos)
+            # setup pos
+            current_pos = NodegraphAPI.GetNodePosition(previous_node)
+            xpos = current_pos[0]
+            ypos = current_pos[1] - 100
+            pos = (xpos, ypos)
+
+        else:
+            send_port_name = parent_node.getInputPortByIndex(0).getName()
+            previous_port = parent_node.getSendPort(send_port_name)
+            pos = (0, 0)
 
     # wire node
     previous_port.connect(node.getInputPortByIndex(0))
@@ -254,6 +298,28 @@ def goToNode(node, frame=False, nodegraph_panel=None, entered=False):
         nodegraph_panel.frameSelection(node)
 
 
+def setGlowColor(node, color):
+    """ Sets the glow color of the node.
+
+    If the color is set to None, it will remove the glow from the node
+
+    Args:
+        node (node):
+        color (rgb0-1):
+    """
+    if color:
+        NodegraphAPI.SetNodeShapeAttr(node, "glowColorR", color[0])
+        NodegraphAPI.SetNodeShapeAttr(node, "glowColorG", color[1])
+        NodegraphAPI.SetNodeShapeAttr(node, "glowColorB", color[2])
+
+    else:
+        for color in ["glowColorR", "glowColorG", "glowColorB"]:
+            NodegraphAPI.SetNodeShapeAttr(node, color, 0)
+            # todo for some reason deleting an attribute is bad?
+            #NodegraphAPI.DeleteNodeShapeAttr(node, color)
+
+    Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
+
 def setNodeColor(node, color):
     """Sets the nodes color
 
@@ -264,7 +330,69 @@ def setNodeColor(node, color):
     DrawingModule.SetCustomNodeColor(node, color[0], color[1], color[2])
     UI4.App.Tabs.FindTopTab("Node Graph").update()
 
+
 def removeNodeColor(node):
     from Katana import DrawingModule, UI4
     DrawingModule.RemoveCustomNodeColor(node)
     UI4.App.Tabs.FindTopTab("Node Graph").update()
+
+
+def reconnectNode(node_to_be_replaced, replacement_node, input=True, output=True):
+    """ Reconnects a node's input/output ports to a new node
+
+    Args:
+        node_to_be_replaced (Node): node to remove
+        replacement_node (Node): node to insert
+        input (bool): determines if the nodes input ports should be reconnected
+        output (bool): determines if the nodes output ports should be reconnected
+    """
+    if input:
+        for index, input_port in enumerate(node_to_be_replaced.getInputPorts()):
+            connected_ports = input_port.getConnectedPorts()
+            for connected_port in connected_ports:
+                replacement_node.getInputPortByIndex(index).connect(connected_port)
+
+    if output:
+        for index, output_port in enumerate(node_to_be_replaced.getOutputPorts()):
+            connected_ports = output_port.getConnectedPorts()
+            for connected_port in connected_ports:
+                replacement_node.getOutputPortByIndex(index).connect(connected_port)
+
+
+def replaceNode(node_to_be_replaced, replacement_node, delete=True, place=True, input=True, output=True):
+    """ Replaces the node with a new one
+
+    Note:
+        Both nodes must have the same amount of input ports, and the same number
+        of output ports.
+
+    Args:
+        node_to_be_replaced (Node): node to remove
+        replacement_node (Node): node to insert
+        delete (bool): determines if the old node should be deleted
+        place (bool): determines if the node should be placed over the old node
+        input (bool): determines if the nodes input ports should be reconnected
+        output (bool): determines if the nodes output ports should be reconnected
+
+    """
+
+    # disconnect ports
+    reconnectNode(node_to_be_replaced, replacement_node, input=input, output=output)
+    # for index, input_port in enumerate(node_to_be_replaced.getInputPorts()):
+    #     connected_ports = input_port.getConnectedPorts()
+    #     for connected_port in connected_ports:
+    #         replacement_node.getInputPortByIndex(index).connect(connected_port)
+    #
+    # for index, output_port in enumerate(node_to_be_replaced.getOutputPorts()):
+    #     connected_ports = output_port.getConnectedPorts()
+    #     for connected_port in connected_ports:
+    #         replacement_node.getOutputPortByIndex(index).connect(connected_port)
+
+    # place node
+    if place:
+        pos = NodegraphAPI.GetNodePosition(node_to_be_replaced)
+        NodegraphAPI.SetNodePosition(replacement_node, pos)
+
+    # delete old node
+    if delete:
+        node_to_be_replaced.delete()

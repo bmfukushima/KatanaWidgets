@@ -318,7 +318,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
 
         # set last active
         last_active_state = self.getItemFullName(item)
-        for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
+        for tab in UI4.App.Tabs.GetTabsByType("State Managers/State Manager"):
             tab.setLastActive(last_active_state)
 
         # todo update popup bar widgets
@@ -329,7 +329,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
             for widget in popup_widgets:
                 popup_widget = widget.popupWidget()
                 if hasattr(popup_widget, "__name__"):
-                    if popup_widget.__name__() == "State Manager":
+                    if popup_widget.__name__() == "State Managers/State Manager":
                         popup_widget.setLastActive(last_active_state)
 
         return True
@@ -341,7 +341,7 @@ class StateManagerOrganizerWidget(AbstractStateManagerOrganizerWidget):
                 if editor_widget:
                     editor_widget.showItemDetails(item)
 
-    def __stateRenameEvent(self, item, old_name, new_name):
+    def __stateRenameEvent(self, item, old_name, new_name, column=None):
         """ When a user renames a state, this will update the states/folder associated with the rename"""
         # preflight
         if old_name == new_name: return
@@ -473,7 +473,7 @@ class StateManagerEditorWidget(AbstractStateManagerTab):
         if load_state:
             Utils.EventModule.ProcessAllEvents()
             # Update all tabs
-            for tab_type in ["GSV Manager", "IRF Manager", "State Manager", "Bookmark Manager"]:
+            for tab_type in ["State Managers/GSV Manager", "State Managers/IRF Manager", "State Managers/State Manager", "State Managers/Bookmark Manager"]:
                 tabs = UI4.App.Tabs.GetTabsByType(tab_type)
                 for tab in tabs:
                     tab.update()

@@ -151,6 +151,13 @@ class ParametersMenu(QMenu):
 
         # update display
         editor.setDisplayMode(index)
+
+        # remove user parameters group
+        user_param = node.getParameter("user")
+        if user_param:
+            hints = eval(user_param.getHintString())
+            hints["hideTitle"] = True
+            user_param.setHintString(repr(hints))
         # get editor here...
         pass
 

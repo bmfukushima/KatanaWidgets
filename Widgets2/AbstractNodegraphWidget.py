@@ -14,7 +14,7 @@ except ModuleNotFoundError:
     pass
 
 
-from cgwidgets.utils import getWidgetAncestor, getWidgetUnderCursor, getWidgetAncestorByObjectName
+from cgwidgets.utils import getWidgetUnderCursor, getWidgetAncestorByObjectName
 
 
 class AbstractNodegraphWidget(QWidget):
@@ -40,16 +40,15 @@ class AbstractNodegraphWidget(QWidget):
     def __init__(self, parent=None, display_menus=True, node=None):
         super(AbstractNodegraphWidget, self).__init__(parent)
         QVBoxLayout(self)
-        # from qtpy.QtWidgets import QLabel
-        # self.layout().addWidget(QLabel("test"))
+
         # set up attrs
         self.setNode(node)
         self._is_scrolling = False
 
         # create node graph
-        self._nodegraph_tab    = self.createNodegraph()
-        self._nodegraph_panel  = self._nodegraph_tab.getWidget()
-        self._nodegraph_widget = self._nodegraph_tab.getWidget().getNodeGraphWidget()
+        # self._nodegraph_panel    = self.createNodegraph()
+        self._nodegraph_panel = self.createNodegraph()
+        self._nodegraph_widget = self._nodegraph_panel.getNodeGraphWidget()
         self.layout().addWidget(self._nodegraph_panel)
 
         # setup nodegraph display
@@ -77,14 +76,10 @@ class AbstractNodegraphWidget(QWidget):
 
         Returns (NodegraphWidget)
         """
-        # plugins = Tabs._LoadedTabPluginsByTabTypeName
-        # parent = self
-        # nodegraph_widget = plugins["Node Graph"].data(parent)
-
-        nodegraph_tab = UI4.App.Tabs.CreateTab('Node Graph', None)
-        # nodegraph_tab.show()
-
-        return nodegraph_tab
+        plugin = Tabs._LoadedTabPluginsByTabTypeName
+        nodegraph_panel = plugin["Node Graph"].data(None)
+        # nodegraph_tab = UI4.App.Tabs.CreateTab('Node Graph', None)
+        return nodegraph_panel
 
     @staticmethod
     def displayMenus(value, nodegraph_widget):
@@ -100,9 +95,15 @@ class AbstractNodegraphWidget(QWidget):
                 Katana Nodegraph Object.
         """
 
+        if value:
+            ngw_menu_bar = nodegraph_widget.getMenuBar()
+            ngw_menu_bar.show()
+
+            nodegraph_widget.layout().itemAt(0).widget().show()
+
         if value is False:
             ngw_menu_bar = nodegraph_widget.getMenuBar()
-            ngw_menu_bar.setParent(None)
+            ngw_menu_bar.hide()
 
             nodegraph_widget.layout().itemAt(0).widget().hide()
 
@@ -177,9 +178,10 @@ class AbstractNodegraphWidget(QWidget):
         When the katana tab is closed / hidden, this will destroy the nodegraph
         """
         event_type = event.type()
-        if event_type == QEvent.Hide:
-            self.destroyNodegraph()
-            obj.removeEventFilter(self)
+        # if event_type == QEvent.Hide:
+        #     print("hide")
+        #     self.destroyNodegraph()
+        #     obj.removeEventFilter(self)
 
         if event_type == QEvent.Close:
             self.destroyNodegraph()
@@ -197,16 +199,19 @@ class AbstractNodegraphWidget(QWidget):
     def nodeDelete(self, args):
         node = self.getNode()
         if node:
-            if args[0][2]['node'] == node:
+            if "basic" in node.getName():
                 self.destroyNodegraph()
+                # if args[0][2]['node'] in [node, node.getParent()]:
+                #     print('node delete')
 
     def loadBegin(self, args):
         self.destroyNodegraph()
-        try:
-            self.destroyNodegraph()
-        except AttributeError:
-            # on init this will suppress the logged message
-            pass
+        # not sure why this was double destroying?
+        # try:
+        #     self.destroyNodegraph()
+        # except AttributeError:
+        #     # on init this will suppress the logged message
+        #     pass
 
     def destroyNodegraph(self):
         """
@@ -222,12 +227,10 @@ class AbstractNodegraphWidget(QWidget):
             this normally happens on copy/paste
         """
         # get node graph widget
-        # print("clean up nodegraphs")
         nodegraph_widget = self.getWidget()
-
         # clean up
         """ Todo disabling cleanup... as its causing the NMC Context to crash"""
-        # nodegraph_widget.cleanup()
+        nodegraph_widget.cleanup()
 
     def closeEvent(self, event):
         self.destroyNodegraph()

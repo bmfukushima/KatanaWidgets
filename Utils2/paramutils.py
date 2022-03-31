@@ -10,6 +10,7 @@ GROUP = 2
 NUMBER_ARRAY = 3
 STRING_ARRAY = 4
 TELEPARAM = 5
+
 def createParamAtLocation(param_location, node, param_type, param=None, initial_value=0):
     """Creates a parameter of the supplied type at the location provided.
 
@@ -74,15 +75,31 @@ def createParamAtLocation(param_location, node, param_type, param=None, initial_
         print(current_param.getFullName(), "already exists")
 
 
-def createTeleparamWidget(node_name, hide_title=False):
+def createParamWidget(param):
+    """ Creates a widget for the provided parameter
+
+    Args:
+        param (param): Katana parameter to create widget for
+    """
+    from Katana import UI4
+
+    locationPolicy = UI4.FormMaster.CreateParameterPolicy(None, param)
+    factory = UI4.FormMaster.KatanaFactory.ParameterWidgetFactory
+    widget = factory.buildWidget(None, locationPolicy)
+
+    return widget
+
+
+def createTeleparamWidget(node_name, hide_title=False, open="True"):
     """
     Creates a teledrop parameter widget
 
     Args:
-        *   node_name (str): name of node to be referenced
-        **  hide_title (bool): Determines if the title of the parameter will be hidden.
-                If there is more than one parameter, the title will not be hidden,
-                if there is only 1 then it will be hidden.
+        node_name (str): name of node to be referenced
+        hide_title (bool): Determines if the title of the parameter will be hidden.
+            If there is more than one parameter, the title will not be hidden,
+            if there is only 1 then it will be hidden.
+        open (str(bool)): determines if the widget is open by default
 
     Returns:
         teledropparam
@@ -93,12 +110,13 @@ def createTeleparamWidget(node_name, hide_title=False):
     params_policy = rootPolicy.getChildByName("displayNode")
     params_policy.getWidgetHints().update(
         widget='teleparam',
-        open="True",
+        open=open,
         hideTitle=repr(hide_title)
     )
     param_widget = UI4.FormMaster.KatanaWidgetFactory.buildWidget(None, params_policy)
     params_policy.setValue(node_name, 0)
     return param_widget
+
 
 def createNodeReference(name, node, parent):
     """ Creates a parameter reference to the node provided
@@ -113,3 +131,18 @@ def createNodeReference(name, node, parent):
     param.setExpressionFlag(True)
     param.setExpression("@{node}".format(node=node.getName()))
     return param
+
+
+def getParameterMapFromNode(node):
+        """ Returns a dictionary of the parameter map for each parameter on the node
+
+        Args:
+            node (Node):
+
+        Returns (dict):
+            str(param_name): (value)"""
+        column_data = {"node": node.getName()}
+        for param in node.getParameters().getChildren():
+            column_data[param.getName()] = param.getValue(0)
+
+        return column_data

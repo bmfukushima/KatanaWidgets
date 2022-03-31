@@ -155,6 +155,18 @@ class AbstractSuperToolEditor(QWidget):
         layout.insertWidget(index, self._resize_bar_widget)
 
     """ REGISTER CUSTOM PARM"""
+    def createCustomParameterWidget(self, widget_type):
+        """ Creates a new custom parameter widget from the class provided
+
+        Args:
+            widget_type (QWidget): class type to be used"""
+        class KatanaParameterWidget(widget_type, iParameter):
+            def __init__(self, parent=None):
+                super(KatanaParameterWidget, self).__init__(parent)
+
+        widget = KatanaParameterWidget()
+        return widget
+
     def createCustomParam(self, widget, param_loc, data_type, get_new_value_function, editing_finished_function, initial_value=0):
         """
         Creates a custom parameter based off of a custom PyQt widget.
@@ -182,6 +194,13 @@ class AbstractSuperToolEditor(QWidget):
         # check to see if parameter exists
         if self.node().getParameter(param_loc):
             param = self.node().getParameter(param_loc)
+
+            # set default values if they exist
+            try:
+                widget.setText(param.getValue(0))
+            except (AttributeError, TypeError) as error:
+                pass
+
         else:
             param = paramutils.createParamAtLocation(param_loc, self.node(), data_type, initial_value=initial_value)
 

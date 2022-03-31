@@ -34,8 +34,8 @@ class SuperToolEditor(AbstractSuperToolEditor):
         self._node_type = ""
         # setup layout
         QVBoxLayout(self)
-        # TODO BUG for some reason setting the layout alignment breaks
-        # katanas internal resize bar
+        """TODO BUG for some reason setting the layout alignment breaks
+        katanas internal resize bar"""
         #self.layout().setAlignment(Qt.AlignTop)
 
         main_widget = SuperToolMainWidget(self)

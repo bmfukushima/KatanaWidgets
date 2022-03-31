@@ -829,7 +829,7 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
                 for item in events_widget.eventsWidget().model().findItems(gsv):
                     events_widget.eventsWidget().model().deleteItem(item.internalPointer(), event_update=True)
 
-    def renameSelectedItem(self, item, old_value, new_value):
+    def renameSelectedItem(self, item, old_value, new_value, column=None):
         """
         Changes the GSV/Option name to the values provided
 
@@ -1001,7 +1001,7 @@ class GSVEventWidget(AbstractEventWidget):
         self.eventsData()[gsv]["enabled"] = enabled
         self.saveEventsData()
 
-    def gsvChangedEvent(self, item, old_value, new_value):
+    def gsvChangedEvent(self, item, old_value, new_value, column=None):
         """ When the user changes the GSV"""
 
         """ Create a new event item"""

@@ -75,7 +75,7 @@ class NodegraphWidget(AbstractNodegraphWidget):
         # setup attrs
         # self.setNode(node)
 
-        #AbstractNodegraphWidget.displayMenus(False, self.getPanel())
+        AbstractNodegraphWidget.displayMenus(True, self.getPanel())
         #self.enableScrollWheel(False)
         # self.goToNode(node.getChildByIndex(0))
         #self.setupDestroyNodegraphEvent()
