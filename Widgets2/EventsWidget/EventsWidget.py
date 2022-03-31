@@ -558,7 +558,8 @@ class PythonWidget(QWidget):
         Args:
             filepath (str): path on disk to file OR param name
         """
-        self.setFilePath(filepath)
+        if self.filepath() != filepath:
+            self.setFilePath(filepath)
 
     def eventFilter(self, obj, event, *args, **kwargs):
         if event.type() == QEvent.Enter:
