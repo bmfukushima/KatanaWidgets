@@ -320,6 +320,7 @@ def setGlowColor(node, color):
 
     Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
 
+
 def setNodeColor(node, color):
     """Sets the nodes color
 
