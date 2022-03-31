@@ -5,6 +5,7 @@ from . import gsvutils
 from . import nodeutils
 from . import nodealignutils
 from . import paramutils
+from . import portutils
 from . import colors
 from . import widgetutils
 from . import scenegraphutils
