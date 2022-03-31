@@ -1,7 +1,7 @@
 import math
 #from cgwidgets.interface.AbstractUtilsInterfaceAPI import disconnectNode, connectInsideGroup
 try:
-    import NodegraphAPI
+    import NodegraphAPI, UI4, Utils
 except ModuleNotFoundError:
     pass
 
@@ -18,6 +18,33 @@ def getNodeAndAllDescendants(node, node_list=None):
         for child in node.getChildren():
             node_list += getNodeAndAllDescendants(child, node_list)
     return list(set(node_list))
+
+
+def getClosestNode():
+    """ Returns the closest node to the cursor """
+    nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
+    nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+
+    node_list = nodegraph_widget.getCurrentNodeView().getChildren()
+    cursor_pos = nodegraph_widget.getMousePos()
+
+    closest_node = None
+    mag = None
+    for node in node_list:
+        # compare vector distance...
+        node_pos = NodegraphAPI.GetNodePosition(node)
+        node_pos = nodegraph_widget.mapFromWorldToQTLocal(node_pos[0], node_pos[1])
+        x = node_pos[0] - cursor_pos.x()
+        y = node_pos[1] - cursor_pos.y()
+        new_mag = math.sqrt(x*x + y*y)
+        if mag == None:
+            mag = new_mag
+            closest_node = node
+        elif new_mag < mag:
+            mag = new_mag
+            closest_node = node
+
+    return closest_node
 
 
 def disconnectNode(node, input=False, output=False, reconnect=False):
@@ -270,6 +297,28 @@ def goToNode(node, frame=False, nodegraph_panel=None, entered=False):
         # frame node provided
         nodegraph_panel.frameSelection(node)
 
+
+def setGlowColor(node, color):
+    """ Sets the glow color of the node.
+
+    If the color is set to None, it will remove the glow from the node
+
+    Args:
+        node (node):
+        color (rgb0-1):
+    """
+    if color:
+        NodegraphAPI.SetNodeShapeAttr(node, "glowColorR", color[0])
+        NodegraphAPI.SetNodeShapeAttr(node, "glowColorG", color[1])
+        NodegraphAPI.SetNodeShapeAttr(node, "glowColorB", color[2])
+
+    else:
+        for color in ["glowColorR", "glowColorG", "glowColorB"]:
+            NodegraphAPI.SetNodeShapeAttr(node, color, 0)
+            # todo for some reason deleting an attribute is bad?
+            #NodegraphAPI.DeleteNodeShapeAttr(node, color)
+
+    Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
 
 def setNodeColor(node, color):
     """Sets the nodes color
