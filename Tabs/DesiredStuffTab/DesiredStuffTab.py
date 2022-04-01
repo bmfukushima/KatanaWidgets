@@ -313,7 +313,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         # setup context menu
         # for some reason I have to add this here.. instead of in the base widget...
         self.addContextMenuEvent("Go To Node", self.goToNode)
-        self.addContextMenuEvent("Go To Param", self.goToParam)
+        self.addContextMenuEvent("Go To Param", self.goToParam, {"object_type":PARAM})
 
     """ EVENTS """
     def goToNode(self, index, selected_indexes):
