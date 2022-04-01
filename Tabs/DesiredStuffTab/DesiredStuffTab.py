@@ -66,7 +66,7 @@ from Utils2 import nodeutils, getFontSize, paramutils, NODE, PARAM
 
 class DesiredStuffTab(UI4.Tabs.BaseTab):
     """Main tab widget for the desirable widgets"""
-    NAME = 'Desired Stuff'
+    NAME = 'Nodegraph Pins'
     def __init__(self, parent=None):
         super(DesiredStuffTab, self).__init__(parent)
         # create main widget
@@ -313,6 +313,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         # setup context menu
         # for some reason I have to add this here.. instead of in the base widget...
         self.addContextMenuEvent("Go To Node", self.goToNode)
+        self.addContextMenuEvent("Go To Param", self.goToParam)
 
     """ EVENTS """
     def goToNode(self, index, selected_indexes):
@@ -320,7 +321,17 @@ class DesirableStuffShojiPanel(NodeViewWidget):
 
         if item:
             node = self.getNodeFromItem(item)
+            if item.getArg("object_type") == PARAM:
+                node = NodegraphAPI.GetNode(item.getArg("node"))
+
             nodeutils.goToNode(node, frame=True)
+
+    def goToParam(self, index, selected_indexes):
+        item = index.internalPointer()
+        if item:
+            if item.getArg("object_type") == PARAM:
+                node = NodegraphAPI.GetNode(item.getArg("node"))
+                NodegraphAPI.SetNodeEdited(node, True, exclusive=True)
 
     """ PROPERTIES """
     def name(self):

@@ -16,6 +16,7 @@ TODO
     *   Prompt color nodes
             For when an override is active
     *   Connecting to/found the current node
+    *   Mouse move, nearest node coloring
 
 """
 from qtpy.QtWidgets import QFrame, QVBoxLayout, QLabel
@@ -25,7 +26,7 @@ from Katana import Utils, QT4Widgets, QT4GLLayerStack, NodegraphAPI, DrawingModu
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 from cgwidgets.widgets import ButtonInputWidgetContainer, ButtonInputWidget, FrameInputWidgetContainer
-from cgwidgets.utils import centerWidgetOnCursor, setAsBorderless, setAsTransparent, setAsTool
+from cgwidgets.utils import centerWidgetOnCursor, setAsBorderless, setAsTransparent, setAsTool, isCursorOverWidget
 from Utils2 import nodeutils, portutils, getFontSize
 
 main_window = UI4.App.MainWindow.CurrentMainWindow()
@@ -63,9 +64,8 @@ class OverridePortWarningButtonPopupWidget(QFrame):
         ButtonInputWidget.closeEvent(self, event)
 
     def leaveEvent(self, event):
-        # if self._show_noodle:
-        #     PortConnector.showNoodle(self._output_port)
-        self.close()
+        if not isCursorOverWidget(self):
+            self.close()
         return ButtonInputWidget.leaveEvent(self, event)
 
 
