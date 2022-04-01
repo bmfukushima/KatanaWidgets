@@ -33,20 +33,40 @@ CURRENT_DIR = (
     os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 )
 katana_bebop_dir = "/".join(CURRENT_DIR.split("/")[:-1])
-cgwidgets_dir = katana_bebop_dir + "/cgwidgets"
+
 
 # append paths
 sys.path.append(katana_bebop_dir)
 
-CGWIDGETS_EXISTS = False
-for path in sys.path:
-    if "cgwidgets" in path:
-        CGWIDGETS_EXISTS = True
-        cgwidgets_logger = ""
-
-if not CGWIDGETS_EXISTS:
+# register cgwidgets
+try:
+    import cgwidgets
+    cgwidgets_logger = ""
+except ModuleNotFoundError:
+    cgwidgets_dir = katana_bebop_dir + "/libs/cgwidgets"
     sys.path.append(cgwidgets_dir)
-    cgwidgets_logger = f"\n\t|\t|__  Appending...  {cgwidgets_dir} to PYTHONPATH\n"
+    cgwidgets_logger = f"\n\t|\t|__  Appending...  {cgwidgets_dir} to PYTHONPATH"
+
+
+# packaging
+try:
+    import packaging
+    packaging_logger = ""
+except ModuleNotFoundError:
+    packaging_dir = katana_bebop_dir + "/libs/packaging"
+    sys.path.append(packaging_dir)
+    packaging_logger = f"\n\t|\t|__  Appending...  {packaging_dir} to PYTHONPATH"
+
+
+# qtpy
+try:
+    import qtpy
+    qtpy_logger = ""
+except ModuleNotFoundError:
+    qtpy_dir = katana_bebop_dir + "/libs/qtpy"
+    sys.path.append(qtpy_dir)
+    qtpy_logger = f"\n\t|\t|__  Appending...  {qtpy_dir} to PYTHONPATH"
+
 
 # update envars
 os.environ["KATANABEBOP"] = katana_bebop_dir
@@ -58,7 +78,7 @@ print(f"""
 ................................      THE GOOD STUFF      .................................
 ...........................................................................................
 \t|____  ENVIRONMENT
-\t|\t|__  Appending...  {katana_bebop_dir} to PYTHONPATH {cgwidgets_logger}
+\t|\t|__  Appending...  {katana_bebop_dir} to PYTHONPATH {cgwidgets_logger} {packaging_logger} {qtpy_logger}
 \t|
 \t|____  MACROS
 \t|\t|__ CalculateNearFarObjects
