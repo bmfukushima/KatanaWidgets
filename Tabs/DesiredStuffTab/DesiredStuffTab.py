@@ -478,11 +478,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
 
         """
         # todo update desirable group names
-        # print("creating panel... ", item.columnData()["name"])
         this = widget.getMainWidget()
-
-        # clear model
-        this.clearModel()
 
         # set attrs
         this.setName(item.columnData()['name'])
@@ -491,15 +487,28 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         this._desired_data = []
         desired_data = reversed(json.loads(this.param().getValue(0))["data"])
         for obj_data in desired_data:
-            if obj_data["type"] == NODE:
-                obj = NodegraphAPI.GetNode(obj_data["node"])
-                this.createNewIndexFromNode(obj)
+            _exists = False
+            for index in this.getAllIndexes():
+                item = index.internalPointer()
+                for arg in ["name", "type", "object_type", "node"]:
+                    try:
+                        if item.getArg(arg) == obj_data[arg]:
+                            _exists = True
+                            break
+                    except KeyError:
+                        pass
 
-            if obj_data["type"] == PARAM:
-                node = NodegraphAPI.GetNode(obj_data["node"])
-                param = ".".join(obj_data["param"].split(".")[1:])
-                obj = node.getParameter(param)
-                this.createNewIndexFromParam(obj)
+            if not _exists:
+                if obj_data["type"] == NODE:
+                    obj = NodegraphAPI.GetNode(obj_data["node"])
+
+                    this.createNewIndexFromNode(obj)
+
+                if obj_data["type"] == PARAM:
+                    node = NodegraphAPI.GetNode(obj_data["node"])
+                    param = ".".join(obj_data["param"].split(".")[1:])
+                    obj = node.getParameter(param)
+                    this.createNewIndexFromParam(obj)
 
 
 class DesirableStuffView(AbstractDragDropListView):
@@ -547,6 +556,12 @@ class DesirableStuffView(AbstractDragDropListView):
             parent_widget.setDesirability(param, True, PARAM)
 
         return AbstractDragDropListView.dropEvent(self, event)
+
+w = DesiredStuffTab()
+w.show()
+w.resize(512, 512)
+from cgwidgets.utils import centerWidgetOnCursor
+centerWidgetOnCursor(w)
 
 
 # class CreateDesirableGroupWidget(LabelledInputWidget):
