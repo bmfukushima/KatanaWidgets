@@ -557,19 +557,3 @@ class DesirableStuffView(AbstractDragDropListView):
 
         return AbstractDragDropListView.dropEvent(self, event)
 
-w = DesiredStuffTab()
-w.show()
-w.resize(512, 512)
-from cgwidgets.utils import centerWidgetOnCursor
-centerWidgetOnCursor(w)
-
-
-# class CreateDesirableGroupWidget(LabelledInputWidget):
-#     def __init__(self, parent=None, delegate_widget=None):
-#         super(CreateDesirableGroupWidget, self).__init__(
-#             parent,
-#             name="Create New Item",
-#             default_label_length=100,
-#             direction=Qt.Horizontal,
-#             delegate_widget=delegate_widget
-#         )
