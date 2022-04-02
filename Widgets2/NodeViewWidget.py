@@ -3,7 +3,7 @@
 - Need a node interface to connect nodes into it
 """
 from qtpy.QtWidgets import QVBoxLayout
-from qtpy.QtCore import QModelIndex
+from qtpy.QtCore import QModelIndex, Qt
 
 from cgwidgets.settings import attrs
 from cgwidgets.widgets import ShojiModelViewWidget, ShojiModelItem
@@ -60,8 +60,11 @@ class NodeViewWidget(ShojiModelViewWidget):
             dynamic_function=NodeTreeDynamicWidget.displayNodeParameters
         )
 
+        # setup events
         self.setHeaderItemTextChangedEvent(self.objectNameChangedEvent)
         self.setHeaderItemEnabledEvent(self.objectDisableEvent)
+        Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'node_setName')
+        Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'parameter_setName')
 
         # setup attrs
         self.setMultiSelect(True)
@@ -113,6 +116,7 @@ class NodeViewWidget(ShojiModelViewWidget):
 
         return new_index
 
+    """ EVENTS """
     def objectDisableEvent(self, item, enabled):
         """ enable/disable event """
         if item.objectType() == NODE:
@@ -123,7 +127,7 @@ class NodeViewWidget(ShojiModelViewWidget):
             pass
 
     def objectNameChangedEvent(self, item, old_value, new_value, column=None):
-
+        """ Update the object name when the user changes the name """
         if item.objectType() == NODE:
             node = NodegraphAPI.GetNode(old_value)
             node.setName(new_value)
@@ -136,6 +140,52 @@ class NodeViewWidget(ShojiModelViewWidget):
             # todo param name change
             # could also just disable this in the item...
             pass
+
+    def updateObjectNameEvent(self, args):
+        """ Updates the desired objects names when a nodes name is changed """
+        for arg in args:
+            # get data
+            old_name = arg[2]["oldName"]
+            new_name = arg[2]["newName"]
+            if arg[0] == "node_setName":
+                node = arg[2][NODE]
+                self.updateObjectName(node, NODE, old_name, new_name)
+
+            if arg[0] == "parameter_setName":
+                param = arg[2][PARAM]
+                parent_path = ".".join(param.getFullName().split(".")[:-1])
+                old_name = f"{parent_path}.{old_name}"
+                new_name = f"{parent_path}.{new_name}"
+                self.updateObjectName(param, PARAM, old_name, new_name)
+
+    def updateObjectName(self, object, object_type, old_name, new_name):
+        """ Updates the metadata when a desired objects name has changed
+
+        Args:
+            object (Node/Param): object that is being updated
+            object_type (NODE/PARAM) object type that is being updated
+            old_name (str): old name
+            new_name (str): new name
+
+        Returns:
+
+        """
+
+        # need to change the display name for the param as it has a special display name
+        if object_type == PARAM:
+            old_name = paramutils.getParamDisplayName(object).replace(new_name.split(".")[-1], old_name.split(".")[-1])
+
+        # find matches and update
+        indexes = self.findItems(old_name, match_type=Qt.MatchExactly)
+        for index in indexes:
+            item = index.internalPointer()
+            if item:
+                if object_type == NODE:
+                    item.setArg("node", new_name)
+                    item.setArg("name", new_name)
+                if object_type == PARAM:
+                    item.setArg("param", new_name)
+                    item.setArg("name", paramutils.getParamDisplayName(object))
 
 
 class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):

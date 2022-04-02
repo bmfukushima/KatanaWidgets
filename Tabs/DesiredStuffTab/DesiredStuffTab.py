@@ -67,6 +67,7 @@ from Utils2 import nodeutils, getFontSize, paramutils, NODE, PARAM
 class DesiredStuffTab(UI4.Tabs.BaseTab):
     """Main tab widget for the desirable widgets"""
     NAME = 'Node Graph Pins'
+
     def __init__(self, parent=None):
         super(DesiredStuffTab, self).__init__(parent)
         # create main widget
@@ -76,11 +77,12 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         QVBoxLayout(self)
         self.layout().addWidget(self._desired_stuff_frame)
         Utils.EventModule.RegisterCollapsedHandler(self.desiredStuffFrame().populate, 'nodegraph_setRootNode')
-        Utils.EventModule.RegisterCollapsedHandler(self.updateDesiredNamesEvent, 'node_setName')
-        Utils.EventModule.RegisterCollapsedHandler(self.updateDesiredNamesEvent, 'parameter_setName')
+        Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'node_setName')
+        Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'parameter_setName')
 
         self.desiredStuffFrame().populate()
 
+    """ UTILS """
     @staticmethod
     def desiredStuffParam():
         """ Returns the Group parameter storing all of the desirable data
@@ -110,7 +112,8 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         Returns (list): of strings """
         return [child.getName() for child in DesiredStuffTab.desiredStuffParam().getChildren()]
 
-    def updateDesiredNamesEvent(self, args):
+    """ EVENTS  """
+    def updateObjectNameEvent(self, args):
         """ Updates the desired objects names when a nodes name is changed """
         for arg in args:
             # get data
@@ -118,16 +121,16 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
             new_name = arg[2]["newName"]
             if arg[0] == "node_setName":
                 node = arg[2][NODE]
-                self.updateDesiredNames(node, NODE, old_name, new_name)
+                self.updateObjectName(node, NODE, old_name, new_name)
 
             if arg[0] == "parameter_setName":
                 param = arg[2][PARAM]
                 parent_path = ".".join(param.getFullName().split(".")[:-1])
                 old_name = f"{parent_path}.{old_name}"
                 new_name = f"{parent_path}.{new_name}"
-                self.updateDesiredNames(param, PARAM, old_name, new_name)
+                self.updateObjectName(param, PARAM, old_name, new_name)
 
-    def updateDesiredNames(self, object, object_type, old_name, new_name):
+    def updateObjectName(self, object, object_type, old_name, new_name):
         """ Updates the metadata when a desired objects name has changed
 
         Args:
@@ -158,25 +161,7 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
 
             child.setValue(json.dumps(data), 0)
 
-        # update display
-        active_widgets = self.desiredStuffFrame().activeDelegateWidgets()
-
-        # need to change the display name for the param as it has a special display name
-        if object_type == PARAM:
-            old_name = paramutils.getParamDisplayName(object).replace(new_name.split(".")[-1], old_name.split(".")[-1])
-
-        for widget in active_widgets:
-            indexes = widget.findItems(old_name, match_type=Qt.MatchExactly)
-            for index in indexes:
-                item = index.internalPointer()
-                if item:
-                    if object_type == NODE:
-                        item.setArg("node", new_name)
-                        item.setArg("name", new_name)
-                    if object_type == PARAM:
-                        item.setArg("param", new_name)
-                        item.setArg("name", paramutils.getParamDisplayName(object))
-
+    """ WIDGET"""
     def desiredStuffFrame(self):
         return self._desired_stuff_frame
 
