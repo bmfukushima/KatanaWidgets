@@ -3,7 +3,7 @@
 - Need a node interface to connect nodes into it
 """
 from qtpy.QtWidgets import QVBoxLayout
-from qtpy.QtCore import QModelIndex, QByteArray
+from qtpy.QtCore import QModelIndex
 
 from cgwidgets.settings import attrs
 from cgwidgets.widgets import ShojiModelViewWidget, ShojiModelItem
@@ -11,7 +11,7 @@ from cgwidgets.widgets import ShojiModelViewWidget, ShojiModelItem
 from Katana import UI4, NodegraphAPI, Utils
 
 from Widgets2 import AbstractParametersDisplayWidget
-from Utils2 import nodeutils, paramutils, NODE, PARAM
+from Utils2 import paramutils, NODE, PARAM
 
 
 class NodeViewWidgetItem(ShojiModelItem):
@@ -73,7 +73,6 @@ class NodeViewWidget(ShojiModelViewWidget):
         node = NodegraphAPI.GetNode(node_name)
         return node
 
-
     def createNewIndexFromNode(self, node, parent_index=QModelIndex(), row=0):
         """
         Creates a new index in the model for the node specified.
@@ -109,7 +108,8 @@ class NodeViewWidget(ShojiModelViewWidget):
                 "object_type": PARAM,
             },
             parent=parent_index,
-            is_enableable=False)
+            is_enableable=False,
+            is_editable=False)
 
         return new_index
 

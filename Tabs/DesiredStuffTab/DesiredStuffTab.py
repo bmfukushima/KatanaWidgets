@@ -42,11 +42,11 @@ KatanaBebop.DesirableStuff.DesirableGroupName
 """
 TODO:
     * Hold data as ns_attr instead of parameter? test this on load/reload
-    * Node/param name change...
-        update the metadata
     * DesirableStuffShojiPanel --> desiredData()
         --> updateDesiredDataFromParam
         - make sure this stays in sync when doing the drag/drop/delete/etc
+            - node/parameter reparent
+            - node/parameter delete
         
 """
 import json
@@ -128,7 +128,17 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
                 self.updateDesiredNames(param, PARAM, old_name, new_name)
 
     def updateDesiredNames(self, object, object_type, old_name, new_name):
+        """ Updates the metadata when a desired objects name has changed
 
+        Args:
+            object (Node/Param): object that is being updated
+            object_type (NODE/PARAM) object type that is being updated
+            old_name (str): old name
+            new_name (str): new name
+
+        Returns:
+
+        """
         # update project settings meta data
         for child in DesiredStuffTab.desiredStuffParam().getChildren():
             data = json.loads(child.getValue(0))
@@ -150,11 +160,12 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
 
         # update display
         active_widgets = self.desiredStuffFrame().activeDelegateWidgets()
+
+        # need to change the display name for the param as it has a special display name
         if object_type == PARAM:
             old_name = paramutils.getParamDisplayName(object).replace(new_name.split(".")[-1], old_name.split(".")[-1])
 
         for widget in active_widgets:
-            # need to change the display name for the param as it has a special display name
             indexes = widget.findItems(old_name, match_type=Qt.MatchExactly)
             for index in indexes:
                 item = index.internalPointer()
@@ -614,8 +625,3 @@ class DesirableStuffView(AbstractDragDropListView):
 
         return AbstractDragDropListView.dropEvent(self, event)
 
-w = DesiredStuffTab()
-w.show()
-w.resize(512, 512)
-from cgwidgets.utils import centerWidgetOnCursor
-centerWidgetOnCursor(w)
