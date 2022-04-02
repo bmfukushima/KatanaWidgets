@@ -255,6 +255,8 @@ class PortConnector():
             connected, then show the user a GUI to select a port.
         """
         node = nodeutils.getClosestNode()
+        if not node: return
+
         selection_active = PortConnector.isSelectionActive()
 
         # PORT SELECTED
@@ -301,7 +303,6 @@ class PortConnector():
                 main_window._port_popup_menu = MultiPortPopupMenuWidget(node)
                 main_window._port_popup_menu.show()
                 centerWidgetOnCursor(main_window._port_popup_menu)
-
 
     @staticmethod
     def getLinkConnectionLayer():

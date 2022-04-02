@@ -66,7 +66,7 @@ from Utils2 import nodeutils, getFontSize, paramutils, NODE, PARAM
 
 class DesiredStuffTab(UI4.Tabs.BaseTab):
     """Main tab widget for the desirable widgets"""
-    NAME = 'Nodegraph Pins'
+    NAME = 'Node Graph Pins'
     def __init__(self, parent=None):
         super(DesiredStuffTab, self).__init__(parent)
         # create main widget
@@ -177,6 +177,8 @@ class DesirableStuffFrame(ShojiModelViewWidget):
 
         # setup style
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
+
+        self.delegateWidget().setObjectName("DesirableStuffFrame")
 
     def rearrangeDesirableGroups(self, data, items_dropped, model, row, parent):
         desirable_param = DesiredStuffTab.desiredStuffParam()
@@ -314,6 +316,8 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         # for some reason I have to add this here.. instead of in the base widget...
         self.addContextMenuEvent("Go To Node", self.goToNode)
         self.addContextMenuEvent("Go To Param", self.goToParam, {"object_type":PARAM})
+
+        self.delegateWidget().setObjectName("Panel")
 
     """ EVENTS """
     def goToNode(self, index, selected_indexes):
@@ -557,3 +561,9 @@ class DesirableStuffView(AbstractDragDropListView):
 
         return AbstractDragDropListView.dropEvent(self, event)
 
+
+widget = DesiredStuffTab()
+widget.show()
+from cgwidgets.utils import centerWidgetOnCursor
+centerWidgetOnCursor(widget)
+widget.resize(512, 512)
