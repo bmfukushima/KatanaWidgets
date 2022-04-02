@@ -560,10 +560,3 @@ class DesirableStuffView(AbstractDragDropListView):
             parent_widget.setDesirability(param, True, PARAM)
 
         return AbstractDragDropListView.dropEvent(self, event)
-
-
-widget = DesiredStuffTab()
-widget.show()
-from cgwidgets.utils import centerWidgetOnCursor
-centerWidgetOnCursor(widget)
-widget.resize(512, 512)
