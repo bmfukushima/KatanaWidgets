@@ -65,6 +65,8 @@ class NodeViewWidget(ShojiModelViewWidget):
         self.setHeaderItemEnabledEvent(self.objectDisableEvent)
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'node_setName')
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'parameter_setName')
+        Utils.EventModule.RegisterCollapsedHandler(self.updateObjectDeleteEvent, 'node_delete')
+        Utils.EventModule.RegisterCollapsedHandler(self.updateObjectDeleteEvent, 'parameter_deleteChild')
 
         # setup attrs
         self.setMultiSelect(True)
@@ -141,6 +143,23 @@ class NodeViewWidget(ShojiModelViewWidget):
             # could also just disable this in the item...
             pass
 
+    def updateObjectDeleteEvent(self, args):
+        """ When a node/parameter is deleted, this will remove the item from the display"""
+        for arg in args:
+            if arg[0] == "node_delete":
+                object_name = arg[2]["node"].getName().replace("__XX_DELETED_", "")
+
+            if arg[0] == "parameter_deleteChild":
+                param_name = arg[2]["childName"]
+                param_full_path = arg[2]["paramName"] + "." + param_name
+                node_name = arg[2]["node"].getName()
+                object_name = f"{param_name} | {node_name} | {param_full_path}"
+
+            indexes = self.findItems(object_name, Qt.MatchExactly)
+            for index in indexes:
+                item = index.internalPointer()
+                self.deleteItem(item)
+
     def updateObjectNameEvent(self, args):
         """ Updates the desired objects names when a nodes name is changed """
         for arg in args:
@@ -158,11 +177,11 @@ class NodeViewWidget(ShojiModelViewWidget):
                 new_name = f"{parent_path}.{new_name}"
                 self.updateObjectName(param, PARAM, old_name, new_name)
 
-    def updateObjectName(self, object, object_type, old_name, new_name):
+    def updateObjectName(self, obj, object_type, old_name, new_name):
         """ Updates the metadata when a desired objects name has changed
 
         Args:
-            object (Node/Param): object that is being updated
+            obj (Node/Param): object that is being updated
             object_type (NODE/PARAM) object type that is being updated
             old_name (str): old name
             new_name (str): new name
@@ -173,7 +192,7 @@ class NodeViewWidget(ShojiModelViewWidget):
 
         # need to change the display name for the param as it has a special display name
         if object_type == PARAM:
-            old_name = paramutils.getParamDisplayName(object).replace(new_name.split(".")[-1], old_name.split(".")[-1])
+            old_name = paramutils.getParamDisplayName(obj).replace(new_name.split(".")[-1], old_name.split(".")[-1])
 
         # find matches and update
         indexes = self.findItems(old_name, match_type=Qt.MatchExactly)
@@ -185,7 +204,7 @@ class NodeViewWidget(ShojiModelViewWidget):
                     item.setArg("name", new_name)
                 if object_type == PARAM:
                     item.setArg("param", new_name)
-                    item.setArg("name", paramutils.getParamDisplayName(object))
+                    item.setArg("name", paramutils.getParamDisplayName(obj))
 
 
 class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):

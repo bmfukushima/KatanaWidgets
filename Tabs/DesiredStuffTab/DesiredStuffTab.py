@@ -79,6 +79,8 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         Utils.EventModule.RegisterCollapsedHandler(self.desiredStuffFrame().populate, 'nodegraph_setRootNode')
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'node_setName')
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'parameter_setName')
+        Utils.EventModule.RegisterCollapsedHandler(self.updateObjectDeleteEvent, 'parameter_deleteChild')
+        Utils.EventModule.RegisterCollapsedHandler(self.updateObjectDeleteEvent, 'node_delete')
 
         self.desiredStuffFrame().populate()
 
@@ -113,6 +115,28 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         return [child.getName() for child in DesiredStuffTab.desiredStuffParam().getChildren()]
 
     """ EVENTS  """
+    def updateObjectDeleteEvent(self, args):
+        """ Updates the metadata when a node/parameter has been deleted"""
+        for arg in args:
+            # get object name
+            if arg[0] == "node_delete":
+                object_name = arg[2]["node"].getName().replace("__XX_DELETED_", "")
+
+            if arg[0] == "parameter_deleteChild":
+                param_name = arg[2]["childName"]
+                param_full_path = arg[2]["paramName"] + "." + param_name
+                node_name = arg[2]["node"].getName()
+                object_name = f"{param_name} | {node_name} | {param_full_path}"
+
+            # update project settings meta data
+            for child in DesiredStuffTab.desiredStuffParam().getChildren():
+                data = json.loads(child.getValue(0))
+                for i, object_data in enumerate(data["data"]):
+                    if object_data["name"] == object_name:
+                        del data["data"][i]
+
+                child.setValue(json.dumps(data), 0)
+
     def updateObjectNameEvent(self, args):
         """ Updates the desired objects names when a nodes name is changed """
         for arg in args:
@@ -130,11 +154,11 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
                 new_name = f"{parent_path}.{new_name}"
                 self.updateObjectName(param, PARAM, old_name, new_name)
 
-    def updateObjectName(self, object, object_type, old_name, new_name):
+    def updateObjectName(self, obj, object_type, old_name, new_name):
         """ Updates the metadata when a desired objects name has changed
 
         Args:
-            object (Node/Param): object that is being updated
+            obj (Node/Param): object that is being updated
             object_type (NODE/PARAM) object type that is being updated
             old_name (str): old name
             new_name (str): new name
@@ -145,14 +169,14 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         # update project settings meta data
         for child in DesiredStuffTab.desiredStuffParam().getChildren():
             data = json.loads(child.getValue(0))
-            for obj in data["data"]:
+            for object_data in data["data"]:
                 try:
-                    if old_name == obj[object_type]:
-                        obj[object_type] = new_name
+                    if old_name == object_data[object_type]:
+                        object_data[object_type] = new_name
                         if object_type == NODE:
-                            obj["name"] = new_name
+                            object_data["name"] = new_name
                         if object_type == PARAM:
-                            obj["name"] = paramutils.getParamDisplayName(object)
+                            object_data["name"] = paramutils.getParamDisplayName(obj)
 
                 except KeyError:
                     """ Need to except a key error here, as the node objects do not
@@ -610,3 +634,9 @@ class DesirableStuffView(AbstractDragDropListView):
 
         return AbstractDragDropListView.dropEvent(self, event)
 
+
+w = DesiredStuffTab()
+w.show()
+w.resize(512, 512)
+from cgwidgets.utils import centerWidgetOnCursor
+centerWidgetOnCursor(w)
