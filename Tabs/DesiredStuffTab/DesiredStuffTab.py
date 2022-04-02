@@ -35,8 +35,8 @@ Hierarchy:
 Data:
 KatanaBebop.DesirableStuff.DesirableGroupName
     {data: [
-        {type: NODE/PARAM, node: node.getName(), param:param.getFullName()},
-        {type: NODE/PARAM, node: node.getName(), param:param.getFullName()}
+        {type:NODE/PARAM.type(), object_type: NODE/PARAM, node: node.getName(), param:param.getFullName()},
+        {type:NODE/PARAM.type(), object_type: NODE/PARAM, node: node.getName(), param:param.getFullName()}
     ]}
 """
 """
@@ -76,7 +76,8 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         QVBoxLayout(self)
         self.layout().addWidget(self._desired_stuff_frame)
         Utils.EventModule.RegisterCollapsedHandler(self.desiredStuffFrame().populate, 'nodegraph_setRootNode')
-        Utils.EventModule.RegisterCollapsedHandler(self.updateDesiredNodeNames, 'node_setName')
+        Utils.EventModule.RegisterCollapsedHandler(self.updateDesiredNamesEvent, 'node_setName')
+        Utils.EventModule.RegisterCollapsedHandler(self.updateDesiredNamesEvent, 'parameter_setName')
 
         self.desiredStuffFrame().populate()
 
@@ -109,23 +110,61 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         Returns (list): of strings """
         return [child.getName() for child in DesiredStuffTab.desiredStuffParam().getChildren()]
 
-    def updateDesiredNodeNames(self, args):
+    def updateDesiredNamesEvent(self, args):
         """ Updates the desired objects names when a nodes name is changed """
         for arg in args:
             # get data
-            node = arg[2]["node"]
             old_name = arg[2]["oldName"]
             new_name = arg[2]["newName"]
+            if arg[0] == "node_setName":
+                node = arg[2][NODE]
+                self.updateDesiredNames(node, NODE, old_name, new_name)
 
-            for child in DesiredStuffTab.desiredStuffParam().getChildren():
-                data = json.loads(child.getValue(0))
-                for obj in data["data"]:
-                    if old_name == obj["node"]:
-                        obj["node"] = new_name
+            if arg[0] == "parameter_setName":
+                param = arg[2][PARAM]
+                parent_path = ".".join(param.getFullName().split(".")[:-1])
+                old_name = f"{parent_path}.{old_name}"
+                new_name = f"{parent_path}.{new_name}"
+                self.updateDesiredNames(param, PARAM, old_name, new_name)
 
-                child.setValue(json.dumps(data), 0)
+    def updateDesiredNames(self, object, object_type, old_name, new_name):
 
-            self.desiredStuffFrame().updateDelegateDisplay()
+        # update project settings meta data
+        for child in DesiredStuffTab.desiredStuffParam().getChildren():
+            data = json.loads(child.getValue(0))
+            for obj in data["data"]:
+                try:
+                    if old_name == obj[object_type]:
+                        obj[object_type] = new_name
+                        if object_type == NODE:
+                            obj["name"] = new_name
+                        if object_type == PARAM:
+                            obj["name"] = paramutils.getParamDisplayName(object)
+
+                except KeyError:
+                    """ Need to except a key error here, as the node objects do not
+                    have the PARAM key"""
+                    pass
+
+            child.setValue(json.dumps(data), 0)
+
+        # update display
+        active_widgets = self.desiredStuffFrame().activeDelegateWidgets()
+        if object_type == PARAM:
+            old_name = paramutils.getParamDisplayName(object).replace(new_name.split(".")[-1], old_name.split(".")[-1])
+
+        for widget in active_widgets:
+            # need to change the display name for the param as it has a special display name
+            indexes = widget.findItems(old_name, match_type=Qt.MatchExactly)
+            for index in indexes:
+                item = index.internalPointer()
+                if item:
+                    if object_type == NODE:
+                        item.setArg("node", new_name)
+                        item.setArg("name", new_name)
+                    if object_type == PARAM:
+                        item.setArg("param", new_name)
+                        item.setArg("name", paramutils.getParamDisplayName(object))
 
     def desiredStuffFrame(self):
         return self._desired_stuff_frame
@@ -360,7 +399,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         Returns (list): of nodes"""
         _desired_nodes = []
         for item in self.desiredData():
-            if item["type"] == NODE:
+            if item["object_type"] == NODE:
                 _desired_nodes.append(NodegraphAPI.GetNode(item["node"]))
         return _desired_nodes
 
@@ -370,7 +409,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         Returns (list): of params"""
         _desired_params = []
         for item in self.desiredData():
-            if item["type"] == PARAM:
+            if item["object_type"] == PARAM:
                 node = NodegraphAPI.GetNode(item["node"])
                 param_path = ".".join(item["param"].split(".")[1:])
                 param = node.getParameter(param_path)
@@ -379,7 +418,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
 
     def addDesirableNodeData(self, node):
         """ Adds a desirable node to the internal data structures"""
-        data = {"type": NODE, "node":node.getName()}
+        data = {"name":node.getName(), "object_type": NODE, "node":node.getName()}
         self.desiredData().append(data)
 
         desirable_data = json.loads(self.param().getValue(0))
@@ -390,7 +429,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
 
     def addDesirableParamData(self, param, node):
         """ Adds a desirable param to the internal data structures"""
-        data = {"type": PARAM, "param":param.getFullName(), "node":node}
+        data = {"name":paramutils.getParamDisplayName(param), "object_type": PARAM, "param":param.getFullName(), "node":node}
         self.desiredData().append(data)
 
         desirable_data = json.loads(self.param().getValue(0))
@@ -399,22 +438,23 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         self.param().setValue(json.dumps(desirable_data), 0)
 
     """ DESIRABLE """
-    def setDesirability(self, obj, enabled, desirable_type):
+    def setDesirability(self, obj, enabled, object_type):
         """ Sets a objs flag to be desirable
 
         Args:
             obj (Node/Param): to make desirable
             enabled (bool): how $3xy this obj is
-            desirable_type (DesiredStuffTab.TYPE): desirable_type to do
+            object_type (DesiredStuffTab.TYPE): object_type to do
+                NODE | PARAM
         """
         if enabled:
-            if desirable_type == NODE:
+            if object_type == NODE:
                 if obj not in self.desiredNodes():
                     node_view_widget = getWidgetAncestor(self, NodeViewWidget)
                     node_view_widget.createNewIndexFromNode(obj)
                     self.addDesirableNodeData(obj)
 
-            if desirable_type == PARAM:
+            if object_type == PARAM:
                 if obj not in self.desiredParams():
                     node_view_widget = getWidgetAncestor(self, NodeViewWidget)
                     node_view_widget.createNewIndexFromParam(obj)
@@ -425,6 +465,30 @@ class DesirableStuffShojiPanel(NodeViewWidget):
 
     def updateDesiredDataFromParam(self):
         pass
+
+    """ UTILS """
+    def doesItemExist(self, obj_data):
+        """ Determines if the object data provided exists
+
+        Args:
+            obj_data (dict): data to be checked
+                {name:obj.getName(), type:NODE/PARAM.type(), object_type: NODE/PARAM, node: node.getName(), param:param.getFullName()},
+        """
+        for index in self.getAllIndexes():
+            item = index.internalPointer()
+            is_match = True
+            for arg in ["name", "type", "object_type", "node"]:
+                try:
+                    if item.getArg(arg) != obj_data[arg]:
+                        is_match = False
+                        break
+                except KeyError:
+                    pass
+
+            if is_match:
+                return True
+
+        return False
 
     """ EVENTS """
     def purgeUndesirableObject(self, item):
@@ -451,17 +515,17 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         # remove data
         for item in items:
             if item.objectType() == NODE:
-                _temp_data = {"type": NODE, "node": item.name()}
+                _temp_data = {"object_type": NODE, "node": item.name()}
             if item.objectType() == PARAM:
-                _temp_data = {"type": PARAM, "param": item.name(), "node": item.getArg("node")}
+                _temp_data = {"object_type": PARAM, "param": item.name(), "node": item.getArg("node")}
             data["data"].remove(_temp_data)
 
         # reinsert data
         for item in items:
             if item.objectType() == NODE:
-                new_data = {"type": NODE, "node": item.name()}
+                new_data = {"object_type": NODE, "node": item.name()}
             if item.objectType() == PARAM:
-                new_data = {"type": PARAM, "param": item.name(), "node": item.getArg("node")}
+                new_data = {"object_type": PARAM, "param": item.name(), "node": item.getArg("node")}
             data["data"].insert(row, new_data)
 
         # save data
@@ -491,24 +555,15 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         this._desired_data = []
         desired_data = reversed(json.loads(this.param().getValue(0))["data"])
         for obj_data in desired_data:
-            _exists = False
-            for index in this.getAllIndexes():
-                item = index.internalPointer()
-                for arg in ["name", "type", "object_type", "node"]:
-                    try:
-                        if item.getArg(arg) == obj_data[arg]:
-                            _exists = True
-                            break
-                    except KeyError:
-                        pass
+            exists = this.doesItemExist(obj_data)
 
-            if not _exists:
-                if obj_data["type"] == NODE:
+            if not exists:
+                if obj_data["object_type"] == NODE:
                     obj = NodegraphAPI.GetNode(obj_data["node"])
 
                     this.createNewIndexFromNode(obj)
 
-                if obj_data["type"] == PARAM:
+                if obj_data["object_type"] == PARAM:
                     node = NodegraphAPI.GetNode(obj_data["node"])
                     param = ".".join(obj_data["param"].split(".")[1:])
                     obj = node.getParameter(param)
@@ -530,9 +585,7 @@ class DesirableStuffView(AbstractDragDropListView):
 
         if mimedata.hasFormat("parameter/path"):
             event.accept()
-        #
-        # for format in mimedata.formats():
-        #     print(format, mimedata.data(format).data())
+
         return AbstractDragDropListView.dragEnterEvent(self, event)
 
     def dropEvent(self, event):
@@ -560,3 +613,9 @@ class DesirableStuffView(AbstractDragDropListView):
             parent_widget.setDesirability(param, True, PARAM)
 
         return AbstractDragDropListView.dropEvent(self, event)
+
+w = DesiredStuffTab()
+w.show()
+w.resize(512, 512)
+from cgwidgets.utils import centerWidgetOnCursor
+centerWidgetOnCursor(w)

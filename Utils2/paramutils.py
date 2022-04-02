@@ -146,3 +146,19 @@ def getParameterMapFromNode(node):
             column_data[param.getName()] = param.getValue(0)
 
         return column_data
+
+
+def getParamDisplayName(param):
+    """ Returns a human readible parameter name
+
+    Args:
+        param (param):
+
+    Returns (str): <param name> | <node name | <full path>
+    """
+
+    param_name = param.getName()
+    param_full_path = param.getFullName()
+    node_name = param.getNode().getName()
+
+    return f"{param_name} | {node_name} | {param_full_path}"

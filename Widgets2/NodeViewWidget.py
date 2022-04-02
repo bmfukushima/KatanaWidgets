@@ -11,7 +11,7 @@ from cgwidgets.widgets import ShojiModelViewWidget, ShojiModelItem
 from Katana import UI4, NodegraphAPI, Utils
 
 from Widgets2 import AbstractParametersDisplayWidget
-from Utils2 import nodeutils, NODE, PARAM
+from Utils2 import nodeutils, paramutils, NODE, PARAM
 
 
 class NodeViewWidgetItem(ShojiModelItem):
@@ -73,6 +73,7 @@ class NodeViewWidget(ShojiModelViewWidget):
         node = NodegraphAPI.GetNode(node_name)
         return node
 
+
     def createNewIndexFromNode(self, node, parent_index=QModelIndex(), row=0):
         """
         Creates a new index in the model for the node specified.
@@ -102,7 +103,7 @@ class NodeViewWidget(ShojiModelViewWidget):
         new_index = self.insertShojiWidget(
             0,
             column_data={
-                "name": param.getFullName(),
+                "name": paramutils.getParamDisplayName(param),
                 "type": param.getType(),
                 "node": param.getNode().getName(),
                 "object_type": PARAM,
