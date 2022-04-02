@@ -46,8 +46,6 @@ TODO:
         --> updateDesiredDataFromParam
         - make sure this stays in sync when doing the drag/drop/delete/etc
             - node/parameter reparent
-            - node/parameter delete
-        
 """
 import json
 

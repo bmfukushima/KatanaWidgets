@@ -50,9 +50,9 @@ class NodeTreeEditor(AbstractSuperToolEditor):
             self.__initializing = False
         return return_val
 
+
 class NodeTreeMainWidget(NodeViewWidget):
     """
-
     Attributes:
         node (NodeTreeNode): This node
     """
@@ -495,8 +495,8 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
             for node_name in nodes_list:
                 # get node
                 node = NodegraphAPI.GetNode(node_name)
-
-                node_tree_widget.insertNode(node, parent_node)
+                if node != node_tree_widget.node():
+                    node_tree_widget.insertNode(node, parent_node)
 
             # reconnect all nodes inside of the group
             node_list = node_tree_widget.getChildNodeListFromItem(node_tree_widget.rootItem())
