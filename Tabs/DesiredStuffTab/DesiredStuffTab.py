@@ -320,6 +320,8 @@ class DesirableStuffFrame(ShojiModelViewWidget):
         """
         name = self._create_desirable_group_input_widget.text()
         if name:
+            if not name[0].isalpha():
+                name = f"_{name}"
             # setup katana params
             param = DesiredStuffTab.desiredStuffParam()
             new_param = param.createChildString(name, json.dumps({"data": []}))
@@ -627,6 +629,8 @@ class DesirableStuffView(AbstractDragDropListView):
 
             # param = eval(mimedata.data('python/text').decode("utf-8").data())
             param = eval(str(mimedata.data('python/text').data(), encoding='utf-8'))
+            if param.getName() == "value":
+                param = param.getParent()
             parent_widget = getWidgetAncestor(self, DesirableStuffShojiPanel)
             parent_widget.setDesirability(param, True, PARAM)
 
