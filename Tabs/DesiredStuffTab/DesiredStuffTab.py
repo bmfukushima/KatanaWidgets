@@ -575,14 +575,15 @@ class DesirableStuffShojiPanel(NodeViewWidget):
             if not exists:
                 if obj_data["object_type"] == NODE:
                     obj = NodegraphAPI.GetNode(obj_data["node"])
-
-                    this.createNewIndexFromNode(obj)
+                    if obj:
+                        this.createNewIndexFromNode(obj)
 
                 if obj_data["object_type"] == PARAM:
                     node = NodegraphAPI.GetNode(obj_data["node"])
                     param = ".".join(obj_data["param"].split(".")[1:])
                     obj = node.getParameter(param)
-                    this.createNewIndexFromParam(obj)
+                    if obj:
+                        this.createNewIndexFromParam(obj)
 
 
 class DesirableStuffView(AbstractDragDropListView):
