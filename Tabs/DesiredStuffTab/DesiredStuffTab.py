@@ -59,7 +59,7 @@ from cgwidgets.settings import attrs
 
 from Katana import UI4 , NodegraphAPI, Utils
 from Widgets2 import NodeViewWidget
-from Utils2 import nodeutils, getFontSize, paramutils, NODE, PARAM
+from Utils2 import nodeutils, getFontSize, paramutils, NODE, PARAM, getValidName
 
 
 class DesiredStuffTab(UI4.Tabs.BaseTab):
@@ -320,8 +320,7 @@ class DesirableStuffFrame(ShojiModelViewWidget):
         """
         name = self._create_desirable_group_input_widget.text()
         if name:
-            if not name[0].isalpha():
-                name = f"_{name}"
+            name = getValidName(name)
             # setup katana params
             param = DesiredStuffTab.desiredStuffParam()
             new_param = param.createChildString(name, json.dumps({"data": []}))
@@ -637,8 +636,8 @@ class DesirableStuffView(AbstractDragDropListView):
         return AbstractDragDropListView.dropEvent(self, event)
 
 
-w = DesiredStuffTab()
-w.show()
-w.resize(512, 512)
-from cgwidgets.utils import centerWidgetOnCursor
-centerWidgetOnCursor(w)
+# w = DesiredStuffTab()
+# w.show()
+# w.resize(512, 512)
+# from cgwidgets.utils import centerWidgetOnCursor
+# centerWidgetOnCursor(w)

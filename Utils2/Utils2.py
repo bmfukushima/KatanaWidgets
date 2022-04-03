@@ -1,5 +1,7 @@
 import math
 import os
+import re
+
 try:
     from Katana import Utils, UI4
 except ModuleNotFoundError:
@@ -9,9 +11,7 @@ NODE = "node"
 PARAM = "param"
 
 def createValueParam(self, name):
-    """
-    Create a katana param
-    """
+    """Create a katana param"""
     factory = UI4.FormMaster.KatanaFactory.ParameterWidgetFactory
     locationPolicy = UI4.FormMaster.CreateParameterPolicy(None, self.node.getParameter(name))
     w = factory.buildWidget(self, locationPolicy)
@@ -50,6 +50,10 @@ def convertStringBoolToBool(string_bool):
         return False
     else:
         return False
+
+
+def getValidName(name):
+    return re.sub('(^[0-9]+|[^a-zA-Z0-9_])', '_', name)
 
 
 def mkdirRecursive(path):
