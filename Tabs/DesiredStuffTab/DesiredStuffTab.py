@@ -516,14 +516,9 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         Args:
             item (ShojiModelItem): item currently selected"""
         data = self.paramData()
-
         for obj in data["data"]:
-            if item.objectType() == NODE:
-                if item.name() == obj["node"]:
-                    data["data"].remove(obj)
-            if item.objectType() == PARAM:
-                if item.name() == obj["param"]:
-                    data["data"].remove(obj)
+            if item.name() == obj["name"]:
+                data["data"].remove(obj)
 
         self.param().setValue(json.dumps(data), 0)
 
@@ -533,18 +528,20 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         data = self.paramData()
         # remove data
         for item in items:
+            item_data = item.columnData()
+            print(f"item == {item_data}")
             if item.objectType() == NODE:
-                _temp_data = {"object_type": NODE, "node": item.name()}
+                _temp_data = {"name":item.name(), "object_type": NODE, "node": item.getArg("node")}
             if item.objectType() == PARAM:
-                _temp_data = {"object_type": PARAM, "param": item.name(), "node": item.getArg("node")}
+                _temp_data = {"name":item.name(), "object_type": PARAM, "param": item.getArg("param"), "node": item.getArg("node")}
             data["data"].remove(_temp_data)
 
         # reinsert data
         for item in items:
             if item.objectType() == NODE:
-                new_data = {"object_type": NODE, "node": item.name()}
+                new_data = {"name":item.name(), "object_type": NODE, "node": item.getArg("node")}
             if item.objectType() == PARAM:
-                new_data = {"object_type": PARAM, "param": item.name(), "node": item.getArg("node")}
+                new_data = {"name":item.name(), "object_type": PARAM, "param": item.getArg("param"), "node": item.getArg("node")}
             data["data"].insert(row, new_data)
 
         # save data
@@ -636,8 +633,9 @@ class DesirableStuffView(AbstractDragDropListView):
         return AbstractDragDropListView.dropEvent(self, event)
 
 
+# from cgwidgets.utils import centerWidgetOnCursor, setAsAlwaysOnTop
 # w = DesiredStuffTab()
+# setAsAlwaysOnTop(w)
 # w.show()
 # w.resize(512, 512)
-# from cgwidgets.utils import centerWidgetOnCursor
 # centerWidgetOnCursor(w)

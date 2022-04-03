@@ -109,8 +109,10 @@ class NodeViewWidget(ShojiModelViewWidget):
             column_data={
                 "name": paramutils.getParamDisplayName(param),
                 "type": param.getType(),
-                "node": param.getNode().getName(),
                 "object_type": PARAM,
+                "node": param.getNode().getName(),
+                "param": param.getFullName(),
+
             },
             parent=parent_index,
             is_enableable=False,
