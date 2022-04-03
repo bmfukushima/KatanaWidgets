@@ -529,7 +529,6 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         # remove data
         for item in items:
             item_data = item.columnData()
-            print(f"item == {item_data}")
             if item.objectType() == NODE:
                 _temp_data = {"name":item.name(), "object_type": NODE, "node": item.getArg("node")}
             if item.objectType() == PARAM:
