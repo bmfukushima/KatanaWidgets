@@ -148,6 +148,7 @@ class NodeViewWidget(ShojiModelViewWidget):
     def updateObjectDeleteEvent(self, args):
         """ When a node/parameter is deleted, this will remove the item from the display"""
         for arg in args:
+            print(arg)
             if arg[0] == "node_delete":
                 object_name = arg[2]["node"].getName().replace("__XX_DELETED_", "")
 

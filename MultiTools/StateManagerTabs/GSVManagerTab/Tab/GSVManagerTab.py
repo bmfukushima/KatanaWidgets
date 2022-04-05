@@ -700,7 +700,6 @@ class DisplayEditableOptionsWidget(ModelViewWidget):
         # get all GSVs
         gsv_keys = gsvutils.getAllGSV(return_as=gsvutils.STRING)
         gsv = edit_widget.text()
-
         # if GSV is valid, populate all options
         if gsv in gsv_keys:
             options_list = gsvutils.getGSVOptions(gsv, return_as=gsvutils.PARAMETER)
@@ -1596,3 +1595,10 @@ class GSVEvent(AbstractScriptInputWidget):
     def setIsEditingActive(self, enabled):
         self._is_editing_active = enabled
 
+
+# from cgwidgets.utils import centerWidgetOnCursor, setAsAlwaysOnTop
+# w = GSVManagerTab()
+# setAsAlwaysOnTop(w)
+# w.show()
+# w.resize(512,512)
+# centerWidgetOnCursor(w)

@@ -50,6 +50,7 @@ def isGSVOptionEvent(arg):
     root_node = NodegraphAPI.GetRootNode()
     if arg[2]['node'] != root_node: return False
     if "param" not in list(arg[2].keys()): return False
+    if not arg[2]['param'].getName() == "value": return False
     if not arg[2]['param'].getParent(): return False
     if not arg[2]['param'].getParent().getParent(): return False
     if arg[2]['param'].getParent().getParent() != getVariablesParameter(): return False

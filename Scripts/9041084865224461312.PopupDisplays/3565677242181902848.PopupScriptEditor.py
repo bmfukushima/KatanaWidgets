@@ -9,7 +9,7 @@ class ScriptEditorWidget(QFrame):
         self.setObjectName("python_widget")
 
         # create python widget
-        script_editor = UI4.App.Tabs.CreateTab('Script Editor', None)
+        script_editor = UI4.App.Tabs.CreateTab('Script Manager', None)
         self._command_widget = script_editor.getWidget().scriptEditorWidget().pythonWidget().codeWidget()
 
         # setup layout

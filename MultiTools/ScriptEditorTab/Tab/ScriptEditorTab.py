@@ -38,7 +38,7 @@ class KatanaPythonEditorWidget(AbstractPythonEditor):
 
 class ScriptEditorTab(UI4.Tabs.BaseTab):
     """Main convenience widget for displaying GSV manipulators to the user."""
-    NAME = "Script Editor"
+    NAME = "Script Manager"
     SCRIPTS_VARIABLE = "KATANABEBOPSCRIPTS"
 
     def __init__(self, parent=None):
