@@ -33,7 +33,7 @@ class NodeViewWidgetItem(ShojiModelItem):
 
     def param(self):
         if self.objectType() == PARAM:
-            node = NodegraphAPI.getNode(self.getArg("node"))
+            node = NodegraphAPI.GetNode(self.getArg("node"))
             param_path = ".".join(self.getArg("param").split(".")[1:])
             return node.getParameter(param_path)
 
@@ -94,29 +94,31 @@ class NodeViewWidget(ShojiModelViewWidget):
 
         return new_index
 
-    def createNewIndexFromParam(self, param, parent_index=QModelIndex()):
+    def createNewIndexFromParam(self, param, name=None, parent_index=QModelIndex()):
         """
         Creates a new index in the model for the node specified.
         Args:
             node (Node): to create index for
+            name (str): display name of param
             parent_index (QModelIndex): index to create index as child of
 
         Returns (QModelIndex): of newly created index
 
         """
+        if not name:
+            name = paramutils.getParamDisplayName(param)
         new_index = self.insertShojiWidget(
             0,
             column_data={
-                "name": paramutils.getParamDisplayName(param),
+                "name": name,
                 "type": param.getType(),
                 "object_type": PARAM,
                 "node": param.getNode().getName(),
-                "param": param.getFullName(),
+                "param": ".".join(param.getFullName().split(".")[1:]),
 
             },
             parent=parent_index,
-            is_enableable=False,
-            is_editable=False)
+            is_enableable=False)
 
         return new_index
 
@@ -141,10 +143,7 @@ class NodeViewWidget(ShojiModelViewWidget):
             item.setArg("node", new_name)
 
         if item.objectType() == PARAM:
-            item.columnData()["name"] = old_value
-            # todo param name change
-            # could also just disable this in the item...
-            pass
+            item.setName(new_value)
 
     def updateObjectDeleteEvent(self, args):
         """ When a node/parameter is deleted, this will remove the item from the display"""
@@ -152,16 +151,24 @@ class NodeViewWidget(ShojiModelViewWidget):
             if arg[0] == "node_delete":
                 object_name = arg[2]["node"].getName().replace("__XX_DELETED_", "")
 
+                # delete node items
+                indexes = self.findItems(object_name, Qt.MatchExactly)
+
+                for index in indexes:
+                    item = index.internalPointer()
+                    self.deleteItem(item)
+
             if arg[0] == "parameter_deleteChild":
                 param_name = arg[2]["childName"]
-                param_full_path = arg[2]["paramName"] + "." + param_name
+                param_full_path = ".".join(arg[2]["paramName"].split(".")[1:]) + "." + param_name
                 node_name = arg[2]["node"].getName()
-                object_name = f"{param_name} | {node_name} | {param_full_path}"
 
-            indexes = self.findItems(object_name, Qt.MatchExactly)
-            for index in indexes:
-                item = index.internalPointer()
-                self.deleteItem(item)
+                # delete param items
+                for index in self.getAllIndexes():
+                    item = index.internalPointer()
+                    if item.hasArg("param"):
+                        if item.getArg("param") == param_full_path and item.getArg("node") == node_name:
+                            self.deleteItem(item)
 
     def updateObjectNameEvent(self, args):
         """ Updates the desired objects names when a nodes name is changed """
@@ -175,10 +182,9 @@ class NodeViewWidget(ShojiModelViewWidget):
 
             if arg[0] == "parameter_setName":
                 param = arg[2][PARAM]
-                parent_path = ".".join(param.getFullName().split(".")[:-1])
-                old_name = f"{parent_path}.{old_name}"
-                new_name = f"{parent_path}.{new_name}"
-                self.updateObjectName(param, PARAM, old_name, new_name)
+                param_path = ".".join(param.getFullName().split(".")[1:])
+                old_name = param_path.replace(new_name, old_name)
+                self.updateObjectName(param, PARAM, old_name, param_path)
 
     def updateObjectName(self, obj, object_type, old_name, new_name):
         """ Updates the metadata when a desired objects name has changed
@@ -194,8 +200,8 @@ class NodeViewWidget(ShojiModelViewWidget):
         """
 
         # need to change the display name for the param as it has a special display name
-        if object_type == PARAM:
-            old_name = paramutils.getParamDisplayName(obj).replace(new_name.split(".")[-1], old_name.split(".")[-1])
+        # if object_type == PARAM:
+        #     old_name = paramutils.getParamDisplayName(obj).replace(new_name.split(".")[-1], old_name.split(".")[-1])
 
         # find matches and update
         indexes = self.findItems(old_name, match_type=Qt.MatchExactly)
@@ -207,7 +213,7 @@ class NodeViewWidget(ShojiModelViewWidget):
                     item.setArg("name", new_name)
                 if object_type == PARAM:
                     item.setArg("param", new_name)
-                    item.setArg("name", paramutils.getParamDisplayName(obj))
+                    # item.setArg("name", paramutils.getParamDisplayName(obj))
 
 
 class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
@@ -235,7 +241,8 @@ class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
             if item.columnData()["object_type"] == NODE:
                 node_list = [NodegraphAPI.GetNode(item.columnData()["name"])]
             if item.columnData()["object_type"] == PARAM:
-                node = item.columnData()["node"]
-                param = ".".join(item.columnData()["name"].split(".")[1:])
+                node = item.getArg("node")
+                # param = ".".join(item.getArg("param").split(".")[1:])
+                param = item.getArg("param")
                 node_list = [NodegraphAPI.GetNode(node).getParameter(param)]
             this.populateParameters(node_list, hide_title=False)

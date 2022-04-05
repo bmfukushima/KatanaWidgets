@@ -46,6 +46,7 @@ TODO:
         --> updateDesiredDataFromParam
         - make sure this stays in sync when doing the drag/drop/delete/etc
             - node/parameter reparent
+
 """
 import json
 
@@ -173,8 +174,9 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
                         object_data[object_type] = new_name
                         if object_type == NODE:
                             object_data["name"] = new_name
+                        # todo this needs to be smarter
                         if object_type == PARAM:
-                            object_data["name"] = paramutils.getParamDisplayName(obj)
+                            object_data["name"] = new_name
 
                 except KeyError:
                     """ Need to except a key error here, as the node objects do not
@@ -374,10 +376,40 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         # for some reason I have to add this here.. instead of in the base widget...
         self.addContextMenuEvent("Go To Node", self.goToNode)
         self.addContextMenuEvent("Go To Param", self.goToParam, {"object_type":PARAM})
+        self.setHeaderItemTextChangedEvent(self.objectNameChangedEvent)
 
         self.delegateWidget().setObjectName("Panel")
 
     """ EVENTS """
+    def objectNameChangedEvent(self, item, old_value, new_value, column=None):
+        """ When the user updates an items name, this updates the metadata on the node
+
+        Note:
+            node name change is not handled here, and is handled in an event handler
+
+        Args:
+              item (NodeViewItem):
+              old_value (str):
+              new_value (str):
+        """
+        if item.objectType() == PARAM:
+            # get data
+            panel_name = self.name()
+            param = DesiredStuffTab.desiredStuffParam().getChild(panel_name)
+            data = json.loads(param.getValue(0))
+
+            # update data
+            for object_data in data["data"]:
+                # if object_data["name"] != old_value: continue
+                if object_data["object_type"] != PARAM: continue
+                if object_data["param"] != item.getArg("param"): continue
+                if object_data["node"] != item.getArg("node"): continue
+                object_data["name"] = new_value
+
+            param.setValue(json.dumps(data), 0)
+
+        return NodeViewWidget.objectNameChangedEvent(self, item, old_value, new_value, column=None)
+
     def goToNode(self, index, selected_indexes):
         item = index.internalPointer()
 
@@ -448,7 +480,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
 
     def addDesirableParamData(self, param, node):
         """ Adds a desirable param to the internal data structures"""
-        data = {"name":paramutils.getParamDisplayName(param), "object_type": PARAM, "param":param.getFullName(), "node":node}
+        data = {"name":paramutils.getParamDisplayName(param), "object_type": PARAM, "param":".".join(param.getFullName().split(".")[1:]), "node":node}
         self.desiredData().append(data)
 
         desirable_data = json.loads(self.param().getValue(0))
@@ -580,10 +612,9 @@ class DesirableStuffShojiPanel(NodeViewWidget):
 
                 if obj_data["object_type"] == PARAM:
                     node = NodegraphAPI.GetNode(obj_data["node"])
-                    param = ".".join(obj_data["param"].split(".")[1:])
-                    obj = node.getParameter(param)
+                    obj = node.getParameter(obj_data["param"])
                     if obj:
-                        this.createNewIndexFromParam(obj)
+                        this.createNewIndexFromParam(obj, name=obj_data["name"])
 
 
 class DesirableStuffView(AbstractDragDropListView):
@@ -633,9 +664,9 @@ class DesirableStuffView(AbstractDragDropListView):
         return AbstractDragDropListView.dropEvent(self, event)
 
 
-# from cgwidgets.utils import centerWidgetOnCursor, setAsAlwaysOnTop
-# w = DesiredStuffTab()
-# setAsAlwaysOnTop(w)
-# w.show()
-# w.resize(512, 512)
-# centerWidgetOnCursor(w)
+from cgwidgets.utils import centerWidgetOnCursor, setAsAlwaysOnTop
+w = DesiredStuffTab()
+setAsAlwaysOnTop(w)
+w.show()
+w.resize(512, 512)
+centerWidgetOnCursor(w)
