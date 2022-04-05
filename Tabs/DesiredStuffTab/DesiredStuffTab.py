@@ -46,7 +46,6 @@ TODO:
         --> updateDesiredDataFromParam
         - make sure this stays in sync when doing the drag/drop/delete/etc
             - node/parameter reparent
-
 """
 import json
 
@@ -148,13 +147,13 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
 
             if arg[0] == "parameter_setName":
                 param = arg[2][PARAM]
-                parent_path = ".".join(param.getFullName().split(".")[:-1])
-                old_name = f"{parent_path}.{old_name}"
-                new_name = f"{parent_path}.{new_name}"
+                parent_path = ".".join(param.getFullName().split(".")[1:])
+                old_name = parent_path.replace(new_name, old_name)
+                new_name = parent_path
                 self.updateObjectName(param, PARAM, old_name, new_name)
 
     def updateObjectName(self, obj, object_type, old_name, new_name):
-        """ Updates the metadata when a desired objects name has changed
+        """ Updates the metadata when a desired objects name has changed in the Nodegraph
 
         Args:
             obj (Node/Param): object that is being updated
@@ -172,11 +171,14 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
                 try:
                     if old_name == object_data[object_type]:
                         object_data[object_type] = new_name
+                        # todo node display names
                         if object_type == NODE:
                             object_data["name"] = new_name
-                        # todo this needs to be smarter
+                            # object_data["node"] = new_name
+
                         if object_type == PARAM:
-                            object_data["name"] = new_name
+                            if obj.getNode().getName() == object_data["node"]:
+                                object_data["param"] = new_name
 
                 except KeyError:
                     """ Need to except a key error here, as the node objects do not
@@ -184,6 +186,23 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
                     pass
 
             child.setValue(json.dumps(data), 0)
+
+        # update active displays
+        for desirable_stuff_widget in self.desiredStuffFrame().activeDelegateWidgets():
+            should_update = False
+            # update internal data
+            for index in desirable_stuff_widget.getAllIndexes():
+                item = index.internalPointer()
+                if item.hasArg("param"):
+                    if item.getArg("param") == old_name and item.getArg("node") == obj.getNode().getName():
+                        item.setArg("param", new_name)
+                        should_update = True
+
+            # update display
+            if should_update:
+                # todo update the display
+                desirable_stuff_widget.updateDelegateDisplay()
+                Utils.EventModule.ProcessAllEvents()
 
     """ WIDGET"""
     def desiredStuffFrame(self):
@@ -376,6 +395,8 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         # for some reason I have to add this here.. instead of in the base widget...
         self.addContextMenuEvent("Go To Node", self.goToNode)
         self.addContextMenuEvent("Go To Param", self.goToParam, {"object_type":PARAM})
+        self.addContextMenuEvent("Print Info", self.printInfo)
+
         self.setHeaderItemTextChangedEvent(self.objectNameChangedEvent)
 
         self.delegateWidget().setObjectName("Panel")
@@ -396,9 +417,9 @@ class DesirableStuffShojiPanel(NodeViewWidget):
             # get data
             panel_name = self.name()
             param = DesiredStuffTab.desiredStuffParam().getChild(panel_name)
-            data = json.loads(param.getValue(0))
 
-            # update data
+            # update parameter data
+            data = json.loads(param.getValue(0))
             for object_data in data["data"]:
                 # if object_data["name"] != old_value: continue
                 if object_data["object_type"] != PARAM: continue
@@ -426,6 +447,11 @@ class DesirableStuffShojiPanel(NodeViewWidget):
             if item.getArg("object_type") == PARAM:
                 node = NodegraphAPI.GetNode(item.getArg("node"))
                 NodegraphAPI.SetNodeEdited(node, True, exclusive=True)
+
+    def printInfo(self, index, selected_indexes):
+        item = index.internalPointer()
+        if item:
+            print(item.columnData())
 
     """ PROPERTIES """
     def name(self):
