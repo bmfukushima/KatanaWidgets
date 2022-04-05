@@ -137,7 +137,8 @@ class NodeViewWidget(ShojiModelViewWidget):
             node.setName(new_value)
             Utils.EventModule.ProcessAllEvents()
             new_name = node.getName()
-            item.columnData()["name"] = new_name
+            item.setName(new_name)
+            item.setArg("node", new_name)
 
         if item.objectType() == PARAM:
             item.columnData()["name"] = old_value

@@ -263,7 +263,7 @@ class NodeTreeMainWidget(NodeViewWidget):
         self.copyNodes(copied_items)
 
         text_nodes = KatanaFile.Paste(self._nodes_to_be_copied, NodegraphAPI.GetRootNode())
-
+        Utils.EventModule.ProcessAllEvents()
         # create new indexes / update nodes parent
         for item, node in zip(duplicated_items, text_nodes):
             # get/update attrs
