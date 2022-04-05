@@ -440,8 +440,9 @@ class NodeTreeMainWidget(NodeViewWidget):
     def nodeDeleteEvent(self, item):
         """ delete event """
         node = self.getNodeFromItem(item)
-        nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
-        node.delete()
+        if node:
+            nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
+            node.delete()
 
     # def keyPressEvent(self, event):
     #     modifiers = event.modifiers()
