@@ -1,3 +1,6 @@
+""" TODO
+        disconnect last node"""
+
 from qtpy.QtWidgets import QVBoxLayout
 from qtpy.QtCore import Qt, QEvent, QModelIndex, QByteArray
 from qtpy.QtGui import QClipboard
@@ -89,7 +92,7 @@ class NodeTreeMainWidget(NodeViewWidget):
         self._node_create_widget = NodeTreeHeaderDelegate(self)
         self.addHeaderDelegateWidget([], self._node_create_widget, modifier=Qt.NoModifier, focus=True)
         self._node_create_widget.show()
-        self._node_create_widget.setUserFinishedEditingEvent(self.createNewNode)
+        self._node_create_widget.setUserFinishedEditingEvent(self.createNewNodeEvent)
         self._node_create_widget.setFixedHeight(getFontSize() * 2)
 
         # populate items
@@ -107,6 +110,13 @@ class NodeTreeMainWidget(NodeViewWidget):
     #     return NodeViewWidget.showEvent(self, event)
 
     def populate(self, node, parent_index=QModelIndex(), row=0):
+        """ Populates the index provided
+
+        Args:
+            node (node): to start populating from
+            parent_index (QModelIndex): index to be populated
+            row (int): row to insert the item at
+        """
         # create child item
         # create new item
         new_index = self.createNewIndexFromNode(node, parent_index=parent_index, row=row)
@@ -299,14 +309,34 @@ class NodeTreeMainWidget(NodeViewWidget):
         nodeutils.connectInsideGroup(node_list, parent_node)
 
     """ EVENTS """
-    def createNewNode(self, widget, value):
-        """ User creating new node """
+    def groupSelectedNodes(self):
+        """ Groups the currently selected items """
+        new_group = self.createNewNode("Group")
+        new_group_node, new_group_item = new_group[0], new_group[1]
+        selected_items = self.getAllSelectedItems()
+        self.cutNodes(selected_items)
+        self.pasteNodes(None, selected_items, new_group_item)
+
+        parent_index = self.model().getIndexFromItem(new_group_item)
+        for item in selected_items:
+            node = NodegraphAPI.GetNode(item.name())
+            self.populate(node, parent_index)
+
+        # connect internals
+        node_list = self.getChildNodeListFromItem(new_group_item)
+        nodeutils.connectInsideGroup(node_list, new_group_node)
+
+    def createNewNode(self, node_type):
+        """ User creating new node
+
+        Args:
+            node_type (str): node type to be created
+
+        Returns (node, item) || None
+        """
         # get node
         parent_index = self.getParentIndex()
         parent_node = self.getParentNodeFromIndex(parent_index)
-
-        # get node type to create
-        node_type = value
 
         # create node
         # # check if node type in nodes list...
@@ -350,15 +380,19 @@ class NodeTreeMainWidget(NodeViewWidget):
             node_list = self.getChildNodeListFromItem(group_item)
             nodeutils.connectInsideGroup(node_list, parent_node)
 
-            # reset widget
-            widget.setText('')
-            # widget.hide()
+            return (new_node, new_item)
 
+        else:
+            return None
+
+    def createNewNodeEvent(self, widget, node_type):
+        """ Creates a new node"""
+        new_node = self.createNewNode(node_type)
+        if new_node:
+            widget.setText("")
             # TODO Set focus back on header?
             # header_view_widget = self.headerViewWidget()
             # header_view_widget.setFocus()
-        else:
-            return
 
     def nodePickupEvent(self, items, model):
         # install all event filters
@@ -477,6 +511,13 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
         delegate = NodeTreeViewItemDelegateWidget(self)
         self.setItemDelegate(delegate)
         #self.setupCustomDelegate()
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_G:
+            main_widget = getWidgetAncestor(self, NodeTreeMainWidget)
+            main_widget.groupSelectedNodes()
+
+        return AbstractDragDropTreeView.keyPressEvent(self, event)
 
     def dragEnterEvent(self, event):
         mimedata = event.mimeData()
