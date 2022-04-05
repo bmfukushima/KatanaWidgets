@@ -65,8 +65,6 @@ def loadGlobalEvents(*args):
         katanaMainWindow().global_events_widget.loadEventsDataFromParam()
 
 def installGlobalEvents():
-    # createDataParamsOnSceneLoad()
-
     Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, cleanupGlobalEvents)
     Utils.EventModule.RegisterCollapsedHandler(createDataParamsOnSceneLoad, 'nodegraph_loadEnd')
     Utils.EventModule.RegisterCollapsedHandler(loadGlobalEvents, 'nodegraph_setRootNode')

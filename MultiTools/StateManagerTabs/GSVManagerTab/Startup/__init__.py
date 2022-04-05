@@ -174,26 +174,6 @@ def gsvCreateEvent(args):
         gsv = arg[2]["childParam"].getName()
         gsvutils.addGSVToAllViewTabs(gsv)
 
-# def updateGSVsOnSceneLoad(args):
-#     """ When a new scene is loaded, this will reset all of the GSVManager tabs to the new data"""
-#     # get all tabs
-#     gsv_manager_tabs = UI4.App.Tabs.GetTabsByType("GSV Manager")
-#
-#     # # for each tab, update tab data
-#     for gsv_manager in gsv_manager_tabs:
-#         print("============= gsv manager")
-#         print(gsv_manager)
-#         gsv_manager.eventsWidget().setNode(NodegraphAPI.GetRootNode())
-#         gsv_manager.update()
-
-    # update state managers
-    # for tab in UI4.App.Tabs.GetTabsByType("State Manager"):
-    #     print("========= state manager")
-    #     print(tab)
-    #     print(tab.viewWidget())
-    #     print(tab.viewWidget().gsvViewWidget())
-    #     tab.viewWidget().gsvViewWidget().update()
-
 
 def createDataParamsOnSceneLoad(*args, **kwargs):
     """Creates the parameters that store the event data on scene load/new scene """

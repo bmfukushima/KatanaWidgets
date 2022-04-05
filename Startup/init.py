@@ -36,7 +36,8 @@ installDefaultNodeColorsEventFilter()
 
 # GSV Manager
 from MultiTools.StateManagerTabs.GSVManagerTab import installGSVManagerEvents
-Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGSVManagerEvents)
+installGSVManagerEvents()
+#Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGSVManagerEvents)
 
 
 # State Manager
