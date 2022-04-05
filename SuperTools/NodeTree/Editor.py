@@ -277,6 +277,10 @@ class NodeTreeMainWidget(NodeViewWidget):
         parent_node = parent_item.node()
         text_nodes = KatanaFile.Paste(self._nodes_to_be_copied, parent_node)
 
+        # need to process events so that the names will be update
+        # without this, the names will fall out of sync
+        Utils.EventModule.ProcessAllEvents()
+
         # create new indexes / update nodes parent
         for item, node in zip(pasted_items, text_nodes):
             # get/update attrs
