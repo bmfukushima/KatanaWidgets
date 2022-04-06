@@ -5,6 +5,36 @@ try:
 except ModuleNotFoundError:
     pass
 
+
+def getConnectedNodeChildren(parent_node, port=0):
+    """ Looks at the children of a group node, and returns the connected tree from the provided port
+
+    Args:
+        parent_node (Node):
+        port (int): port to search from
+    """
+
+    # get attrs
+    in_port_name = parent_node.getInputPortByIndex(port).getName()
+    send_port = parent_node.getSendPort(in_port_name)
+    connected_ports = send_port.getConnectedPorts()
+    node_list = []
+
+    # run through childrens connections
+    if 0 < len(connected_ports):
+        child_node = send_port.getConnectedPorts()[0].getNode()
+        while child_node != parent_node:
+            node_list.append(child_node)
+            connected_port = child_node.getOutputPortByIndex(0).getConnectedPorts()[0]
+            if not connected_port:
+                break
+            child_node = connected_port.getNode()
+
+        node_list.reverse()
+
+    return node_list
+
+
 def getNodeAndAllDescendants(node, node_list=None):
     """ Gets the node and all of the descendants inside of it
 

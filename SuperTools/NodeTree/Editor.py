@@ -97,7 +97,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
         # populate items
         self.clearModel()
-        for node in self.node().getChildren():
+        for node in nodeutils.getConnectedNodeChildren(self.node()):
             self.populate(node)
 
         # events
@@ -106,7 +106,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
     def undoEnd(self, args):
         self.clearModel()
-        for node in self.node().getChildren():
+        for node in nodeutils.getConnectedNodeChildren(self.node()):
             self.populate(node)
 
     def populate(self, node, parent_index=QModelIndex(), row=0):
@@ -125,7 +125,8 @@ class NodeTreeMainWidget(NodeViewWidget):
         # setup drop for new item
         if nodeutils.isContainerNode(node):
             new_item.setIsDroppable(True)
-            children = node.getChildren()
+
+            children = nodeutils.getConnectedNodeChildren(node)
             if 0 < len(children):
                 for row, grand_child in enumerate(children):
                     self.populate(grand_child, parent_index=new_index, row=row)
@@ -207,6 +208,7 @@ class NodeTreeMainWidget(NodeViewWidget):
 
     """ COPY / PASTE"""
     def insertNode(self, node, parent_node, parent_index=None, row=0):
+        """ During a drop event, this inserts a node """
         if not parent_index:
             parent_index = self.getIndexFromItem(self.rootItem())
         nodeutils.createIOPorts(node, in_port=True, out_port=True, connect=False, force_create=False)
@@ -542,6 +544,7 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
         """
         mimedata = event.mimeData()
         if mimedata.hasFormat('nodegraph/nodes'):
+            Utils.UndoStack.OpenGroup("Group Tree Node Drop")
             nodes_list_bytes = mimedata.data('nodegraph/nodes').data()
             nodes_list = nodes_list_bytes.decode("utf-8").split(',')
             node_tree_widget = getWidgetAncestor(self, NodeTreeMainWidget)
@@ -555,6 +558,8 @@ class NodeTreeViewWidget(AbstractDragDropTreeView):
             # reconnect all nodes inside of the group
             node_list = node_tree_widget.getChildNodeListFromItem(node_tree_widget.rootItem())
             nodeutils.connectInsideGroup(node_list, parent_node)
+
+            Utils.UndoStack.CloseGroup()
 
         return AbstractDragDropTreeView.dropEvent(self, event)
 
