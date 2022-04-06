@@ -14,6 +14,7 @@ class AbstractParametersDisplayWidget(QScrollArea):
     """Abstract class for display parameters."""
     def __init__(self, parent=None):
         super(AbstractParametersDisplayWidget, self).__init__(parent)
+        self._widgets = []
 
         # create main widget
         self.setWidget(QWidget(self))
@@ -78,7 +79,7 @@ class AbstractParametersDisplayWidget(QScrollArea):
         #         #     hide_title = True
         #         # else:
         #         hide_title = False
-
+        self._widgets = []
         # display nodes
         for node in node_list:
 
@@ -103,7 +104,14 @@ class AbstractParametersDisplayWidget(QScrollArea):
         teleparam_widget = paramutils.createTeleparamWidget(node_name, hide_title=hide_title)
         self.getLayout().addWidget(teleparam_widget)
         teleparam_widget.show()
+        self.widgets().append(teleparam_widget)
         self.update()
+
+    def widgets(self):
+        return self._widgets
+
+    def addWidget(self, widget):
+        self.widgets().append(widget)
 
     """ Get node list"""
     def filterNodeList(self, node_list):

@@ -5,6 +5,7 @@
 from qtpy.QtWidgets import QVBoxLayout
 from qtpy.QtCore import QModelIndex, Qt
 
+from cgwidgets.utils import getWidgetsDescendants
 from cgwidgets.settings import attrs
 from cgwidgets.widgets import ShojiModelViewWidget, ShojiModelItem
 
@@ -246,3 +247,30 @@ class NodeTreeDynamicWidget(AbstractParametersDisplayWidget):
                 param = item.getArg("param")
                 node_list = [NodegraphAPI.GetNode(node).getParameter(param)]
             this.populateParameters(node_list, hide_title=False)
+
+            # add shoji layout handlers
+            # todo add handlers for parameter widgets
+            # from cgwidgets.utils import getWidgetAncestor
+            # from cgwidgets.widgets import ShojiLayout
+            # from qtpy.QtWidgets import QApplication
+            # shoji_layout_widget = getWidgetAncestor(this, ShojiLayout)
+            # for child in this.widgets():
+            #
+            #     popdown_widget = child.getPopdownWidget()
+            #     child.show()
+            #     QApplication.processEvents()
+            #
+            #     form_widget = popdown_widget.children()[1]
+            #     params_popdown = form_widget.getPopdownWidget()
+            #
+            #     layout = params_popdown.layout()
+            #     for child in params_popdown.children():
+            #         print(child)
+            #     print("=================================")
+            #     for x in range(layout.count()):
+            #         widget = layout.itemAt(x).widget()
+            #         print(widget)
+            #         widget.installEventFilter(shoji_layout_widget)
+            #
+            #     child.show()
+            #     child.installEventFilter(shoji_layout_widget)
