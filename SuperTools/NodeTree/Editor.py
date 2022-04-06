@@ -100,14 +100,14 @@ class NodeTreeMainWidget(NodeViewWidget):
         for node in self.node().getChildren():
             self.populate(node)
 
+        # events
         self.addContextMenuEvent("Go To Node", self.goToNode)
+        Utils.EventModule.RegisterCollapsedHandler(self.undoEnd, 'undo_end')
 
-    # def showEvent(self, event):
-    #     """ refresh UI on show event """
-    #     self.clearModel()
-    #     for node in self.node().getChildren():
-    #         self.populate(node)
-    #     return NodeViewWidget.showEvent(self, event)
+    def undoEnd(self, args):
+        self.clearModel()
+        for node in self.node().getChildren():
+            self.populate(node)
 
     def populate(self, node, parent_index=QModelIndex(), row=0):
         """ Populates the index provided
@@ -262,6 +262,8 @@ class NodeTreeMainWidget(NodeViewWidget):
     def duplicateNodes(self, copied_items, duplicated_items):
         self.copyNodes(copied_items)
 
+        Utils.UndoStack.OpenGroup("Group Tree Duplicate")
+
         text_nodes = KatanaFile.Paste(self._nodes_to_be_copied, NodegraphAPI.GetRootNode())
         Utils.EventModule.ProcessAllEvents()
         # create new indexes / update nodes parent
@@ -282,8 +284,11 @@ class NodeTreeMainWidget(NodeViewWidget):
             node_list = self.getChildNodeListFromItem(item.parent())
             nodeutils.connectInsideGroup(node_list, parent_node)
 
+        Utils.UndoStack.CloseGroup()
+
     def pasteNodes(self, copied_items, pasted_items, parent_item):
         # paste node XML
+        Utils.UndoStack.OpenGroup("Group Tree Paste")
         parent_node = parent_item.node()
         text_nodes = KatanaFile.Paste(self._nodes_to_be_copied, parent_node)
 
@@ -307,6 +312,7 @@ class NodeTreeMainWidget(NodeViewWidget):
         # connect internals
         node_list = self.getChildNodeListFromItem(parent_item)
         nodeutils.connectInsideGroup(node_list, parent_node)
+        Utils.UndoStack.CloseGroup()
 
     """ EVENTS """
     def groupSelectedNodes(self):
@@ -441,8 +447,10 @@ class NodeTreeMainWidget(NodeViewWidget):
         """ delete event """
         node = self.getNodeFromItem(item)
         if node:
+            Utils.UndoStack.OpenGroup("Group Tree Delete")
             nodeutils.disconnectNode(node, input=True, output=True, reconnect=True)
             node.delete()
+            Utils.UndoStack.CloseGroup()
 
     # def keyPressEvent(self, event):
     #     modifiers = event.modifiers()

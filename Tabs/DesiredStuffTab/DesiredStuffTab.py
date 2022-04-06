@@ -690,9 +690,9 @@ class DesirableStuffView(AbstractDragDropListView):
         return AbstractDragDropListView.dropEvent(self, event)
 
 
-from cgwidgets.utils import centerWidgetOnCursor, setAsAlwaysOnTop
-w = DesiredStuffTab()
-setAsAlwaysOnTop(w)
-w.show()
-w.resize(512, 512)
-centerWidgetOnCursor(w)
+# from cgwidgets.utils import centerWidgetOnCursor, setAsAlwaysOnTop
+# w = DesiredStuffTab()
+# setAsAlwaysOnTop(w)
+# w.show()
+# w.resize(512, 512)
+# centerWidgetOnCursor(w)
