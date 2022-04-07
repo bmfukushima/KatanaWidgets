@@ -197,6 +197,9 @@ class IRFActivationWidget(ShojiLayout):
         self.addWidget(self._available_filters_widget)
         self.addWidget(self._activated_filters_widget)
 
+        self.setIsSoloViewEnabled(False)
+        self.setIsSoloViewEnabled(True, override_children=False)
+
     def update(self):
         self.availableFiltersWidget().update()
         self.activatedFiltersWidget().update()
@@ -258,6 +261,9 @@ class IRFCreateWidget(ShojiLayout):
         self._create_new_filter_button.setFixedHeight(getFontSize() * 3)
         self._irf_node_labelled_widget.setFixedHeight(getFontSize() * 3)
         self._create_new_category_button.setFixedHeight(getFontSize() * 3)
+
+        self.setIsSoloViewEnabled(False)
+        self.setIsSoloViewEnabled(True, override_children=False)
 
     """ WIDGETS """
     def irfNodeWidget(self):

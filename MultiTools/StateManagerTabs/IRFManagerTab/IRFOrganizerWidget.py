@@ -105,6 +105,7 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
         self.clearModel()
         self.populate()
 
+
 class AbstractIRFAvailableOrganizerWidget(AbstractIRFOrganizerWidget):
     """ Organizer View widget, this will display ALL of the IRFs in the scene"""
     def __init__(self, parent=None):
