@@ -12,7 +12,7 @@ from Katana import UI4
 
 from cgwidgets.utils import setAsAlwaysOnTop
 
-class PopupTabWidget(QFrame):
+class PopupWidget(QFrame):
     """ Creates a popup tab widget that will be displayed over the UI
 
     Args:
@@ -25,8 +25,8 @@ class PopupTabWidget(QFrame):
                 (Qt.AltModifier | Qt.ShiftModifier | Qt.ControlModifier)
     """
     def __init__(self, widget, size=(0.5, 0.85), hide_on_leave=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier, parent=None):
-        super(PopupTabWidget, self).__init__(parent)
-        self.setObjectName("PopupTabWidget")
+        super(PopupWidget, self).__init__(parent)
+        self.setObjectName("PopupWidget")
         self._main_widget = widget
         self._hide_hotkey = hide_hotkey
         self._hide_modifiers = hide_modifiers
@@ -36,14 +36,14 @@ class PopupTabWidget(QFrame):
         # setup layout
         QVBoxLayout(self)
         self._central_widget = QWidget(self)
-        self._central_widget.setObjectName("PopupTabWidget")
+        self._central_widget.setObjectName("PopupWidget")
 
         QVBoxLayout(self._central_widget)
         self.layout().addWidget(self._central_widget)
         self._central_widget.layout().addWidget(self._main_widget)
 
         # setup style
-        self.setStyleSheet("""QWidget#PopupTabWidget{border: 1px solid rgba(128,128,255,255)}""")
+        self.setStyleSheet("""QWidget#PopupWidget{border: 1px solid rgba(128,128,255,255)}""")
 
         # install events
         self._main_widget.installEventFilter(self)
@@ -162,14 +162,14 @@ class PopupTabWidget(QFrame):
 
         # create widget if it doesn't exist
         if not hasattr(main_window, popup_widget_attr):
-            popup_tab_widget = PopupTabWidget(
+            popup_tab_widget = PopupWidget(
                 widget, hide_on_leave=hide_on_leave, hide_hotkey=hide_hotkey, hide_modifiers=hide_modifiers, size=size, parent=main_window)
             setattr(main_window, popup_widget_attr, popup_tab_widget)
             popup_tab_widget.hide()
 
         # show tab
         if show_on_init:
-            PopupTabWidget.togglePopupWidgetVisibility(name, size)
+            PopupWidget.togglePopupWidgetVisibility(name, size)
 
     @staticmethod
     def constructPopupTabWidget(tab_type, hide_on_leave=False, size=(0.5, 0.85), show_on_init=True, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
@@ -192,14 +192,14 @@ class PopupTabWidget(QFrame):
         # create widget if it doesn't exist
         if not hasattr(main_window, popup_widget_attr):
             widget = UI4.App.Tabs.CreateTab(tab_type, None)
-            popup_tab_widget = PopupTabWidget(
+            popup_tab_widget = PopupWidget(
                 widget, size=size, hide_on_leave=hide_on_leave, hide_hotkey=hide_hotkey, hide_modifiers=hide_modifiers, parent=main_window)
             setattr(main_window, popup_widget_attr, popup_tab_widget)
             popup_tab_widget.hide()
 
         # show tab
         if show_on_init:
-            PopupTabWidget.togglePopupWidgetVisibility(tab_type, size)
+            PopupWidget.togglePopupWidgetVisibility(tab_type, size)
 
     @staticmethod
     def togglePopupWidgetVisibility(name, size=(0.5, 0.85)):
@@ -214,4 +214,4 @@ class PopupTabWidget(QFrame):
             if widget.isVisible():
                 widget.hide()
             else:
-                PopupTabWidget.showWidget(widget, size)
+                PopupWidget.showWidget(widget, size)

@@ -23,7 +23,7 @@ Alt+D
 
 """
 from qtpy.QtCore import Qt
-from Widgets2 import PopupTabWidget, AbstractParametersDisplayWidget
+from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 
 
 def displayParameters():
@@ -52,16 +52,16 @@ def displayPopupParameters(hide_on_leave=False):
     if len(selected_nodes) == 0: return
 
     # construct popup parameters window if it doesn't exist
-    if not PopupTabWidget.doesPopupWidgetExist("popupParameters"):
+    if not PopupWidget.doesPopupWidgetExist("popupParameters"):
         widget = AbstractParametersDisplayWidget()
-        PopupTabWidget.constructPopupWidget(
+        PopupWidget.constructPopupWidget(
             "popupParameters", widget, size=(0.5, 0.85), hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
 
     # hide/show popup parameters
-    widget = PopupTabWidget.getPopupWidget("popupParameters")
+    widget = PopupWidget.getPopupWidget("popupParameters")
     widget.setHideOnLeave(hide_on_leave)
-    widget.mainWidget().populateParameters(NodegraphAPI.GetAllSelectedNodes(), hide_title=False)
-    PopupTabWidget.togglePopupWidgetVisibility("popupParameters")
+    widget.mainWidget().populateParameters(selected_nodes, hide_title=False)
+    PopupWidget.togglePopupWidgetVisibility("popupParameters")
 
 def __installNodegraphHotkeyOverrides(**kwargs):
     import UI4

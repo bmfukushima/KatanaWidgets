@@ -18,4 +18,4 @@ from .NodeViewWidget import NodeViewWidget
 from .EventsWidget import *
 from .GroupNodeEditorWidget import GroupNodeEditorWidget
 from .AbstractStateManagerTab import AbstractStateManagerTab, AbstractStateManagerOrganizerWidget
-from .PopupTabWidget import PopupTabWidget
+from .PopupWidget import PopupWidget
