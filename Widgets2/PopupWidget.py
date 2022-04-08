@@ -71,11 +71,6 @@ class PopupWidget(QFrame):
         return self._main_widget
 
     """ EVENTS """
-    # def showEvent(self, event):
-    #     QFrame.showEvent(self, event)
-    #     self.mainWidget().setFocus()
-    #     print("show focus")
-
     def __hideOnKeyPress(self, event):
         if event.key() == Qt.Key_Escape:
             self.hide()
@@ -92,9 +87,6 @@ class PopupWidget(QFrame):
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
             self.__hideOnKeyPress(event)
-        # if event.type() == QEvent.Enter:
-        #     print("enter focus filter")
-        #     self.mainWidget().setFocus()
         return False
 
     def leaveEvent(self, event):
@@ -103,12 +95,10 @@ class PopupWidget(QFrame):
                 self.hide()
         return QFrame.enterEvent(self, event)
 
-    # def enterEvent(self, event):
-    #     print('enter focus')
-    #     from qtpy.QtWidgets import QApplication
-    #     QApplication.focusWidget().releaseKeyboard()
-    #     self.mainWidget().setFocus()
-    #     return QFrame.enterEvent(self, event)
+    def enterEvent(self, event):
+        self.activateWindow()
+        self.setFocus()
+        return QFrame.enterEvent(self, event)
 
     """ UTILS """
     @staticmethod
