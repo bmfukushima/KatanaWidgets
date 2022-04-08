@@ -14,7 +14,6 @@ TODO
     *   Connecting to 0 ports, such as merge or switch
     *   Prompt color nodes
             For when an override is active
-    *   Connecting to/found the current node
     *   Mouse move, nearest node coloring
             Get LinkConnectionLayer
             check to see if monkey patch installed
@@ -261,56 +260,76 @@ class PortConnector():
         widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
         if widget_under_cursor != "NodegraphWidget": return
 
+        selection_active = PortConnector.isSelectionActive()
+
         node = nodeutils.getClosestNode()
         if not node: return
 
-
-        selection_active = PortConnector.isSelectionActive()
-
         # PORT SELECTED
         if selection_active:
-            link_connection_layer = PortConnector.getLinkConnectionLayer()
-            if link_connection_layer:
-                base_ports = link_connection_layer.getBasePorts()
+            self.connectPortEvent()
 
-                # SINGULAR INPUT PORT
-                if len(node.getInputPorts()) == 1:
-                    input_port = node.getInputPortByIndex(0)
-                    is_connected = portutils.isPortConnected(input_port)
-
-                    # prompt user to connect
-                    if is_connected:
-                        main_window._warning_widget = OverridePortWarningButtonPopupWidget(node, input_port, base_ports[0])
-                        main_window._warning_widget.show()
-                        centerWidgetOnCursor(main_window._warning_widget)
-
-                    # automagically connect
-                    else:
-                        for base_port in base_ports:
-                            input_port.connect(base_port)
-                        PortConnector.hideNoodle()
-                # MULTIPLE INPUT PORTS
-                elif 1 < len(node.getInputPorts()):
-                    main_window._port_popup_menu = MultiPortPopupMenuWidget(node, port_type=INPUT_PORT, selected_port=base_ports[0])
-                    main_window._port_popup_menu.show()
-                    centerWidgetOnCursor(main_window._port_popup_menu)
-
-        # NOT SELECTED
+        # NO PORT SELECTED
         else:
-            # NO OUTPUT PORTS
-            if 0 == len(node.getOutputPorts()):
-                return
+            self.selectPortEvent()
 
-            # SINGULAR OUTPUT PORT
-            if 1 == len(node.getOutputPorts()):
-                self.output_port = node.getOutputPorts()[0]
-                self.showNoodle(self.output_port)
+    def connectPortEvent(self):
+        """ Run when the user has as port link selected, and is trying to connect a port"""
+        link_connection_layer = PortConnector.getLinkConnectionLayer()
+        if link_connection_layer:
+            base_ports = link_connection_layer.getBasePorts()
+            exclude_nodes = [base_ports[0].getNode()]
+            node = nodeutils.getClosestNode(has_input_ports=True, include_dynamic_port_nodes=True, exclude_nodes=exclude_nodes)
+            if not node: return
 
-            # MULTIPLE OUTPUT PORTS
-            elif 1 < len(node.getOutputPorts()):
-                main_window._port_popup_menu = MultiPortPopupMenuWidget(node)
+            if len(node.getInputPorts()) == 0:
+                input_port = node.addInputPort("i0")
+                for base_port in base_ports:
+                    input_port.connect(base_port)
+                PortConnector.hideNoodle()
+
+            # SINGULAR INPUT PORT
+            elif len(node.getInputPorts()) == 1:
+                input_port = node.getInputPortByIndex(0)
+                is_connected = portutils.isPortConnected(input_port)
+
+                # prompt user to connect
+                if is_connected:
+                    main_window._warning_widget = OverridePortWarningButtonPopupWidget(node, input_port, base_ports[0])
+                    main_window._warning_widget.show()
+                    centerWidgetOnCursor(main_window._warning_widget)
+
+                # automagically connect
+                else:
+                    for base_port in base_ports:
+                        input_port.connect(base_port)
+                    PortConnector.hideNoodle()
+            # MULTIPLE INPUT PORTS
+            elif 1 < len(node.getInputPorts()):
+                main_window._port_popup_menu = MultiPortPopupMenuWidget(
+                    node, port_type=INPUT_PORT, selected_port=base_ports[0])
                 main_window._port_popup_menu.show()
                 centerWidgetOnCursor(main_window._port_popup_menu)
+
+    def selectPortEvent(self):
+        """ Run when the user attempts to start a port connection event"""
+        node = nodeutils.getClosestNode(has_output_ports=True)
+        if not node: return
+
+        # NO OUTPUT PORTS
+        if 0 == len(node.getOutputPorts()):
+            return
+
+        # SINGULAR OUTPUT PORT
+        if 1 == len(node.getOutputPorts()):
+            self.output_port = node.getOutputPorts()[0]
+            self.showNoodle(self.output_port)
+
+        # MULTIPLE OUTPUT PORTS
+        elif 1 < len(node.getOutputPorts()):
+            main_window._port_popup_menu = MultiPortPopupMenuWidget(node)
+            main_window._port_popup_menu.show()
+            centerWidgetOnCursor(main_window._port_popup_menu)
 
     @staticmethod
     def getLinkConnectionLayer():

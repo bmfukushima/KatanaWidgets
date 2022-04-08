@@ -50,12 +50,42 @@ def getNodeAndAllDescendants(node, node_list=None):
     return list(set(node_list))
 
 
-def getClosestNode():
-    """ Returns the closest node to the cursor """
+def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False, exclude_nodes=[]):
+    """ Returns the closest node to the cursor
+
+    Args:
+        exclude_nodes (list): list of nodes to not include in the search
+        has_input_ports (bool): determines if the node is required to have an input port
+        has_output_ports (bool): determines if the node is required to have an output port
+        include_dynamic_port_nodes (bool): Determines if nodes with no input ports, but the possibility of having
+            them should be included
+    """
+    _dynamic_port_types = ["Merge", "VariableSwitch", "Switch"]
+
     nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
     nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
 
+    # populate node list
     node_list = nodegraph_widget.getCurrentNodeView().getChildren()
+    if has_output_ports:
+        node_list = [node for node in node_list if 0 < len(node.getOutputPorts())]
+
+    if has_input_ports:
+        _node_list = []
+        for node in node_list:
+            if 0 < len(node.getInputPorts()):
+                _node_list.append(node)
+            else:
+                if include_dynamic_port_nodes:
+                    if node.getType() in _dynamic_port_types:
+                        _node_list.append(node)
+
+        node_list = _node_list
+
+    for node in exclude_nodes:
+        if node in node_list:
+            node_list.remove(node)
+
     cursor_pos = nodegraph_widget.getMousePos()
 
     closest_node = None
