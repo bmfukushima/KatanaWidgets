@@ -1,11 +1,16 @@
-""" TODO:
-        *   Option to center on tab, vs center on screen, vs mouse position
-                - if position provided, use that, if not, use center of main window
-        *   How to handle actual resolution vs screen size
-                Need to just dynamically scale with screen resolution
+""" The PopupWidget is displayed over the Main Katana window.  This can popup
+any widget type, including tabs.
+
+
+Hierarchy
+PopupWidget --> (QFrame)
+    |- QVBoxLayout
+        |- _central_widget --> (QWidget)
+            |- QVBoxLayout
+                |- main_widget (PopupWidget)
 """
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QFrame
-from qtpy.QtCore import Qt, QEvent, QPoint
+from qtpy.QtCore import Qt, QEvent, QPoint, QSize
 from qtpy.QtGui import QKeySequence
 
 from Katana import UI4
@@ -23,14 +28,14 @@ class PopupWidget(QFrame):
             multiple modifiers can be provided as:
                 (Qt.AltModifier | Qt.ShiftModifier | Qt.ControlModifier)
     """
-    def __init__(self, widget, size=(480, 960), hide_on_leave=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier, parent=None):
+    def __init__(self, widget, size=QSize(480, 960), hide_on_leave=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier, parent=None):
         super(PopupWidget, self).__init__(parent)
         self.setObjectName("PopupWidget")
         self._main_widget = widget
         self._hide_hotkey = hide_hotkey
         self._hide_modifiers = hide_modifiers
         self._hide_on_leave = hide_on_leave
-        self._size = size
+        self.setFixedSize(size)
 
         # setup layout
         QVBoxLayout(self)
@@ -135,9 +140,10 @@ class PopupWidget(QFrame):
             size = widget.size()
         if not pos:
             pos = QPoint(main_window.width() * 0.5, main_window.height * 0.5)
+
         # find geometry bounds
-        width = size[0]
-        height = size[1]
+        width = size.width()
+        height = size.height()
         xpos = int(pos.x() - (width * 0.5))
         ypos = int(pos.y() - (height * 0.5))
 
@@ -146,7 +152,7 @@ class PopupWidget(QFrame):
         widget.show()
 
     @staticmethod
-    def constructPopupWidget(name, widget, hide_on_leave=False, size=(480, 960), pos=None, show_on_init=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
+    def constructPopupWidget(name, widget, hide_on_leave=False, size=QSize(480, 960), pos=None, show_on_init=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
         """ Constructs a new popup widget
 
         Args:
@@ -175,7 +181,7 @@ class PopupWidget(QFrame):
             PopupWidget.togglePopupWidgetVisibility(name, size=size, pos=pos)
 
     @staticmethod
-    def constructPopupTabWidget(tab_type, hide_on_leave=False, size=(480, 960), pos=None, show_on_init=True, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
+    def constructPopupTabWidget(tab_type, hide_on_leave=False, size=QSize(480, 960), pos=None, show_on_init=True, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
         """ Constructs a new popup from the tab type provided
 
         Args:
@@ -205,8 +211,14 @@ class PopupWidget(QFrame):
             PopupWidget.togglePopupWidgetVisibility(tab_type, size=size, pos=pos)
 
     @staticmethod
-    def togglePopupWidgetVisibility(name, size=(480, 960), pos=None):
+    def togglePopupWidgetVisibility(name, size=None, pos=None):
+        """ Toggles the visibility of the widget
 
+        Args:
+            name (str): name of widget to toggle
+            size (QSize): Size to set widget to, if none is provided, this will default to the widgets size
+            pos = (QPoint): position to show widget at
+            """
         # get attrs
         main_window = UI4.App.MainWindow.CurrentMainWindow()
         popup_name = f"_popup_{name}"
@@ -217,4 +229,4 @@ class PopupWidget(QFrame):
             if widget.isVisible():
                 widget.hide()
             else:
-                PopupWidget.showWidget(widget, size, pos)
+                PopupWidget.showWidget(widget, size=size, pos=pos)
