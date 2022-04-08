@@ -1,107 +1,217 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFrame
-from PyQt5.QtCore import Qt, QEvent
+""" TODO:
+        *   Option to center on tab, vs center on screen, vs mouse position
+                - if position provided, use that, if not, use center of main window
+        *   How to handle actual resolution vs screen size
+                Need to just dynamically scale with screen resolution
+"""
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QFrame
+from qtpy.QtCore import Qt, QEvent
+from qtpy.QtGui import QKeySequence
 
 from Katana import UI4
 
-from cgwidgets.utils import setAsAlwaysOnTop, setAsBorderless
+from cgwidgets.utils import setAsAlwaysOnTop
 
 class PopupTabWidget(QFrame):
     """ Creates a popup tab widget that will be displayed over the UI
 
     Args:
-        tab_type (str): name of tab type to create
-        size (tuple(int,int)): display size
+        hide_on_leave (bool): determines if the widget should be hidden on leave
+        widget (QWidget): Widget to popup
+        size (tuple(float, float)): percent of main window to take
+        hide_hotkey (Qt.KEY): special hotkeys for hiding
+        hide_modifiers (Qt.MODIFIER): special modifiers for hiding
+            multiple modifiers can be provided as:
+                (Qt.AltModifier | Qt.ShiftModifier | Qt.ControlModifier)
     """
-    def __init__(self, tab_type, size=(480, 960), parent=None):
+    def __init__(self, widget, size=(0.5, 0.85), hide_on_leave=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier, parent=None):
         super(PopupTabWidget, self).__init__(parent)
-        self._tab_type = tab_type
-        self.setObjectName(tab_type)
+        self.setObjectName("PopupTabWidget")
+        self._main_widget = widget
+        self._hide_hotkey = hide_hotkey
+        self._hide_modifiers = hide_modifiers
+        self._hide_on_leave = hide_on_leave
         self._size = size
-        # create tab
-        self._tab_widget = UI4.App.Tabs.CreateTab(tab_type, None)
 
         # setup layout
         QVBoxLayout(self)
         self._central_widget = QWidget(self)
-        self._central_widget.setObjectName(tab_type)
+        self._central_widget.setObjectName("PopupTabWidget")
+
         QVBoxLayout(self._central_widget)
         self.layout().addWidget(self._central_widget)
-        self._central_widget.layout().addWidget(self._tab_widget)
+        self._central_widget.layout().addWidget(self._main_widget)
 
         # setup style
-        self.setStyleSheet(f"""QWidget#{tab_type}{{border: 1px solid rgba(128,128,255,255)}}""")
+        self.setStyleSheet("""QWidget#PopupTabWidget{border: 1px solid rgba(128,128,255,255)}""")
 
         # install events
-        self._tab_widget.installEventFilter(self)
+        self._main_widget.installEventFilter(self)
         setAsAlwaysOnTop(self)
-        #setAsBorderless(self)
 
-    def tabType(self):
-        return self._tab_type
+    """ PROPERTIES """
+    def hideModifiers(self):
+        return self._hide_modifiers
 
-    def tabWidget(self):
-        return self._tab_widget
+    def setHideModifiers(self, hide_modifiers):
+        self._hide_modifiers = hide_modifiers
+
+    def hideHotkey(self):
+        return self._hide_hotkey
+
+    def setHideHotkey(self, hide_hotkey):
+        self._hide_hotkey = hide_hotkey
+
+    def hideOnLeave(self):
+        return self._hide_on_leave
+
+    def setHideOnLeave(self, hide_on_leave):
+        self._hide_on_leave = hide_on_leave
+
+    def mainWidget(self):
+        return self._main_widget
+
+    """ EVENTS """
+    def __hideOnKeyPress(self, event):
+        if event.key() == Qt.Key_Escape:
+            self.hide()
+
+        if event.key() == self.hideHotkey() and event.modifiers() == self.hideModifiers():
+            self.hide()
 
     def keyPressEvent(self, event):
         if event.type() == QEvent.KeyPress:
-            if event.key() == Qt.Key_Escape:
-                self.close()
+            self.__hideOnKeyPress(event)
+
         return QFrame.keyPressEvent(self, event)
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
-            if event.key() == Qt.Key_Escape:
-                self.close()
+            self.__hideOnKeyPress(event)
         return False
 
-    def showEvent(self, event):
-        QFrame.showEvent(self, event)
-        main_window = UI4.App.MainWindow.CurrentMainWindow()
+    def leaveEvent(self, event):
+        if self.hideOnLeave():
+            self.hide()
+        return QFrame.enterEvent(self, event)
 
-        tab_type = self.tabType()
-        tab_attr = f"_popup_{tab_type}"
-
-        if not hasattr(main_window, tab_attr):
-            #popup_tab = PopupTabWidget(self.tabType(), parent=main_window)
-            setattr(main_window, f"_popup_{tab_type}", self)
-
-            width = main_window.width() * 0.85
-            height = main_window.height() * 0.85
-            xpos = int((main_window.width() * 0.5) - (width * 0.5))
-            ypos = int((main_window.height() * 0.5) - (height * 0.5))
-            getattr(main_window, f"_popup_{tab_type}").setGeometry(xpos, ypos, width, height)
-
+    def enterEvent(self, event):
         self.setFocus()
+        return QFrame.enterEvent(self, event)
+
+    """ UTILS """
+    @staticmethod
+    def getPopupWidget(name):
+        """ Returns the popup widget of the given name
+
+        Args:
+            name (str): name of popup widget to retrieve
+            """
+        main_window = UI4.App.MainWindow.CurrentMainWindow()
+        popup_widget_attr = f"_popup_{name}"
+        if hasattr(main_window, popup_widget_attr):
+            return getattr(main_window, popup_widget_attr)
+        return None
 
     @staticmethod
-    def toggleVisibility(tab_type, size=(480, 960)):
-        """  Toggles the visibility of the popup widget
+    def doesPopupWidgetExist(name):
+        main_window = UI4.App.MainWindow.CurrentMainWindow()
+        popup_widget_attr = f"_popup_{name}"
+        if hasattr(main_window, popup_widget_attr):
+            True
+        return False
+
+    @staticmethod
+    def showWidget(widget, size=None):
+        """ Shows the widget
+
         Args:
-            tab_type (str): name of tab type to create
-            size (tuple(int, int)): size of widget to be displayed
+            size (tuple(float, float)): percentage of screen to take
+            """
+        # get attrs
+        main_window = UI4.App.MainWindow.CurrentMainWindow()
+        if not size:
+            size = widget.size()
 
-        Returns:
+        # find geometry bounds
+        width = main_window.width() * size[0]
+        height = main_window.height() * size[1]
+        xpos = int((main_window.width() * 0.5) - (width * 0.5))
+        ypos = int((main_window.height() * 0.5) - (height * 0.5))
 
+        # set geo
+        widget.setGeometry(xpos, ypos, width, height)
+        widget.show()
+
+    @staticmethod
+    def constructPopupWidget(name, widget, hide_on_leave=False, size=(0.5, 0.85), show_on_init=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
+        """ Constructs a new popup widget
+
+        Args:
+            name (str): name to be called with
+            widget (QWidget): Widget to popup
+            size (tuple(float,float)): percent of main window to take
+            show_on_init (bool): determines if this widget should be shown on first key press
+            hide_hotkey (Qt.KEY): special hotkeys for hiding
+            hide_modifiers (Qt.MODIFIER): special modifiers for hiding
+                multiple modifiers can be provided as:
+                    (Qt.AltModifier | Qt.ShiftModifier | Qt.ControlModifier)
         """
+        main_window = UI4.App.MainWindow.CurrentMainWindow()
+        popup_widget_attr = f"_popup_{name}"
+
+        # create widget if it doesn't exist
+        if not hasattr(main_window, popup_widget_attr):
+            popup_tab_widget = PopupTabWidget(
+                widget, hide_on_leave=hide_on_leave, hide_hotkey=hide_hotkey, hide_modifiers=hide_modifiers, size=size, parent=main_window)
+            setattr(main_window, popup_widget_attr, popup_tab_widget)
+            popup_tab_widget.hide()
+
+        # show tab
+        if show_on_init:
+            PopupTabWidget.togglePopupWidgetVisibility(name, size)
+
+    @staticmethod
+    def constructPopupTabWidget(tab_type, hide_on_leave=False, size=(0.5, 0.85), show_on_init=True, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
+        """ Constructs a new popup from the tab type provided
+
+        Args:
+            name (str): name to be called with
+            widget (QWidget): Widget to popup
+            size (tuple(float,float)): percent of main window to take
+            show_on_init (bool): determines if this widget should be shown on first key press
+            hide_hotkey (Qt.KEY): special hotkeys for hiding
+            hide_modifiers (Qt.MODIFIER): special modifiers for hiding
+                multiple modifiers can be provided as:
+                    (Qt.AltModifier | Qt.ShiftModifier | Qt.ControlModifier)
+        """
+        # get attrs
+        main_window = UI4.App.MainWindow.CurrentMainWindow()
+        popup_widget_attr = f"_popup_{tab_type}"
+
+        # create widget if it doesn't exist
+        if not hasattr(main_window, popup_widget_attr):
+            widget = UI4.App.Tabs.CreateTab(tab_type, None)
+            popup_tab_widget = PopupTabWidget(
+                widget, size=size, hide_on_leave=hide_on_leave, hide_hotkey=hide_hotkey, hide_modifiers=hide_modifiers, parent=main_window)
+            setattr(main_window, popup_widget_attr, popup_tab_widget)
+            popup_tab_widget.hide()
+
+        # show tab
+        if show_on_init:
+            PopupTabWidget.togglePopupWidgetVisibility(tab_type, size)
+
+    @staticmethod
+    def togglePopupWidgetVisibility(name, size=(0.5, 0.85)):
 
         # get attrs
         main_window = UI4.App.MainWindow.CurrentMainWindow()
-        tab_attr = f"_popup_{tab_type}"
-
+        popup_name = f"_popup_{name}"
         # create widget if it doesn't exist
-        if not hasattr(main_window, tab_attr):
-            popup_tab_widget = PopupTabWidget(tab_type, size=size, parent=main_window)
-            setattr(main_window, f"_popup_{tab_type}", popup_tab_widget)
-            getattr(main_window, f"_popup_{tab_type}").hide()
-
-        # show/hide
-        if getattr(main_window, f"_popup_{tab_type}").isVisible():
-            getattr(main_window, f"_popup_{tab_type}").hide()
-        else:
-            width = size[0]
-            height = size[1]
-            xpos = int((main_window.width() * 0.5) - (size[0] * 0.5))
-            ypos = int((main_window.height() * 0.5) - (size[1] * 0.5))
-            getattr(main_window, f"_popup_{tab_type}").setGeometry(xpos, ypos, width, height)
-            getattr(main_window, f"_popup_{tab_type}").show()
-
+        if hasattr(main_window, popup_name):
+            widget = getattr(main_window, f"_popup_{name}")
+            # show/hide
+            if widget.isVisible():
+                widget.hide()
+            else:
+                PopupTabWidget.showWidget(widget, size)

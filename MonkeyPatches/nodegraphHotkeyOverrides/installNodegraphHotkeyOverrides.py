@@ -12,10 +12,10 @@ E
         Show parameters of all currently selected nodes
 
 Alt+E / Alt+Shift+E
-    PopupTabWidget API
-        - leave event
-        - toggle hotkey
-        - need popup only nodes selected...
+    Changed from
+        Show parameters of selected nodes
+            to
+        Popup parameter display
 
 D
 Alt+D
@@ -23,11 +23,11 @@ Alt+D
 
 """
 from qtpy.QtCore import Qt
-
-from Widgets2 import PopupTabWidget
+from Widgets2 import PopupTabWidget, AbstractParametersDisplayWidget
 
 
 def displayParameters():
+    """ Sets all of the currently selected nodes to being edited """
     from Katana import NodegraphAPI, Utils
     Utils.UndoStack.OpenGroup('Edit Nodes')
     try:
@@ -40,6 +40,28 @@ def displayParameters():
     finally:
         Utils.UndoStack.CloseGroup()
 
+def displayPopupParameters(hide_on_leave=False):
+    """ Popups up a parameters view of all of the currently selected nodes
+    Args:
+        hide_on_leave (bool): determines if this should should be hidden on leave
+    """
+    from Katana import NodegraphAPI
+
+    # preflight
+    selected_nodes = NodegraphAPI.GetAllSelectedNodes()
+    if len(selected_nodes) == 0: return
+
+    # construct popup parameters window if it doesn't exist
+    if not PopupTabWidget.doesPopupWidgetExist("popupParameters"):
+        widget = AbstractParametersDisplayWidget()
+        PopupTabWidget.constructPopupWidget(
+            "popupParameters", widget, size=(0.5, 0.85), hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
+
+    # hide/show popup parameters
+    widget = PopupTabWidget.getPopupWidget("popupParameters")
+    widget.setHideOnLeave(hide_on_leave)
+    widget.mainWidget().populateParameters(NodegraphAPI.GetAllSelectedNodes(), hide_title=False)
+    PopupTabWidget.togglePopupWidgetVisibility("popupParameters")
 
 def __installNodegraphHotkeyOverrides(**kwargs):
     import UI4
@@ -60,11 +82,11 @@ def __installNodegraphHotkeyOverrides(**kwargs):
         if event.key() == 96: return
         if event.key() == Qt.Key_E:
             if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
+                displayPopupParameters(hide_on_leave=False)
                 print("alt + shift + E")
                 return True
             elif event.modifiers() == Qt.AltModifier:
-                main_window = UI4.App.MainWindow.CurrentMainWindow()
-                PopupTabWidget.toggleVisibility("Parameters", size=(750, 1000))
+                displayPopupParameters(hide_on_leave=True)
                 print("alt + E")
                 return True
 

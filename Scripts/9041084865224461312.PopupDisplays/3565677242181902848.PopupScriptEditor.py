@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QFrame
-from PyQt5.QtCore import Qt, QEvent
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QFrame
+from qtpy.QtCore import Qt, QEvent
 
 from Katana import UI4
 
