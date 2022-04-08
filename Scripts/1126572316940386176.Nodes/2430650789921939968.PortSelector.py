@@ -11,12 +11,16 @@ This is actived with the Alt+~ and will do a few things:
         2c) If there are multiple input ports, prompt the user to select an input port to connect to.  If the user
                 selects a port that has a connection, prompt the user to override the connection.
 TODO
-    *   Case for 0 ports
-            Selecting ports
+    *   Connecting to 0 ports, such as merge or switch
     *   Prompt color nodes
             For when an override is active
     *   Connecting to/found the current node
     *   Mouse move, nearest node coloring
+            Get LinkConnectionLayer
+            check to see if monkey patch installed
+            if not installed, install movement patch
+            __processMouseMove
+    *   Override for port types
 
 """
 from qtpy.QtWidgets import QFrame, QVBoxLayout, QLabel
@@ -26,7 +30,7 @@ from Katana import Utils, QT4Widgets, QT4GLLayerStack, NodegraphAPI, DrawingModu
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 from cgwidgets.widgets import ButtonInputWidgetContainer, ButtonInputWidget, FrameInputWidgetContainer
-from cgwidgets.utils import centerWidgetOnCursor, setAsBorderless, setAsTransparent, setAsTool, isCursorOverWidget
+from cgwidgets.utils import centerWidgetOnCursor, setAsBorderless, setAsTransparent, getWidgetUnderCursor, isCursorOverWidget
 from Utils2 import nodeutils, portutils, getFontSize
 
 main_window = UI4.App.MainWindow.CurrentMainWindow()
@@ -254,8 +258,12 @@ class PortConnector():
         2b.) If a port is selected, then connect the port.  If multiple ports are available to be
             connected, then show the user a GUI to select a port.
         """
+        widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
+        if widget_under_cursor != "NodegraphWidget": return
+
         node = nodeutils.getClosestNode()
         if not node: return
+
 
         selection_active = PortConnector.isSelectionActive()
 

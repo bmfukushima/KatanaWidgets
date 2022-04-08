@@ -104,13 +104,14 @@ from MonkeyPatches import (
     changeFullscreenHotkey,
     changeMinTabSize,
     saveLastActiveBookmark,
-    installUserParametersPolicyOverride)
-#, installNodegraphHotkeyOverrides)
+    installUserParametersPolicyOverride,
+    installNodegraphHotkeyOverrides)
+
 changeFullscreenHotkey(Qt.Key_B)
 changeMinTabSize(50)
 saveLastActiveBookmark()
 installUserParametersPolicyOverride()
-# installNodegraphHotkeyOverrides()
+installNodegraphHotkeyOverrides()
 
 
 # update NMC node
@@ -253,4 +254,3 @@ def createNMCUtilNodes(*args):
             # create material assign / display param
             createMaterialAssign(network_material_create_node)
 
-# Utils.EventModule.RegisterCollapsedHandler(createNMCUtilNodes, 'node_create')
