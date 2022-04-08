@@ -25,7 +25,8 @@ Alt+D
 from qtpy.QtCore import Qt, QSize
 from qtpy.QtGui import QCursor
 
-from cgwidgets.utils import getScreenResolution, scaleResolution
+from cgwidgets.utils import scaleResolution
+from cgwidgets.settings import iColor
 
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 from Utils2 import nodeutils
@@ -64,18 +65,36 @@ def displayPopupParameters(hide_on_leave=False):
     # preflight
     selected_nodes = NodegraphAPI.GetAllSelectedNodes()
     if len(selected_nodes) == 0:
-        selected_nodes = [nodeutils.getClosestNode()]
+        selected_nodes = list(filter(None, [nodeutils.getClosestNode()]))
+
+    if len(selected_nodes) == 0: return
 
     # construct popup parameters window if it doesn't exist
     if not PopupWidget.doesPopupWidgetExist("popupParameters"):
+        # create popup widget
         widget = AbstractParametersDisplayWidget()
-
-        size = scaleResolution(QSize(640, 1060))
-        PopupWidget.constructPopupWidget(
+        size = scaleResolution(QSize(800, 1060))
+        popup_widget = PopupWidget.constructPopupWidget(
             "popupParameters", widget, size=size, hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
+        # setup style
+        rgba_border = iColor["rgba_selected"]
+        popup_widget.setStyleSheet(f"""
+            QWidget#PopupWidget{{
+                border-top: 1px solid rgba{rgba_border};
+                border-bottom: 1px solid rgba{rgba_border};
+            }}
+        """)
+
+        # set popup widget style
+        popup_widget.setIsMaskEnabled(True)
+        popup_widget.setMaskSize(QSize(800, 2000))
+        popup_widget.setContentsMargins(0, 0, 0, 0)
+        popup_widget.layout().setContentsMargins(0, 0, 0, 0)
+        offset_x = scaleResolution(70)
+        offset_y = scaleResolution(15)
+        popup_widget.centralWidget().setContentsMargins(offset_x, offset_y, offset_x, offset_y)
 
     # hide/show popup parameters
-
     widget = PopupWidget.getPopupWidget("popupParameters")
     widget.setHideOnLeave(hide_on_leave)
     widget.mainWidget().populateParameters(selected_nodes, hide_title=False)

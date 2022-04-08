@@ -9,14 +9,15 @@ PopupWidget --> (QFrame)
             |- QVBoxLayout
                 |- main_widget (PopupWidget)
 """
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QFrame
+from qtpy.QtWidgets import QWidget, QVBoxLayout
 from qtpy.QtCore import Qt, QEvent, QPoint, QSize
-from qtpy.QtGui import QKeySequence
-
+from qtpy.QtGui import QPainter, QColor, QPen, QRegion
 from Katana import UI4
-from cgwidgets.utils import setAsAlwaysOnTop, setAsTool, isCursorOverWidget
+from cgwidgets.utils import setAsAlwaysOnTop, setAsTool, isCursorOverWidget, scaleResolution
+from cgwidgets.settings import iColor
 
-class PopupWidget(QFrame):
+
+class PopupWidget(QWidget):
     """ Creates a popup tab widget that will be displayed over the UI
 
     Args:
@@ -27,6 +28,8 @@ class PopupWidget(QFrame):
         hide_modifiers (Qt.MODIFIER): special modifiers for hiding
             multiple modifiers can be provided as:
                 (Qt.AltModifier | Qt.ShiftModifier | Qt.ControlModifier)
+        mask_size (QSize): Size of the mask
+        is_mask_enabled (bool): determines if this should have the mask applied
     """
     def __init__(self, widget, size=QSize(480, 960), hide_on_leave=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier, parent=None):
         super(PopupWidget, self).__init__(parent)
@@ -36,6 +39,12 @@ class PopupWidget(QFrame):
         self._hide_modifiers = hide_modifiers
         self._hide_on_leave = hide_on_leave
         self.setFixedSize(size)
+        self._mask_size = QSize(
+            scaleResolution(self.width()),
+            scaleResolution(self.height())
+        )
+        self._is_mask_enabled = False
+        setAsAlwaysOnTop(self)
 
         # setup layout
         QVBoxLayout(self)
@@ -46,12 +55,56 @@ class PopupWidget(QFrame):
         self.layout().addWidget(self._central_widget)
         self._central_widget.layout().addWidget(self._main_widget)
 
-        # setup style
-        self.setStyleSheet("""QWidget#PopupWidget{border: 1px solid rgba(128,128,255,255)}""")
-
         # install events
         self._main_widget.installEventFilter(self)
-        setAsAlwaysOnTop(self)
+
+    """ MASKING """
+    def maskSize(self):
+        return self._mask_size
+
+    def setMaskSize(self, size):
+        self._mask_size = QSize(
+            scaleResolution(size.width()),
+            scaleResolution(size.height())
+        )
+
+    def isMaskEnabled(self):
+        return self._is_mask_enabled
+
+    def setIsMaskEnabled(self, enabled):
+        self._is_mask_enabled = enabled
+
+    def paintEvent(self, event=None):
+        """ Sets the crop window for the widget"""
+        if not self.isMaskEnabled(): return
+
+        painter = QPainter(self)
+        painter.setOpacity(0.75)
+        bg_color = QColor(*iColor["rgba_selected"])
+        painter.setPen(QPen(bg_color))
+
+        # ellipse
+        """ Draws an ellipse at the coordinates provided, starting at the upper left corner.
+        This is offsetting the radius of the ellipse so that it wills up the entire window"""
+        painter.drawEllipse(
+            QPoint(
+                int(self.width()-(self.width()*0.5)),
+                int(self.height()-(self.height()*0.5))
+            ),
+            self.maskSize().width() * 0.5 - 1,
+            self.maskSize().height() * 0.5 - 1
+        )
+
+    def resizeEvent(self, event):
+        """ Draws the border around the cropped area"""
+        if not self.isMaskEnabled(): return
+
+        width_offset = int((self.maskSize().width() - self.width()) * 0.5)
+        height_offset = int((self.maskSize().height() - self.height()) * 0.5)
+
+        region = QRegion(-width_offset, -height_offset, self.maskSize().width(), self.maskSize().height(), QRegion.Ellipse)
+        self.clearMask()
+        self.setMask(region)
 
     """ PROPERTIES """
     def hideModifiers(self):
@@ -72,6 +125,10 @@ class PopupWidget(QFrame):
     def setHideOnLeave(self, hide_on_leave):
         self._hide_on_leave = hide_on_leave
 
+    """ WIDGETS """
+    def centralWidget(self):
+        return self._central_widget
+
     def mainWidget(self):
         return self._main_widget
 
@@ -87,7 +144,7 @@ class PopupWidget(QFrame):
         if event.type() == QEvent.KeyPress:
             self.__hideOnKeyPress(event)
 
-        return QFrame.keyPressEvent(self, event)
+        return QWidget.keyPressEvent(self, event)
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
@@ -98,12 +155,12 @@ class PopupWidget(QFrame):
         if self.hideOnLeave():
             if not isCursorOverWidget(self):
                 self.hide()
-        return QFrame.enterEvent(self, event)
+        return QWidget.enterEvent(self, event)
 
     def enterEvent(self, event):
         self.activateWindow()
         self.setFocus()
-        return QFrame.enterEvent(self, event)
+        return QWidget.enterEvent(self, event)
 
     """ UTILS """
     @staticmethod
@@ -124,7 +181,7 @@ class PopupWidget(QFrame):
         main_window = UI4.App.MainWindow.CurrentMainWindow()
         popup_widget_attr = f"_popup_{name}"
         if hasattr(main_window, popup_widget_attr):
-            True
+            return True
         return False
 
     @staticmethod
@@ -170,15 +227,17 @@ class PopupWidget(QFrame):
 
         # create widget if it doesn't exist
         if not hasattr(main_window, popup_widget_attr):
-            popup_tab_widget = PopupWidget(
+            popup_widget = PopupWidget(
                 widget, hide_on_leave=hide_on_leave, hide_hotkey=hide_hotkey, hide_modifiers=hide_modifiers, size=size)
-            setAsTool(popup_tab_widget)
-            setattr(main_window, popup_widget_attr, popup_tab_widget)
-            popup_tab_widget.hide()
+            setAsTool(popup_widget)
+            setattr(main_window, popup_widget_attr, popup_widget)
+            popup_widget.hide()
 
-        # show tab
-        if show_on_init:
-            PopupWidget.togglePopupWidgetVisibility(name, size=size, pos=pos)
+            # show tab
+            if show_on_init:
+                PopupWidget.togglePopupWidgetVisibility(name, size=size, pos=pos)
+
+            return popup_widget
 
     @staticmethod
     def constructPopupTabWidget(tab_type, hide_on_leave=False, size=QSize(480, 960), pos=None, show_on_init=True, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
@@ -201,14 +260,16 @@ class PopupWidget(QFrame):
         # create widget if it doesn't exist
         if not hasattr(main_window, popup_widget_attr):
             widget = UI4.App.Tabs.CreateTab(tab_type, None)
-            popup_tab_widget = PopupWidget(
+            popup_widget = PopupWidget(
                 widget, size=size, hide_on_leave=hide_on_leave, hide_hotkey=hide_hotkey, hide_modifiers=hide_modifiers, parent=main_window)
-            setattr(main_window, popup_widget_attr, popup_tab_widget)
-            popup_tab_widget.hide()
+            setattr(main_window, popup_widget_attr, popup_widget)
+            popup_widget.hide()
 
-        # show tab
-        if show_on_init:
-            PopupWidget.togglePopupWidgetVisibility(tab_type, size=size, pos=pos)
+            # show tab
+            if show_on_init:
+                PopupWidget.togglePopupWidgetVisibility(tab_type, size=size, pos=pos)
+
+            return popup_widget
 
     @staticmethod
     def togglePopupWidgetVisibility(name, size=None, pos=None):
