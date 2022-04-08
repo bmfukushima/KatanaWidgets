@@ -23,7 +23,7 @@ class PopupWidget(QFrame):
             multiple modifiers can be provided as:
                 (Qt.AltModifier | Qt.ShiftModifier | Qt.ControlModifier)
     """
-    def __init__(self, widget, size=(0.5, 0.85), hide_on_leave=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier, parent=None):
+    def __init__(self, widget, size=(480, 960), hide_on_leave=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier, parent=None):
         super(PopupWidget, self).__init__(parent)
         self.setObjectName("PopupWidget")
         self._main_widget = widget
@@ -136,8 +136,8 @@ class PopupWidget(QFrame):
         if not pos:
             pos = QPoint(main_window.width() * 0.5, main_window.height * 0.5)
         # find geometry bounds
-        width = main_window.width() * size[0]
-        height = main_window.height() * size[1]
+        width = size[0]
+        height = size[1]
         xpos = int(pos.x() - (width * 0.5))
         ypos = int(pos.y() - (height * 0.5))
 
@@ -146,7 +146,7 @@ class PopupWidget(QFrame):
         widget.show()
 
     @staticmethod
-    def constructPopupWidget(name, widget, hide_on_leave=False, size=(0.5, 0.85), pos=None, show_on_init=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
+    def constructPopupWidget(name, widget, hide_on_leave=False, size=(480, 960), pos=None, show_on_init=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
         """ Constructs a new popup widget
 
         Args:
@@ -175,7 +175,7 @@ class PopupWidget(QFrame):
             PopupWidget.togglePopupWidgetVisibility(name, size=size, pos=pos)
 
     @staticmethod
-    def constructPopupTabWidget(tab_type, hide_on_leave=False, size=(0.5, 0.85), pos=None, show_on_init=True, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
+    def constructPopupTabWidget(tab_type, hide_on_leave=False, size=(480, 960), pos=None, show_on_init=True, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
         """ Constructs a new popup from the tab type provided
 
         Args:
@@ -205,7 +205,7 @@ class PopupWidget(QFrame):
             PopupWidget.togglePopupWidgetVisibility(tab_type, size=size, pos=pos)
 
     @staticmethod
-    def togglePopupWidgetVisibility(name, size=(0.5, 0.85), pos=None):
+    def togglePopupWidgetVisibility(name, size=(480, 960), pos=None):
 
         # get attrs
         main_window = UI4.App.MainWindow.CurrentMainWindow()
