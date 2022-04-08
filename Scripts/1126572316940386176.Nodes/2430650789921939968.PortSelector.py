@@ -20,6 +20,8 @@ TODO
             if not installed, install movement patch
             __processMouseMove
     *   Override for port types
+    *   Inside of group nodes
+    *   Network Material Create
 
 """
 from qtpy.QtWidgets import QFrame, QVBoxLayout, QLabel
