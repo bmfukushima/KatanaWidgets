@@ -23,7 +23,17 @@ Alt+D
 
 """
 from qtpy.QtCore import Qt
+from qtpy.QtGui import QCursor
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
+from Utils2 import nodeutils
+
+
+def disableNodes():
+    import NodegraphAPI
+    selected_nodes = NodegraphAPI.GetAllSelectedNodes()
+    for node in selected_nodes:
+        node.isBypassed()
+        node.setBypassed(not node.isBypassed())
 
 
 def displayParameters():
@@ -40,20 +50,23 @@ def displayParameters():
     finally:
         Utils.UndoStack.CloseGroup()
 
+
 def displayPopupParameters(hide_on_leave=False):
     """ Popups up a parameters view of all of the currently selected nodes
     Args:
         hide_on_leave (bool): determines if this should should be hidden on leave
     """
-    from Katana import NodegraphAPI
+    from Katana import NodegraphAPI, UI4
 
     # preflight
     selected_nodes = NodegraphAPI.GetAllSelectedNodes()
-    if len(selected_nodes) == 0: return
+    if len(selected_nodes) == 0:
+        selected_nodes = [nodeutils.getClosestNode()]
 
     # construct popup parameters window if it doesn't exist
     if not PopupWidget.doesPopupWidgetExist("popupParameters"):
         widget = AbstractParametersDisplayWidget()
+
         PopupWidget.constructPopupWidget(
             "popupParameters", widget, size=(0.5, 0.85), hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
 
@@ -61,10 +74,10 @@ def displayPopupParameters(hide_on_leave=False):
     widget = PopupWidget.getPopupWidget("popupParameters")
     widget.setHideOnLeave(hide_on_leave)
     widget.mainWidget().populateParameters(selected_nodes, hide_title=False)
-    PopupWidget.togglePopupWidgetVisibility("popupParameters")
+    PopupWidget.togglePopupWidgetVisibility("popupParameters", pos=QCursor.pos())
+
 
 def __installNodegraphHotkeyOverrides(**kwargs):
-    import UI4
     from UI4.App import Tabs
     # create proxy nodegraph
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
@@ -80,14 +93,19 @@ def __installNodegraphHotkeyOverrides(**kwargs):
         # This is now handled by the script manager
         # Nodes --> PortSelector
         if event.key() == 96: return
+
+        # updating disable handler
+        if event.key() == Qt.Key_D:
+            disableNodes()
+            return True
+
+        # updating parameter view handler
         if event.key() == Qt.Key_E:
             if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
                 displayPopupParameters(hide_on_leave=False)
-                print("alt + shift + E")
                 return True
             elif event.modifiers() == Qt.AltModifier:
                 displayPopupParameters(hide_on_leave=True)
-                print("alt + E")
                 return True
 
             displayParameters()
