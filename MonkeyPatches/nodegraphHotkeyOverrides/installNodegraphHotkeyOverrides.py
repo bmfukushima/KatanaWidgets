@@ -22,7 +22,7 @@ Alt+D
 
 
 """
-from qtpy.QtCore import Qt, QSize
+from qtpy.QtCore import Qt, QSize, QPoint
 from qtpy.QtGui import QCursor
 
 from cgwidgets.utils import scaleResolution
@@ -98,7 +98,12 @@ def displayPopupParameters(hide_on_leave=False):
     widget = PopupWidget.getPopupWidget("popupParameters")
     widget.setHideOnLeave(hide_on_leave)
     widget.mainWidget().populateParameters(selected_nodes, hide_title=False)
-    PopupWidget.togglePopupWidgetVisibility("popupParameters", pos=QCursor.pos())
+    pos = QPoint(
+        QCursor.pos().x(),
+        QCursor.pos().y() + widget.height() * 0.25
+
+    )
+    PopupWidget.togglePopupWidgetVisibility("popupParameters", pos=pos)
 
 
 def __installNodegraphHotkeyOverrides(**kwargs):
