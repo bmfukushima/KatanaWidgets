@@ -635,8 +635,6 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         """
         # todo update desirable group names
         this = widget.getMainWidget()
-        print("widget == ", widget)
-        print("item ==", item)
 
         # set attrs
         this.setName(item.columnData()['name'])

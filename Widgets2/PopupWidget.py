@@ -151,11 +151,19 @@ class PopupWidget(QWidget):
             self.__hideOnKeyPress(event)
         return False
 
-    def leaveEvent(self, event):
+    def __leaveEvent(self):
         if self.hideOnLeave():
             if not isCursorOverWidget(self):
                 self.hide()
-        return QWidget.enterEvent(self, event)
+
+    def dragLeaveEvent(self, event):
+        print('drag leave?')
+        self.__leaveEvent()
+        return QWidget.dragLeaveEvent(self, event)
+
+    def leaveEvent(self, event):
+        self.__leaveEvent()
+        return QWidget.leaveEvent(self, event)
 
     def enterEvent(self, event):
         self.activateWindow()
