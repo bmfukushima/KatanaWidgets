@@ -46,8 +46,6 @@ TODO:
         --> updateDesiredDataFromParam
         - make sure this stays in sync when doing the drag/drop/delete/etc
             - node/parameter reparent
-    *   Deleting node not deleting parameters?
-    *   Delete event handler just doesn't work anymore?
 """
 import json
 
@@ -622,18 +620,13 @@ class DesirableStuffShojiPanel(NodeViewWidget):
 
     @staticmethod
     def populate(parent, widget, item):
-        """
-        Adds all of the indexes for every node that has been
-        chosen as "desirable" by the user
-            def updateGUI(parent, widget, item):
+        """Adds all of the indexes for every node that has been chosen as "desirable" by the user
 
-            parent (ShojiModelViewWidget)
-            widget (ShojiModelDelegateWidget)
-            item (ShojiModelItem)
-            self --> widget.getMainWidget()
-
+        parent (ShojiModelViewWidget)
+        widget (ShojiModelDelegateWidget)
+        item (ShojiModelItem)
+        self --> widget.getMainWidget()
         """
-        # todo update desirable group names
         this = widget.getMainWidget()
 
         # set attrs
