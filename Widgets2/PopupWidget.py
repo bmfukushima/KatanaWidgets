@@ -149,17 +149,14 @@ class PopupWidget(QWidget):
     def eventFilter(self, obj, event):
         if event.type() == QEvent.KeyPress:
             self.__hideOnKeyPress(event)
+        if event.type() == QEvent.DragLeave:
+            self.hide()
         return False
 
     def __leaveEvent(self):
         if self.hideOnLeave():
             if not isCursorOverWidget(self):
                 self.hide()
-
-    def dragLeaveEvent(self, event):
-        print('drag leave?')
-        self.__leaveEvent()
-        return QWidget.dragLeaveEvent(self, event)
 
     def leaveEvent(self, event):
         self.__leaveEvent()
