@@ -46,6 +46,8 @@ TODO:
         --> updateDesiredDataFromParam
         - make sure this stays in sync when doing the drag/drop/delete/etc
             - node/parameter reparent
+    *   Deleting node not deleting parameters?
+    *   Delete event handler just doesn't work anymore?
 """
 import json
 
@@ -117,23 +119,29 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         """ Updates the metadata when a node/parameter has been deleted"""
         for arg in args:
             # get object name
-            if arg[0] == "node_delete":
-                object_name = arg[2]["node"].getName().replace("__XX_DELETED_", "")
+            if arg[0] in ["node_delete", "parameter_deleteChild"]:
+                if arg[0] == "node_delete":
+                    node_name = arg[2]["oldName"]
+                    IS_NODE = True
+                if arg[0] == "parameter_deleteChild":
+                    param_name = arg[2]["paramName"] + "." + arg[2]["childName"]
+                    node_name = arg[2]["node"].getName()
+                    IS_NODE = False
 
-            if arg[0] == "parameter_deleteChild":
-                param_name = arg[2]["childName"]
-                param_full_path = arg[2]["paramName"] + "." + param_name
-                node_name = arg[2]["node"].getName()
-                object_name = f"{param_name} | {node_name} | {param_full_path}"
+                # update active displays
+                for desirable_stuff_widget in self.desiredStuffFrame().activeDelegateWidgets():
+                    # update internal data
+                    for index in desirable_stuff_widget.getAllIndexes():
+                        item = index.internalPointer()
+                        if item.getArg("node") == node_name:
+                            if IS_NODE:
+                                desirable_stuff_widget.deleteItem(item, event_update=True)
+                            else:
+                                if item.hasArg("param"):
+                                    if item.getArg("param") == param_name:
+                                        desirable_stuff_widget.deleteItem(item, event_update=True)
 
-            # update project settings meta data
-            for child in DesiredStuffTab.desiredStuffParam().getChildren():
-                data = json.loads(child.getValue(0))
-                for i, object_data in enumerate(data["data"]):
-                    if object_data["name"] == object_name:
-                        del data["data"][i]
-
-                child.setValue(json.dumps(data), 0)
+                self.desiredStuffFrame().updateDelegateDisplay()
 
     def updateObjectNameEvent(self, args):
         """ Updates the desired objects names when a nodes name is changed """
@@ -200,7 +208,6 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
 
             # update display
             if should_update:
-                # todo update the display
                 desirable_stuff_widget.updateDelegateDisplay()
                 Utils.EventModule.ProcessAllEvents()
 
@@ -638,9 +645,10 @@ class DesirableStuffShojiPanel(NodeViewWidget):
 
                 if obj_data["object_type"] == PARAM:
                     node = NodegraphAPI.GetNode(obj_data["node"])
-                    obj = node.getParameter(obj_data["param"])
-                    if obj:
-                        this.createNewIndexFromParam(obj, name=obj_data["name"])
+                    if node:
+                        obj = node.getParameter(obj_data["param"])
+                        if obj:
+                            this.createNewIndexFromParam(obj, name=obj_data["name"])
 
 
 class DesirableStuffView(AbstractDragDropListView):
