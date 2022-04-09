@@ -120,6 +120,7 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         for arg in args:
             # get object name
             if arg[0] in ["node_delete", "parameter_deleteChild"]:
+                Utils.UndoStack.OpenGroup("Delete Node Graph Pins")
                 if arg[0] == "node_delete":
                     node_name = arg[2]["oldName"]
                     IS_NODE = True
@@ -142,6 +143,7 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
                                         desirable_stuff_widget.deleteItem(item, event_update=True)
 
                 self.desiredStuffFrame().updateDelegateDisplay()
+                Utils.UndoStack.CloseGroup()
 
     def updateObjectNameEvent(self, args):
         """ Updates the desired objects names when a nodes name is changed """
@@ -173,6 +175,7 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
 
         """
         # update project settings meta data
+        Utils.UndoStack.OpenGroup("Rename Node Graph Pins")
         for child in DesiredStuffTab.desiredStuffParam().getChildren():
             data = json.loads(child.getValue(0))
             for object_data in data["data"]:
@@ -210,6 +213,7 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
             if should_update:
                 desirable_stuff_widget.updateDelegateDisplay()
                 Utils.EventModule.ProcessAllEvents()
+        Utils.UndoStack.CloseGroup()
 
     """ WIDGET"""
     def desiredStuffFrame(self):
@@ -264,6 +268,10 @@ class DesirableStuffFrame(ShojiModelViewWidget):
         self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.MinimumExpanding)
 
         self.delegateWidget().setObjectName("DesirableStuffFrame")
+        Utils.EventModule.RegisterCollapsedHandler(self.undoEvent, 'undo_end')
+
+    def undoEvent(self, *args):
+        self.populate()
 
     def rearrangeDesirableGroups(self, data, items_dropped, model, row, parent):
         desirable_param = DesiredStuffTab.desiredStuffParam()
@@ -627,6 +635,8 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         """
         # todo update desirable group names
         this = widget.getMainWidget()
+        print("widget == ", widget)
+        print("item ==", item)
 
         # set attrs
         this.setName(item.columnData()['name'])
