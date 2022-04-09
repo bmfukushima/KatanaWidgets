@@ -195,6 +195,14 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         for port in self.getDisplayPorts():
             self.addButton(port.getName(), port.getName(), self.portSelectedEvent)
 
+        if port_type == INPUT_PORT:
+            if node.getType() in nodeutils.dynamicInputPortNodes():
+                self.addButton("< New >", "< New >", self.createNewPortEvent)
+
+    """ PROPERTIES """
+    def node(self):
+        return self._node
+
     """ EVENTS """
     def portSelectedEvent(self, widget):
         """ Event run when the user selects a port"""
@@ -220,6 +228,13 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
             PortConnector.showNoodle(port)
 
         # self.parent()._show_noodle = False
+        self.parent().close()
+
+    def createNewPortEvent(self, widget):
+        num_ports = len(self.node().getInputPorts())
+        port = self.node().addInputPort(f"i{num_ports}")
+        self._selected_port.connect(port)
+        PortConnector.hideNoodle()
         self.parent().close()
 
     """ UTILS """
