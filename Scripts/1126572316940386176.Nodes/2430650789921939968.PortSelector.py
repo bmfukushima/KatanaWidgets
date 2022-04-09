@@ -62,6 +62,8 @@ class OverridePortWarningButtonPopupWidget(QFrame):
         if event.key() == Qt.Key_Escape:
             # PortConnector.showNoodle(self._output_port)
             self.close()
+        if event.key() == 96:
+            self._button_widget.connectPortsEvent()
         ButtonInputWidget.keyPressEvent(self, event)
 
     def closeEvent(self, event):
@@ -104,7 +106,7 @@ class OverridePortWarningButtonWidget(ButtonInputWidget):
         # setup events
         self.setUserClickedEvent(self.connectPortsEvent)
 
-    def connectPortsEvent(self, widget):
+    def connectPortsEvent(self, *args):
         self._input_port.connect(self._output_port)
         PortConnector.hideNoodle()
         self.parent().close()

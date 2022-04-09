@@ -63,7 +63,6 @@ def setNodeColor(args):
 
 
 def installDefaultNodeColorsEventFilter(**kwargs):
-    # test
     # os.environ[DEFAULT_CONFIG_ENVAR] = "/home/brian/.katana/ColorConfigs/User/test.json"
     # os.environ["KATANABEBOPNODECOLORS"] = "/home/brian/.cgwidgets/colorConfigs_01/;/home/brian/.cgwidgets/colorConfigs_02"
     from Katana import Utils
