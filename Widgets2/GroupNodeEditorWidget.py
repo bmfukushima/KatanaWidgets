@@ -45,7 +45,6 @@ class GroupNodeEditorWidget(ShojiLayout):
 
         # create gui
         self._nodegraph_widget = NodegraphWidget(self, node=self.node())
-        self._nodegraph_widget.setupDestroyNodegraphEvent()
         self._parameters_widget = ParametersDisplayWidget(self, node=self.node())
 
         self.addWidget(self._nodegraph_widget)

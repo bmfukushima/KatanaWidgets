@@ -58,17 +58,19 @@ class AbstractNodegraphWidget(QWidget):
 
         # todo nodegraph destruction handlers
         # causes crash on NMC
-        if self.panel_scroll_area:
-            self.panel_scroll_area = self.panel_scroll_area.parent()
+        # if self.panel_scroll_area:
+        #     self.panel_scroll_area = self.panel_scroll_area.parent()
+        #
+        #     # install event filters
+        #     panel.installEventFilter(self)
+        #     self.panel_scroll_area.viewport().installEventFilter(self)
 
-            # install event filters
-            panel.installEventFilter(self)
-            self.panel_scroll_area.viewport().installEventFilter(self)
-
-        self.getWidget().installEventFilter(self)
+        #self.getWidget().installEventFilter(self)
 
         # display menus
         self.displayMenus(display_menus, panel)
+
+        #self.destroyed.connect(self.destroyNodegraphTest)
 
     def createNodegraph(self):
         """
@@ -144,48 +146,48 @@ class AbstractNodegraphWidget(QWidget):
         self.getPanel()._NodegraphPanel__navigationToolbarCallback(node.getName(), 'useless')
 
     """ SETUP NODEGRAPH DESTRUCTION HANDLER """
-    def setupDestroyNodegraphEvent(self, widget_list=None):
-        """
-        Sets up all of the handlers for when the Nodegraph is destroyed.
-        Don't necessarily want this during the hide/show event as that could
-        a larger head ache than its worth.
-
-        Args:
-            widget_list (list): of widgets to install the destruction handler on
-            enabled (bool): whether or not these should be turned on or not.
-        """
-        # node delete
-        Utils.EventModule.RegisterCollapsedHandler(
-            self.nodeDelete, 'node_delete', None
-        )
-
-        # new scene
-        Utils.EventModule.RegisterCollapsedHandler(
-            self.loadBegin, 'nodegraph_loadBegin', None
-        )
-
-        # additional widgets closed to destroy this...
-        if self.panel_scroll_area:
-            self.parameters_panel = self.panel_scroll_area.parent()
-            self.parameters_panel.installEventFilter(self)
-
-        if widget_list:
-            for widget in widget_list:
-                widget.installEventFilter(self)
-
-    def destroyNodegraphEventFilter(self, obj, event):
-        """
-        When the katana tab is closed / hidden, this will destroy the nodegraph
-        """
-        event_type = event.type()
-        # if event_type == QEvent.Hide:
-        #     print("hide")
-        #     self.destroyNodegraph()
-        #     obj.removeEventFilter(self)
-
-        if event_type == QEvent.Close:
-            self.destroyNodegraph()
-            obj.removeEventFilter(self)
+    # def setupDestroyNodegraphEvent(self, widget_list=None):
+    #     """
+    #     Sets up all of the handlers for when the Nodegraph is destroyed.
+    #     Don't necessarily want this during the hide/show event as that could
+    #     a larger head ache than its worth.
+    #
+    #     Args:
+    #         widget_list (list): of widgets to install the destruction handler on
+    #         enabled (bool): whether or not these should be turned on or not.
+    #     """
+    #     # node delete
+    #     Utils.EventModule.RegisterCollapsedHandler(
+    #         self.nodeDelete, 'node_delete', None
+    #     )
+    #
+    #     # new scene
+    #     Utils.EventModule.RegisterCollapsedHandler(
+    #         self.loadBegin, 'nodegraph_loadBegin', None
+    #     )
+    #
+    #     # additional widgets closed to destroy this...
+    #     if self.panel_scroll_area:
+    #         self.parameters_panel = self.panel_scroll_area.parent()
+    #         self.parameters_panel.installEventFilter(self)
+    #
+    #     if widget_list:
+    #         for widget in widget_list:
+    #             widget.installEventFilter(self)
+    #
+    # def destroyNodegraphEventFilter(self, obj, event):
+    #     """
+    #     When the katana tab is closed / hidden, this will destroy the nodegraph
+    #     """
+    #     event_type = event.type()
+    #     # if event_type == QEvent.Hide:
+    #     #     print("hide")
+    #     #     self.destroyNodegraph()
+    #     #     obj.removeEventFilter(self)
+    #
+    #     if event_type == QEvent.Close:
+    #         self.destroyNodegraph()
+    #         obj.removeEventFilter(self)
 
     def eventFilter(self, obj, event):
         # wheel event
@@ -193,48 +195,59 @@ class AbstractNodegraphWidget(QWidget):
         if should_return: return True
 
         # destroy
-        self.destroyNodegraphEventFilter(obj, event)
+        #self.destroyNodegraphEventFilter(obj, event)
         return False
 
-    def nodeDelete(self, args):
-        node = self.getNode()
-        if node:
-            if "basic" in node.getName():
-                self.destroyNodegraph()
-                # if args[0][2]['node'] in [node, node.getParent()]:
-                #     print('node delete')
+    # def nodeDelete(self, args):
+    #     node = self.getNode()
+    #     if node:
+    #         if "basic" in node.getName():
+    #             self.destroyNodegraph()
+    #             # if args[0][2]['node'] in [node, node.getParent()]:
+    #             #     print('node delete')
+    #
+    # def loadBegin(self, args):
+    #     self.destroyNodegraph()
+    #     # not sure why this was double destroying?
+    #     # try:
+    #     #     self.destroyNodegraph()
+    #     # except AttributeError:
+    #     #     # on init this will suppress the logged message
+    #     #     pass
 
-    def loadBegin(self, args):
-        self.destroyNodegraph()
-        # not sure why this was double destroying?
-        # try:
-        #     self.destroyNodegraph()
-        # except AttributeError:
-        #     # on init this will suppress the logged message
-        #     pass
-
-    def destroyNodegraph(self):
-        """
-        Purges all metadata from the Nodegraph.  If you don't do this,
-        holy warning messages batman!  But it doesn't crash ;).
-
-        Essentially there is a private class attr on the Node Graph Widget called
-        __nodegraphWidgetList which needs to have the nodegraph removed from it,
-        or else it will let you know that its been destroyed
-
-        todo:
-            cleanup is causing the NMC context to crash
-            this normally happens on copy/paste
-        """
-        # get node graph widget
-        nodegraph_widget = self.getWidget()
-        # clean up
-        """ Todo disabling cleanup... as its causing the NMC Context to crash"""
-        nodegraph_widget.cleanup()
-
-    def closeEvent(self, event):
-        self.destroyNodegraph()
-        return QWidget.closeEvent(self, event)
+    # def destroyNodegraphTest(self):
+    #     print("================ destruction")
+    #     self.destroyNodegraph()
+    #
+    # def destroyNodegraph(self):
+    #     """
+    #     Purges all metadata from the Nodegraph.  If you don't do this,
+    #     holy warning messages batman!  But it doesn't crash ;).
+    #
+    #     Essentially there is a private class attr on the Node Graph Widget called
+    #     __nodegraphWidgetList which needs to have the nodegraph removed from it,
+    #     or else it will let you know that its been destroyed
+    #
+    #     todo:
+    #         cleanup is causing the NMC context to crash
+    #         this normally happens on copy/paste
+    #     """
+    #     # get node graph widget
+    #     nodegraph_widget = self.getWidget()
+    #     # clean up
+    #     """ Todo disabling cleanup... as its causing the NMC Context to crash"""
+    #     nodegraph_widget.cleanup()
+    #
+    #     for w in nodegraph_widget.getAllNodeGraphWidgets():
+    #         try:
+    #             print(w.isValid())
+    #         except RuntimeError:
+    #             # widget delete
+    #             nodegraph_widget._NodegraphWidget__nodegraphWidgetList.pop(w, None)
+    #
+    # def closeEvent(self, event):
+    #     self.destroyNodegraph()
+    #     return QWidget.closeEvent(self, event)
 
     """ PROPERTIES """
     def setNode(self, node):

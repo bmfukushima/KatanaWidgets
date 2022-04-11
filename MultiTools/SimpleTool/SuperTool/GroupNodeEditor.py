@@ -51,7 +51,6 @@ class GroupNodeEditorMainWidget(QWidget):
 
         # create gui
         self.nodegraph_widget = NodegraphWidget(self, node=self.node())
-        self.nodegraph_widget.setupDestroyNodegraphEvent()
         self.parameters_widget = ParametersDisplayWidget(self, node=self.main_node)
 
         self.node_editor_widget.addWidget(self.nodegraph_widget)
