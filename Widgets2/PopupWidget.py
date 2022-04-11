@@ -38,7 +38,7 @@ class PopupWidget(QWidget):
         self._hide_hotkey = hide_hotkey
         self._hide_modifiers = hide_modifiers
         self._hide_on_leave = hide_on_leave
-        self.setFixedSize(size)
+        self.setFixedSize(scaleResolution(size))
         self._mask_size = QSize(
             scaleResolution(self.width()),
             scaleResolution(self.height())
@@ -150,13 +150,17 @@ class PopupWidget(QWidget):
         if event.type() == QEvent.KeyPress:
             self.__hideOnKeyPress(event)
         if event.type() == QEvent.DragLeave:
-            self.hide()
+            self.__leaveEvent()
         return False
 
     def __leaveEvent(self):
         if self.hideOnLeave():
-            if not isCursorOverWidget(self):
+            if not isCursorOverWidget(self, is_ellipse=True, mask=True):
                 self.hide()
+
+    def dragLeaveEvent(self, event):
+        self.__leaveEvent()
+        return QWidget.dragLeaveEvent(self, event)
 
     def leaveEvent(self, event):
         self.__leaveEvent()
