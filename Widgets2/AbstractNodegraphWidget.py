@@ -58,19 +58,17 @@ class AbstractNodegraphWidget(QWidget):
 
         # todo nodegraph destruction handlers
         # causes crash on NMC
-        # if self.panel_scroll_area:
-        #     self.panel_scroll_area = self.panel_scroll_area.parent()
-        #
-        #     # install event filters
-        #     panel.installEventFilter(self)
-        #     self.panel_scroll_area.viewport().installEventFilter(self)
+        if self.panel_scroll_area:
+            self.panel_scroll_area = self.panel_scroll_area.parent()
 
-        #self.getWidget().installEventFilter(self)
+            # install event filters
+            panel.installEventFilter(self)
+            self.panel_scroll_area.viewport().installEventFilter(self)
+
+        self.getWidget().installEventFilter(self)
 
         # display menus
         self.displayMenus(display_menus, panel)
-
-        #self.destroyed.connect(self.destroyNodegraphTest)
 
     def createNodegraph(self):
         """
