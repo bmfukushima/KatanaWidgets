@@ -171,6 +171,13 @@ class PopupWidget(QWidget):
         self.setFocus()
         return QWidget.enterEvent(self, event)
 
+    def hideEvent(self, event):
+        # todo when another window is set to always on top, this doesn't work for leave events
+        main_window = UI4.App.MainWindow.CurrentMainWindow()
+        main_window.activateWindow()
+
+        return QWidget.hideEvent(self, event)
+
     """ UTILS """
     @staticmethod
     def getPopupWidget(name):
