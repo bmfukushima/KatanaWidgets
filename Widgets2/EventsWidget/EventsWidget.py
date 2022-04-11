@@ -827,7 +827,10 @@ class EventInterface(object):
             node_name = user_data["node"]
             node = NodegraphAPI.GetNode(node_name)
         except KeyError:
-            node = None
+            try:
+                node = event_data["node"]
+            except KeyError:
+                node = None
 
         for key in event_data.keys():
             event_arg_data = event_data[key]
