@@ -351,12 +351,17 @@ class PortConnector():
             centerWidgetOnCursor(main_window._port_popup_menu)
 
     @staticmethod
+    def nodegraphWidget():
+        widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
+        if widget_under_cursor != "NodegraphWidget": return None
+        return getWidgetUnderCursor()
+
+    @staticmethod
     def getLinkConnectionLayer():
         """ Returns the link interaction layer.
 
         If it is not the last in the stack, this will return None"""
-        nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
-        nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+        nodegraph_widget = PortConnector.nodegraphWidget()
         last_layer = nodegraph_widget.getLayers()[-1]
         if isinstance(last_layer, LinkConnectionLayer):
             return last_layer
@@ -366,22 +371,19 @@ class PortConnector():
     @staticmethod
     def isSelectionActive():
         """ Determines if a port selection is active"""
-        nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
-        nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+        nodegraph_widget = PortConnector.nodegraphWidget()
         graph_interaction = nodegraph_widget.getGraphInteraction()
         return not graph_interaction
 
     @staticmethod
     def hideNoodle():
         """ Hides the noodle, or multiple noodles..."""
-        nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
-        nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+        nodegraph_widget = PortConnector.nodegraphWidget()
         last_layer = nodegraph_widget.getLayers()[-1]
         while isinstance(last_layer, LinkConnectionLayer):
             nodegraph_widget.idleUpdate()
             nodegraph_widget.removeLayer(last_layer)
-            nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
-            nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+            nodegraph_widget = PortConnector.nodegraphWidget()
             last_layer = nodegraph_widget.getLayers()[-1]
 
     @staticmethod
@@ -391,8 +393,7 @@ class PortConnector():
         Args:
             port (Port): """
 
-        nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
-        nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+        nodegraph_widget = PortConnector.nodegraphWidget()
         port_layer = nodegraph_widget.getLayerByName("PortInteractions")
 
         ls = port_layer.layerStack()

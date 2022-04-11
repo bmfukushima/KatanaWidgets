@@ -1,4 +1,6 @@
 import math
+
+from cgwidgets.utils import getWidgetUnderCursor
 #from cgwidgets.interface.AbstractUtilsInterfaceAPI import disconnectNode, connectInsideGroup
 try:
     import NodegraphAPI, UI4, Utils
@@ -55,7 +57,7 @@ def dynamicInputPortNodes():
     return ["Merge", "VariableSwitch", "Switch"]
 
 
-def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False, exclude_nodes=[]):
+def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False, exclude_nodes=[], nodegraph_widget=None):
     """ Returns the closest node to the cursor
 
     Args:
@@ -66,8 +68,11 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
             them should be included
     """
 
-    nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
-    nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+    widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
+    if widget_under_cursor != "NodegraphWidget": return
+
+    if not nodegraph_widget:
+        nodegraph_widget = getWidgetUnderCursor()
 
     # populate node list
     node_list = nodegraph_widget.getCurrentNodeView().getChildren()
