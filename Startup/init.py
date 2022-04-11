@@ -99,6 +99,7 @@ def contextMenu(**kwargs):
 
 Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)
 
+
 # change full screen hotkey
 from MonkeyPatches import (
     changeFullscreenHotkey,
@@ -113,7 +114,20 @@ saveLastActiveBookmark()
 installUserParametersPolicyOverride()
 installNodegraphHotkeyOverrides()
 
+def cleanupNodegraphs(args):
+    from Katana import UI4
+    nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
+    nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+    # print("cleanup")
+    for w in nodegraph_widget.getAllNodeGraphWidgets():
+        try:
+            w.isValid()
+            # print(w.isValid())
+        except RuntimeError:
+            # widget delete
+            nodegraph_widget._NodegraphWidget__nodegraphWidgetList.pop(w, None)
 
+Utils.EventModule.RegisterCollapsedHandler(cleanupNodegraphs, 'nodegraph_redraw', None, True)
 # update NMC node
 def createNMCUtilNodes(*args):
     """
