@@ -11,9 +11,6 @@ This is actived with the Alt+~ and will do a few things:
         2c) If there are multiple input ports, prompt the user to select an input port to connect to.  If the user
                 selects a port that has a connection, prompt the user to override the connection.
 TODO
-    *   Connecting to 0 ports, such as merge or switch
-    *   Prompt color nodes
-            For when an override is active
     *   Mouse move, nearest node coloring
             Get LinkConnectionLayer
             check to see if monkey patch installed
@@ -53,7 +50,7 @@ class OverridePortWarningButtonPopupWidget(QFrame):
 
         # setup display
         setAsBorderless(self)
-        self.setContentsMargins(10, 10, 10, 10)
+        # self.setContentsMargins(10, 10, 10, 10)
         self.setStyleSheet("""QFrame{border: 1px solid rgba(128,128,255,255); margin: 2px}""")
         if not PortConnector.isSelectionActive():
             PortConnector.showNoodle(output_port)
@@ -290,6 +287,7 @@ class PortConnector():
 
         # NO PORT SELECTED
         else:
+            PortConnector.setActiveNodegraphWidget()
             self.selectPortEvent()
 
     def connectPortEvent(self):
@@ -351,9 +349,24 @@ class PortConnector():
             centerWidgetOnCursor(main_window._port_popup_menu)
 
     @staticmethod
+    def setActiveNodegraphWidget(nodegraph_widget=None):
+        """ Sets the currently active nodegraph widget"""
+        if not nodegraph_widget:
+            nodegraph_widget = PortConnector.nodegraphWidget()
+        main_window._active_nodegraph_widget = nodegraph_widget
+
+    @staticmethod
+    def activeNodegraphWidget():
+        """ Returns the currently active nodegraph widget"""
+        return main_window._active_nodegraph_widget
+
+    @staticmethod
     def nodegraphWidget():
+        """ Gets the nodegraph under the cursor"""
+        # Todo update, as it hits the menu, instead of the nodegraph on release
         widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
         if widget_under_cursor != "NodegraphWidget": return None
+
         return getWidgetUnderCursor()
 
     @staticmethod
@@ -372,19 +385,23 @@ class PortConnector():
     def isSelectionActive():
         """ Determines if a port selection is active"""
         nodegraph_widget = PortConnector.nodegraphWidget()
+        if not nodegraph_widget:
+            nodegraph_widget = PortConnector.activeNodegraphWidget()
         graph_interaction = nodegraph_widget.getGraphInteraction()
         return not graph_interaction
 
     @staticmethod
     def hideNoodle():
         """ Hides the noodle, or multiple noodles..."""
-        nodegraph_widget = PortConnector.nodegraphWidget()
+        nodegraph_widget = PortConnector.activeNodegraphWidget()
         last_layer = nodegraph_widget.getLayers()[-1]
         while isinstance(last_layer, LinkConnectionLayer):
             nodegraph_widget.idleUpdate()
             nodegraph_widget.removeLayer(last_layer)
-            nodegraph_widget = PortConnector.nodegraphWidget()
+            # nodegraph_widget = PortConnector.nodegraphWidget()
             last_layer = nodegraph_widget.getLayers()[-1]
+
+        delattr(main_window, "_active_nodegraph_widget")
 
     @staticmethod
     def showNoodle(port):
@@ -393,7 +410,7 @@ class PortConnector():
         Args:
             port (Port): """
 
-        nodegraph_widget = PortConnector.nodegraphWidget()
+        nodegraph_widget = PortConnector.activeNodegraphWidget()
         port_layer = nodegraph_widget.getLayerByName("PortInteractions")
 
         ls = port_layer.layerStack()

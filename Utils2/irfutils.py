@@ -58,6 +58,21 @@ def irfNodeParam():
     return NodegraphAPI.GetRootNode().getParameter("KatanaBebop.IRFNode")
 
 
+def setupDefaultIRFNode():
+    """ On init, this creates the default IRF Node if none exist
+
+    Returns (Node) InteractiveRenderFilters node"""
+    setupDefaultIRFParam()
+    irf_node_name = irfNodeParam().getValue(0)
+    irf_node = NodegraphAPI.GetNode(irf_node_name)
+
+    if not irf_node:
+        irf_node = NodegraphAPI.CreateNode("InteractiveRenderFilters", NodegraphAPI.GetRootNode())
+        setDefaultIRFNode(irf_node)
+
+    return irf_node
+
+
 def setupDefaultIRFParam():
     from . import paramutils
     Utils.UndoStack.DisableCapture()
@@ -83,6 +98,7 @@ def setDefaultIRFNode(irf_node):
     for tab in getAllIRFTabs():
         irf_node_widget = tab.createWidget().irfNodeWidget()
         irf_node_widget.setText(irf_node.getName())
+
 
 def getAllIRFTabs():
     """ Returns a list of all of the GSVViewWidgets"""

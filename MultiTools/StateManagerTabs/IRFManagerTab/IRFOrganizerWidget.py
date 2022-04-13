@@ -75,6 +75,8 @@ class AbstractIRFOrganizerWidget(ModelViewWidget):
 
     def createFilterItem(self, render_filter_node):
         """ Creates a new item from the node provided"""
+        if not render_filter_node:
+            render_filter_node = irfutils.setupDefaultIRFNode()
         name = render_filter_node.getParameter('name').getValue(0)
         category = render_filter_node.getParameter('category').getValue(0)
 

@@ -79,7 +79,7 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
     def __init__(self, parent=None):
         super(IRFManagerTab, self).__init__(parent)
         # setup default attrs
-        self.__setupDefaultIRFNode()
+        irfutils.setupDefaultIRFNode()
 
         # setup layout
         QVBoxLayout(self)
@@ -103,16 +103,6 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
         return IRFManagerTab.NAME
 
     """ UTILS """
-    def __setupDefaultIRFNode(self):
-        """ On init, this creates the default IRF Node if none exist"""
-        irfutils.setupDefaultIRFParam()
-        irf_node_name = irfutils.irfNodeParam().getValue(0)
-        irf_node = NodegraphAPI.GetNode(irf_node_name)
-
-        if not irf_node:
-            irf_node = NodegraphAPI.CreateNode("InteractiveRenderFilters", NodegraphAPI.GetRootNode())
-            irfutils.setDefaultIRFNode(irf_node)
-
     def update(self):
         self.activationWidget().update()
         self.viewWidget().update()
@@ -135,7 +125,7 @@ class IRFManagerTab(UI4.Tabs.BaseTab):
 
     """ EVENTS """
     def showEvent(self, event):
-        self.__setupDefaultIRFNode()
+        irfutils.setupDefaultIRFNode()
         return UI4.Tabs.BaseTab.showEvent(self, event)
 
     def nodegraphLoad(self, args):
