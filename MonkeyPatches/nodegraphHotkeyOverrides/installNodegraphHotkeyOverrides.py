@@ -1,3 +1,12 @@
+""" TODO
+        * LinkConnectionLayer
+            - Exit remove color
+        * Refactor
+            - folder name --> nodegraphOverrides
+            - PortConnection
+            - hotkey overrides
+"""
+
 """ Overrides the hotkeys for the nodegraph
 
 def test(self, event):
@@ -22,7 +31,8 @@ Alt+D
 
 
 """
-from qtpy.QtCore import Qt, QSize, QPoint
+
+from qtpy.QtCore import Qt, QSize, QPoint, QTimer
 from qtpy.QtGui import QCursor
 
 from cgwidgets.utils import scaleResolution
@@ -31,6 +41,8 @@ from cgwidgets.settings import iColor
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 from Utils2 import nodeutils
 
+from Katana import NodegraphAPI, Utils
+from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 def disableNodes():
     import NodegraphAPI
@@ -106,18 +118,52 @@ def displayPopupParameters(hide_on_leave=False):
     PopupWidget.togglePopupWidgetVisibility("popupParameters", pos=pos)
 
 
+# link connection mouse move
+def linkConnectionMouseMove(self, event):
+    def colorNearestNode():
+
+        closest_node = nodeutils.getClosestNode(has_input_ports=True, include_dynamic_port_nodes=True)
+        print(closest_node)
+        # remove old color
+        if hasattr(LinkConnectionLayer, "_closest_node"):
+            # if closest_node == getattr(LinkConnectionLayer, "_closest_node"): return
+            NodegraphAPI.SetNodeShapeAttr(LinkConnectionLayer._closest_node, "glowColorR", 0)
+            NodegraphAPI.SetNodeShapeAttr(LinkConnectionLayer._closest_node, "glowColorG", 0)
+            NodegraphAPI.SetNodeShapeAttr(LinkConnectionLayer._closest_node, "glowColorB", 0)
+            Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(LinkConnectionLayer._closest_node), node=LinkConnectionLayer._closest_node)
+        # set new color
+        NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorR", 0.5)
+        NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorG", 0.5)
+        NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorB", 1)
+
+        Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(closest_node), node=closest_node)
+
+        LinkConnectionLayer._closest_node = closest_node
+
+    def unfreeze():
+        LinkConnectionLayer._is_frozen = False
+
+    delay_amount = 100
+    # setup frozen attr
+    if not hasattr(LinkConnectionLayer, "_is_frozen"):
+        LinkConnectionLayer._is_frozen = False
+
+    # run events on timer
+    if not LinkConnectionLayer._is_frozen:
+        # setup timer
+        timer = QTimer()
+        timer.start(delay_amount)
+        timer.timeout.connect(unfreeze)
+        colorNearestNode()
+        # LinkConnectionLayer._is_frozen = True
+
+    return LinkConnectionLayer._orig__processMouseMove(self, event)
+
+
 def __installNodegraphHotkeyOverrides(**kwargs):
-    from UI4.App import Tabs
-    # create proxy nodegraph
-    nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
-    nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
-
-    # get node interaction layer
-    for layer in nodegraph_widget.getLayers():
-        if layer.__module__.split(".")[-1] == "NodeInteractionLayer":
-            node_interaction_layer = layer
-
-    def keyPressOverrides(self, event):
+    # Node interaction key press
+    def nodeInteractionKeyPress(self, event):
+        """ This needs to go here to keep the variable in scope"""
         # Suppress ~ key press
         # This is now handled by the script manager
         # Nodes --> PortSelector
@@ -141,13 +187,30 @@ def __installNodegraphHotkeyOverrides(**kwargs):
             return True
 
         return node_interaction_layer.__class__._orig__processKeyPress(self, event)
+    from UI4.App import Tabs
+    #from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
-    # monkey patch
+    # create proxy nodegraph
+    nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
+    nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
+
+    # get node interaction layer
+    for layer in nodegraph_widget.getLayers():
+        layer_name = layer.__module__.split(".")[-1]
+        if layer_name == "NodeInteractionLayer":
+            node_interaction_layer = layer
+
+    # node interaction monkey patch
     node_interaction_layer.__class__._orig__processKeyPress = node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress
-    node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = keyPressOverrides
+    node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress
+
+    # link interaction monkey patch
+    LinkConnectionLayer._orig__processMouseMove = LinkConnectionLayer._LinkConnectionLayer__processMouseMove
+    LinkConnectionLayer._LinkConnectionLayer__processMouseMove = linkConnectionMouseMove
 
     # cleanup
     nodegraph_widget.cleanup()
+
 
 def installNodegraphHotkeyOverrides(**kwargs):
     from Katana import Callbacks
