@@ -6,6 +6,8 @@ from Katana import NodegraphAPI, Utils
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 
+
+
 # link connection mouse move
 def linkConnectionLayerMouseMove(self, event):
     """ Changes the color of the nearest node """
@@ -16,10 +18,7 @@ def linkConnectionLayerMouseMove(self, event):
         # remove old color
         if hasattr(LinkConnectionLayer, "_closest_node"):
             # if closest_node == getattr(LinkConnectionLayer, "_closest_node"): return
-            NodegraphAPI.SetNodeShapeAttr(LinkConnectionLayer._closest_node, "glowColorR", 0)
-            NodegraphAPI.SetNodeShapeAttr(LinkConnectionLayer._closest_node, "glowColorG", 0)
-            NodegraphAPI.SetNodeShapeAttr(LinkConnectionLayer._closest_node, "glowColorB", 0)
-            Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(LinkConnectionLayer._closest_node), node=LinkConnectionLayer._closest_node)
+            nodeutils.removeGlowColor(LinkConnectionLayer._closest_node)
 
         # set new color
         if closest_node:
@@ -61,6 +60,17 @@ def linkConnectionLayerKeyPress(self, event):
     LinkConnectionLayer._orig__processKeyPress(self, event)
 
 
+def exitLink(func):
+    def removeGlowColor(self, *args):
+        if hasattr(LinkConnectionLayer, "_closest_node"):
+            nodeutils.removeGlowColor(LinkConnectionLayer._closest_node)
+            delattr(LinkConnectionLayer, "_closest_node")
+        func(self, *args)
+    return removeGlowColor
+
+    nodeutils.removeGlowColor(node)
+
+
 def installLinkConnectionLayerOverrides(**kwargs):
     """ Installs the overrides for the link connection layer"""
     # link interaction monkey patch
@@ -69,3 +79,7 @@ def installLinkConnectionLayerOverrides(**kwargs):
 
     LinkConnectionLayer._orig__processKeyPress = LinkConnectionLayer._LinkConnectionLayer__processKeyPress
     LinkConnectionLayer._LinkConnectionLayer__processKeyPress = linkConnectionLayerKeyPress
+
+    LinkConnectionLayer._LinkConnectionLayer__connectLinks = exitLink(LinkConnectionLayer._LinkConnectionLayer__connectLinks)
+    LinkConnectionLayer._LinkConnectionLayer__dropLinks = exitLink(LinkConnectionLayer._LinkConnectionLayer__dropLinks)
+    LinkConnectionLayer._LinkConnectionLayer__exitNoChange = exitLink(LinkConnectionLayer._LinkConnectionLayer__exitNoChange)
