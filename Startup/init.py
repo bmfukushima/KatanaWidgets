@@ -106,13 +106,13 @@ from MonkeyPatches import (
     changeMinTabSize,
     saveLastActiveBookmark,
     installUserParametersPolicyOverride,
-    installNodegraphHotkeyOverrides)
+    installNodegraphOverrides)
 
 changeFullscreenHotkey(Qt.Key_B)
 changeMinTabSize(50)
 saveLastActiveBookmark()
 installUserParametersPolicyOverride()
-installNodegraphHotkeyOverrides()
+installNodegraphOverrides()
 
 def cleanupNodegraphs(args):
     from Katana import UI4

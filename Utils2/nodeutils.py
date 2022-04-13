@@ -69,7 +69,6 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
     """
 
     widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
-    print(widget_under_cursor)
     if widget_under_cursor != "NodegraphWidget": return
 
     if not nodegraph_widget:
@@ -97,7 +96,6 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
             node_list.remove(node)
 
     cursor_pos = nodegraph_widget.getMousePos()
-    print(cursor_pos)
     closest_node = None
     mag = None
     for node in node_list:
