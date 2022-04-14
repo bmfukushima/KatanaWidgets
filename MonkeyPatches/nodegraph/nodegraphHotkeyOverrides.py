@@ -12,6 +12,8 @@ from UI4.App import Tabs
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
 
+from .portConnector import PortConnector
+
 def disableNodes():
     selected_nodes = NodegraphAPI.GetAllSelectedNodes()
     for node in selected_nodes:
@@ -92,7 +94,9 @@ def installNodegraphHotkeyOverrides(**kwargs):
         # Suppress ~ key press
         # This is now handled by the script manager
         # Nodes --> PortSelector
-        if event.key() == 96: return False
+        if event.key() == 96:
+            PortConnector.actuateSelection()
+            return True
 
         # updating disable handler
         if event.key() == Qt.Key_D:

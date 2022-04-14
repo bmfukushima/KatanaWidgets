@@ -5,6 +5,8 @@ from Utils2 import nodeutils
 from Katana import NodegraphAPI, Utils
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
+from .portConnector import PortConnector
+
 
 # link connection mouse move
 def linkConnectionLayerMouseMove(func):
@@ -59,6 +61,12 @@ def linkConnectionLayerKeyPress(func):
             if not event.isAutoRepeat():
                 self._LinkConnectionLayer__create_dot_node()
                 return
+
+        if event.key() == 96:
+            PortConnector.actuateSelection()
+            if event.modifiers() == Qt.AltModifier:
+                PortConnector.actuateSelection()
+            return True
 
         func(self, event)
     return __linkConnectionLayerKeyPress
