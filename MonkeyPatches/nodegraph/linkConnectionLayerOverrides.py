@@ -71,10 +71,9 @@ def linkConnectionLayerKeyPress(func):
 
             if (event.modifiers() & Qt.AltModifier) == Qt.AltModifier:
                 is_recursive_selection = True
-            # actuate first click
-            PortConnector.actuateSelection(display_warning=display_warning, is_recursive_selection=is_recursive_selection)
 
-            # actuate second (if recurise connection)
+            # actuate
+            PortConnector.actuateSelection(display_warning=display_warning, is_recursive_selection=is_recursive_selection)
 
             return True
 

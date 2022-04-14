@@ -14,6 +14,8 @@ This is actived with the Alt+~ and will do a few things:
 Alt: Recursive selection
 Ctrl: Hide warning
 TODO
+    *   Recursive selection
+            - warnings
     *   Override for port types
     *   Network Material Create
 
@@ -35,14 +37,15 @@ OUTPUT_PORT = 1
 
 
 class OverridePortWarningButtonPopupWidget(QFrame):
-    def __init__(self, node, input_port, output_port, parent=None):
+    def __init__(self, node, input_port, output_port, is_recursive_selection=False, parent=None):
         super(OverridePortWarningButtonPopupWidget, self).__init__(parent)
         # setup attrs
         #self._show_noodle = False
         self._output_port = output_port
+
         # setup layout
         QVBoxLayout(self)
-        self._button_widget = OverridePortWarningButtonWidget(node, input_port, output_port)
+        self._button_widget = OverridePortWarningButtonWidget(node, input_port, output_port, is_recursive_selection=is_recursive_selection)
         self.layout().addWidget(self._button_widget)
 
         # setup display
@@ -83,13 +86,15 @@ class OverridePortWarningButtonWidget(ButtonInputWidget):
         input_port (port):
         output_port (port)
     """
-    def __init__(self, node, input_port, output_port, parent=None):
+    def __init__(self, node, input_port, output_port, is_recursive_selection=False, parent=None):
         super(OverridePortWarningButtonWidget, self).__init__(parent=parent)
 
         # setup attrs
+        self._is_recursive_selection = is_recursive_selection
         self._input_port = input_port
         self._output_port = output_port
         self._show_noodle = False
+        self._node = node
         self.setIsToggleable(False)
 
         # setup display
@@ -100,9 +105,20 @@ class OverridePortWarningButtonWidget(ButtonInputWidget):
         # setup events
         self.setUserClickedEvent(self.connectPortsEvent)
 
+    def node(self):
+        return self._node
+
     def connectPortsEvent(self, *args):
         self._input_port.connect(self._output_port)
         PortConnector.hideNoodle()
+
+        if self._is_recursive_selection:
+            self.parent().hide()
+            QApplication.processEvents()
+            katanaMainWindow().activateWindow()
+            katanaMainWindow().setFocus()
+            PortConnector.actuateSelection(PortConnector.activeNodegraphWidget(), node=self.node())
+
         self.parent().close()
 
 
@@ -111,7 +127,6 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
         super(MultiPortPopupMenuWidget, self).__init__(parent)
         # setup attrs
         self._node = node
-        is_recursive_selection
         #self._show_noodle = False
         self._selected_port = selected_port
         self.setTitle(node.getName())
@@ -207,14 +222,13 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
     def portSelectedEvent(self, widget):
         """ Event run when the user selects a port"""
         port = self.getSelectedPort(widget.flag())
-
         # connect selected ports
         if self._port_type == INPUT_PORT:
             is_connected = portutils.isPortConnected(port)
 
             # port selected is connected, display display_warning
             if is_connected and self._display_warning:
-                katanaMainWindow()._display_warning_widget = OverridePortWarningButtonPopupWidget(self._node, port, self._selected_port)
+                katanaMainWindow()._display_warning_widget = OverridePortWarningButtonPopupWidget(self._node, port, self._selected_port, is_recursive_selection=self._is_recursive_selection)
                 katanaMainWindow()._display_warning_widget.show()
                 centerWidgetOnCursor(katanaMainWindow()._display_warning_widget, raise_=True)
 
@@ -224,9 +238,9 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
                 PortConnector.hideNoodle()
 
                 # recursive multi port selection
-                #modifiers = QApplication.keyboardModifiers()
+                # todo does this not close?? I think this gets auto cleaned up... because if I remove the
+                # return statement, it gives me a warning saying it doesn't work good
                 if self._is_recursive_selection:
-                    #if (modifiers & Qt.AltModifier) == Qt.AltModifier:
                     self.parent().hide()
                     QApplication.processEvents()
                     katanaMainWindow().activateWindow()
@@ -304,7 +318,6 @@ class PortConnector():
         if not node:
             node = nodeutils.getClosestNode(nodegraph_widget=nodegraph_widget)
             if not node: return
-
         # PORT SELECTED
         if selection_active:
             PortConnector.connectPortEvent(display_warning=display_warning, is_recursive_selection=is_recursive_selection)
@@ -337,7 +350,9 @@ class PortConnector():
 
                 # prompt user to connect
                 if display_warning and is_connected:
-                    katanaMainWindow()._display_warning_widget = OverridePortWarningButtonPopupWidget(node, input_port, base_ports[0])
+
+                    katanaMainWindow()._display_warning_widget = OverridePortWarningButtonPopupWidget(
+                        node, input_port, base_ports[0], is_recursive_selection=is_recursive_selection)
                     katanaMainWindow()._display_warning_widget.show()
                     centerWidgetOnCursor(katanaMainWindow()._display_warning_widget)
 
@@ -346,9 +361,9 @@ class PortConnector():
                     for base_port in base_ports:
                         input_port.connect(base_port)
                     PortConnector.hideNoodle()
-                
-                if is_recursive_selection:
-                    PortConnector.actuateSelection()
+
+                    if is_recursive_selection:
+                        PortConnector.actuateSelection()
 
             # MULTIPLE INPUT PORTS
             elif 1 < len(node.getInputPorts()):
@@ -382,6 +397,8 @@ class PortConnector():
             katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(node)
             katanaMainWindow()._port_popup_menu.show()
             centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
+            katanaMainWindow()._port_popup_menu.activateWindow()
+            katanaMainWindow()._port_popup_menu.setFocus()
 
     @staticmethod
     def setActiveNodegraphWidget(nodegraph_widget=None):
