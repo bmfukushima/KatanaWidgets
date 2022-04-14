@@ -10,18 +10,15 @@ This is actived with the Alt+~ and will do a few things:
         2b) If there is only one input port, and it is connected, prompt the user to override the connection
         2c) If there are multiple input ports, prompt the user to select an input port to connect to.  If the user
                 selects a port that has a connection, prompt the user to override the connection.
+
+Alt: Recursive selection
+Ctrl: Hide warning
 TODO
-    *   Mouse move, nearest node coloring
-            Get LinkConnectionLayer
-            check to see if monkey patch installed
-            if not installed, install movement patch
-            __processMouseMove
     *   Override for port types
-    *   Inside of group nodes
     *   Network Material Create
 
 """
-from qtpy.QtWidgets import QFrame, QVBoxLayout, QLabel
+from qtpy.QtWidgets import QFrame, QVBoxLayout, QLabel, QApplication
 from qtpy.QtCore import Qt
 
 from Katana import Utils, QT4Widgets, QT4GLLayerStack, NodegraphAPI, DrawingModule, ResourceFiles, KatanaPrefs, logging, PrefNames, UI4
@@ -110,10 +107,11 @@ class OverridePortWarningButtonWidget(ButtonInputWidget):
 
 
 class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
-    def __init__(self, node, port_type=OUTPUT_PORT, selected_port=None,  parent=None):
+    def __init__(self, node, port_type=OUTPUT_PORT, selected_port=None, display_warning=True, is_recursive_selection=False, parent=None):
         super(MultiPortPopupMenuWidget, self).__init__(parent)
         # setup attrs
         self._node = node
+        is_recursive_selection
         #self._show_noodle = False
         self._selected_port = selected_port
         self.setTitle(node.getName())
@@ -123,7 +121,14 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
         # create widgets
         self._title_widget = QLabel(node.getName())
         self._title_widget.setAlignment(Qt.AlignCenter)
-        self._ports_widget = MultiPortPopupMenu(node, port_type=port_type, selected_port=selected_port,  parent=self)
+        self._ports_widget = MultiPortPopupMenu(
+            node,
+            port_type=port_type,
+            selected_port=selected_port,
+            display_warning=display_warning,
+            is_recursive_selection=is_recursive_selection,
+            parent=self
+        )
         self.addInputWidget(self._ports_widget)
 
         # setup display
@@ -147,11 +152,7 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
 
     def closeEvent(self, event):
         katanaMainWindow().activateWindow()
-        # if self._show_noodle:
-        #     PortConnector.showNoodle(self._selected_port)
-
         nodeutils.setGlowColor(self._node, None)
-
         QFrame.closeEvent(self, event)
 
     def leaveEvent(self, event):
@@ -180,13 +181,15 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         selected_port (port): port currently selected
 
     """
-    def __init__(self, node, port_type=OUTPUT_PORT, selected_port=None,  parent=None):
+    def __init__(self, node, port_type=OUTPUT_PORT, selected_port=None, display_warning=True, is_recursive_selection=False, parent=None):
         super(MultiPortPopupMenu, self).__init__(parent, Qt.Vertical)
 
         # setup attrs
-        self._selected_port = selected_port
         self._node = node
+        self._is_recursive_selection = is_recursive_selection
         self._port_type = port_type
+        self._selected_port = selected_port
+        self._display_warning = display_warning
         self.setIsToggleable(False)
 
         for port in self.getDisplayPorts():
@@ -209,17 +212,28 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         if self._port_type == INPUT_PORT:
             is_connected = portutils.isPortConnected(port)
 
-            # port selected is connected, display warning
-            if is_connected:
-                katanaMainWindow()._warning_widget = OverridePortWarningButtonPopupWidget(self._node, port, self._selected_port)
-                katanaMainWindow()._warning_widget.show()
-                centerWidgetOnCursor(katanaMainWindow()._warning_widget, raise_=True)
+            # port selected is connected, display display_warning
+            if is_connected and self._display_warning:
+                katanaMainWindow()._display_warning_widget = OverridePortWarningButtonPopupWidget(self._node, port, self._selected_port)
+                katanaMainWindow()._display_warning_widget.show()
+                centerWidgetOnCursor(katanaMainWindow()._display_warning_widget, raise_=True)
 
             # port selected has no connections, connect port
             else:
                 self._selected_port.connect(port)
                 PortConnector.hideNoodle()
 
+                # recursive multi port selection
+                #modifiers = QApplication.keyboardModifiers()
+                if self._is_recursive_selection:
+                    #if (modifiers & Qt.AltModifier) == Qt.AltModifier:
+                    self.parent().hide()
+                    QApplication.processEvents()
+                    katanaMainWindow().activateWindow()
+                    katanaMainWindow().setFocus()
+                    PortConnector.actuateSelection(PortConnector.activeNodegraphWidget(), node=self.node())
+                    return
+                    # return
         # show noodle
         elif self._port_type == OUTPUT_PORT:
             PortConnector.showNoodle(port)
@@ -262,7 +276,7 @@ class PortConnector():
         PortConnector.active_port = None
 
     @staticmethod
-    def actuateSelection():
+    def actuateSelection(display_warning=True, is_recursive_selection=False, nodegraph_widget=None, node=None):
         """ Run when the node is initialized.
 
         This is the main switch that will determine what should be done.
@@ -272,26 +286,36 @@ class PortConnector():
             then show the user a GUI to select a port
         2b.) If a port is selected, then connect the port.  If multiple ports are available to be
             connected, then show the user a GUI to select a port.
+
+        Args:
+            display_warning (bool): determines if a display_warning should popup for users if the port is already
+                connected.  This is only valid when doing a connection event.
+            is_recursive_selection (bool):
+            nodegraph_widget (NodgraphWiget):
+            node (Node): Node to display port selection of
         """
-        widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
-        if widget_under_cursor != "NodegraphWidget": return
+        if not nodegraph_widget:
+            widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
+            if widget_under_cursor != "NodegraphWidget": return
+            nodegraph_widget = getWidgetUnderCursor()
 
         selection_active = PortConnector.isSelectionActive()
 
-        node = nodeutils.getClosestNode()
-        if not node: return
+        if not node:
+            node = nodeutils.getClosestNode(nodegraph_widget=nodegraph_widget)
+            if not node: return
 
         # PORT SELECTED
         if selection_active:
-            PortConnector.connectPortEvent()
+            PortConnector.connectPortEvent(display_warning=display_warning, is_recursive_selection=is_recursive_selection)
 
         # NO PORT SELECTED
         else:
-            PortConnector.setActiveNodegraphWidget()
-            PortConnector.selectPortEvent()
+            PortConnector.setActiveNodegraphWidget(nodegraph_widget)
+            PortConnector.selectPortEvent(node=node)
 
     @staticmethod
-    def connectPortEvent():
+    def connectPortEvent(display_warning=True, is_recursive_selection=False):
         """ Run when the user has as port link selected, and is trying to connect a port"""
         link_connection_layer = PortConnector.getLinkConnectionLayer()
         if link_connection_layer:
@@ -312,28 +336,37 @@ class PortConnector():
                 is_connected = portutils.isPortConnected(input_port)
 
                 # prompt user to connect
-                if is_connected:
-                    katanaMainWindow()._warning_widget = OverridePortWarningButtonPopupWidget(node, input_port, base_ports[0])
-                    katanaMainWindow()._warning_widget.show()
-                    centerWidgetOnCursor(katanaMainWindow()._warning_widget)
+                if display_warning and is_connected:
+                    katanaMainWindow()._display_warning_widget = OverridePortWarningButtonPopupWidget(node, input_port, base_ports[0])
+                    katanaMainWindow()._display_warning_widget.show()
+                    centerWidgetOnCursor(katanaMainWindow()._display_warning_widget)
 
                 # automagically connect
                 else:
                     for base_port in base_ports:
                         input_port.connect(base_port)
                     PortConnector.hideNoodle()
+                
+                if is_recursive_selection:
+                    PortConnector.actuateSelection()
+
             # MULTIPLE INPUT PORTS
             elif 1 < len(node.getInputPorts()):
                 katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
-                    node, port_type=INPUT_PORT, selected_port=base_ports[0])
+                    node, port_type=INPUT_PORT, selected_port=base_ports[0], display_warning=display_warning, is_recursive_selection=is_recursive_selection)
                 katanaMainWindow()._port_popup_menu.show()
                 centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
 
     @staticmethod
-    def selectPortEvent():
-        """ Run when the user attempts to start a port connection event"""
-        node = nodeutils.getClosestNode(has_output_ports=True)
-        if not node: return
+    def selectPortEvent(node=None):
+        """ Run when the user attempts to start a port connection event
+
+        Args:
+            node (Node): to display ports of
+        """
+        if not node:
+            node = nodeutils.getClosestNode(has_output_ports=True)
+            if not node: return
 
         # NO OUTPUT PORTS
         if 0 == len(node.getOutputPorts()):
@@ -408,7 +441,7 @@ class PortConnector():
             # if closest_node == getattr(LinkConnectionLayer, "_closest_node"): return
             nodeutils.removeGlowColor(LinkConnectionLayer._closest_node)
             delattr(LinkConnectionLayer, "_closest_node")
-        delattr(katanaMainWindow(), "_active_nodegraph_widget")
+        # delattr(katanaMainWindow(), "_active_nodegraph_widget")
 
     @staticmethod
     def showNoodle(port):

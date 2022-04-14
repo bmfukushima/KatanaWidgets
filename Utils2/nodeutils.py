@@ -183,10 +183,9 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
             them should be included
     """
 
-    widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
-    if widget_under_cursor != "NodegraphWidget": return
-
     if not nodegraph_widget:
+        widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
+        if widget_under_cursor != "NodegraphWidget": return
         nodegraph_widget = getWidgetUnderCursor()
 
     # populate node list
@@ -213,9 +212,11 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
 
     # get cursor position
     cursor_pos = nodegraph_widget.getMousePos()
-    groupNode = nodegraph_widget.getGroupNodeUnderMouse()
-    worldPos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
-    cursor_pos = QPoint(*nodegraph_widget.getPointAdjustedToGroupNodeSpace(groupNode, worldPos))
+    group_node = nodegraph_widget.getGroupNodeUnderMouse()
+    world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
+    # from qtpy.QtGui import QCursor
+    # world_pos = (QCursor.pos().x(), QCursor.pos().y())
+    cursor_pos = QPoint(*nodegraph_widget.getPointAdjustedToGroupNodeSpace(group_node, world_pos))
 
     closest_node = None
     mag = None
