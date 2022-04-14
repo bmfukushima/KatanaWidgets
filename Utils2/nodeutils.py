@@ -190,8 +190,8 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
         nodegraph_widget = getWidgetUnderCursor()
 
     # populate node list
-    node_list = nodegraph_widget.getCurrentNodeView().getChildren()
-    # node_list = getFocusedGroupNode().getChildren()
+    node_list = nodegraph_widget.getGroupNodeUnderMouse().getChildren()
+
     if has_output_ports:
         node_list = [node for node in node_list if 0 < len(node.getOutputPorts())]
 
@@ -211,17 +211,17 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
         if node in node_list:
             node_list.remove(node)
 
-    # todo how to map this to the popup group
+    # get cursor position
     cursor_pos = nodegraph_widget.getMousePos()
-    # cursor_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
-    # cursor_pos = QPoint(cursor_pos[0], cursor_pos[1])
+    groupNode = nodegraph_widget.getGroupNodeUnderMouse()
+    worldPos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
+    cursor_pos = QPoint(*nodegraph_widget.getPointAdjustedToGroupNodeSpace(groupNode, worldPos))
 
     closest_node = None
     mag = None
     for node in node_list:
         # compare vector distance...
         node_pos = NodegraphAPI.GetNodePosition(node)
-        node_pos = nodegraph_widget.mapFromWorldToQTLocal(node_pos[0], node_pos[1])
         x = node_pos[0] - cursor_pos.x()
         y = node_pos[1] - cursor_pos.y()
         new_mag = math.sqrt(x*x + y*y)
