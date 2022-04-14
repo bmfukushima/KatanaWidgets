@@ -47,7 +47,7 @@ def linkConnectionLayerMouseMove(func):
             timer.timeout.connect(unfreeze)
             colorNearestNode()
             # LinkConnectionLayer._is_frozen = True
-
+        # print(event.pos())
         return func(self, event)
 
     return __linkConnectionLayerMouseMove
@@ -75,11 +75,9 @@ def exitLink(func):
 
 def installLinkConnectionLayerOverrides(**kwargs):
     """ Installs the overrides for the link connection layer"""
+
     # link interaction monkey patch
-
-    # LinkConnectionLayer._orig__processMouseMove = LinkConnectionLayer._LinkConnectionLayer__processMouseMove
     LinkConnectionLayer._LinkConnectionLayer__processMouseMove = linkConnectionLayerMouseMove(LinkConnectionLayer._LinkConnectionLayer__processMouseMove)
-
     LinkConnectionLayer._LinkConnectionLayer__processKeyPress = linkConnectionLayerKeyPress(LinkConnectionLayer._LinkConnectionLayer__processKeyPress)
 
     LinkConnectionLayer._LinkConnectionLayer__connectLinks = exitLink(LinkConnectionLayer._LinkConnectionLayer__connectLinks)

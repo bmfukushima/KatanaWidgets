@@ -83,6 +83,13 @@ def displayPopupParameters(hide_on_leave=False):
     )
     PopupWidget.togglePopupWidgetVisibility("popupParameters", pos=pos)
 
+# def testProcess(func):
+#     def test(self, event):
+#         print("pos == ", event.pos())
+#         return func(self, event)
+#
+#     return test
+
 
 def installNodegraphHotkeyOverrides(**kwargs):
     """ Installs the hotkey overrides """
@@ -123,7 +130,10 @@ def installNodegraphHotkeyOverrides(**kwargs):
         layer_name = layer.__module__.split(".")[-1]
         if layer_name == "NodeInteractionLayer":
             node_interaction_layer = layer
+        # if layer_name == "GroupInteractionLayer":
+        #     group_interaction_layer = layer
 
+    # group_interaction_layer.processEvent = testProcess(group_interaction_layer.processEvent)
     # node interaction monkey patch
     node_interaction_layer.__class__._orig__processKeyPress = node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress
     node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress
