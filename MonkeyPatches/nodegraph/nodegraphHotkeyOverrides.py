@@ -10,7 +10,7 @@ from Utils2 import nodeutils
 from Katana import NodegraphAPI, Utils
 from UI4.App import Tabs
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
-
+from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
 
 def disableNodes():
     selected_nodes = NodegraphAPI.GetAllSelectedNodes()
@@ -83,13 +83,6 @@ def displayPopupParameters(hide_on_leave=False):
     )
     PopupWidget.togglePopupWidgetVisibility("popupParameters", pos=pos)
 
-# def testProcess(func):
-#     def test(self, event):
-#         print("pos == ", event.pos())
-#         return func(self, event)
-#
-#     return test
-
 
 def installNodegraphHotkeyOverrides(**kwargs):
     """ Installs the hotkey overrides """
@@ -99,7 +92,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
         # Suppress ~ key press
         # This is now handled by the script manager
         # Nodes --> PortSelector
-        if event.key() == 96: return
+        if event.key() == 96: return False
 
         # updating disable handler
         if event.key() == Qt.Key_D:
@@ -117,9 +110,8 @@ def installNodegraphHotkeyOverrides(**kwargs):
 
             displayParameters()
             return True
-
-        return node_interaction_layer.__class__._orig__processKeyPress(self, event)
-    #from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
+        return self.__class__._orig__processKeyPress(self, event)
+        # return node_interaction_layer.__class__._orig__processKeyPress(self, event)
 
     # create proxy nodegraph
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
@@ -135,8 +127,12 @@ def installNodegraphHotkeyOverrides(**kwargs):
 
     # group_interaction_layer.processEvent = testProcess(group_interaction_layer.processEvent)
     # node interaction monkey patch
+    # NodeInteractionLayer._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress(NodeInteractionLayer._NodeInteractionLayer__processKeyPress)
+    # node_interaction_layer._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress(node_interaction_layer._NodeInteractionLayer__processKeyPress)
+
     node_interaction_layer.__class__._orig__processKeyPress = node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress
     node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress
-
+    # NodeInteractionLayer.__class__._orig__processKeyPress = NodeInteractionLayer._NodeInteractionLayer__processKeyPress
+    # NodeInteractionLayer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress
     # cleanup
     nodegraph_widget.cleanup()

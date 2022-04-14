@@ -15,35 +15,6 @@ OPTIONS = 1
 
 EVENT_PARAM_LOCATION = "KatanaBebop.GSVEventsData"
 
-# pretty sure I can delete this...
-# def createNewPattern(pattern, variable, set=False):
-#     """
-#     Creates a new variable pattern.  If that pattern
-#     does not exist for that variable.
-#
-#     Args:
-#         pattern (str): the name of the new pattern to be created
-#         variable (str): the name of the variable to create the pattern under
-#     Kwargs:
-#         set (bool): if True will set the new variable to this value.
-#     """
-#     variable_param = NodegraphAPI.GetRootNode().getParameter(
-#         'variables.{variable}'.format(variable=variable)
-#     )
-#     # get variables list
-#     variables_options_param = variable_param.getChild('options')
-#     variables_list = [child.getValue(0) for child in variables_options_param.getChildren()]
-#
-#     # create new variable if doesn't exist
-#     if pattern not in variables_list:
-#         num_children = variables_options_param.getNumChildren()
-#         variables_options_param.resizeArray(num_children + 1)
-#         variables_options_param.getChildByIndex(num_children).setValue(pattern, 0)
-#
-#     # set pattern
-#     if set is True:
-#         variable_param.getChild('value').setValue(pattern, 0)
-
 
 def isGSVOptionEvent(arg):
     """ Determines if this is an event running on the <root_node>.variables.<gsv>.<value>"""
@@ -109,8 +80,8 @@ def createNewGSVOption(gsv, new_option, row=None):
         options = gsv_param.getChild("options")
 
     # get all options
-    #options_list = [gsv_param.getValue(0) for gsv_param in options.getChildren()]
     options_list = getGSVOptions(gsv, return_as=STRING)
+
     # create new GSV option
     if new_option not in options_list:
         if not row:
@@ -155,8 +126,6 @@ def deleteGSVOption(gsv, option):
 def deleteGSV(gsv):
     gsv_param = getGSVParameter(gsv)
     getVariablesParameter().deleteChild(gsv_param)
-
-    # removeGSVFromAllViewTabs(gsv)
 
 
 def getAllGSV(return_as=STRING):
@@ -268,7 +237,6 @@ def hideEngineersGSVUI():
         Cheers,
         Me
     """
-    from Katana import UI4
     from UI4.Widgets import VariablesPopupButton
     from .widgetutils import katanaMainWindow
 
@@ -527,5 +495,4 @@ def updateGSVOptionForAllViewTabs(gsv, option):
     view_widgets = getAllGSVViewWidgets()
 
     for view_widget in view_widgets:
-        # print(view_widget)
         view_widget.updateGSVOptionDisplayText(gsv, option)
