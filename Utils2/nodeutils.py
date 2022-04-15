@@ -189,7 +189,7 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
         nodegraph_widget = getWidgetUnderCursor()
 
     # populate node list
-    node_list = nodegraph_widget.getGroupNodeUnderMouse().getChildren()
+    node_list = [node for node in nodegraph_widget.getGroupNodeUnderMouse().getChildren() if node.getType() != "Backdrop"]
 
     if has_output_ports:
         node_list = [node for node in node_list if 0 < len(node.getOutputPorts())]

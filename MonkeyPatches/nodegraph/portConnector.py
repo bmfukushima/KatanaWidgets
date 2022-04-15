@@ -14,8 +14,6 @@ This is actived with the Alt+~ and will do a few things:
 Alt: Recursive selection
 Ctrl: Hide warning
 TODO
-    *   Recursive selection
-            - warnings
     *   Override for port types
     *   Network Material Create
 
@@ -363,7 +361,7 @@ class PortConnector():
                     PortConnector.hideNoodle()
 
                     if is_recursive_selection:
-                        PortConnector.actuateSelection()
+                        PortConnector.actuateSelection(node=node)
 
             # MULTIPLE INPUT PORTS
             elif 1 < len(node.getInputPorts()):
