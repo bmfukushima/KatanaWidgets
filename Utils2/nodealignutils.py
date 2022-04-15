@@ -1107,53 +1107,20 @@ def ironNodes():
     nodegraph_widget.installEventFilter(view)
 
 
-# if __name__ == '__main__':
-#     app = QtWidgets.QApplication(sys.argv)
-#     pos = QtGui.QCursor.pos()
-#
-#     MainWidget = View()
-#     MainWidget.setFixedSize(500, 500)
-#     MainWidget.move(pos)
-#     MainWidget.show()
-#     MainWidget.setupMask()
-#     sys.exit(app.exec_())
-# else:
-#
-#     nodegraph = UI4.App.Tabs.FindTopTab('Node Graph')
-#     nodegraph_widget = nodegraph.getNodeGraphWidget()
-#     view = View()
-#     view.alignAllNodes()
-#     # view.show()
-#     # view.goBumper()
-#     # nodegraph_widget.installEventFilter(view)
-#
-#     # ironNodes()
-#     # view.goIron()
-#     """
-#
-#
-#     orig_node = NodegraphAPI.GetAllSelectedNodes()[0]
-#     offset = View().getNearestGridPoint(orig_node)
-#     xpos = (offset[0] * View().x_grid) + View().x_grid
-#     ypos = (offset[1] * View().y_grid) + View().y_grid
-#
-#     NodegraphAPI.SetNodePosition(
-#         orig_node, (xpos, ypos)
-#     )
-#
-#     node_list = View().alignDownstreamNodesRecurse(orig_node)
-#     for node in node_list:
-#         if node != orig_node:
-#             orig_pos = NodegraphAPI.GetNodePosition(node)
-#
-#             offset_xpos = orig_pos[0] + xpos
-#             offset_ypos = orig_pos[1] + ypos
-#
-#             NodegraphAPI.SetNodePosition(
-#                 node, (offset_xpos, offset_ypos)
-#             )
-#     """
-#     # View().alignDownstreamNodesRecurse(node, x=offset[0], y=offset[1])
-#
-#     # mw.alignAllNodes()
-#     # View().alignDownstreamNodesRecurse(node, x, y, align_upstream)
+def snapNodeToGrid(node):
+    """ Snaps the node provided to the nearest point on the grid"""
+    x_grid = 32
+    y_grid = 16
+    pos = NodegraphAPI.GetNodePosition(node)
+
+    if pos[0] % x_grid < 0.5 * x_grid:
+        x = x_grid * (pos[0] // x_grid)
+    else:
+        x = x_grid * ((pos[0] // x_grid) + 1)
+
+    if pos[1] % y_grid < 0.5 * y_grid:
+        y = y_grid * (pos[1] // y_grid)
+    else:
+        y = y_grid * ((pos[1] // y_grid) + 1)
+
+    NodegraphAPI.SetNodePosition(node, (x, y))
