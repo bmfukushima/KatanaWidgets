@@ -48,8 +48,7 @@ def linkConnectionLayerMouseMove(func):
             timer.start(delay_amount)
             timer.timeout.connect(unfreeze)
             colorNearestNode()
-            # LinkConnectionLayer._is_frozen = True
-        # print(event.pos())
+
         return func(self, event)
 
     return __linkConnectionLayerMouseMove
@@ -63,19 +62,16 @@ def linkConnectionLayerKeyPress(func):
                 return
 
         if event.key() == 96:
+            """ Note: Recursive selection is handled throught the ScriptManager, as for some reason
+            ShiftModifier events are not recognized here"""
             # get warning status
             display_warning = True
-            is_recursive_selection = False
-            if (event.modifiers() & Qt.ControlModifier) == Qt.ControlModifier:
-                print("shift?a")
-                is_recursive_selection = True
-            if event.modifiers() == Qt.ShiftModifier:
-                print("shift?")
+
             if (event.modifiers() & Qt.AltModifier) == Qt.AltModifier:
                 display_warning = False
 
             # actuate
-            PortConnector.actuateSelection(display_warning=display_warning, is_recursive_selection=is_recursive_selection)
+            PortConnector.actuateSelection(display_warning=display_warning, is_recursive_selection=False)
 
             return True
 
