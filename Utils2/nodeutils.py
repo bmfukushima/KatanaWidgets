@@ -214,6 +214,7 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
     """
 
     if not nodegraph_widget:
+        if not hasattr(getWidgetUnderCursor(), "__module__"): return None
         widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
         if widget_under_cursor != "NodegraphWidget": return
         nodegraph_widget = getWidgetUnderCursor()
@@ -423,6 +424,16 @@ def insertNode(node, parent_node):
 
     # position node
     NodegraphAPI.SetNodePosition(node, pos)
+
+
+def isCursorOverNodeGraphWidget():
+    """ Determines if the cursor is over a nodegraph widget or not.
+
+    If it is, it will return the nodegraph widget.  If it is not, it will return None"""
+    if not hasattr(getWidgetUnderCursor(), "__module__"): return False
+    widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
+    if widget_under_cursor != "NodegraphWidget": return False
+    return widget_under_cursor
 
 
 def setGlowColor(node, color):
