@@ -1,3 +1,6 @@
+import os
+import inspect
+
 from qtpy.QtCore import Qt, QSize, QPoint, QTimer
 from qtpy.QtGui import QCursor
 
@@ -154,7 +157,8 @@ def installNodegraphHotkeyOverrides(**kwargs):
             return True
 
         if event.key() == Qt.Key_A:
-            file_path = "/media/ssd01/dev/katana/KatanaWidgets/Scripts/1126572316940386176.Nodes/8725372294303740928.Organization/171993683730177760.AlignNodes.json"
+            current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+            file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
             popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
             popup_widget.show()
             return True
