@@ -15,34 +15,18 @@ def linkConnectionLayerMouseMove(func):
         def colorNearestNode():
             base_ports = self.getBasePorts()
             exclude_nodes = [base_ports[0].getNode()]
-            closest_node = nodeutils.getClosestNode(has_input_ports=True, include_dynamic_port_nodes=True,
-                                                    exclude_nodes=exclude_nodes)
-
-            # remove old color
-            if hasattr(LinkConnectionLayer, "_closest_node"):
-                # if closest_node == getattr(LinkConnectionLayer, "_closest_node"): return
-                nodeutils.removeGlowColor(LinkConnectionLayer._closest_node)
-
-            # set new color
-            if closest_node:
-                NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorR", 0.5)
-                NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorG", 0.5)
-                NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorB", 1)
-                Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(closest_node), node=closest_node)
-
-                # update closest node
-                LinkConnectionLayer._closest_node = closest_node
+            nodeutils.colorClosestNode(exclude_nodes=exclude_nodes, has_input_ports=True)
 
         def unfreeze():
-            LinkConnectionLayer._is_frozen = False
+            self._is_frozen = False
 
         delay_amount = 100
         # setup frozen attr
-        if not hasattr(LinkConnectionLayer, "_is_frozen"):
-            LinkConnectionLayer._is_frozen = False
+        if not hasattr(self, "_is_frozen"):
+            self._is_frozen = False
 
         # run events on timer
-        if not LinkConnectionLayer._is_frozen:
+        if not self._is_frozen:
             # setup timer
             timer = QTimer()
             timer.start(delay_amount)

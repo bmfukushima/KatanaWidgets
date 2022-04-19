@@ -83,6 +83,36 @@ def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=
             node.getSendPort(send_port_name).connect(node.getReturnPort(return_port_name))
 
 
+def colorClosestNode(exclude_nodes=[], has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False):
+    """ Sets the node color of the closest node to Normals Blue
+
+    Args:
+        exclude_nodes (list): of nodes to be excluded from the coloring process
+        include_dynamic_port_nodes (bool): include ports with dynamic ports (merge, switch, variableSwitch, etc)
+        has_input_ports (bool): only include nodes that have valid input ports
+        has_output_ports (bool): only include nodes that have valid output ports
+        """
+    from .widgetutils import katanaMainWindow
+
+    closest_node = getClosestNode(
+        has_input_ports=has_input_ports, has_output_ports=has_output_ports, include_dynamic_port_nodes=include_dynamic_port_nodes, exclude_nodes=exclude_nodes)
+
+    # remove old color
+    if hasattr(katanaMainWindow(), "_closest_node"):
+        # if closest_node == getattr(LinkConnectionLayer, "_closest_node"): return
+        removeGlowColor(katanaMainWindow()._closest_node)
+
+    # set new color
+    if closest_node:
+        NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorR", 0.5)
+        NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorG", 0.5)
+        NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorB", 1)
+        Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(closest_node), node=closest_node)
+
+        # update closest node
+        katanaMainWindow()._closest_node = closest_node
+
+
 def disconnectNode(node, input=False, output=False, reconnect=False):
     """
     Disconnects the node provide from all other nodes.  The same
@@ -204,7 +234,11 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
                     if node.getType() in dynamicInputPortNodes():
                         _node_list.append(node)
 
-        node_list = _node_list
+        # update node list
+        if has_output_ports:
+            node_list += _node_list
+        else:
+            node_list = _node_list
 
     for node in exclude_nodes:
         if node in node_list:

@@ -9,7 +9,7 @@ from Utils2 import nodeutils
 
 from Katana import NodegraphAPI, Utils
 from UI4.App import Tabs
-from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
+# from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
 
 from .portConnector import PortConnector
@@ -86,6 +86,53 @@ def displayPopupParameters(hide_on_leave=False):
     PopupWidget.togglePopupWidgetVisibility("popupParameters", pos=pos)
 
 
+def nodeInteractionLayerMouseMove(func):
+    """ Changes the color of the nearest node """
+    def __nodeInteractionLayerMouseMove(self, event):
+        # def colorNearestNode():
+        #     base_ports = self.getBasePorts()
+        #     exclude_nodes = [base_ports[0].getNode()]
+        #     closest_node = nodeutils.getClosestNode(
+        #         has_input_ports=True, include_dynamic_port_nodes=True, exclude_nodes=exclude_nodes)
+        #
+        #     # remove old color
+        #     if hasattr(LinkConnectionLayer, "_closest_node"):
+        #         # if closest_node == getattr(LinkConnectionLayer, "_closest_node"): return
+        #         nodeutils.removeGlowColor(LinkConnectionLayer._closest_node)
+        #
+        #     # set new color
+        #     if closest_node:
+        #         NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorR", 0.5)
+        #         NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorG", 0.5)
+        #         NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorB", 1)
+        #         Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(closest_node), node=closest_node)
+        #
+        #         # update closest node
+        #         LinkConnectionLayer._closest_node = closest_node
+        def colorNearestNode():
+            nodeutils.colorClosestNode(has_output_ports=True)
+
+        def unfreeze():
+            self._is_frozen = False
+
+        delay_amount = 100
+        # setup frozen attr
+        if not hasattr(self, "_is_frozen"):
+            self._is_frozen = False
+
+        # run events on timer
+        if not self._is_frozen:
+            # setup timer
+            timer = QTimer()
+            timer.start(delay_amount)
+            timer.timeout.connect(unfreeze)
+            colorNearestNode()
+
+        return func(self, event)
+
+    return __nodeInteractionLayerMouseMove
+
+
 def installNodegraphHotkeyOverrides(**kwargs):
     """ Installs the hotkey overrides """
     # Node interaction key press
@@ -129,14 +176,14 @@ def installNodegraphHotkeyOverrides(**kwargs):
         # if layer_name == "GroupInteractionLayer":
         #     group_interaction_layer = layer
 
-    # group_interaction_layer.processEvent = testProcess(group_interaction_layer.processEvent)
-    # node interaction monkey patch
-    # NodeInteractionLayer._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress(NodeInteractionLayer._NodeInteractionLayer__processKeyPress)
-    # node_interaction_layer._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress(node_interaction_layer._NodeInteractionLayer__processKeyPress)
 
+    # key press
     node_interaction_layer.__class__._orig__processKeyPress = node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress
     node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress
-    # NodeInteractionLayer.__class__._orig__processKeyPress = NodeInteractionLayer._NodeInteractionLayer__processKeyPress
-    # NodeInteractionLayer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress
+
+    # mouse move
+    node_interaction_layer.__class__._NodeInteractionLayer__processMouseMove = nodeInteractionLayerMouseMove(NodeInteractionLayer._NodeInteractionLayer__processMouseMove)
+
+
     # cleanup
     nodegraph_widget.cleanup()
