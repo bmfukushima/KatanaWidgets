@@ -89,26 +89,6 @@ def displayPopupParameters(hide_on_leave=False):
 def nodeInteractionLayerMouseMove(func):
     """ Changes the color of the nearest node """
     def __nodeInteractionLayerMouseMove(self, event):
-        # def colorNearestNode():
-        #     base_ports = self.getBasePorts()
-        #     exclude_nodes = [base_ports[0].getNode()]
-        #     closest_node = nodeutils.getClosestNode(
-        #         has_input_ports=True, include_dynamic_port_nodes=True, exclude_nodes=exclude_nodes)
-        #
-        #     # remove old color
-        #     if hasattr(LinkConnectionLayer, "_closest_node"):
-        #         # if closest_node == getattr(LinkConnectionLayer, "_closest_node"): return
-        #         nodeutils.removeGlowColor(LinkConnectionLayer._closest_node)
-        #
-        #     # set new color
-        #     if closest_node:
-        #         NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorR", 0.5)
-        #         NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorG", 0.5)
-        #         NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorB", 1)
-        #         Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(closest_node), node=closest_node)
-        #
-        #         # update closest node
-        #         LinkConnectionLayer._closest_node = closest_node
         def colorNearestNode():
             nodeutils.colorClosestNode(has_output_ports=True)
 
@@ -160,6 +140,22 @@ def installNodegraphHotkeyOverrides(**kwargs):
                 return True
 
             displayParameters()
+            return True
+
+        if event.key() == Qt.Key_F:
+            current_group = self.layerStack().getCurrentNodeView()
+            selected_nodes = [x for x in NodegraphAPI.GetAllSelectedNodes() if x.getParent() == current_group]
+            if selected_nodes:
+                self.frameSelection()
+            else:
+                self.layerStack().getLayerByName('Frame All').frameAll()
+            return True
+
+        if event.key() == Qt.Key_A:
+            print('a')
+            return True
+        if event.key() == Qt.Key_B:
+            print("b")
             return True
         return self.__class__._orig__processKeyPress(self, event)
         # return node_interaction_layer.__class__._orig__processKeyPress(self, event)
