@@ -3,14 +3,16 @@ from qtpy.QtGui import QCursor
 
 from cgwidgets.utils import scaleResolution
 from cgwidgets.settings import iColor
+from cgwidgets.widgets import PopupHotkeyMenu
 
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
-from Utils2 import nodeutils
+from Utils2 import nodeutils, widgetutils
 
 from Katana import NodegraphAPI, Utils
 from UI4.App import Tabs
 # from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
+from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdropNodeDialog
 
 from .portConnector import PortConnector
 
@@ -152,11 +154,33 @@ def installNodegraphHotkeyOverrides(**kwargs):
             return True
 
         if event.key() == Qt.Key_A:
-            print('a')
+            file_path = "/media/ssd01/dev/katana/KatanaWidgets/Scripts/1126572316940386176.Nodes/8725372294303740928.Organization/171993683730177760.AlignNodes.json"
+            popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
+            popup_widget.show()
             return True
+
         if event.key() == Qt.Key_B:
-            print("b")
+            # Todo: popup backdrop dialogue at cursor
+            """ For some reason, the preview won't update, and the backdrop needs to be selected to
+            toggle an update.  This kinda works for now... and I don't feel like putting any more effort
+            into it as it's clearly a not my problem bug.
+            """
+            # create backdrop and fit around selection
+            current_group = self.layerStack().getCurrentNodeView()
+            backdrop_node = NodegraphAPI.CreateNode("Backdrop", current_group)
+            NodegraphAPI.SetNodeSelected(backdrop_node, True)
+            self.layerStack().fitBackdropNode()
+
+            # promp user for setting the node color
+            def previewUpdate(node, attrDict):
+                Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
+
+            dialog = EditBackdropNodeDialog(backdrop_node, previewCallback=previewUpdate)
+            dialog.exec_()
+            dialog.deleteLater()
+
             return True
+
         return self.__class__._orig__processKeyPress(self, event)
         # return node_interaction_layer.__class__._orig__processKeyPress(self, event)
 
