@@ -67,10 +67,12 @@ def linkConnectionLayerKeyPress(func):
             display_warning = True
             is_recursive_selection = False
             if (event.modifiers() & Qt.ControlModifier) == Qt.ControlModifier:
-                display_warning = False
-
-            if (event.modifiers() & Qt.AltModifier) == Qt.AltModifier:
+                print("shift?a")
                 is_recursive_selection = True
+            if event.modifiers() == Qt.ShiftModifier:
+                print("shift?")
+            if (event.modifiers() & Qt.AltModifier) == Qt.AltModifier:
+                display_warning = False
 
             # actuate
             PortConnector.actuateSelection(display_warning=display_warning, is_recursive_selection=is_recursive_selection)

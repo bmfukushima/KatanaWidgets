@@ -1,1 +1,2 @@
 from .installNodegraphOverrides import installNodegraphOverrides
+from .portConnector import PortConnector
