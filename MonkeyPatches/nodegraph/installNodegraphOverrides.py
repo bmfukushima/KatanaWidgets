@@ -1,9 +1,12 @@
 """ Overrides the hotkeys for the nodegraph
 
-def test(self, event):
-    print("test")
-
-print(layer)
+~
+    Changed to detect near field detection
+    Alt:
+        Disable warnings for connected ports
+    Shift:
+        Continuous selection, will automatically select the port
+        of the node connected to.
 
 E
     Changed from
@@ -26,10 +29,11 @@ D / Alt + D
 
 from .nodeInteractionLayerOverrides import installNodegraphHotkeyOverrides
 from .linkConnectionLayerOverrides import installLinkConnectionLayerOverrides
-
+from .menuLayerOverride import installMenuLayerOverrides
 # link connection mouse move
 def installNodegraphOverrides(**kwargs):
     from Katana import Callbacks
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installNodegraphHotkeyOverrides)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installLinkConnectionLayerOverrides)
+    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installMenuLayerOverrides)
 

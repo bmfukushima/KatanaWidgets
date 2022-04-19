@@ -218,6 +218,7 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
         widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
         if widget_under_cursor != "NodegraphWidget": return
         nodegraph_widget = getWidgetUnderCursor()
+    if not nodegraph_widget: return
 
     # populate node list
     node_list = [node for node in nodegraph_widget.getGroupNodeUnderMouse().getChildren() if node.getType() != "Backdrop"]
@@ -431,9 +432,8 @@ def isCursorOverNodeGraphWidget():
 
     If it is, it will return the nodegraph widget.  If it is not, it will return None"""
     if not hasattr(getWidgetUnderCursor(), "__module__"): return False
-    widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
-    if widget_under_cursor != "NodegraphWidget": return False
-    return widget_under_cursor
+    if getWidgetUnderCursor().__module__.split(".")[-1] != "NodegraphWidget": return False
+    return getWidgetUnderCursor()
 
 
 def setGlowColor(node, color):

@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets, QtCore
 
 from Katana import NodegraphAPI, RenderingAPI, LayeredMenuAPI, UI4, Utils
 from cgwidgets.utils import getWidgetUnderCursor
-from Utils import nodeutils
+from Utils2 import nodeutils, widgetutils
 
 
 def PopulateCallback(layeredMenu):
@@ -35,30 +35,36 @@ def ActionCallback(value):
     """
     # flip display flag
     display_flag = getGSVDisplayFlag()
+
+    # frist menu | display options menu
     if display_flag:
         # set flags to allow recursion through menus
         setGSV(value)
         setGSVDisplayFlag(False)
-        """
-        hacky force update on the nodegraph tabs layer stack
-
-        This is going to log an error, as we're manually removing the layer from the GL
-        layer stack, and Katana will do this again during cleanup.
+        """ Hacky update used to clear the last layer of the layer stack, as if
+        this is not done for some reason the node graph will become unresponsive.
+        
+        A custom attr is added to the main window which is called in a monkey patch
+        to block an error that occurs using this technique (MonkeyPatches.nodegraph.menuLayerOverride)
         """
         nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()
         if nodegraph_widget:
-            global gsvMenu
+            widgetutils.katanaMainWindow()._is_recursive_layered_menu_event = True
+            # nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()
+            # nodegraph_widget.removeLayer(nodegraph_widget.getLayers()[-1])
+            nodegraph_widget.getLayers()[-1]._MenuLayer__close()
             nodegraph_widget.showLayeredMenu(gsvMenu)
-        return
+
+        #return
+
+    # second menu | set GSV Option
     else:
         setGSVDisplayFlag(True)
         gsv_parm = NodegraphAPI.GetNode('rootNode').getParameter('variables')
-        if display_flag is False:
-            gsv_name = getGSV()
-            gsv_parm = gsv_parm.getChild('%s.value'%gsv_name)
-            gsv_parm.setValue(value, 0)
-
-    return value
+        gsv_name = getGSV()
+        gsv_parm = gsv_parm.getChild(f'{gsv_name}.value')
+        gsv_parm.setValue(value, 0)
+    return ""
 
 
 def getGSVDisplayFlag():
@@ -103,3 +109,6 @@ gsvMenu = LayeredMenuAPI.LayeredMenu(
 )
 
 LayeredMenuAPI.RegisterLayeredMenu(gsvMenu, 'GSV')
+
+
+
