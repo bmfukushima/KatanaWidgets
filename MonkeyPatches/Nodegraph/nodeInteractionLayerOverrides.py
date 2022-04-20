@@ -166,10 +166,15 @@ def nodeInteractionLayerMouseMove(func):
     return __nodeInteractionLayerMouseMove
 
 
-def installNodegraphHotkeyOverrides(**kwargs):
-    """ Installs the hotkey overrides """
-    # Node interaction key press
-    def nodeInteractionKeyPress(self, event):
+def nodeInteractionMousePressEvent(func):
+    def __nodeInteractionMousePressEvent(self, event):
+
+        func(self, event)
+
+    return __nodeInteractionMousePressEvent
+
+def nodeInteractionKeyPressEvent(func):
+    def __nodeInteractionKeyPressEvent(self, event):
         """ This needs to go here to keep the variable in scope"""
         # Suppress ~ key press
         # This is now handled by the script manager
@@ -221,7 +226,6 @@ def installNodegraphHotkeyOverrides(**kwargs):
 
         if event.key() == Qt.Key_W:
             selected_nodes = NodegraphAPI.GetAllSelectedNodes()
-            view_node = None
             if selected_nodes:
                 view_node = selected_nodes[0]
             else:
@@ -232,7 +236,14 @@ def installNodegraphHotkeyOverrides(**kwargs):
 
             return True
 
-        return self.__class__._orig__processKeyPress(self, event)
+        return func(self, event)
+        # return self.__class__._orig__processKeyPress(self, event)
+    return __nodeInteractionKeyPressEvent
+
+
+def installNodegraphHotkeyOverrides(**kwargs):
+    """ Installs the hotkey overrides """
+    # Node interaction key press
 
     # create proxy nodegraph
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
@@ -245,9 +256,9 @@ def installNodegraphHotkeyOverrides(**kwargs):
             node_interaction_layer = layer
 
     # key press
-    node_interaction_layer.__class__._orig__processKeyPress = node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress
-    node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress
-
+    # node_interaction_layer.__class__._orig__processKeyPress = node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress
+    # node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress
+    node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(NodeInteractionLayer._NodeInteractionLayer__processKeyPress)
     # mouse move
     node_interaction_layer.__class__._NodeInteractionLayer__processMouseMove = nodeInteractionLayerMouseMove(NodeInteractionLayer._NodeInteractionLayer__processMouseMove)
 

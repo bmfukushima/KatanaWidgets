@@ -6,6 +6,7 @@ from Katana import NodegraphAPI, Utils
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 from .portConnector import PortConnector
+from Utils2 import widgetutils
 
 
 # link connection mouse move
@@ -43,10 +44,10 @@ def linkConnectionLayerKeyPress(func):
         if event.key() == Qt.Key_D:
             if not event.isAutoRepeat():
                 self._LinkConnectionLayer__create_dot_node()
-                return
+                return True
 
         if event.key() == 96:
-            """ Note: Recursive selection is handled throught the ScriptManager, as for some reason
+            """ Note: Recursive selection is handled through the ScriptManager, as for some reason
             ShiftModifier events are not recognized here"""
             # get warning status
             display_warning = True
@@ -57,6 +58,13 @@ def linkConnectionLayerKeyPress(func):
             # actuate
             PortConnector.actuateSelection(display_warning=display_warning, is_recursive_selection=False)
 
+            return True
+
+        if event.key() == Qt.Key_Tab:
+            """ Connect last active node/port (dot, or first node selected) to first node created """
+            widgetutils.katanaMainWindow()._is_link_creation_active = True
+            interaction_layer = self.layerStack().getLayerByName("NodeInteractions")
+            interaction_layer._NodeInteractionLayer__launchNodeCreationMenuLayer()
             return True
 
         func(self, event)

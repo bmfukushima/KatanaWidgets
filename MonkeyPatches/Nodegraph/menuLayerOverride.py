@@ -34,6 +34,9 @@ def menuLayerActionOverride(func):
                                   key=(lambda node: NodegraphAPI.GetNodePosition(node)[0]))
                                 for newNode in newNodes:
                                     NodegraphAPI.SetNodeFloating(newNode, False)
+                                    if widgetutils.katanaMainWindow()._is_link_creation_active:
+                                        pass
+                                        """ Connect here... """
 
                             if isinstance(newNodes, collections.abc.Sequence):
                                 notReplacing = self._MenuLayer__replacedNode is None
@@ -45,6 +48,7 @@ def menuLayerActionOverride(func):
 
             finally:
                 widgetutils.katanaMainWindow()._is_recursive_layered_menu_event = False
+                widgetutils.katanaMainWindow()._is_link_creation_active = False
                 Utils.UndoStack.CloseGroup()
 
         self._MenuLayer__close()
