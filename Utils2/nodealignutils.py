@@ -392,36 +392,7 @@ class View(QtWidgets.QGraphicsView):
         NodegraphAPI.SetAllSelectedNodes(node_list)
         self.nodegraph.floatNodes(node_list)
 
-    # ===============================================================================
-    #     def selectDownstreamNodes(self):
-    #         """
-    #         Selects all nodes downstream of the current user selection
-    #         if multiple nodes are selected, it will search down stream from
-    #         all of the selected nodes
-    #         """
-    #         node_list = []
-    #         for node in NodegraphAPI.GetAllSelectedNodes():
-    #             if node not in node_list:
-    #                 node_list += self.getDownstreamNodes(node, node_list=[])
-    #         NodegraphAPI.SetAllSelectedNodes(node_list)
-    #         self.nodegraph.floatNodes(node_list)
-    #
-    #     def selectUpstreamNodes(self):
-    #         """
-    #         Selects all nodes upstream of the current user selection
-    #         if multiple nodes are selected, it will search up stream
-    #         from all of them
-    #         """
-    #         node_list = []
-    #         for node in NodegraphAPI.GetAllSelectedNodes():
-    #             if node not in node_list:
-    #                 node_list += self.getUpstreamNodes(node, node_list=[])
-    #         NodegraphAPI.SetAllSelectedNodes(node_list)
-    #         self.nodegraph.floatNodes(node_list)
-    # ===============================================================================
-
     """  ALIGNMENT """
-
     def getNearestGridPoint(self, x, y):
         """
         @return: returns an offset of grid units (x, y)
@@ -497,30 +468,6 @@ class View(QtWidgets.QGraphicsView):
                         node, (offset_xpos, offset_ypos)
                     )
 
-    def alignUpstreamNodes(self):
-        selected_nodes = NodegraphAPI.GetAllSelectedNodes()
-        for selected_node in selected_nodes:
-            pos = NodegraphAPI.GetNodePosition(selected_node)
-            offset = View().getNearestGridPoint(pos[0], pos[1])
-            xpos = (offset[0] * View().x_grid) + View().x_grid
-            ypos = (offset[1] * View().y_grid) + View().y_grid
-
-            NodegraphAPI.SetNodePosition(
-                selected_node, (xpos, ypos)
-            )
-
-            node_list = View().alignUpstreamNodesRecurse(selected_node)
-            for node in node_list:
-                if node != selected_node:
-                    orig_pos = NodegraphAPI.GetNodePosition(node)
-
-                    offset_xpos = orig_pos[0] + xpos
-                    offset_ypos = orig_pos[1] + ypos
-
-                    NodegraphAPI.SetNodePosition(
-                        node, (offset_xpos, offset_ypos)
-                    )
-
     def alignDownstreamNodesRecurse(
             self,
             node,
@@ -578,6 +525,30 @@ class View(QtWidgets.QGraphicsView):
 
         return list(set(node_list))
 
+    def alignUpstreamNodes(self):
+        selected_nodes = NodegraphAPI.GetAllSelectedNodes()
+        for selected_node in selected_nodes:
+            pos = NodegraphAPI.GetNodePosition(selected_node)
+            offset = View().getNearestGridPoint(pos[0], pos[1])
+            xpos = (offset[0] * View().x_grid) + View().x_grid
+            ypos = (offset[1] * View().y_grid) + View().y_grid
+
+            NodegraphAPI.SetNodePosition(
+                selected_node, (xpos, ypos)
+            )
+
+            node_list = View().alignUpstreamNodesRecurse(selected_node)
+            for node in node_list:
+                if node != selected_node:
+                    orig_pos = NodegraphAPI.GetNodePosition(node)
+
+                    offset_xpos = orig_pos[0] + xpos
+                    offset_ypos = orig_pos[1] + ypos
+
+                    NodegraphAPI.SetNodePosition(
+                        node, (offset_xpos, offset_ypos)
+                    )
+
     def alignUpstreamNodesRecurse(
             self,
             node,
@@ -585,8 +556,7 @@ class View(QtWidgets.QGraphicsView):
             y=0,
             node_list=None
     ):
-        """
-        recursive function to look downstream of a specific node and align all of
+        """ Recursive function to look upstream of a specific node and align all of
         those nodes to the original node
         @node <node> origin node
         @x <int> x_offset
@@ -606,7 +576,7 @@ class View(QtWidgets.QGraphicsView):
             connected_ports = input_port.getConnectedPorts()
             for index, input_port in enumerate(connected_ports):
                 connected_node = input_port.getNode()
-                if index > 0:
+                if 0 < index:
                     x += 1
                 if connected_node not in node_list:
                     NodegraphAPI.SetNodePosition(
@@ -626,7 +596,7 @@ class View(QtWidgets.QGraphicsView):
                     # recurse through nodes
                     # check downstream
                     output_ports = connected_node.getOutputPorts()
-                    if len(output_ports) > 1:
+                    if 1 < len(output_ports):
                         for output_port in output_ports[1:]:
                             self.alignDownstreamNodesRecurse(
                                 connected_node,

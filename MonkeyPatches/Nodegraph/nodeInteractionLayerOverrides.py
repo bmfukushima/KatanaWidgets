@@ -11,9 +11,9 @@ from cgwidgets.widgets import PopupHotkeyMenu
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 from Utils2 import nodeutils, widgetutils
 
-from Katana import NodegraphAPI, Utils
+from Katana import NodegraphAPI, Utils, UI4, DrawingModule
 from UI4.App import Tabs
-# from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
+
 from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
 from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdropNodeDialog
 
@@ -131,7 +131,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
             return True
 
         # updating disable handler
-        if event.key()  in [Qt.Key_D, Qt.Key_Q]:
+        if event.key() in [Qt.Key_D, Qt.Key_Q]:
             disableNodes()
             return True
 
@@ -169,19 +169,30 @@ def installNodegraphHotkeyOverrides(**kwargs):
             toggle an update.  This kinda works for now... and I don't feel like putting any more effort
             into it as it's clearly a not my problem bug.
             """
+            Utils.UndoStack.OpenGroup("Create Backdrop")
+
+
             # create backdrop and fit around selection
             current_group = self.layerStack().getCurrentNodeView()
             backdrop_node = NodegraphAPI.CreateNode("Backdrop", current_group)
             NodegraphAPI.SetNodeSelected(backdrop_node, True)
             self.layerStack().fitBackdropNode()
 
-            # promp user for setting the node color
-            def previewUpdate(node, attrDict):
-                Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
+            # prompt user for setting the node color
+            def previewCallback(node, attrDict):
+                for attrName, attrValue in attrDict.items():
+                    nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
 
-            dialog = EditBackdropNodeDialog(backdrop_node, previewCallback=previewUpdate)
-            dialog.exec_()
-            dialog.deleteLater()
+                    DrawingModule.nodeWorld_setShapeAttr(node, attrName, attrValue)
+                    DrawingModule.nodeWorld_setShapeAttr(node, "update", 1)
+                    # this gives us live updates
+                    nodegraph_widget.idleUpdate()
+
+            d = EditBackdropNodeDialog(backdrop_node, previewCallback=previewCallback)
+            d.exec_()
+            d.close()
+            d.move(QCursor.pos())
+            Utils.UndoStack.CloseGroup()
 
             return True
 
@@ -198,9 +209,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
 
             return True
 
-
         return self.__class__._orig__processKeyPress(self, event)
-        # return node_interaction_layer.__class__._orig__processKeyPress(self, event)
 
     # create proxy nodegraph
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
@@ -211,9 +220,6 @@ def installNodegraphHotkeyOverrides(**kwargs):
         layer_name = layer.__module__.split(".")[-1]
         if layer_name == "NodeInteractionLayer":
             node_interaction_layer = layer
-        # if layer_name == "GroupInteractionLayer":
-        #     group_interaction_layer = layer
-
 
     # key press
     node_interaction_layer.__class__._orig__processKeyPress = node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress

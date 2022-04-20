@@ -1,3 +1,3 @@
-from MonkeyPatches.nodegraph import PortConnector
+from MonkeyPatches.Nodegraph import PortConnector
 
 PortConnector.actuateSelection(display_warning=True, is_recursive_selection=True)
