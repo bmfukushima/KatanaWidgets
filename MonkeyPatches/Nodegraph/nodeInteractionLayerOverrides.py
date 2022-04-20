@@ -131,7 +131,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
             return True
 
         # updating disable handler
-        if event.key() == Qt.Key_D:
+        if event.key()  in [Qt.Key_D, Qt.Key_Q]:
             disableNodes()
             return True
 
@@ -184,6 +184,20 @@ def installNodegraphHotkeyOverrides(**kwargs):
             dialog.deleteLater()
 
             return True
+
+        if event.key() == Qt.Key_W:
+            selected_nodes = NodegraphAPI.GetAllSelectedNodes()
+            view_node = None
+            if selected_nodes:
+                view_node = selected_nodes[0]
+            else:
+                view_node = nodeutils.getClosestNode()
+
+            if view_node:
+                NodegraphAPI.SetNodeViewed(view_node, True, exclusive=True)
+
+            return True
+
 
         return self.__class__._orig__processKeyPress(self, event)
         # return node_interaction_layer.__class__._orig__processKeyPress(self, event)
