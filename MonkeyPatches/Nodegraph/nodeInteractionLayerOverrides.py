@@ -19,6 +19,54 @@ from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdrop
 
 from .portConnector import PortConnector
 
+def createBackdropNode(is_floating=False):
+    """ Creates a backdrop node around the current selection"""
+    Utils.UndoStack.OpenGroup("Create Backdrop")
+
+    # get nodegraph
+    nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()
+    if not nodegraph_widget:
+        nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
+
+    # create backdrop and fit around selection
+    current_group = nodegraph_widget.getCurrentNodeView()
+    backdrop_node = NodegraphAPI.CreateNode("Backdrop", current_group)
+    NodegraphAPI.SetNodeSelected(backdrop_node, True)
+    nodegraph_widget.fitBackdropNode()
+
+    # float if no nodes selected
+    if len(NodegraphAPI.GetAllSelectedNodes()) == 1 or is_floating:
+        nodegraph_widget.parent().floatNodes(NodegraphAPI.GetAllSelectedNodes())
+
+    # prompt user for setting the node color
+    def previewCallback(node, attr_dict):
+        """ Callback run when the user updates a parameter in the backdrop node
+
+        Args:
+            node (Node): backdrop node to be updated
+            attr_dict (dict): attributes to be updated
+            """
+        # get nodegraph
+        nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()
+        if not nodegraph_widget:
+            nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
+
+        for attrName, attrValue in attr_dict.items():
+            DrawingModule.nodeWorld_setShapeAttr(node, attrName, attrValue)
+            DrawingModule.nodeWorld_setShapeAttr(node, "update", 1)
+
+            for layerStack in nodegraph_widget.getAllNodeGraphWidgets():
+                layerStack.setNGVShapeAttrs(node, attr_dict)
+            # this gives us live updates
+            nodegraph_widget.idleUpdate()
+
+    d = EditBackdropNodeDialog(backdrop_node, previewCallback=previewCallback)
+    d.exec_()
+    d.close()
+    d.move(QCursor.pos())
+    Utils.UndoStack.CloseGroup()
+
+
 def disableNodes():
     selected_nodes = NodegraphAPI.GetAllSelectedNodes()
     for node in selected_nodes:
@@ -164,36 +212,11 @@ def installNodegraphHotkeyOverrides(**kwargs):
             return True
 
         if event.key() == Qt.Key_B:
-            # Todo: popup backdrop dialogue at cursor
-            """ For some reason, the preview won't update, and the backdrop needs to be selected to
-            toggle an update.  This kinda works for now... and I don't feel like putting any more effort
-            into it as it's clearly a not my problem bug.
-            """
-            Utils.UndoStack.OpenGroup("Create Backdrop")
-
-
-            # create backdrop and fit around selection
-            current_group = self.layerStack().getCurrentNodeView()
-            backdrop_node = NodegraphAPI.CreateNode("Backdrop", current_group)
-            NodegraphAPI.SetNodeSelected(backdrop_node, True)
-            self.layerStack().fitBackdropNode()
-
-            # prompt user for setting the node color
-            def previewCallback(node, attrDict):
-                for attrName, attrValue in attrDict.items():
-                    nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
-
-                    DrawingModule.nodeWorld_setShapeAttr(node, attrName, attrValue)
-                    DrawingModule.nodeWorld_setShapeAttr(node, "update", 1)
-                    # this gives us live updates
-                    nodegraph_widget.idleUpdate()
-
-            d = EditBackdropNodeDialog(backdrop_node, previewCallback=previewCallback)
-            d.exec_()
-            d.close()
-            d.move(QCursor.pos())
-            Utils.UndoStack.CloseGroup()
-
+            # determine if nodes should be floated
+            is_floating = False
+            if event.modifiers() == Qt.ShiftModifier:
+                is_floating = True
+            createBackdropNode(is_floating=is_floating)
             return True
 
         if event.key() == Qt.Key_W:
