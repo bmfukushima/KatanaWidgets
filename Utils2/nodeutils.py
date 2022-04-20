@@ -432,15 +432,6 @@ def insertNode(node, parent_node):
     NodegraphAPI.SetNodePosition(node, pos)
 
 
-def isCursorOverNodeGraphWidget():
-    """ Determines if the cursor is over a nodegraph widget or not.
-
-    If it is, it will return the nodegraph widget.  If it is not, it will return None"""
-    if not hasattr(getWidgetUnderCursor(), "__module__"): return False
-    if getWidgetUnderCursor().__module__.split(".")[-1] != "NodegraphWidget": return False
-    return getWidgetUnderCursor()
-
-
 def setGlowColor(node, color):
     """ Sets the glow color of the node.
 

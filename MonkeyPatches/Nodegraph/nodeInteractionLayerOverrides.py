@@ -24,7 +24,7 @@ def createBackdropNode(is_floating=False):
     Utils.UndoStack.OpenGroup("Create Backdrop")
 
     # get nodegraph
-    nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()
+    nodegraph_widget = widgetutils.isCursorOverNodeGraphWidget()
     if not nodegraph_widget:
         nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
 
@@ -47,7 +47,7 @@ def createBackdropNode(is_floating=False):
             attr_dict (dict): attributes to be updated
             """
         # get nodegraph
-        nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()
+        nodegraph_widget = widgetutils.isCursorOverNodeGraphWidget()
         if not nodegraph_widget:
             nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
 

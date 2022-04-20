@@ -2,6 +2,8 @@ import collections
 
 from Katana import LayeredMenuAPI, Utils, NodegraphAPI
 from UI4.Tabs.NodeGraphTab.Layers.CustomMenuLayer import CustomMenuLayer
+from UI4.Tabs.NodeGraphTab.Layers.NodeCreationMenuLayer import NodeCreationMenuLayer
+from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 from UI4.App import Tabs
 
 from Utils2 import nodeutils, widgetutils
@@ -34,9 +36,6 @@ def menuLayerActionOverride(func):
                                   key=(lambda node: NodegraphAPI.GetNodePosition(node)[0]))
                                 for newNode in newNodes:
                                     NodegraphAPI.SetNodeFloating(newNode, False)
-                                    if widgetutils.katanaMainWindow()._is_link_creation_active:
-                                        pass
-                                        """ Connect here... """
 
                             if isinstance(newNodes, collections.abc.Sequence):
                                 notReplacing = self._MenuLayer__replacedNode is None
@@ -48,11 +47,11 @@ def menuLayerActionOverride(func):
 
             finally:
                 widgetutils.katanaMainWindow()._is_recursive_layered_menu_event = False
-                widgetutils.katanaMainWindow()._is_link_creation_active = False
                 Utils.UndoStack.CloseGroup()
 
         self._MenuLayer__close()
         return
+        # return func(self)
 
     return __menuLayerActionOverride
 
@@ -65,6 +64,45 @@ def menuLayerCloseOverride(func):
     return __menuLayerCloseOverride
 
 
+def nodeEntryChosen(func):
+    def __nodeEntryChosen(self, value):
+        node = func(self, value)
+        #### START INJECTION ####
+        """ Inject code to connect nodes when creating nodes via the Tab menu on the LinkConnectionLayer """
+        if hasattr(widgetutils.katanaMainWindow(), "_is_link_creation_active"):
+            if widgetutils.katanaMainWindow()._is_link_creation_active:
+                # connect node
+                last_active_node = widgetutils.katanaMainWindow()._link_connection_active_node
+
+                # connect nodes
+                if len(node.getInputPorts()) == 0:
+                    if node.getType() in nodeutils.dynamicInputPortNodes():
+                        input_port = node.addInputPort("i0")
+                else:
+                    input_port = node.getInputPortByIndex(0)
+                last_active_node.getOutputPortByIndex(0).connect(input_port)
+
+                # hide link
+                # todo hide link for some reason this causes the node graph to freeze?
+                # nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+                # print(nodegraph_widget.getLayers())
+                # for layer in reversed(nodegraph_widget.getLayers()):
+                #     if isinstance(layer, LinkConnectionLayer):
+                #         print("removing layer, ", layer)
+                #         nodegraph_widget.removeLayer(layer)
+                # nodegraph_widget.idleUpdate()
+
+                # disable attrs
+                delattr(widgetutils.katanaMainWindow(), "_link_connection_active_node")
+                widgetutils.katanaMainWindow()._is_link_creation_active = False
+
+                """ Connect here... """
+        #### END INJECTION ####
+        return node
+
+    return __nodeEntryChosen
+
+
 def installMenuLayerOverrides(**kwargs):
     """ Installs the custom menu layer event
 
@@ -75,18 +113,29 @@ def installMenuLayerOverrides(**kwargs):
     # create proxy nodegraph / layered menu
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
+
+    # create proxy layered menu
     proxy_layered_menu = LayeredMenuAPI.LayeredMenu(lambda _: _, lambda _: _, '')
     nodegraph_widget.showLayeredMenu(proxy_layered_menu)
+
+    # create proxy node create menu
+    interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")
+    interaction_layer._NodeInteractionLayer__launchNodeCreationMenuLayer()
 
     # get node interaction layer
     for layer in nodegraph_widget.getLayers():
         layer_name = layer.__module__.split(".")[-1]
         if layer_name == "CustomMenuLayer":
             custom_menu_layer = layer
+        if layer_name == "NodeCreationMenuLayer":
+            node_creation_menu_layer = layer
 
+    print(custom_menu_layer)
+    print(node_creation_menu_layer)
     # install overrides
     custom_menu_layer.__class__._MenuLayer__action = menuLayerActionOverride(CustomMenuLayer._MenuLayer__action)
     custom_menu_layer.__class__._MenuLayer__close = menuLayerCloseOverride(CustomMenuLayer._MenuLayer__close)
 
+    node_creation_menu_layer.__class__.onEntryChosen = nodeEntryChosen(NodeCreationMenuLayer.onEntryChosen)
     # cleanup
     nodegraph_widget.cleanup()

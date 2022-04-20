@@ -47,7 +47,7 @@ def ActionCallback(value):
         A custom attr is added to the main window which is called in a monkey patch
         to block an error that occurs using this technique (MonkeyPatches.nodegraph.menuLayerOverride)
         """
-        nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()
+        nodegraph_widget = widgetutils.isCursorOverNodeGraphWidget()
         if nodegraph_widget:
             widgetutils.katanaMainWindow()._is_recursive_layered_menu_event = True
             # nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()

@@ -2,11 +2,17 @@ from qtpy.QtCore import QTimer, Qt
 
 from Utils2 import nodeutils
 
-from Katana import NodegraphAPI, Utils
+from Katana import NodegraphAPI, Utils, DrawingModule, KatanaPrefs, PrefNames
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 from .portConnector import PortConnector
 from Utils2 import widgetutils
+
+def lastActiveNode():
+    return widgetutils.katanaMainWindow()._link_connection_active_node
+
+def setLastActiveNode(node):
+    widgetutils.katanaMainWindow()._link_connection_active_node = node
 
 
 # link connection mouse move
@@ -41,9 +47,16 @@ def linkConnectionLayerMouseMove(func):
 
 def linkConnectionLayerKeyPress(func):
     def __linkConnectionLayerKeyPress(self, event):
+        widgetutils.katanaMainWindow()._is_link_creation_active = True
+        if not hasattr(widgetutils.katanaMainWindow(), "_link_connection_active_node"):
+            last_active_node = self.getBasePorts()[0].getNode()
+            setLastActiveNode(last_active_node)
         if event.key() == Qt.Key_D:
             if not event.isAutoRepeat():
+                # todo place all nodes on dot create
                 self._LinkConnectionLayer__create_dot_node()
+                last_active_node = self.getBasePorts()[0].getNode()
+                setLastActiveNode(last_active_node)
                 return True
 
         if event.key() == 96:
@@ -62,7 +75,6 @@ def linkConnectionLayerKeyPress(func):
 
         if event.key() == Qt.Key_Tab:
             """ Connect last active node/port (dot, or first node selected) to first node created """
-            widgetutils.katanaMainWindow()._is_link_creation_active = True
             interaction_layer = self.layerStack().getLayerByName("NodeInteractions")
             interaction_layer._NodeInteractionLayer__launchNodeCreationMenuLayer()
             return True
@@ -72,12 +84,19 @@ def linkConnectionLayerKeyPress(func):
 
 
 def exitLink(func):
-    def removeGlowColor(self, *args):
+    def __exitLink(self, *args):
+        # remove glow color
         if hasattr(LinkConnectionLayer, "_closest_node"):
             nodeutils.removeGlowColor(LinkConnectionLayer._closest_node)
             delattr(LinkConnectionLayer, "_closest_node")
+
+        # toggle last active node flags
+        widgetutils.katanaMainWindow()._is_link_creation_active = False
+        if hasattr(LinkConnectionLayer, "_link_connection_active_node"):
+            delattr(LinkConnectionLayer, "_link_connection_active_node")
+
         func(self, *args)
-    return removeGlowColor
+    return __exitLink
 
 
 def installLinkConnectionLayerOverrides(**kwargs):
@@ -90,3 +109,5 @@ def installLinkConnectionLayerOverrides(**kwargs):
     LinkConnectionLayer._LinkConnectionLayer__connectLinks = exitLink(LinkConnectionLayer._LinkConnectionLayer__connectLinks)
     LinkConnectionLayer._LinkConnectionLayer__dropLinks = exitLink(LinkConnectionLayer._LinkConnectionLayer__dropLinks)
     LinkConnectionLayer._LinkConnectionLayer__exitNoChange = exitLink(LinkConnectionLayer._LinkConnectionLayer__exitNoChange)
+
+    # LinkConnectionLayer._LinkConnectionLayer__create_dot_node = createDotNode
