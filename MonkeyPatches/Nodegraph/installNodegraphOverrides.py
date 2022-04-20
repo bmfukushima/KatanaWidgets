@@ -20,9 +20,15 @@ Alt+E / Alt+Shift+E
             to
         Popup parameter display
 
-D / Alt + D
-    "Alt + D" moved to "D".
+Q / D / Alt + D
+    "Alt + D" moved to "D" and "Q"
     "D" has been removed.
+
+W
+    Set current resolve node
+
+Shift + MMB
+    Duplicate node selection, or nearest node
 
 
 """

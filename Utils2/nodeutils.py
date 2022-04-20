@@ -14,6 +14,10 @@ def dynamicInputPortNodes():
     return ["Merge", "VariableSwitch", "Switch"]
 
 
+def clearNodeSelection():
+    for node in NodegraphAPI.GetAllSelectedNodes():
+        NodegraphAPI.SetNodeSelected(node, False)
+
 def connectInsideGroup(node_list, parent_node):
     """
     Connects all of the nodes inside of a specific node in a linear fashion
@@ -543,6 +547,22 @@ def replaceNode(node_to_be_replaced, replacement_node, delete=True, place=True, 
     # delete old node
     if delete:
         node_to_be_replaced.delete()
+
+
+def selectNodes(node_list, is_exclusive=False):
+    """ Select all of the nodes in the list provided
+
+    Args:
+        node_list (list): of nodes to select
+        is_exclusive (bool): determines if these nodes should be exclusive, or appended to
+            the current selection
+
+    """
+    if is_exclusive:
+        clearNodeSelection()
+
+    for node in node_list:
+        NodegraphAPI.SetNodeSelected(node, True)
 
 
 def toggleTwoFacedNodeAppearance(node):

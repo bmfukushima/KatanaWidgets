@@ -11,7 +11,7 @@ from cgwidgets.widgets import PopupHotkeyMenu
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 from Utils2 import nodeutils, widgetutils
 
-from Katana import NodegraphAPI, Utils, UI4, DrawingModule
+from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile
 from UI4.App import Tabs
 
 from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
@@ -139,6 +139,26 @@ def displayPopupParameters(hide_on_leave=False):
     PopupWidget.togglePopupWidgetVisibility("popupParameters", pos=pos)
 
 
+def duplicateNodes(nodegraph_layer):
+    """ Duplicate selected nodes, or closest node to cursor
+
+    Args:
+        nodegraph_layer (NodeGraphLayer): Current layer of the Nodegraph.
+            Most likely the NodeInteractionLayer
+        """
+    selected_nodes = NodegraphAPI.GetAllSelectedNodes()
+    nodes_to_duplicate = [node for node in selected_nodes if not NodegraphAPI.IsNodeLockedByParents(node)]
+
+    if not nodes_to_duplicate:
+        nodes_to_duplicate = [nodeutils.getClosestNode()]
+
+    duplicated_nodes = NodegraphAPI.Util.DuplicateNodes(nodes_to_duplicate)
+    nodeutils.selectNodes(duplicated_nodes, is_exclusive=True)
+
+    if duplicated_nodes:
+        nodegraph_layer.layerStack().parent().prepareFloatingLayerWithPasteBounds(duplicated_nodes)
+        nodegraph_layer.layerStack().parent()._NodegraphPanel__nodegraphWidget.enableFloatingLayer()
+
 def nodeInteractionLayerMouseMove(func):
     """ Changes the color of the nearest node """
     def __nodeInteractionLayerMouseMove(self, event):
@@ -166,12 +186,17 @@ def nodeInteractionLayerMouseMove(func):
     return __nodeInteractionLayerMouseMove
 
 
-def nodeInteractionMousePressEvent(func):
-    def __nodeInteractionMousePressEvent(self, event):
+def nodeInteractionMouseEvent(func):
+    def __nodeInteractionMouseEvent(self, event):
+        # Duplicate nodes
+        if event.modifiers() == Qt.ShiftModifier and event.button() in [Qt.MidButton, Qt.MiddleButton]:
+            duplicateNodes(self)
+            return True
 
-        func(self, event)
+        return func(self, event)
 
-    return __nodeInteractionMousePressEvent
+    return __nodeInteractionMouseEvent
+
 
 def nodeInteractionKeyPressEvent(func):
     def __nodeInteractionKeyPressEvent(self, event):
@@ -185,8 +210,9 @@ def nodeInteractionKeyPressEvent(func):
 
         # updating disable handler
         if event.key() in [Qt.Key_D, Qt.Key_Q]:
-            disableNodes()
-            return True
+            if event.modifiers() == Qt.NoModifier:
+                disableNodes()
+                return True
 
         # updating parameter view handler
         if event.key() == Qt.Key_E:
@@ -237,7 +263,7 @@ def nodeInteractionKeyPressEvent(func):
             return True
 
         return func(self, event)
-        # return self.__class__._orig__processKeyPress(self, event)
+
     return __nodeInteractionKeyPressEvent
 
 
@@ -250,18 +276,15 @@ def installNodegraphHotkeyOverrides(**kwargs):
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
 
     # get node interaction layer
-    for layer in nodegraph_widget.getLayers():
-        layer_name = layer.__module__.split(".")[-1]
-        if layer_name == "NodeInteractionLayer":
-            node_interaction_layer = layer
+    node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")
 
-    # key press
-    # node_interaction_layer.__class__._orig__processKeyPress = node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress
-    # node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPress
-    node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(NodeInteractionLayer._NodeInteractionLayer__processKeyPress)
+    node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(
+        NodeInteractionLayer._NodeInteractionLayer__processKeyPress)
+    node_interaction_layer.__class__._NodeInteractionLayer__processMouseButtonPress = nodeInteractionMouseEvent(
+        NodeInteractionLayer._NodeInteractionLayer__processMouseButtonPress)
     # mouse move
-    node_interaction_layer.__class__._NodeInteractionLayer__processMouseMove = nodeInteractionLayerMouseMove(NodeInteractionLayer._NodeInteractionLayer__processMouseMove)
-
+    node_interaction_layer.__class__._NodeInteractionLayer__processMouseMove = nodeInteractionLayerMouseMove(
+        NodeInteractionLayer._NodeInteractionLayer__processMouseMove)
 
     # cleanup
     nodegraph_widget.cleanup()
