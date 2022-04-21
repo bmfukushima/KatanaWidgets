@@ -8,12 +8,11 @@ library, but rather please contact me directly if you have any questions/comment
 This repo contains a Katana Resources directory which can be added to the `KATANA_RESOURCES `environment variable.
 This repo contains a small collection of my personal tools which have been created to sit as addons for Katana.
 
-### Prerequisites
-  * [qtpy](https://pypi.org/project/QtPy/)
-        is a small abstraction layer that lets you write applications using a single API call to either PyQt or PySide.
-  * [cgwidgets](https://github.com/bmfukushima/cgwidgets)
-        PyQt5/PySide agnostic widgets to be used between multiple DCCs
 
+### Installation
+Append this directory to your `KATANA_RESOURCES` environment variable.
+
+Install your license file under `$KATANABEBOP/license.txt` or place it in the environment variable `$KATANABEBOPLICENSE`
 
 ### Written for
 This library is written for [VFX Reference Platform 2021](https://vfxplatform.com/)
@@ -24,12 +23,14 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   
 # Tools
 ### Tabs
-- [Desired Stuff Tab](Tabs/DesiredStuffTab/README.md)
+- [Node Graph Pins Tab](Tabs/DesiredStuffTab/README.md)
 - [Global Events Tab](MultiTools/GlobalEventsTab/README.md)
-- [GSV Manager Tab](MultiTools/GSVManagerTab/README.md)
-- [IRF Manager Tab](Tabs/IRFManagerTab/README.md)
+- [GSV Manager Tab](MultiTools/StateManagerTabs/GSVManagerTab/README.md)
+- [IRF Manager Tab](MultiTools/StateManagerTabs/IRFManagerTab/README.md)
+- [State Manager Tab](MultiTools/StateManagerTabs/README.md) +
+- [Bookmark Manager Tab](MultiTools/StateManagerTabs/BookmarkManagerTab/README.md) +
 - [Node Color Registry Tab](MultiTools/NodeColorRegistryTab/README.md)
-- [Popup Bar Tabs](Tabs/PopupBar/README.md)
+- [Popup Bar Tabs](Tabs/PopupBar/README.md) -
 - [Script Editor Tab](MultiTools/ScriptEditorTab/README.md)
 
 ### SuperTools
@@ -37,20 +38,28 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 - [Isolate CEL](SuperTools/IsolateCEL/README.md)
 - [Node Tree](SuperTools/NodeTree/README.md) +
 - [Simple Tool](MultiTools/SimpleTool/README.md)
-- [Variable Manager](MultiTools/VariableManager/README.md)
+- [Variable Manager](MultiTools/VariableManager/README.md) -
+
+### UX Enhancements
+- Port connector `~` 
+  - Detects closest node to cursor
+  - If multiple ports are detected a popup will display the ports
+  - `Shift + ~` Will enable continuously port connection selection <br>
+  - `Alt + ~` Will disable the warning if a connection already exists
+- View/Edit parameters
+  - `Alt + E` move to `E`
+  - `Alt + E` popup parameters tab
+  - `Alt + Shift + E` Pinned popup parameters tab
+- Color closest node
+- `Alt + D` moved to `D` and `Q`
+- `V` moved to `W`
+- Link Connection
+  - Can now drop dots with `D`
+  - Can create nodes with `Tab`
+- Full Screen changed from `Space` to `Ctrl + B`
+  - `Space` is now used to increase widget sizes of new KatanaBebop widgets
 
 ### [Macros](Macros/README.md) +
 - Cleanup Empty Groups
 - Frustum
-
-# Notes
-  * I am aiming for a first release of this library with Katana 5.0 which will have the upgrades to
-      Python 3.7.x and Qt for Python (PySide2).
-  * The Utils2 / Widgets2 folders are named this way to avoid library conflicts with
-        Katana's internal mechanisms.  I haven't really tested a work around too much
-        for this... But as of this time, this works and shouldn't conflict with anything...
-  * Load Order...
-      * SuperTools
-      * UIPlugins
-      * Startup
-      * Tabs
+- Calculate Near/Far Objects
