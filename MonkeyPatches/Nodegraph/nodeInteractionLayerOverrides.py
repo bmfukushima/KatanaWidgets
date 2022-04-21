@@ -160,6 +160,7 @@ def duplicateNodes(nodegraph_layer):
         nodegraph_layer.layerStack().parent().prepareFloatingLayerWithPasteBounds(duplicated_nodes)
         nodegraph_layer.layerStack().parent()._NodegraphPanel__nodegraphWidget.enableFloatingLayer()
 
+
 def nodeInteractionLayerMouseMove(func):
     """ Changes the color of the nearest node """
     def __nodeInteractionLayerMouseMove(self, event):
@@ -191,7 +192,7 @@ def nodeInteractionMouseEvent(func):
     """ DUPLICATE NODES """
     def __nodeInteractionMouseEvent(self, event):
         # Duplicate nodes
-        if event.modifiers() == Qt.ShiftModifier and event.button() in [Qt.MidButton, Qt.MiddleButton]:
+        if event.modifiers() == Qt.ControlModifier and event.button() in [Qt.MidButton, Qt.MiddleButton]:
             duplicateNodes(self)
             return True
 

@@ -220,9 +220,8 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
     if not nodegraph_widget:
         widget_under_cursor = getWidgetUnderCursor()
         if not hasattr(widget_under_cursor, "__module__"): return None
-        widget_under_cursor = widget_under_cursor.__module__.split(".")[-1]
-        if widget_under_cursor != "NodegraphWidget": return
-        nodegraph_widget = getWidgetUnderCursor()
+        if widget_under_cursor.__module__.split(".")[-1] != "NodegraphWidget": return
+        nodegraph_widget = widget_under_cursor
     if not nodegraph_widget: return
 
     # populate node list

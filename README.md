@@ -58,6 +58,7 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   - Can create nodes with `Tab`
 - Full Screen changed from `Space` to `Ctrl + B`
   - `Space` is now used to increase widget sizes of new KatanaBebop widgets
+- `Ctrl + MMB` Duplicate selected nodes
 
 ### [Macros](Macros/README.md) +
 - Cleanup Empty Groups
