@@ -76,18 +76,14 @@ def linkConnectionLayerKeyPress(func):
         if event.key() == Qt.Key_Tab:
             """ Connect last active node/port (dot, or first node selected) to first node created """
             # hide link
-            # todo hide link for some reason this causes the node graph to freeze?
-            #nodegraph_widget = widgetutils.getActiveNodegraphWidget()
             nodegraph_widget = self.layerStack()
-            print(nodegraph_widget.getLayers())
             for layer in reversed(nodegraph_widget.getLayers()):
                 if isinstance(layer, LinkConnectionLayer):
-                    print("removing layer, ", layer)
                     nodegraph_widget.removeLayer(layer)
             nodegraph_widget.idleUpdate()
 
-
-            interaction_layer = self.layerStack().getLayerByName("NodeInteractions")
+            # launch node menu
+            interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")
             interaction_layer._NodeInteractionLayer__launchNodeCreationMenuLayer()
             return True
 

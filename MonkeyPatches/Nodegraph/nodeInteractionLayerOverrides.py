@@ -15,6 +15,7 @@ from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile
 from UI4.App import Tabs
 
 from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
+from UI4.Tabs.NodeGraphTab.Layers.NodeGraphViewInteractionLayer import NodeGraphViewInteractionLayer
 from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdropNodeDialog
 
 from .portConnector import PortConnector
@@ -187,6 +188,7 @@ def nodeInteractionLayerMouseMove(func):
 
 
 def nodeInteractionMouseEvent(func):
+    """ DUPLICATE NODES """
     def __nodeInteractionMouseEvent(self, event):
         # Duplicate nodes
         if event.modifiers() == Qt.ShiftModifier and event.button() in [Qt.MidButton, Qt.MiddleButton]:
@@ -275,16 +277,24 @@ def installNodegraphHotkeyOverrides(**kwargs):
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
 
-    # get node interaction layer
+    # NORMAL NODEGRAPH
     node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")
 
     node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(
         NodeInteractionLayer._NodeInteractionLayer__processKeyPress)
     node_interaction_layer.__class__._NodeInteractionLayer__processMouseButtonPress = nodeInteractionMouseEvent(
         NodeInteractionLayer._NodeInteractionLayer__processMouseButtonPress)
-    # mouse move
     node_interaction_layer.__class__._NodeInteractionLayer__processMouseMove = nodeInteractionLayerMouseMove(
         NodeInteractionLayer._NodeInteractionLayer__processMouseMove)
+
+    # NETWORK MATERIAL
+    nodegraph_view_interaction_layer = nodegraph_widget.getLayerByName("NodeGraphViewInteraction")
+    nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(
+        NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processKeyPress)
+    nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseButtonDown = nodeInteractionMouseEvent(
+        NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processMouseButtonDown)
+    nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseMove = nodeInteractionLayerMouseMove(
+        NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processMouseMove)
 
     # cleanup
     nodegraph_widget.cleanup()
