@@ -1,8 +1,5 @@
-from PyQt5 import QtWidgets, QtCore
-
 from Katana import NodegraphAPI, RenderingAPI, LayeredMenuAPI, UI4, Utils
-from cgwidgets.utils import getWidgetUnderCursor
-from Utils2 import nodeutils, widgetutils
+from Utils2 import widgetutils, isLicenseValid
 
 
 def PopulateCallback(layeredMenu):
@@ -99,16 +96,16 @@ def setGSV(gsv):
     katana_main = UI4.App.MainWindow.CurrentMainWindow()
     katana_main._layered_menu_gsv = gsv
 
+if isLicenseValid():
+    gsvMenu = LayeredMenuAPI.LayeredMenu(
+        PopulateCallback,
+        ActionCallback,
+        'S',
+        alwaysPopulate=True,
+        onlyMatchWordStart=False
+    )
 
-gsvMenu = LayeredMenuAPI.LayeredMenu(
-    PopulateCallback,
-    ActionCallback,
-    'S',
-    alwaysPopulate=True,
-    onlyMatchWordStart=False
-)
-
-LayeredMenuAPI.RegisterLayeredMenu(gsvMenu, 'GSV')
+    LayeredMenuAPI.RegisterLayeredMenu(gsvMenu, 'GSV')
 
 
 

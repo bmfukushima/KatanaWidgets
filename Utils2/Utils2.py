@@ -52,8 +52,98 @@ def convertStringBoolToBool(string_bool):
         return False
 
 
+def getAllVisibleTabs():
+    """ Gets all of the current top level tabs
+
+    Returns (list): of KatanaTabs """
+    from Katana import UI4
+    tabs = UI4.App.Tabs.GetAllTabs()
+    visible_tab_list = []
+    for tab in tabs:
+        if hasattr(tab, 'isVisible'):
+            try:
+                if tab.isVisible():
+                    visible_tab_list.append(tab)
+            except RuntimeError:
+                # tab deleted?
+                pass
+    return visible_tab_list
+
+
+def getCurrentTab():
+    """ Returns the current tab that is under the cursor
+
+    Note:
+        Doing a positional check, as when suing the ScriptEditor,
+        the PopupDisplay will block the underCursor from registering.
+    Returns (KatanaTab)"""
+    from qtpy.QtGui import QCursor
+    for tab in getAllVisibleTabs():
+        tab_xpos = tab.parent().mapToGlobal(tab.pos()).x()
+        tab_ypos = tab.parent().mapToGlobal(tab.pos()).y()
+        tab_w = tab.width()
+        tab_h = tab.height()
+
+        cursor_pos = QCursor.pos()
+        cursor_xpos = cursor_pos.x()
+        cursor_ypos = cursor_pos.y()
+
+        # check ypos
+        if (tab_ypos < cursor_ypos < tab_ypos + tab_h
+            and tab_xpos < cursor_xpos < tab_xpos + tab_w
+        ):
+            return tab
+
+        # if tab.underMouse():
+        #     return tab
+
+    return None
+
+
+def getFontSize():
+    """
+    Gets the current font size in Katana.  This is useful for dynamically resizing the application.
+
+    """
+    from qtpy.QtWidgets import QApplication
+    from cgwidgets.utils import getFontSize
+
+    font_size = getFontSize(QApplication.instance())
+    return font_size
+
+
 def getValidName(name):
     return re.sub('(^[0-9]+|[^a-zA-Z0-9_])', '_', name)
+
+
+def isLicenseValid():
+    """ Determines if there is a valid license located at either
+        $KATANABEBOP/license.txt
+            or
+        $KATANABEBOPLICENSEFILE
+    """
+    if "KATANABEBOPISVALID" in os.environ:
+        if os.environ["KATANABEBOPISVALID"] == ":)": return True
+        else: return False
+
+    else:
+        from cgwidgets.utils import checkLicenseFiles
+        license_files = []
+        # current_dir = os.path.dirname(os.path.realpath(__file__))
+        # local_license_file = f"{current_dir}/license.txt"
+        local_license_file = os.environ["KATANABEBOP"] + "/license.txt"
+        license_files.append(local_license_file)
+        try:
+            license_files.append(os.environ["KATANABEBOPLICENSEFILE"])
+        except KeyError:
+            pass
+
+        is_license_valid = checkLicenseFiles(license_files)
+        if is_license_valid:
+            os.environ["KATANABEBOPISVALID"] = ":)"
+        else:
+            os.environ["KATANABEBOPISVALID"] = ":("
+        return is_license_valid
 
 
 def mkdirRecursive(path):
@@ -143,61 +233,6 @@ def makeUndoozDisappear(index=0):
     Utils.UndoStack._TriggerUndoCallbacks()
 
 
-def getFontSize():
-    """
-    Gets the current font size in Katana.  This is useful for dynamically resizing the application.
-
-    """
-    from qtpy.QtWidgets import QApplication
-    from cgwidgets.utils import getFontSize
-
-    font_size = getFontSize(QApplication.instance())
-    return font_size
 
 
-def getAllVisibleTabs():
-    """ Gets all of the current top level tabs
 
-    Returns (list): of KatanaTabs """
-    from Katana import UI4
-    tabs = UI4.App.Tabs.GetAllTabs()
-    visible_tab_list = []
-    for tab in tabs:
-        if hasattr(tab, 'isVisible'):
-            try:
-                if tab.isVisible():
-                    visible_tab_list.append(tab)
-            except RuntimeError:
-                # tab deleted?
-                pass
-    return visible_tab_list
-
-
-def getCurrentTab():
-    """ Returns the current tab that is under the cursor
-
-    Note:
-        Doing a positional check, as when suing the ScriptEditor,
-        the PopupDisplay will block the underCursor from registering.
-    Returns (KatanaTab)"""
-    from qtpy.QtGui import QCursor
-    for tab in getAllVisibleTabs():
-        tab_xpos = tab.parent().mapToGlobal(tab.pos()).x()
-        tab_ypos = tab.parent().mapToGlobal(tab.pos()).y()
-        tab_w = tab.width()
-        tab_h = tab.height()
-
-        cursor_pos = QCursor.pos()
-        cursor_xpos = cursor_pos.x()
-        cursor_ypos = cursor_pos.y()
-
-        # check ypos
-        if (tab_ypos < cursor_ypos < tab_ypos + tab_h
-            and tab_xpos < cursor_xpos < tab_xpos + tab_w
-        ):
-            return tab
-
-        # if tab.underMouse():
-        #     return tab
-
-    return None

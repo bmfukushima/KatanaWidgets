@@ -130,8 +130,6 @@ def installMenuLayerOverrides(**kwargs):
         if layer_name == "NodeCreationMenuLayer":
             node_creation_menu_layer = layer
 
-    print(custom_menu_layer)
-    print(node_creation_menu_layer)
     # install overrides
     custom_menu_layer.__class__._MenuLayer__action = menuLayerActionOverride(CustomMenuLayer._MenuLayer__action)
     custom_menu_layer.__class__._MenuLayer__close = menuLayerCloseOverride(CustomMenuLayer._MenuLayer__close)
