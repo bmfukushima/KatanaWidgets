@@ -10,7 +10,7 @@ This repo contains a small collection of my personal tools which have been creat
 
 
 ### Installation
-Append this directory to your `KATANA_RESOURCES` environment variable.
+Append this directory to your `$KATANA_RESOURCES` environment variable.
 
 Install your license file under `$KATANABEBOP/license.txt` or place it in the environment variable `$KATANABEBOPLICENSE`
 

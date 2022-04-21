@@ -313,15 +313,15 @@ class PortConnector():
 
         selection_active = PortConnector.isSelectionActive()
 
-        if not node:
-            node = nodeutils.getClosestNode(nodegraph_widget=nodegraph_widget)
-            if not node: return
-        # PORT SELECTED
+        # CONNECT PORTS
         if selection_active:
             PortConnector.connectPortEvent(display_warning=display_warning, is_recursive_selection=is_recursive_selection)
 
-        # NO PORT SELECTED
+        # SELECT PORT
         else:
+            if not node:
+                node = nodeutils.getClosestNode(has_output_ports=True, nodegraph_widget=nodegraph_widget)
+                if not node: return
             PortConnector.setActiveNodegraphWidget(nodegraph_widget)
             PortConnector.selectPortEvent(node=node)
 
