@@ -82,16 +82,6 @@ def nodeEntryChosen(func):
                     input_port = node.getInputPortByIndex(0)
                 last_active_node.getOutputPortByIndex(0).connect(input_port)
 
-                # hide link
-                # todo hide link for some reason this causes the node graph to freeze?
-                # nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-                # print(nodegraph_widget.getLayers())
-                # for layer in reversed(nodegraph_widget.getLayers()):
-                #     if isinstance(layer, LinkConnectionLayer):
-                #         print("removing layer, ", layer)
-                #         nodegraph_widget.removeLayer(layer)
-                # nodegraph_widget.idleUpdate()
-
                 # disable attrs
                 delattr(widgetutils.katanaMainWindow(), "_link_connection_active_node")
                 widgetutils.katanaMainWindow()._is_link_creation_active = False
