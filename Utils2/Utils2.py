@@ -127,21 +127,24 @@ def isLicenseValid():
         else: return False
 
     else:
-        from cgwidgets.utils import checkLicenseFiles
+        from cgwidgets.utils import checkLicenseFiles, licenseDate
         license_files = []
         # current_dir = os.path.dirname(os.path.realpath(__file__))
         # local_license_file = f"{current_dir}/license.txt"
         local_license_file = os.environ["KATANABEBOP"] + "/license.txt"
         license_files.append(local_license_file)
         try:
-            license_files.append(os.environ["KATANABEBOPLICENSEFILE"])
+            license_files.append(os.environ["KATANABEBOPLICENSE"])
         except KeyError:
             pass
 
-        is_license_valid = checkLicenseFiles(license_files)
+        is_license_valid, filepath = checkLicenseFiles(license_files)
         if is_license_valid:
+            expiry_date = licenseDate(filepath)
+            print(f"Katana Bebop license found at {filepath} \n\t |- Valid until {expiry_date}")
             os.environ["KATANABEBOPISVALID"] = ":)"
         else:
+            print(f"No valid licenses found for Katana Bebop")
             os.environ["KATANABEBOPISVALID"] = ":("
         return is_license_valid
 
