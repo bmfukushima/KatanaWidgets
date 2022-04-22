@@ -370,6 +370,63 @@ class View(QtWidgets.QGraphicsView):
                 )
         return list(set(node_list))
 
+    def getAllUpstreamTerminalNodes(self, node, node_list=[]):
+        """ Gets all nodes upstream of a specific node that have no input nodes
+
+        Args:
+            node (Node): node to search from
+
+        Returns (list): of nodes with no inputs
+        """
+        children = node.getInputPorts()
+        if 0 < len(children):
+            for input_port in children:
+                connected_ports = input_port.getConnectedPorts()
+                for port in connected_ports:
+                    node = port.getNode()
+                    self.getAllUpstreamTerminalNodes(node, node_list=node_list)
+                    terminal = True
+                    for input_port in node.getInputPorts():
+                        if 0 < len(input_port.getConnectedPorts()):
+                            terminal = False
+                    if terminal is True:
+                        node_list.append(node)
+
+        return list(set(node_list))
+
+    def getTreeRootNode(self, node):
+        """ Returns the Root Node of this specific Nodegraph Tree aka the upper left node
+
+        Args:
+            node (Node): node to start searching from
+        """
+
+        def getFirstNode(input_ports):
+            """
+            gets the first node connected to a node...
+            @ports <port> getConnectedPorts()
+            """
+            for input_port in input_ports:
+                connected_ports = input_port.getConnectedPorts()
+                if len(connected_ports) > 0:
+                    for port in connected_ports:
+                        node = port.getNode()
+                        if node:
+                            return node
+
+            return None
+
+        input_ports = node.getInputPorts()
+        if len(input_ports) > 0:
+            # get first node
+            first_node = getFirstNode(input_ports)
+            if first_node:
+                return self.getTreeRootNode(first_node)
+            else:
+                return node
+        else:
+            return node
+
     """ SELECTION """
     def selectAllNodes(self, upstream=False, downstream=False):
         node_list = []
@@ -434,10 +491,13 @@ class View(QtWidgets.QGraphicsView):
         self._aligned_nodes = []
         node = NodegraphAPI.GetAllSelectedNodes()[0]
         root_node = self.getTreeRootNode(node)
+        #terminal_nodes = self.getAllUpstreamTerminalNodes(node)
 
         # if x and y:
         NodegraphAPI.SetNodePosition(root_node, (x * self.x_offset, y * self.y_offset))
-        self.__alignDownstreamNodes(root_node, x, y)
+        self._aligned_nodes.append(root_node)
+        #for terminal_node in terminal_nodes:
+        self.__alignDownstreamNodes(root_node, x, y, recursive=True)
         Utils.UndoStack.CloseGroup()
 
         nodegraph_widget = widgetutils.getActiveNodegraphWidget()
@@ -473,7 +533,7 @@ class View(QtWidgets.QGraphicsView):
         nodegraph_widget = widgetutils.getActiveNodegraphWidget()
         nodegraph_widget.parent().floatNodes(self._aligned_nodes)
 
-    def __alignDownstreamNodes(self, node, x=0, y=0):
+    def __alignDownstreamNodes(self, node, x=0, y=0, recursive=False):
         """ Algorithm to align all of the nodes in the tree selected
 
         Args:
@@ -498,19 +558,25 @@ class View(QtWidgets.QGraphicsView):
                     if 0 < index:
                         x += 1
 
-                    if len(connected_ports) == 1:
+                    # set position
+                    if recursive:
+                        if len(connected_ports) == 1:
+                            NodegraphAPI.SetNodePosition(connected_node, (self.x_offset * x, self.y_offset * y))
+                            self._aligned_nodes.append(connected_node)
+                    else:
                         NodegraphAPI.SetNodePosition(connected_node, (self.x_offset * x, self.y_offset * y))
                         self._aligned_nodes.append(connected_node)
 
                     # recurse through nodes
-                    self.__alignDownstreamNodes(connected_node, x=x, y=y)
+                    self.__alignDownstreamNodes(connected_node, x=x, y=y, recursive=recursive)
 
                     # check upstream
-                    input_ports = connected_node.getInputPorts()
-                    if 1 < len(input_ports):
-                        for input_port in input_ports[1:]:
-                            sibling_node = input_port.getNode()
-                            self.__alignUpstreamNodes(sibling_node, x=x, y=y)
+                    if recursive:
+                        input_ports = connected_node.getInputPorts()
+                        if 1 < len(input_ports):
+                            for input_port in input_ports[1:]:
+                                sibling_node = input_port.getNode()
+                                self.__alignUpstreamNodes(sibling_node, x=x, y=y, recursive=recursive)
 
     def alignUpstreamNodes(self):
         Utils.UndoStack.OpenGroup("Align Nodes")
@@ -538,7 +604,7 @@ class View(QtWidgets.QGraphicsView):
         nodegraph_widget = widgetutils.getActiveNodegraphWidget()
         nodegraph_widget.parent().floatNodes(self._aligned_nodes)
 
-    def __alignUpstreamNodes(self, node, x=0, y=0):
+    def __alignUpstreamNodes(self, node, x=0, y=0, recursive=False):
         """ Algorithm to align all of the nodes in the tree selected
 
         Args:
@@ -562,72 +628,23 @@ class View(QtWidgets.QGraphicsView):
                     """ This needs to be done as when there are multiple connected ports, these show
                     up as an unordered list.  Which means it is hard to sort, so we defer the sorting
                     to later """
-                    if len(connected_ports) == 1:
+                    if recursive:
+                        if len(connected_ports) == 1:
+                            NodegraphAPI.SetNodePosition(connected_node, (self.x_offset * x, self.y_offset * y))
+                            self._aligned_nodes.append(connected_node)
+                    else:
                         NodegraphAPI.SetNodePosition(connected_node, (self.x_offset * x, self.y_offset * y))
                         self._aligned_nodes.append(connected_node)
-
                     # recurse through nodes
-                    self.__alignUpstreamNodes(connected_node, x=x, y=y)
+                    self.__alignUpstreamNodes(connected_node, x=x, y=y, recursive=recursive)
 
                     # check upstream
-                    output_ports = connected_node.getOutputPorts()
-                    if 1 < len(output_ports):
-                        for output_port in output_ports[1:]:
-                            sibling_node = output_port.getNode()
-                            self.__alignDownstreamNodes(sibling_node, x=x, y=y)
-
-    def getAllUpstreamTerminalNodes(self, node, node_list=[]):
-        """
-        gets all nodes upstream of a specific node
-        @returns a list of nodes
-        """
-        children = node.getInputPorts()
-        if children > 0:
-            for input_port in children:
-                connected_ports = input_port.getConnectedPorts()
-                for port in connected_ports:
-                    node = port.getNode()
-
-                    self.getAllUpstreamTerminalNodes(node, node_list=node_list)
-                    terminal = True
-                    for input_port in node.getInputPorts():
-                        if len(input_port.getConnectedPorts()) > 0:
-                            terminal = False
-                    if terminal is True:
-                        node_list.append(node)
-        return list(set(node_list))
-
-    def getTreeRootNode(self, node):
-        """
-        returns the Root Node of this specific Nodegraph Tree
-        aka the upper left node
-        """
-
-        def getFirstNode(input_ports):
-            """
-            gets the first node connected to a node...
-            @ports <port> getConnectedPorts()
-            """
-            for input_port in input_ports:
-                connected_ports = input_port.getConnectedPorts()
-                if len(connected_ports) > 0:
-                    for port in connected_ports:
-                        node = port.getNode()
-                        if node:
-                            return node
-
-            return None
-
-        input_ports = node.getInputPorts()
-        if len(input_ports) > 0:
-            # get first node
-            first_node = getFirstNode(input_ports)
-            if first_node:
-                return self.getTreeRootNode(first_node)
-            else:
-                return node
-        else:
-            return node
+                    if recursive:
+                        output_ports = connected_node.getOutputPorts()
+                        if 1 < len(output_ports):
+                            for output_port in output_ports[1:]:
+                                sibling_node = output_port.getNode()
+                                self.__alignDownstreamNodes(sibling_node, x=x, y=y, recursive=recursive)
 
 
 class Scene(QtWidgets.QGraphicsScene):
