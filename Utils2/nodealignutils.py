@@ -1,24 +1,15 @@
 """
 - Align All
-    Issue with recursion...
-        - Can't seem to find nodes... when it recurses back up, then back down...
-        for some reason it doesn't fine some down stream nodes...
-            - tried moving the recursive loop... just stalled out lol
     Root node not being aligned
     Potentially store node dictionary with offsets...
         check against dictionary
         if it is overlapping... 
             offset and recurse up/down?
 
-- Arrow key walk nodes
-    Up/Down go up/down...
-    Left/Right 
-        Check above and below... to see if multiple ports
-            if multiple ports... go to the next index
 Iron Trajectory is set by direction when you pass through first node...
 
 """
-import sys
+
 import platform
 import time
 import math
@@ -27,6 +18,7 @@ import math
 from qtpy import QtWidgets, QtGui, QtCore
 from Katana import UI4, NodegraphAPI, DrawingModule, NodeGraphView, Utils
 
+from Utils2 import widgetutils
 
 class MainWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
@@ -352,7 +344,6 @@ class View(QtWidgets.QGraphicsView):
         # self.setupMask()
 
     """ GET NODES """
-
     def getDownstreamNodes(self, node, node_list=None):
         output_ports = node.getOutputPorts()
         node_list.append(node)
@@ -433,179 +424,157 @@ class View(QtWidgets.QGraphicsView):
             )
 
     def alignAllNodes(self, x=0, y=0):
-        self.align_list = []
+        """ Algorithm to align all of the nodes in the tree selected
+
+        Args:
+            x (int): How many grid units the node should be offset
+            y (int): How many grid units the node should be offset
+        """
+        Utils.UndoStack.OpenGroup("Align Nodes")
+        self._aligned_nodes = []
         node = NodegraphAPI.GetAllSelectedNodes()[0]
-        root_node = View().getTreeRootNode(node)
+        root_node = self.getTreeRootNode(node)
 
         # if x and y:
-        NodegraphAPI.SetNodePosition(
-            root_node,
-            (x * self.x_offset, y * self.y_offset)
-        )
-        self.alignDownstreamNodesRecurse(root_node, x, y)
+        NodegraphAPI.SetNodePosition(root_node, (x * self.x_offset, y * self.y_offset))
+        self.__alignDownstreamNodes(root_node, x, y)
+        Utils.UndoStack.CloseGroup()
+
+        nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+        nodegraph_widget.parent().floatNodes(self._aligned_nodes)
 
     def alignDownstreamNodes(self):
+        Utils.UndoStack.OpenGroup("Align Nodes")
+        self._aligned_nodes = []
         selected_nodes = NodegraphAPI.GetAllSelectedNodes()
         for selected_node in selected_nodes:
             pos = NodegraphAPI.GetNodePosition(selected_node)
-            offset = View().getNearestGridPoint(pos[0], pos[1])
-            xpos = (offset[0] * View().x_grid) + View().x_grid
-            ypos = (offset[1] * View().y_grid) + View().y_grid
+            offset = self.getNearestGridPoint(pos[0], pos[1])
+            xpos = (offset[0] * self.x_grid) + self.x_grid
+            ypos = (offset[1] * self.y_grid) + self.y_grid
 
-            NodegraphAPI.SetNodePosition(
-                selected_node, (xpos, ypos)
-            )
+            NodegraphAPI.SetNodePosition(selected_node, (xpos, ypos))
+            self._aligned_nodes.append(selected_node)
+            self.__alignDownstreamNodes(selected_node, x=0, y=0)
 
-            node_list = View().alignDownstreamNodesRecurse(selected_node)
-            for node in node_list:
+            # offset all nodes back to a relative position of the original node...
+            """ Would be smarter to just move the original node to the right position"""
+            for node in list(set(self._aligned_nodes)):
                 if node != selected_node:
                     orig_pos = NodegraphAPI.GetNodePosition(node)
 
                     offset_xpos = orig_pos[0] + xpos
                     offset_ypos = orig_pos[1] + ypos
 
-                    NodegraphAPI.SetNodePosition(
-                        node, (offset_xpos, offset_ypos)
-                    )
+                    NodegraphAPI.SetNodePosition(node, (offset_xpos, offset_ypos))
 
-    def alignDownstreamNodesRecurse(
-            self,
-            node,
-            x=0,
-            y=0,
-            node_list=None
-    ):
-        """
-        recursive function to look downstream of a specific node and align all of
-        those nodes to the original node
-        @node <node> origin node
-        @x <int> x_offset
-        @y <int> y_offset
-        @node_list <list> list of all nodes that have been aligned
-        """
-        # init node list
-        if not node_list:
-            node_list = []
+        Utils.UndoStack.CloseGroup()
 
+        nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+        nodegraph_widget.parent().floatNodes(self._aligned_nodes)
+
+    def __alignDownstreamNodes(self, node, x=0, y=0):
+        """ Algorithm to align all of the nodes in the tree selected
+
+        Args:
+            node (Node): Node currently being looked at
+            x (int): How many grid units the node should be offset
+            y (int): How many grid units the node should be offset
+        """
         output_ports = node.getOutputPorts()
-        node_list.append(node)
         y += 1
         for count, output_port in enumerate(output_ports):
-            if count > 0:
+            if 0 < count:
                 x += 1
             connected_ports = output_port.getConnectedPorts()
+
             for index, input_port in enumerate(connected_ports):
                 connected_node = input_port.getNode()
-                if index > 0:
-                    x += 1
-                if connected_node not in node_list:
-                    NodegraphAPI.SetNodePosition(
-                        connected_node,
-                        (self.x_offset * x, self.y_offset * y)
-                    )
+                if connected_node not in self._aligned_nodes:
+                    # if there is only one port, set the position and continue
+                    """ This needs to be done as when there are multiple connected ports, these show
+                    up as an unordered list.  Which means it is hard to sort, so we defer the sorting
+                    to later """
+                    if 0 < index:
+                        x += 1
+
+                    if len(connected_ports) == 1:
+                        NodegraphAPI.SetNodePosition(connected_node, (self.x_offset * x, self.y_offset * y))
+                        self._aligned_nodes.append(connected_node)
 
                     # recurse through nodes
-                    self.alignDownstreamNodesRecurse(
-                        connected_node,
-                        x=x,
-                        y=y,
-                        node_list=node_list
-                    )
+                    self.__alignDownstreamNodes(connected_node, x=x, y=y)
 
                     # check upstream
                     input_ports = connected_node.getInputPorts()
-                    if len(input_ports) > 1:
+                    if 1 < len(input_ports):
                         for input_port in input_ports[1:]:
-                            self.alignUpstreamNodesRecurse(
-                                connected_node,
-                                x=x,
-                                y=y,
-                                node_list=node_list
-                            )
-
-        return list(set(node_list))
+                            sibling_node = input_port.getNode()
+                            self.__alignUpstreamNodes(sibling_node, x=x, y=y)
 
     def alignUpstreamNodes(self):
+        Utils.UndoStack.OpenGroup("Align Nodes")
+        self._aligned_nodes = []
         selected_nodes = NodegraphAPI.GetAllSelectedNodes()
         for selected_node in selected_nodes:
             pos = NodegraphAPI.GetNodePosition(selected_node)
-            offset = View().getNearestGridPoint(pos[0], pos[1])
-            xpos = (offset[0] * View().x_grid) + View().x_grid
-            ypos = (offset[1] * View().y_grid) + View().y_grid
+            offset = self.getNearestGridPoint(pos[0], pos[1])
+            xpos = (offset[0] * self.x_grid) + self.x_grid
+            ypos = (offset[1] * self.y_grid) + self.y_grid
 
-            NodegraphAPI.SetNodePosition(
-                selected_node, (xpos, ypos)
-            )
-
-            node_list = View().alignUpstreamNodesRecurse(selected_node)
-            for node in node_list:
+            NodegraphAPI.SetNodePosition(selected_node, (xpos, ypos))
+            self._aligned_nodes.append(selected_node)
+            self.__alignUpstreamNodes(selected_node)
+            for node in list(set(self._aligned_nodes)):
                 if node != selected_node:
                     orig_pos = NodegraphAPI.GetNodePosition(node)
 
                     offset_xpos = orig_pos[0] + xpos
                     offset_ypos = orig_pos[1] + ypos
 
-                    NodegraphAPI.SetNodePosition(
-                        node, (offset_xpos, offset_ypos)
-                    )
+                    NodegraphAPI.SetNodePosition(node, (offset_xpos, offset_ypos))
+        Utils.UndoStack.CloseGroup()
 
-    def alignUpstreamNodesRecurse(
-            self,
-            node,
-            x=0,
-            y=0,
-            node_list=None
-    ):
-        """ Recursive function to look upstream of a specific node and align all of
-        those nodes to the original node
-        @node <node> origin node
-        @x <int> x_offset
-        @y <int> y_offset
-        @node_list <list> list of all nodes that have been aligned
+        nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+        nodegraph_widget.parent().floatNodes(self._aligned_nodes)
+
+    def __alignUpstreamNodes(self, node, x=0, y=0):
+        """ Algorithm to align all of the nodes in the tree selected
+
+        Args:
+            node (Node): Node currently being looked at
+            x (int): How many grid units the node should be offset
+            y (int): How many grid units the node should be offset
         """
-        # init node list
-        if not node_list:
-            node_list = []
-
         input_ports = node.getInputPorts()
-        node_list.append(node)
         y -= 1
         for count, input_port in enumerate(input_ports):
-            if count > 0:
+            if 0 < count:
                 x += 1
             connected_ports = input_port.getConnectedPorts()
-            for index, input_port in enumerate(connected_ports):
-                connected_node = input_port.getNode()
+
+            for index, output_port in enumerate(connected_ports):
+                connected_node = output_port.getNode()
                 if 0 < index:
                     x += 1
-                if connected_node not in node_list:
-                    NodegraphAPI.SetNodePosition(
-                        connected_node,
-                        (self.x_offset * x, self.y_offset * y)
-                    )
-
-                    # check upstream
-                    # upstream_x = x
-                    self.alignUpstreamNodesRecurse(
-                        connected_node,
-                        x=x,
-                        y=y,
-                        node_list=node_list
-                    )
+                if connected_node not in self._aligned_nodes:
+                    # if there is only one port, set the position and continue
+                    """ This needs to be done as when there are multiple connected ports, these show
+                    up as an unordered list.  Which means it is hard to sort, so we defer the sorting
+                    to later """
+                    if len(connected_ports) == 1:
+                        NodegraphAPI.SetNodePosition(connected_node, (self.x_offset * x, self.y_offset * y))
+                        self._aligned_nodes.append(connected_node)
 
                     # recurse through nodes
-                    # check downstream
+                    self.__alignUpstreamNodes(connected_node, x=x, y=y)
+
+                    # check upstream
                     output_ports = connected_node.getOutputPorts()
                     if 1 < len(output_ports):
                         for output_port in output_ports[1:]:
-                            self.alignDownstreamNodesRecurse(
-                                connected_node,
-                                x=x,
-                                y=y,
-                                node_list=node_list
-                            )
-
-        return list(set(node_list))
+                            sibling_node = output_port.getNode()
+                            self.__alignDownstreamNodes(sibling_node, x=x, y=y)
 
     def getAllUpstreamTerminalNodes(self, node, node_list=[]):
         """
@@ -659,109 +628,6 @@ class View(QtWidgets.QGraphicsView):
                 return node
         else:
             return node
-
-    """
-def alignDownstreamNodesRecurse(
-        self,
-        node,
-        x=0,
-        y=0,
-        align_upstream=False,
-        node_list=None
-    ):
-        # init node list
-        if not node_list:
-            node_list = []
-
-        output_ports = node.getOutputPorts()
-        node_list.append(node)
-        y += 1
-        for count, output_port in enumerate(output_ports):
-            connected_ports = output_port.getConnectedPorts()
-            for index, input_port in enumerate(connected_ports):
-                connected_node = input_port.getNode()
-                self.align_list.append(connected_node)
-                NodegraphAPI.SetNodePosition(
-                    connected_node,
-                    (self.x_offset * self.x, self.y_offset * y)
-                )
-
-                # check if last node
-                terminal = True
-                for output_port in connected_node.getOutputPorts():
-                    if len(output_port.getConnectedPorts()) > 0:
-                        terminal = False
-                if terminal is True:
-                    self.x += 1
-
-                # check upstream
-                if align_upstream is True:
-                    input_ports = connected_node.getInputPorts()
-                    if len(input_ports) > 1:
-                        for input_port in input_ports[1:]:
-
-                            #===================================================
-                            # upstream_nodes_list = self.getAllUpstreamTerminalNodes(connected_node)
-                            # for upstream_node in upstream_nodes_list:
-                            #     self.alignNode(upstream_node)
-                            #===================================================
-
-                            self.upstream_x = self.x
-                            #print(connected_node, self.upstream_x)
-                            self.alignUpstreamNodesRecurse(
-                                connected_node,
-                                x=self.upstream_x,
-                                y=y-1,
-                                node_list=node_list
-                            )
-
-                # recurse through nodes
-                self.alignDownstreamNodesRecurse(
-                    connected_node,
-                    x=x,
-                    y=y,
-                    node_list=node_list
-                )
-
-        return list(set(node_list))
-    def alignUpstreamNodesOld(self, node, x=0, y=0, node_list=None):
-        input_ports = node.getInputPorts()
-        y -= 1
-        if not node_list:
-            node_list = []
-        node_list.append(node)
-        for count, input_port in enumerate(input_ports):
-            connected_ports = input_port.getConnectedPorts()
-            for index, input_port in enumerate(connected_ports):
-                connected_node = input_port.getNode()
-                # check if is multi align?
-                if hasattr(self, 'align_list'):
-                    if connected_node in self.align_list:
-                        break
-
-                # alignt node
-                NodegraphAPI.SetNodePosition(
-                    connected_node,
-                    (self.x_offset * self.upstream_x, self.y_offset * y)
-                )
-
-                # check if last node
-                terminal = True
-                for input_port in connected_node.getInputPorts():
-                    if len(input_port.getConnectedPorts()) > 0:
-                        terminal = False
-                if terminal is True:
-                    self.upstream_x += 1
-
-                # recurse through nodes
-                self.alignUpstreamNodesRecurse(
-                    connected_node,
-                    x=self.upstream_x,
-                    y=y
-                )
-
-        return list(set(node_list))
-    """
 
 
 class Scene(QtWidgets.QGraphicsScene):
