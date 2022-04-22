@@ -19,7 +19,10 @@ from qtpy import QtWidgets, QtGui, QtCore
 from Katana import UI4, NodegraphAPI, DrawingModule, NodeGraphView, Utils
 
 from Utils2 import widgetutils
-
+X_GRID = 32
+Y_GRID = 16
+X_SPACE = 6
+Y_SPACE = 6
 class MainWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(MainWidget, self).__init__(parent)
@@ -356,45 +359,6 @@ class View(QtWidgets.QGraphicsView):
         self.nodegraph.floatNodes(node_list)
 
     """  ALIGNMENT """
-    def getNearestGridPoint(self, x, y):
-        """
-        @return: returns an offset of grid units (x, y)
-        @x: <float> or <int>
-        @y: <float> or <int>
-
-        This should be in the Nodegraph Coordinate System,
-        use self.mapToNodegraph() to convert to this sytem
-        """
-        # pos = NodegraphAPI.GetNodePosition(node)
-        x = int(x)
-        y = int(y)
-        if x % self.x_grid > (self.x_grid * .5):
-            x_offset = (x // self.x_grid)
-        else:
-            x_offset = (x // self.x_grid) - 1
-        if y % self.y_grid > (self.y_grid * .5):
-            y_offset = (y // self.y_grid)
-        else:
-            y_offset = (y // self.y_grid) - 1
-        return (x_offset, y_offset)
-
-    def snapSelectedNodesToGrid(self):
-        """
-        Gets all of the selected nodes by the user and snaps them
-        the grid at the neareset point
-        """
-        node_list = NodegraphAPI.GetAllSelectedNodes()
-        for node in node_list:
-            pos = NodegraphAPI.GetNodePosition(node)
-            offset = self.getNearestGridPoint(pos[0], pos[1])
-            NodegraphAPI.SetNodePosition(
-                node,
-                (
-                    (offset[0] * self.x_grid) + self.x_grid,
-                    (offset[1] * self.y_grid) + self.y_grid
-                )
-            )
-
     def alignAllNodes(self, x=0, y=0):
         """ Algorithm to align all of the nodes in the tree selected
 
@@ -404,6 +368,7 @@ class View(QtWidgets.QGraphicsView):
         """
         Utils.UndoStack.OpenGroup("Align Nodes")
         self._aligned_nodes = []
+        if len(NodegraphAPI.GetAllSelectedNodes()) == 0: return
         node = NodegraphAPI.GetAllSelectedNodes()[0]
         root_node = getTreeRootNode(node)
 
@@ -423,7 +388,7 @@ class View(QtWidgets.QGraphicsView):
         selected_nodes = NodegraphAPI.GetAllSelectedNodes()
         for selected_node in selected_nodes:
             pos = NodegraphAPI.GetNodePosition(selected_node)
-            offset = self.getNearestGridPoint(pos[0], pos[1])
+            offset = getNearestGridPoint(pos[0], pos[1])
             xpos = (offset[0] * self.x_grid) + self.x_grid
             ypos = (offset[1] * self.y_grid) + self.y_grid
 
@@ -498,7 +463,7 @@ class View(QtWidgets.QGraphicsView):
         selected_nodes = NodegraphAPI.GetAllSelectedNodes()
         for selected_node in selected_nodes:
             pos = NodegraphAPI.GetNodePosition(selected_node)
-            offset = self.getNearestGridPoint(pos[0], pos[1])
+            offset = getNearestGridPoint(pos[0], pos[1])
             xpos = (offset[0] * self.x_grid) + self.x_grid
             ypos = (offset[1] * self.y_grid) + self.y_grid
 
@@ -674,7 +639,7 @@ class IronTool(QtWidgets.QGraphicsRectItem):
             # Align Row
             if len(selected_nodes) > 0:
                 init_pos = NodegraphAPI.GetNodePosition(selected_nodes[0])
-                init_offset = view.getNearestGridPoint(init_pos[0], init_pos[1])
+                init_offset = getNearestGridPoint(init_pos[0], init_pos[1])
                 for index, node in enumerate(selected_nodes):
                     if 'x' in direction:
                         if 'neg' in direction:
@@ -874,23 +839,64 @@ def ironNodes():
     nodegraph_widget.installEventFilter(view)
 
 
+""" SNAP TO GRID """
 def snapNodeToGrid(node):
     """ Snaps the node provided to the nearest point on the grid"""
-    x_grid = 32
-    y_grid = 16
     pos = NodegraphAPI.GetNodePosition(node)
 
-    if pos[0] % x_grid < 0.5 * x_grid:
-        x = x_grid * (pos[0] // x_grid)
+    if pos[0] % X_GRID < 0.5 * X_GRID:
+        x = X_GRID * (pos[0] // X_GRID)
     else:
-        x = x_grid * ((pos[0] // x_grid) + 1)
+        x = X_GRID * ((pos[0] // X_GRID) + 1)
 
-    if pos[1] % y_grid < 0.5 * y_grid:
-        y = y_grid * (pos[1] // y_grid)
+    if pos[1] % Y_GRID < 0.5 * Y_GRID:
+        y = Y_GRID * (pos[1] // Y_GRID)
     else:
-        y = y_grid * ((pos[1] // y_grid) + 1)
+        y = Y_GRID * ((pos[1] // Y_GRID) + 1)
 
     NodegraphAPI.SetNodePosition(node, (x, y))
+
+
+def getNearestGridPoint(x, y):
+    """
+    @return: returns an offset of grid units (x, y)
+    @x: <float> or <int>
+    @y: <float> or <int>
+
+    This should be in the Nodegraph Coordinate System,
+    use self.mapToNodegraph() to convert to this sytem
+    """
+    # pos = NodegraphAPI.GetNodePosition(node)
+    x = int(x)
+    y = int(y)
+    if x % X_GRID > (X_GRID * .5):
+        x_offset = (x // X_GRID)
+    else:
+        x_offset = (x // X_GRID) - 1
+    if y % Y_GRID > (Y_GRID * .5):
+        y_offset = (y // Y_GRID)
+    else:
+        y_offset = (y // Y_GRID) - 1
+    return (x_offset, y_offset)
+
+
+def snapNodesToGrid(node_list=None):
+    """ Snaps the nodes provided to the grid
+
+    Args:
+        node_list (list): of nodes to be snapped to the grid
+            If none is provided, it will use the currently selected nodes
+    """
+    Utils.UndoStack.OpenGroup("Snap Nodes to Grid")
+    if not node_list:
+        node_list = NodegraphAPI.GetAllSelectedNodes()
+    for node in node_list:
+        pos = NodegraphAPI.GetNodePosition(node)
+        offset = getNearestGridPoint(pos[0], pos[1])
+        NodegraphAPI.SetNodePosition(node, ((offset[0] * X_GRID) + X_GRID, (offset[1] * Y_GRID) + Y_GRID))
+
+    Utils.UndoStack.CloseGroup()
+
 
 """ GET NODES """
 def getDownstreamNodes(node, node_list=None):

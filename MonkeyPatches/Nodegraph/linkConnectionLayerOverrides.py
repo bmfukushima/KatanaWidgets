@@ -74,7 +74,11 @@ def linkConnectionLayerKeyPress(func):
             return True
 
         if event.key() == Qt.Key_Tab:
-            """ Connect last active node/port (dot, or first node selected) to first node created """
+            """ Connect last active node/port (dot, or first node selected) to first node created 
+            
+            # Todo hiding link here... because on exit doesnt work
+            Might need to do something like this??
+            self.layerStack().releaseMouse()"""
             # hide link
             nodegraph_widget = self.layerStack()
             for layer in reversed(nodegraph_widget.getLayers()):

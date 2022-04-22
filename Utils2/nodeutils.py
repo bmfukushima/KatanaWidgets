@@ -18,6 +18,7 @@ def clearNodeSelection():
     for node in NodegraphAPI.GetAllSelectedNodes():
         NodegraphAPI.SetNodeSelected(node, False)
 
+
 def connectInsideGroup(node_list, parent_node):
     """
     Connects all of the nodes inside of a specific node in a linear fashion
