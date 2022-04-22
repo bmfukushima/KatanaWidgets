@@ -27,7 +27,7 @@ Q / D / Alt + D
 W
     Set current resolve node
 
-Shift + MMB
+Ctrl + Shift + MMB
     Duplicate node selection, or nearest node
 
 
@@ -36,10 +36,11 @@ Shift + MMB
 from .nodeInteractionLayerOverrides import installNodegraphHotkeyOverrides
 from .linkConnectionLayerOverrides import installLinkConnectionLayerOverrides
 from .menuLayerOverride import installMenuLayerOverrides
+from .zoomInteractionLayerOverrides import installZoomLayerOverrides
 # link connection mouse move
 def installNodegraphOverrides(**kwargs):
     from Katana import Callbacks
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installNodegraphHotkeyOverrides)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installLinkConnectionLayerOverrides)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installMenuLayerOverrides)
-
+    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installZoomLayerOverrides)

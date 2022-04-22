@@ -40,28 +40,34 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 - [Simple Tool](MultiTools/SimpleTool/README.md)
 - [Variable Manager](MultiTools/VariableManager/README.md) -
 
+### Layered Menus
+- `N` to access NetworkMaterialCreate/Edits
+- `S` to access GSVs
+
 ### UX Enhancements
 - Port connector `~` 
   - Detects closest node to cursor
   - If multiple ports are detected a popup will display the ports
   - `Shift + ~` Will enable continuously port connection selection <br>
   - `Alt + ~` Will disable the warning if a connection already exists
+  - Link Connection
+    - Can now drop dots with `D`
+    - Can create nodes with `Tab`
 - View/Edit parameters `E`
   - `Alt + E` move to `E`
   - `Alt + E` popup parameters tab
   - `Alt + Shift + E` Pinned popup parameters tab
-- Link Connection
-  - Can now drop dots with `D`
-  - Can create nodes with `Tab`
-- Color closest node
-- `Alt + D` moved to `D` and `Q`
-- `V` moved to `W`
+
+- Closest node to cursor is highlighted
+- `Alt + D` disable moved to `D` and `Q`
+- `V` node viewed moved to `W`
 - Full Screen changed from `Space` to `Ctrl + B`
   - `Space` is now used to increase widget sizes of new KatanaBebop widgets
 - `Ctrl + Shift + MMB` Duplicate selected nodes
 - `Ctrl + LMB` Move all nodes above closest node
 - `Ctrl + Shift + LMB` Move all nodes below closest node
 - `A` Alignment Menu
+- `S` GSV Popup Menu
 - Back/Forward buttons
   - `Back Button` show previous node as view node
   - `Forward Button` show next node view node

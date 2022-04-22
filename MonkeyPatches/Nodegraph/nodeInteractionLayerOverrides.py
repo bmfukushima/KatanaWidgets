@@ -242,6 +242,8 @@ def nodeInteractionMouseEvent(func):
         if event.button() == Qt.BackButton and event.modifiers() == Qt.ControlModifier:
             navigateNodegraph(HOME)
 
+        if event.modifiers() == Qt.AltModifier:
+            print("alt??!?")
         # Duplicate nodes
         if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() in [Qt.MidButton, Qt.MiddleButton]:
             duplicateNodes(self)
