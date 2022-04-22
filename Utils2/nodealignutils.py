@@ -343,100 +343,15 @@ class View(QtWidgets.QGraphicsView):
         # self.show()
         # self.setupMask()
 
-    """ GET NODES """
-    def getDownstreamNodes(self, node, node_list=None):
-        output_ports = node.getOutputPorts()
-        node_list.append(node)
-        for output_port in output_ports:
-            connected_ports = output_port.getConnectedPorts()
-            for output_port in connected_ports:
-                connected_node = output_port.getNode()
-                self.getDownstreamNodes(
-                    connected_node,
-                    node_list=node_list
-                )
-        return list(set(node_list))
-
-    def getUpstreamNodes(self, node, node_list=None):
-        input_ports = node.getInputPorts()
-        node_list.append(node)
-        for input_port in input_ports:
-            connected_ports = input_port.getConnectedPorts()
-            for input_port in connected_ports:
-                connected_node = input_port.getNode()
-                self.getUpstreamNodes(
-                    connected_node,
-                    node_list=node_list
-                )
-        return list(set(node_list))
-
-    def getAllUpstreamTerminalNodes(self, node, node_list=[]):
-        """ Gets all nodes upstream of a specific node that have no input nodes
-
-        Args:
-            node (Node): node to search from
-
-        Returns (list): of nodes with no inputs
-        """
-        children = node.getInputPorts()
-        if 0 < len(children):
-            for input_port in children:
-                connected_ports = input_port.getConnectedPorts()
-                for port in connected_ports:
-                    node = port.getNode()
-                    self.getAllUpstreamTerminalNodes(node, node_list=node_list)
-                    terminal = True
-                    for input_port in node.getInputPorts():
-                        if 0 < len(input_port.getConnectedPorts()):
-                            terminal = False
-                    if terminal is True:
-                        node_list.append(node)
-
-        return list(set(node_list))
-
-    def getTreeRootNode(self, node):
-        """ Returns the Root Node of this specific Nodegraph Tree aka the upper left node
-
-        Args:
-            node (Node): node to start searching from
-        """
-
-        def getFirstNode(input_ports):
-            """
-            gets the first node connected to a node...
-            @ports <port> getConnectedPorts()
-            """
-            for input_port in input_ports:
-                connected_ports = input_port.getConnectedPorts()
-                if len(connected_ports) > 0:
-                    for port in connected_ports:
-                        node = port.getNode()
-                        if node:
-                            return node
-
-            return None
-
-        input_ports = node.getInputPorts()
-        if len(input_ports) > 0:
-            # get first node
-            first_node = getFirstNode(input_ports)
-            if first_node:
-                return self.getTreeRootNode(first_node)
-            else:
-                return node
-        else:
-            return node
-
     """ SELECTION """
     def selectAllNodes(self, upstream=False, downstream=False):
         node_list = []
         for node in NodegraphAPI.GetAllSelectedNodes():
             if downstream is True:
                 print('downstream')
-                node_list += self.getDownstreamNodes(node, node_list=[])
+                node_list += getDownstreamNodes(node, node_list=[])
             if upstream is True:
-                print('upstream')
-                node_list += self.getUpstreamNodes(node, node_list=[])
+                node_list += getUpstreamNodes(node, node_list=[])
         NodegraphAPI.SetAllSelectedNodes(node_list)
         self.nodegraph.floatNodes(node_list)
 
@@ -490,8 +405,7 @@ class View(QtWidgets.QGraphicsView):
         Utils.UndoStack.OpenGroup("Align Nodes")
         self._aligned_nodes = []
         node = NodegraphAPI.GetAllSelectedNodes()[0]
-        root_node = self.getTreeRootNode(node)
-        #terminal_nodes = self.getAllUpstreamTerminalNodes(node)
+        root_node = getTreeRootNode(node)
 
         # if x and y:
         NodegraphAPI.SetNodePosition(root_node, (x * self.x_offset, y * self.y_offset))
@@ -977,3 +891,91 @@ def snapNodeToGrid(node):
         y = y_grid * ((pos[1] // y_grid) + 1)
 
     NodegraphAPI.SetNodePosition(node, (x, y))
+
+""" GET NODES """
+def getDownstreamNodes(node, node_list=None):
+    output_ports = node.getOutputPorts()
+    if not node_list:
+        node_list = []
+    node_list.append(node)
+    for output_port in output_ports:
+        connected_ports = output_port.getConnectedPorts()
+        for output_port in connected_ports:
+            connected_node = output_port.getNode()
+            getDownstreamNodes(
+                connected_node,
+                node_list=node_list
+            )
+    return list(set(node_list))
+
+def getUpstreamNodes(node, node_list=None):
+    input_ports = node.getInputPorts()
+    if not node_list:
+        node_list = []
+    node_list.append(node)
+    for input_port in input_ports:
+        connected_ports = input_port.getConnectedPorts()
+        for input_port in connected_ports:
+            connected_node = input_port.getNode()
+            getUpstreamNodes(
+                connected_node,
+                node_list=node_list
+            )
+    return list(set(node_list))
+
+def getAllUpstreamTerminalNodes(node, node_list=[]):
+    """ Gets all nodes upstream of a specific node that have no input nodes
+
+    Args:
+        node (Node): node to search from
+
+    Returns (list): of nodes with no inputs
+    """
+    children = node.getInputPorts()
+    if 0 < len(children):
+        for input_port in children:
+            connected_ports = input_port.getConnectedPorts()
+            for port in connected_ports:
+                node = port.getNode()
+                getAllUpstreamTerminalNodes(node, node_list=node_list)
+                terminal = True
+                for input_port in node.getInputPorts():
+                    if 0 < len(input_port.getConnectedPorts()):
+                        terminal = False
+                if terminal is True:
+                    node_list.append(node)
+
+    return list(set(node_list))
+
+def getTreeRootNode(node):
+    """ Returns the Root Node of this specific Nodegraph Tree aka the upper left node
+
+    Args:
+        node (Node): node to start searching from
+    """
+
+    def getFirstNode(input_ports):
+        """
+        gets the first node connected to a node...
+        @ports <port> getConnectedPorts()
+        """
+        for input_port in input_ports:
+            connected_ports = input_port.getConnectedPorts()
+            if len(connected_ports) > 0:
+                for port in connected_ports:
+                    node = port.getNode()
+                    if node:
+                        return node
+
+        return None
+
+    input_ports = node.getInputPorts()
+    if len(input_ports) > 0:
+        # get first node
+        first_node = getFirstNode(input_ports)
+        if first_node:
+            return getTreeRootNode(first_node)
+        else:
+            return node
+    else:
+        return node

@@ -160,6 +160,17 @@ def disconnectNode(node, input=False, output=False, reconnect=False):
                 port.disconnect(output)
 
 
+def floatNodes(node_list):
+    """ Floats the nodes in the list provided
+
+    Args:
+        node_list (list): of nodes to be floated
+    """
+    from .widgetutils import getActiveNodegraphWidget
+    nodegraph_widget = getActiveNodegraphWidget()
+    nodegraph_widget.parent().floatNodes(node_list)
+
+
 def getConnectedNodeChildren(parent_node, port=0):
     """ Looks at the children of a group node, and returns the connected tree from the provided port
 

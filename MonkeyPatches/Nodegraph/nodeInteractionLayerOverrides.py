@@ -20,6 +20,10 @@ from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdrop
 
 from .portConnector import PortConnector
 
+UP = 0
+DOWN = 1
+
+""" UTILS """
 def createBackdropNode(is_floating=False):
     """ Creates a backdrop node around the current selection"""
     Utils.UndoStack.OpenGroup("Create Backdrop")
@@ -160,10 +164,24 @@ def duplicateNodes(nodegraph_layer):
         nodegraph_layer.layerStack().parent().prepareFloatingLayerWithPasteBounds(duplicated_nodes)
         nodegraph_layer.layerStack().parent()._NodegraphPanel__nodegraphWidget.enableFloatingLayer()
 
+def moveNodes(direction=UP):
+    """ Selects and moves the nodes upstream or downstream of the selected node """
+    from Utils2 import nodeutils, nodealignutils
 
-def nodeInteractionLayerMouseMove(func):
+    closest_node = nodeutils.getClosestNode()
+    if direction == UP:
+        node_list = nodealignutils.getUpstreamNodes(closest_node)
+    if direction == DOWN:
+        node_list = nodealignutils.getDownstreamNodes(closest_node)
+
+    nodeutils.selectNodes(node_list)
+    nodeutils.floatNodes(node_list)
+
+
+""" EVENTS"""
+def nodeInteractionLayerMouseMoveEvent(func):
     """ Changes the color of the nearest node """
-    def __nodeInteractionLayerMouseMove(self, event):
+    def __nodeInteractionLayerMouseMoveEvent(self, event):
         def colorNearestNode():
             nodeutils.colorClosestNode(has_output_ports=True)
 
@@ -185,7 +203,7 @@ def nodeInteractionLayerMouseMove(func):
 
         return func(self, event)
 
-    return __nodeInteractionLayerMouseMove
+    return __nodeInteractionLayerMouseMoveEvent
 
 
 def nodeInteractionMouseEvent(func):
@@ -195,7 +213,12 @@ def nodeInteractionMouseEvent(func):
         if event.modifiers() == Qt.ControlModifier and event.button() in [Qt.MidButton, Qt.MiddleButton]:
             duplicateNodes(self)
             return True
-
+        if event.modifiers() == Qt.ControlModifier and event.button() in [Qt.LeftButton]:
+            moveNodes(UP)
+            return True
+        if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() in [Qt.LeftButton]:
+            moveNodes(DOWN)
+            return True
         return func(self, event)
 
     return __nodeInteractionMouseEvent
@@ -282,7 +305,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
         NodeInteractionLayer._NodeInteractionLayer__processKeyPress)
     node_interaction_layer.__class__._NodeInteractionLayer__processMouseButtonPress = nodeInteractionMouseEvent(
         NodeInteractionLayer._NodeInteractionLayer__processMouseButtonPress)
-    node_interaction_layer.__class__._NodeInteractionLayer__processMouseMove = nodeInteractionLayerMouseMove(
+    node_interaction_layer.__class__._NodeInteractionLayer__processMouseMove = nodeInteractionLayerMouseMoveEvent(
         NodeInteractionLayer._NodeInteractionLayer__processMouseMove)
 
     # NETWORK MATERIAL
@@ -291,7 +314,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
         NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processKeyPress)
     nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseButtonDown = nodeInteractionMouseEvent(
         NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processMouseButtonDown)
-    nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseMove = nodeInteractionLayerMouseMove(
+    nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseMove = nodeInteractionLayerMouseMoveEvent(
         NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processMouseMove)
 
     # cleanup
