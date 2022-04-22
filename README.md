@@ -57,7 +57,6 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   - `Alt + E` move to `E`
   - `Alt + E` popup parameters tab
   - `Alt + Shift + E` Pinned popup parameters tab
-
 - Closest node to cursor is highlighted
 - `Alt + D` disable moved to `D` and `Q`
 - `V` node viewed moved to `W`
@@ -73,7 +72,8 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   - `Forward Button` show next node view node
   - `Alt + Back Button` show parent node as view node
   - `Alt + Forward Button` show root node as view node
-
+-`Control + Alt + Shift + G` Show Grid
+  
 ### [Macros](Macros/README.md) +
 - Cleanup Empty Groups
 - Frustum

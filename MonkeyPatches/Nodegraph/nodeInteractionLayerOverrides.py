@@ -310,6 +310,25 @@ def nodeInteractionKeyPressEvent(func):
             createBackdropNode(is_floating=True)
             return True
 
+        if event.key() == Qt.Key_Q and event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier | Qt.AltModifier):
+            from Utils2.widgetutils import getActiveNodegraphWidget
+            from .gridLayer import GridLayer
+            nodegraph_widget = getActiveNodegraphWidget()
+            grid_layer = nodegraph_widget.getLayerByName("Grid Layer")
+            # Disable Grid
+            if grid_layer:
+                nodegraph_widget.removeLayer(grid_layer)
+            # Enable Grid
+            else:
+                grid_layer = GridLayer("Grid Layer", enabled=True)
+                nodegraph_widget.appendLayer(grid_layer)
+            nodegraph_widget.idleUpdate()
+            # from .gridLayer import GridGUIWidget
+            # grid_gui_widget = GridGUIWidget()
+            # grid_gui_widget.show()
+
+            return True
+
         if event.key() == Qt.Key_N and event.modifiers() == Qt.NoModifier:
             nodegraph_widget = widgetutils.getActiveNodegraphWidget()
             from UIPlugins.NMXMenu import NMXMenuPopulateCallback, NMXMenuActionCallback
