@@ -305,9 +305,17 @@ def nodeInteractionKeyPressEvent(func):
         if event.key() == Qt.Key_B and event.modifiers() == Qt.NoModifier:
             createBackdropNode(is_floating=False)
             return True
-        if event.key() == Qt.Key_B  and event.modifiers() == Qt.NoModifier:
+
+        if event.key() == Qt.Key_B and event.modifiers() == Qt.NoModifier:
             createBackdropNode(is_floating=True)
             return True
+
+        if event.key() == Qt.Key_N and event.modifiers() == Qt.NoModifier:
+            nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+            from UIPlugins import nmx_menu
+            nodegraph_widget.showLayeredMenu(nmx_menu)
+            return True
+
         if event.key() == Qt.Key_W and event.modifiers() == Qt.NoModifier:
             selected_nodes = NodegraphAPI.GetAllSelectedNodes()
             if selected_nodes:

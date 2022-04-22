@@ -17,7 +17,10 @@ def menuLayerActionOverride(func):
         """
         # run default
         if self.layerStack():
-            func(self)
+            try:
+                func(self)
+            except:
+                pass
         # block doubled layered menu events
         else:
             if self._MenuLayer__matchedEntries:

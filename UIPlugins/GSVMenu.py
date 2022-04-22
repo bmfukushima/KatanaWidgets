@@ -1,8 +1,8 @@
 from Katana import NodegraphAPI, RenderingAPI, LayeredMenuAPI, UI4, Utils
-from Utils2 import widgetutils, isLicenseValid
+from Utils2 import widgetutils
 
 
-def PopulateCallback(layeredMenu):
+def GSVMenuPopulateCallback(layeredMenu):
     """
     The populate call back is given to the layeredMenu as an argument.  This
     function will determine what options are displayed to the user when the user
@@ -24,7 +24,7 @@ def PopulateCallback(layeredMenu):
             layeredMenu.addEntry(str(child.getName()), text=str(child.getName()), color=(0, 128, 128))
 
 
-def ActionCallback(value):
+def GSVMenuActionCallback(value):
     """
     The ActionCallback is given to the LayeredMenu as an argument.  This function
     will determine what should happen when the user selects an option in the
@@ -46,11 +46,12 @@ def ActionCallback(value):
         """
         nodegraph_widget = widgetutils.isCursorOverNodeGraphWidget()
         if nodegraph_widget:
+            from .__init__ import gsv_menu
             widgetutils.katanaMainWindow()._is_recursive_layered_menu_event = True
             # nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()
             # nodegraph_widget.removeLayer(nodegraph_widget.getLayers()[-1])
             nodegraph_widget.getLayers()[-1]._MenuLayer__close()
-            nodegraph_widget.showLayeredMenu(gsvMenu)
+            nodegraph_widget.showLayeredMenu(gsv_menu)
 
         #return
 
@@ -96,16 +97,11 @@ def setGSV(gsv):
     katana_main = UI4.App.MainWindow.CurrentMainWindow()
     katana_main._layered_menu_gsv = gsv
 
-if isLicenseValid():
-    gsvMenu = LayeredMenuAPI.LayeredMenu(
-        PopulateCallback,
-        ActionCallback,
-        'S',
-        alwaysPopulate=True,
-        onlyMatchWordStart=False
-    )
 
-    LayeredMenuAPI.RegisterLayeredMenu(gsvMenu, 'GSV')
-
-
-
+gsv_menu = LayeredMenuAPI.LayeredMenu(
+    GSVMenuPopulateCallback,
+    GSVMenuActionCallback,
+    'S',
+    alwaysPopulate=True,
+    onlyMatchWordStart=False
+)
