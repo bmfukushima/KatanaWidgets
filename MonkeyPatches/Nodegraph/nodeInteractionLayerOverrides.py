@@ -11,7 +11,7 @@ from cgwidgets.widgets import PopupHotkeyMenu
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 from Utils2 import nodeutils, widgetutils
 
-from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile
+from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile, LayeredMenuAPI
 from UI4.App import Tabs
 
 from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
@@ -310,10 +310,10 @@ def nodeInteractionKeyPressEvent(func):
             createBackdropNode(is_floating=True)
             return True
 
-        if event.key() == Qt.Key_Q and event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier | Qt.AltModifier):
-            from Utils2.widgetutils import getActiveNodegraphWidget
+        if event.key() == Qt.Key_G and event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier | Qt.AltModifier):
+
             from .gridLayer import GridLayer
-            nodegraph_widget = getActiveNodegraphWidget()
+            nodegraph_widget = widgetutils.getActiveNodegraphWidget()
             grid_layer = nodegraph_widget.getLayerByName("Grid Layer")
             # Disable Grid
             if grid_layer:
@@ -332,7 +332,6 @@ def nodeInteractionKeyPressEvent(func):
         if event.key() == Qt.Key_N and event.modifiers() == Qt.NoModifier:
             nodegraph_widget = widgetutils.getActiveNodegraphWidget()
             from UIPlugins.NMXMenu import NMXMenuPopulateCallback, NMXMenuActionCallback
-            from Katana import LayeredMenuAPI
             NMXMenu = LayeredMenuAPI.LayeredMenu(
                     NMXMenuPopulateCallback,
                     NMXMenuActionCallback,
