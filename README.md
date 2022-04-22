@@ -46,19 +46,22 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   - If multiple ports are detected a popup will display the ports
   - `Shift + ~` Will enable continuously port connection selection <br>
   - `Alt + ~` Will disable the warning if a connection already exists
-- View/Edit parameters
+- View/Edit parameters `E`
   - `Alt + E` move to `E`
   - `Alt + E` popup parameters tab
   - `Alt + Shift + E` Pinned popup parameters tab
-- Color closest node
-- `Alt + D` moved to `D` and `Q`
-- `V` moved to `W`
 - Link Connection
   - Can now drop dots with `D`
   - Can create nodes with `Tab`
+- Color closest node
+- `Alt + D` moved to `D` and `Q`
+- `V` moved to `W`
 - Full Screen changed from `Space` to `Ctrl + B`
   - `Space` is now used to increase widget sizes of new KatanaBebop widgets
-- `Ctrl + MMB` Duplicate selected nodes
+- `Ctrl + Shift + MMB` Duplicate selected nodes
+- `Ctrl + LMB` Move all nodes above closest node
+- `Ctrl + Shift + LMB` Move all nodes below closest node
+- `A` Alignment Menu
 
 ### [Macros](Macros/README.md) +
 - Cleanup Empty Groups

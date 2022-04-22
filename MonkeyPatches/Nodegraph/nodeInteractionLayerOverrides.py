@@ -164,6 +164,7 @@ def duplicateNodes(nodegraph_layer):
         nodegraph_layer.layerStack().parent().prepareFloatingLayerWithPasteBounds(duplicated_nodes)
         nodegraph_layer.layerStack().parent()._NodegraphPanel__nodegraphWidget.enableFloatingLayer()
 
+
 def moveNodes(direction=UP):
     """ Selects and moves the nodes upstream or downstream of the selected node """
     from Utils2 import nodeutils, nodealignutils
@@ -209,8 +210,9 @@ def nodeInteractionLayerMouseMoveEvent(func):
 def nodeInteractionMouseEvent(func):
     """ DUPLICATE NODES """
     def __nodeInteractionMouseEvent(self, event):
+        print(event.button())
         # Duplicate nodes
-        if event.modifiers() == Qt.ControlModifier and event.button() in [Qt.MidButton, Qt.MiddleButton]:
+        if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() in [Qt.MidButton, Qt.MiddleButton]:
             duplicateNodes(self)
             return True
         if event.modifiers() == Qt.ControlModifier and event.button() in [Qt.LeftButton]:
