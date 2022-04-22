@@ -27,9 +27,18 @@ Q / D / Alt + D
 W
     Set current resolve node
 
-Ctrl + Shift + MMB
+Ctrl + LMB
     Duplicate node selection, or nearest node
 
+- `Alt + LMB` Move all nodes above closest node
+- `Alt + Shift + LMB` Move all nodes below closest node
+- `A` Alignment Menu
+- `S` GSV Popup Menu
+- Back/Forward buttons
+  - `Back Button` show previous node as view node
+  - `Forward Button` show next node view node
+  - `Alt + Back Button` show root node as view node
+  - `Alt + Forward Button` show parent node as view node
 
 """
 

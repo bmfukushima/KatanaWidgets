@@ -237,23 +237,21 @@ def nodeInteractionMouseEvent(func):
             navigateNodegraph(FORWARD)
         if event.button() == Qt.BackButton and event.modifiers() == Qt.NoModifier:
             navigateNodegraph(BACK)
-        if event.button() == Qt.ForwardButton and event.modifiers() == Qt.ControlModifier:
-            navigateNodegraph(UP)
-        if event.button() == Qt.BackButton and event.modifiers() == Qt.ControlModifier:
+        if event.button() == Qt.ForwardButton and event.modifiers() == Qt.AltModifier:
             navigateNodegraph(HOME)
+        if event.button() == Qt.BackButton and event.modifiers() == Qt.AltModifier:
+            navigateNodegraph(UP)
 
-        if event.modifiers() == Qt.AltModifier:
-            print("alt??!?")
         # Duplicate nodes
-        if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() in [Qt.MidButton, Qt.MiddleButton]:
+        if event.modifiers() == (Qt.ControlModifier) and event.button() == Qt.LeftButton:
             duplicateNodes(self)
             return True
 
         # Move nodes
-        if event.modifiers() == Qt.ControlModifier and event.button() in [Qt.LeftButton]:
+        if event.modifiers() == Qt.AltModifier and event.button() in [Qt.LeftButton]:
             moveNodes(UP)
             return True
-        if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() in [Qt.LeftButton]:
+        if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier) and event.button() in [Qt.LeftButton]:
             moveNodes(DOWN)
             return True
         return func(self, event)
