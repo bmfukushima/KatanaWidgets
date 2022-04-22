@@ -19,33 +19,39 @@ if isLicenseValid():
     from MultiTools.SimpleTool import installSimpleTools
     installSimpleTools()
 
-
     # Global Events
     from MultiTools.GlobalEventsTab import installGlobalEvents
     installGlobalEvents()
-
 
     # Popup Hotkeys
     from MultiTools.ScriptEditorTab import installPopupHotkeysEventFilter
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installPopupHotkeysEventFilter)
 
-
     # Node Color Registry
     from MultiTools.NodeColorRegistryTab import installDefaultNodeColorsEventFilter
     installDefaultNodeColorsEventFilter()
-    # Callbacks.addCallback(Callbacks.Type.onStartupComplete, installDefaultNodeColorsEventFilter)
-
 
     # GSV Manager
     from MultiTools.StateManagerTabs.GSVManagerTab import installGSVManagerEvents
     installGSVManagerEvents()
-    #Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGSVManagerEvents)
-
 
     # State Manager
     from MultiTools.StateManagerTabs import installStateManagerDefaultParam
     installStateManagerDefaultParam()
 
+    # # Node Alignment
+    # def moveNodes(args):
+    #     """ node – node moved
+    #     nodeName – name of the node moved
+    #     oldPosition – previous (x,y) position
+    #     newPosition"""
+    #     for arg in args:
+    #         if arg[0] == "node_setPosition":
+    #             # preflight
+    #             node = arg[2]["node"]
+    #             print(node)
+    #
+    # Utils.EventModule.RegisterCollapsedHandler(moveNodes, 'node_setPosition')
 
     # Variable Switch | Populate
     def contextMenu(**kwargs):
@@ -98,11 +104,11 @@ if isLicenseValid():
 
         RegisterActionDelegate("VariableSwitch", UpdateGSVOptions())
 
-
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, contextMenu)
 
-
-    # change full screen hotkey
+    ###################################################
+    ################ MONKEY PATCHES ##################
+    ###################################################
     from MonkeyPatches import (
         changeFullscreenHotkey,
         changeMinTabSize,

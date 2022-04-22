@@ -212,13 +212,12 @@ def nodeInteractionKeyPressEvent(func):
             return True
 
         # updating disable handler
-        if event.key() in [Qt.Key_D, Qt.Key_Q]:
-            if event.modifiers() == Qt.NoModifier:
-                disableNodes()
-                return True
+        if event.key() in [Qt.Key_D, Qt.Key_Q] and event.modifiers() == Qt.NoModifier:
+            disableNodes()
+            return True
 
         # updating parameter view handler
-        if event.key() == Qt.Key_E:
+        if event.key() == Qt.Key_E and event.modifiers() == Qt.NoModifier:
             if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
                 displayPopupParameters(hide_on_leave=False)
                 return True
@@ -229,7 +228,7 @@ def nodeInteractionKeyPressEvent(func):
             displayParameters()
             return True
 
-        if event.key() == Qt.Key_F:
+        if event.key() == Qt.Key_F and event.modifiers() == Qt.NoModifier:
             current_group = self.layerStack().getCurrentNodeView()
             selected_nodes = [x for x in NodegraphAPI.GetAllSelectedNodes() if x.getParent() == current_group]
             if selected_nodes:
@@ -238,22 +237,20 @@ def nodeInteractionKeyPressEvent(func):
                 self.layerStack().getLayerByName('Frame All').frameAll()
             return True
 
-        if event.key() == Qt.Key_A:
+        if event.key() == Qt.Key_A and event.modifiers() == Qt.NoModifier:
             current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
             file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
             popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
             popup_widget.show()
             return True
 
-        if event.key() == Qt.Key_B:
-            # determine if nodes should be floated
-            is_floating = False
-            if event.modifiers() == Qt.ShiftModifier:
-                is_floating = True
-            createBackdropNode(is_floating=is_floating)
+        if event.key() == Qt.Key_B and event.modifiers() == Qt.NoModifier:
+            createBackdropNode(is_floating=False)
             return True
-
-        if event.key() == Qt.Key_W:
+        if event.key() == Qt.Key_B  and event.modifiers() == Qt.NoModifier:
+            createBackdropNode(is_floating=True)
+            return True
+        if event.key() == Qt.Key_W and event.modifiers() == Qt.NoModifier:
             selected_nodes = NodegraphAPI.GetAllSelectedNodes()
             if selected_nodes:
                 view_node = selected_nodes[0]
