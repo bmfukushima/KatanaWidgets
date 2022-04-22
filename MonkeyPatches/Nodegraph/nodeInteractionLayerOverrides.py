@@ -312,8 +312,16 @@ def nodeInteractionKeyPressEvent(func):
 
         if event.key() == Qt.Key_N and event.modifiers() == Qt.NoModifier:
             nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-            from UIPlugins import nmx_menu
-            nodegraph_widget.showLayeredMenu(nmx_menu)
+            from UIPlugins.NMXMenu import NMXMenuPopulateCallback, NMXMenuActionCallback
+            from Katana import LayeredMenuAPI
+            NMXMenu = LayeredMenuAPI.LayeredMenu(
+                    NMXMenuPopulateCallback,
+                    NMXMenuActionCallback,
+                    'N',
+                    alwaysPopulate=True,
+                    onlyMatchWordStart=False
+                )
+            nodegraph_widget.showLayeredMenu(NMXMenu)
             return True
 
         if event.key() == Qt.Key_W and event.modifiers() == Qt.NoModifier:

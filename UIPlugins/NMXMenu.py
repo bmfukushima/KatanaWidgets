@@ -1,3 +1,7 @@
+""" This is registered in MonkeyPatches/Nodegraph/nodeInteractionLayerOverrides (Qt.Key_N)
+
+This is to avoid an initialization conflict that would cause these layered menus to load multiple times
+"""
 from Katana import NodegraphAPI, RenderingAPI, LayeredMenuAPI, UI4, Utils
 from Utils2 import widgetutils
 
@@ -29,10 +33,3 @@ def NMXMenuActionCallback(node):
     return ""
 
 
-nmx_menu = LayeredMenuAPI.LayeredMenu(
-    NMXMenuPopulateCallback,
-    NMXMenuActionCallback,
-    'N',
-    alwaysPopulate=True,
-    onlyMatchWordStart=False
-)

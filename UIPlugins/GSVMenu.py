@@ -1,5 +1,5 @@
 from Katana import NodegraphAPI, RenderingAPI, LayeredMenuAPI, UI4, Utils
-from Utils2 import widgetutils
+from Utils2 import widgetutils, isLicenseValid
 
 
 def GSVMenuPopulateCallback(layeredMenu):
@@ -46,12 +46,11 @@ def GSVMenuActionCallback(value):
         """
         nodegraph_widget = widgetutils.isCursorOverNodeGraphWidget()
         if nodegraph_widget:
-            from .__init__ import gsv_menu
             widgetutils.katanaMainWindow()._is_recursive_layered_menu_event = True
             # nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()
             # nodegraph_widget.removeLayer(nodegraph_widget.getLayers()[-1])
             nodegraph_widget.getLayers()[-1]._MenuLayer__close()
-            nodegraph_widget.showLayeredMenu(gsv_menu)
+            nodegraph_widget.showLayeredMenu(GSVMenu)
 
         #return
 
@@ -98,10 +97,14 @@ def setGSV(gsv):
     katana_main._layered_menu_gsv = gsv
 
 
-gsv_menu = LayeredMenuAPI.LayeredMenu(
-    GSVMenuPopulateCallback,
-    GSVMenuActionCallback,
-    'S',
-    alwaysPopulate=True,
-    onlyMatchWordStart=False
-)
+if isLicenseValid():
+    GSVMenu = LayeredMenuAPI.LayeredMenu(
+        GSVMenuPopulateCallback,
+        GSVMenuActionCallback,
+        'S',
+        alwaysPopulate=True,
+        onlyMatchWordStart=False
+    )
+
+    LayeredMenuAPI.RegisterLayeredMenu(GSVMenu, 'GSV')
+
