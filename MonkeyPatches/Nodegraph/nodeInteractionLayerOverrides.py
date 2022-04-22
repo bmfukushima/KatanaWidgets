@@ -22,6 +22,9 @@ from .portConnector import PortConnector
 
 UP = 0
 DOWN = 1
+BACK = 2
+FORWARD = 4
+HOME = 8
 
 """ UTILS """
 def createBackdropNode(is_floating=False):
@@ -179,6 +182,25 @@ def moveNodes(direction=UP):
     nodeutils.floatNodes(node_list)
 
 
+def navigateNodegraph(direction):
+    """ Goes back/forward the node hierarchy history
+
+    Args:
+        direction (BACK | FORWARD): Determines which way
+    """
+    nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+    navigation_toolbar = nodegraph_widget.parent()._NodegraphPanel__navigationToolbar
+    if direction == FORWARD:
+        navigation_toolbar._NavigationToolbar__forwardButtonClicked()
+    if direction == BACK:
+        navigation_toolbar._NavigationToolbar__backButtonClicked()
+    if direction == HOME:
+        nodegraph_widget.setCurrentNodeView(NodegraphAPI.GetRootNode())
+    if direction == UP:
+        if nodegraph_widget.getCurrentNodeView() != NodegraphAPI.GetRootNode():
+            nodegraph_widget.setCurrentNodeView(nodegraph_widget.getCurrentNodeView().getParent())
+
+
 """ EVENTS"""
 def nodeInteractionLayerMouseMoveEvent(func):
     """ Changes the color of the nearest node """
@@ -210,11 +232,22 @@ def nodeInteractionLayerMouseMoveEvent(func):
 def nodeInteractionMouseEvent(func):
     """ DUPLICATE NODES """
     def __nodeInteractionMouseEvent(self, event):
-        print(event.button())
+        # Nodegraph Navigation
+        if event.button() == Qt.ForwardButton and event.modifiers() == Qt.NoModifier:
+            navigateNodegraph(FORWARD)
+        if event.button() == Qt.BackButton and event.modifiers() == Qt.NoModifier:
+            navigateNodegraph(BACK)
+        if event.button() == Qt.ForwardButton and event.modifiers() == Qt.ControlModifier:
+            navigateNodegraph(UP)
+        if event.button() == Qt.BackButton and event.modifiers() == Qt.ControlModifier:
+            navigateNodegraph(HOME)
+
         # Duplicate nodes
         if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() in [Qt.MidButton, Qt.MiddleButton]:
             duplicateNodes(self)
             return True
+
+        # Move nodes
         if event.modifiers() == Qt.ControlModifier and event.button() in [Qt.LeftButton]:
             moveNodes(UP)
             return True

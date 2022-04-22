@@ -62,6 +62,11 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 - `Ctrl + LMB` Move all nodes above closest node
 - `Ctrl + Shift + LMB` Move all nodes below closest node
 - `A` Alignment Menu
+- Back/Forward buttons
+  - `Back Button` show previous node as view node
+  - `Forward Button` show next node view node
+  - `Ctrl + Back Button` show root node as view node
+  - `Ctrl + Forward Button` show parent node as view node
 
 ### [Macros](Macros/README.md) +
 - Cleanup Empty Groups
