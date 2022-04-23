@@ -18,6 +18,7 @@ from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLay
 from UI4.Tabs.NodeGraphTab.Layers.NodeGraphViewInteractionLayer import NodeGraphViewInteractionLayer
 from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdropNodeDialog
 
+from .gridLayer import GridGUIWidget
 from .portConnector import PortConnector
 
 UP = 0
@@ -145,6 +146,48 @@ def displayPopupParameters(hide_on_leave=False):
 
     )
     PopupWidget.togglePopupWidgetVisibility("popupParameters", pos=pos)
+
+
+def displayGridSettings(hide_on_leave=True):
+    """ Popups up a parameters view of all of the currently selected nodes
+
+    Args:
+        hide_on_leave (bool): determines if this should should be hidden on leave
+    """
+    # construct popup parameters window if it doesn't exist
+    if not PopupWidget.doesPopupWidgetExist("gridSettings"):
+        # create popup widget
+        widget = GridGUIWidget()
+        size = scaleResolution(QSize(450, 275))
+        popup_widget = PopupWidget.constructPopupWidget(
+            "gridSettings", widget, size=size, hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
+        # setup style
+        rgba_border = iColor["rgba_selected"]
+        popup_widget.setStyleSheet(f"""
+            QWidget#PopupWidget{{
+                border-top: 1px solid rgba{rgba_border};
+                border-bottom: 1px solid rgba{rgba_border};
+            }}
+        """)
+
+        # set popup widget style
+        popup_widget.setIsMaskEnabled(True)
+        popup_widget.setMaskSize(QSize(450, 550))
+        popup_widget.setContentsMargins(0, 0, 0, 0)
+        popup_widget.layout().setContentsMargins(0, 0, 0, 0)
+        offset_x = scaleResolution(70)
+        offset_y = scaleResolution(30)
+        popup_widget.centralWidget().setContentsMargins(offset_x, offset_y, offset_x, offset_y)
+
+    # hide/show popup parameters
+    widget = PopupWidget.getPopupWidget("gridSettings")
+    widget.setHideOnLeave(hide_on_leave)
+    pos = QPoint(
+        QCursor.pos().x(),
+        QCursor.pos().y() + widget.height() * 0.25
+
+    )
+    PopupWidget.togglePopupWidgetVisibility("gridSettings", pos=pos)
 
 
 def duplicateNodes(nodegraph_layer):
@@ -275,15 +318,15 @@ def nodeInteractionKeyPressEvent(func):
             return True
 
         # updating parameter view handler
-        if event.key() == Qt.Key_E and event.modifiers() == Qt.NoModifier:
+        if event.key() == Qt.Key_E:
             if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
                 displayPopupParameters(hide_on_leave=False)
                 return True
             elif event.modifiers() == Qt.AltModifier:
                 displayPopupParameters(hide_on_leave=True)
                 return True
-
-            displayParameters()
+            elif event.modifiers() == Qt.NoModifier:
+                displayParameters()
             return True
 
         if event.key() == Qt.Key_F and event.modifiers() == Qt.NoModifier:
@@ -311,22 +354,19 @@ def nodeInteractionKeyPressEvent(func):
             return True
 
         if event.key() == Qt.Key_G and event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier | Qt.AltModifier):
-
-            from .gridLayer import GridLayer
-            nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-            grid_layer = nodegraph_widget.getLayerByName("Grid Layer")
-            # Disable Grid
-            if grid_layer:
-                nodegraph_widget.removeLayer(grid_layer)
-            # Enable Grid
-            else:
-                grid_layer = GridLayer("Grid Layer", enabled=True)
-                nodegraph_widget.appendLayer(grid_layer)
-            nodegraph_widget.idleUpdate()
-            # from .gridLayer import GridGUIWidget
-            # grid_gui_widget = GridGUIWidget()
-            # grid_gui_widget.show()
-
+            #
+            # from .gridLayer import GridLayer
+            # nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+            # grid_layer = nodegraph_widget.getLayerByName("Grid Layer")
+            # # Disable Grid
+            # if grid_layer:
+            #     nodegraph_widget.removeLayer(grid_layer)
+            # # Enable Grid
+            # else:
+            #     grid_layer = GridLayer("Grid Layer", enabled=True)
+            #     nodegraph_widget.appendLayer(grid_layer)
+            # nodegraph_widget.idleUpdate()
+            displayGridSettings()
             return True
 
         if event.key() == Qt.Key_N and event.modifiers() == Qt.NoModifier:

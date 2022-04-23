@@ -1,9 +1,17 @@
+""" Todo:
+        - Add color to grid gui
+        - Ladder Delegate... This has been broken forever...
+        - Store grid settings for reuse?
+"""
+
+import inspect
+from qtpy.QtWidgets import QWidget, QHBoxLayout
 from qtpy.QtCore import Qt, QTimer
 
 from OpenGL.GL import GL_BLEND, GL_LINES, glBegin, glColor4f, glDisable, glEnable, glEnd, glVertex2f, GL_POINTS, glPointSize, glLineWidth, GL_LINE_LOOP
 
 import QT4GLLayerStack
-from Katana import KatanaPrefs, PrefNames
+from Katana import KatanaPrefs, PrefNames, UI4
 
 from cgwidgets.widgets import FrameInputWidgetContainer, BooleanInputWidget, IntInputWidget, ListInputWidget, LabelledInputWidget
 from Utils2.widgetutils import getActiveNodegraphWidget
@@ -230,25 +238,49 @@ class GridGUIWidget(FrameInputWidgetContainer):
             line_width = GridGUIWidget.gridLayer().lineWidth()
             draw_mode = GridGUIWidget.gridLayer().drawMode()
             enabled = True
+            grid_x_size = GridGUIWidget.gridLayer().gridSize()[0]
+            grid_y_size = GridGUIWidget.gridLayer().gridSize()[1]
         else:
             color = (1, 1, 1, 0.5)
             radius = 5
             line_width = 1
             draw_mode = GridLayer.CROSSHAIR
             enabled = False
+            grid_x_size = 32
+            grid_y_size = 16
 
+        # ENABLE WIDGET
         self._grid_button = BooleanInputWidget(text="Toggle Grid", is_selected=enabled)
 
+        # RADIUS WIDGET
         self._radius_widget = IntInputWidget()
+        #self._radius_widget.setUseLadder(True, value_list=[1, 1])
         self._radius_widget.setText(str(radius))
         self._radius_widget_labelled_widget = LabelledInputWidget(name="Radius", delegate_widget=self._radius_widget)
         self._radius_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
 
+        # LINE WIDTH WIDGET
         self._line_width_widget = IntInputWidget()
+        #self._line_width_widget.setUseLadder(True, value_list=[1, 1])
         self._line_width_widget.setText(str(line_width))
         self._line_width_widget_labelled_widget = LabelledInputWidget(name="Width", delegate_widget=self._line_width_widget)
         self._line_width_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
 
+        # SIZE WIDGET
+        self._grid_widget = QWidget()
+        self._grid_layout = QHBoxLayout(self._grid_widget)
+        self._grid_size_x_widget = IntInputWidget()
+        self._grid_size_x_widget.setUserFinishedEditingEvent(self.setGridXSize)
+        self._grid_size_x_widget.setText(str(grid_x_size))
+        self._grid_size_y_widget = IntInputWidget()
+        self._grid_size_y_widget.setUserFinishedEditingEvent(self.setGridYSize)
+        self._grid_size_y_widget.setText(str(grid_y_size))
+        self._grid_layout.addWidget(self._grid_size_x_widget)
+        self._grid_layout.addWidget(self._grid_size_y_widget)
+
+        self._grid_size_widget_labelled_widget = LabelledInputWidget(name="Size", delegate_widget=self._grid_widget)
+
+        # MODE WIDGET
         self._draw_mode_widget = ListInputWidget()
         self._draw_mode_widget.populate([[mode] for mode in list(GridGUIWidget.DRAW_OPTIONS_MAP.keys())])
         self._draw_mode_widget.filter_results = False
@@ -256,7 +288,9 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._draw_mode_widget_labelled_widget = LabelledInputWidget(name="Mode", delegate_widget=self._draw_mode_widget)
         self._draw_mode_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
 
+        # SETUP LAYOUT
         self.addInputWidget(self._grid_button, self.toggleGrid)
+        self.addInputWidget(self._grid_size_widget_labelled_widget)
         self.addInputWidget(self._radius_widget_labelled_widget, self.setGridRadius)
         self.addInputWidget(self._line_width_widget_labelled_widget, self.setGridLineWidth)
         self.addInputWidget(self._draw_mode_widget_labelled_widget, self.setGridDrawMode)
@@ -323,12 +357,32 @@ class GridGUIWidget(FrameInputWidgetContainer):
         GridGUIWidget.gridLayer().setLineWidth(int(value))
         GridGUIWidget.updateNodegraph()
 
-    def gridSize(self):
-        return (32, 16)
+    def gridXSize(self):
+        return int(self._grid_size_x_widget.text())
 
-    def setGridSize(self, widget, value):
-        GridGUIWidget.gridLayer().setGridSize(value)
+    def gridYSize(self):
+        return int(self._grid_size_y_widget.text())
 
+    # Todo: Update for LinkConnectionLayer, not sure if necessary... but would be nice
+    """ This is dynamically drawn... so would need to do a hack registry
+    See in the LinkConnectionLayer Overrides
+    """
+    def setGridXSize(self, widget, value):
+        GridGUIWidget.gridLayer().setGridSize((int(value), self.gridYSize()))
+        nodegraph_widget = getActiveNodegraphWidget()
+        floating_node_layer = nodegraph_widget.getLayerByName("Floating Nodes")
+        module = inspect.getmodule(floating_node_layer)
+        module.GRIDSIZEX = int(value)
+        GridGUIWidget.updateNodegraph()
+
+    def setGridYSize(self, widget, value):
+        GridGUIWidget.gridLayer().setGridSize((self.gridXSize(), int(value)))
+
+        nodegraph_widget = getActiveNodegraphWidget()
+        floating_node_layer = nodegraph_widget.getLayerByName("Floating Nodes")
+        module = inspect.getmodule(floating_node_layer)
+        module.GRIDSIZEY = int(value)
+        GridGUIWidget.updateNodegraph()
 
 # def toggleGrid(color=(0, 1, 0, 0.1), draw_mode=GridLayer.CROSSHAIR, radius=3, line_width=3):
 #     """ Toggles the visibility of the grid"""
@@ -350,12 +404,12 @@ class GridGUIWidget(FrameInputWidgetContainer):
 # draw_mode = GridLayer.DIAMOND
 # toggleGrid(color=color, draw_mode=draw_mode, radius=radius, line_width=line_width)
 
-from cgwidgets.utils import centerWidgetOnCursor, setAsAlwaysOnTop
-grid_gui_widget = GridGUIWidget()
-setAsAlwaysOnTop(grid_gui_widget)
-grid_gui_widget.show()
-centerWidgetOnCursor(grid_gui_widget)
-
+# from cgwidgets.utils import centerWidgetOnCursor, setAsAlwaysOnTop
+# grid_gui_widget = GridGUIWidget()
+# setAsAlwaysOnTop(grid_gui_widget)
+# grid_gui_widget.show()
+# centerWidgetOnCursor(grid_gui_widget)
+#
 
 
 
