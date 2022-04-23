@@ -16,7 +16,7 @@ from qtpy.QtCore import Qt, QTimer
 from OpenGL.GL import GL_BLEND, GL_LINES, glBegin, glColor4f, glDisable, glEnable, glEnd, glVertex2f, GL_POINTS, glPointSize, glLineWidth, GL_LINE_LOOP
 # setup prefs
 import QT4GLLayerStack
-from Katana import KatanaPrefs, UI4 Utils
+from Katana import KatanaPrefs, UI4, Utils
 from UI4.App import Tabs
 
 from cgwidgets.widgets import FrameInputWidgetContainer, BooleanInputWidget, IntInputWidget, ListInputWidget, LabelledInputWidget, FloatInputWidget
@@ -472,8 +472,6 @@ def showEvent(func):
 
 
 def installGridLayer(**kwargs):
-    # create proxy nodegraph
-    # todo for some reason this registry doesn't work
     # insert nodegraph grid layer
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
@@ -488,13 +486,14 @@ def installGridLayer(**kwargs):
     line_width = 1
     draw_mode = 1
 
+    # setup preferences
     KatanaPrefs.declareGroupPref(GRID_GROUP_PREF_NAME)
 
     KatanaPrefs.declareColorPref(GRID_COLOR_PREF_NAME, color, 'Color of grid')
     KatanaPrefs.declareBoolPref(GRID_ENABLED_PREF_NAME, enabled, helpText="Determines if the nodegraph grid is enabled")
     options = []
     for i, draw_mode in enumerate(GridUtils.DRAW_MODES):
-        options.append(f"{draw_mode}:{i}|")
+        options.append(f"{draw_mode}:{i}")
     options = "|".join(options)
 
     KatanaPrefs.declareIntPref(
