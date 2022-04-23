@@ -236,9 +236,9 @@ class GridGUIWidget(FrameInputWidgetContainer):
 
         # MODE WIDGET
         self._draw_mode_widget = ListInputWidget()
-        self._draw_mode_widget.populate([[mode] for mode in list(GridUtils.DRAW_OPTIONS_MAP.keys())])
+        self._draw_mode_widget.populate([[mode] for mode in list(GridUtils.DRAW_MODES)])
         self._draw_mode_widget.filter_results = False
-        self._draw_mode_widget.setText(GridUtils.DRAW_OPTIONS_MAP_INVERSE[draw_mode])
+        self._draw_mode_widget.setText(GridUtils.DRAW_MODES[draw_mode])
         self._draw_mode_widget_labelled_widget = LabelledInputWidget(name="Mode", delegate_widget=self._draw_mode_widget)
         self._draw_mode_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
 
@@ -271,7 +271,7 @@ class GridGUIWidget(FrameInputWidgetContainer):
         GridUtils.setColor(color)
 
     def setGridDrawMode(self, widget, value):
-        GridUtils.setDrawMode(GridUtils.DRAW_OPTIONS_MAP[value])
+        GridUtils.setDrawMode(GridUtils.DRAW_MODES.index(value))
 
     def setIsGridEnabled(self, widget, enabled):
         GridUtils.setIsGridEnabled(enabled)
@@ -288,12 +288,6 @@ class GridGUIWidget(FrameInputWidgetContainer):
     """
     def setGridSizeX(self, widget, value):
         GridUtils.setGridSizeX(int(value))
-
-        # update floating node layer grid size
-        nodegraph_widget = getActiveNodegraphWidget()
-        floating_node_layer = nodegraph_widget.getLayerByName("Floating Nodes")
-        module = inspect.getmodule(floating_node_layer)
-        module.GRIDSIZEX = int(value)
 
     def setGridSizeY(self, widget, value):
         GridUtils.setGridSizeY(int(value))
@@ -322,22 +316,6 @@ class GridUtils(object):
         "DIAMOND",
         "SQUARE"
     ]
-
-    DRAW_OPTIONS_MAP = {
-        "POINT": POINT,
-        "CROSSHAIR": CROSSHAIR,
-        "LINE": LINE,
-        "DIAMOND": DIAMOND,
-        "SQUARE": SQUARE
-    }
-
-    DRAW_OPTIONS_MAP_INVERSE = {
-        POINT: "POINT",
-        CROSSHAIR: "CROSSHAIR",
-        LINE: "LINE",
-        DIAMOND: "DIAMOND",
-        SQUARE: "SQUARE",
-    }
 
     """ UTILS """
     @staticmethod
@@ -455,6 +433,13 @@ class GridUtils(object):
     def setGridSizeX(grid_size):
         KatanaPrefs[GRID_SIZE_X_PREF_NAME] = grid_size
         KatanaPrefs.commit()
+
+        # update floating node layer grid size
+        nodegraph_widget = getActiveNodegraphWidget()
+        floating_node_layer = nodegraph_widget.getLayerByName("Floating Nodes")
+        module = inspect.getmodule(floating_node_layer)
+        module.GRIDSIZEX = int(grid_size)
+
         GridUtils.updateNodegraph()
 
     @staticmethod
@@ -465,40 +450,53 @@ class GridUtils(object):
     def setGridSizeY(grid_size):
         KatanaPrefs[GRID_SIZE_Y_PREF_NAME] = grid_size
         KatanaPrefs.commit()
+
+        # update floating node layer grid size
+        nodegraph_widget = getActiveNodegraphWidget()
+        floating_node_layer = nodegraph_widget.getLayerByName("Floating Nodes")
+        module = inspect.getmodule(floating_node_layer)
+        module.GRIDSIZEY = int(grid_size)
+
         GridUtils.updateNodegraph()
 
 
-def buildLayers(func):
-    def __buildLayers(self):
-        func(self)
-        from MonkeyPatches.Nodegraph.gridLayer import GridLayer as Test
-        self._grid_layer = Test("Grid Layer", enabled=True)
+def showEvent(func):
+    def __showEvent(self, event):
+        grid_layer = self.getLayerByName("Grid Layer")
+        if not grid_layer:
+            self._grid_layer = GridLayer("Grid Layer", enabled=True)
 
-        # self.insertLayer(grid_layer, 2)
-        self.appendLayer(self._grid_layer)
+            self.insertLayer(self._grid_layer, 2)
+            # self.appendLayer(self._grid_layer)
+        return func(self, event)
 
-    return __buildLayers
+    return __showEvent
 
 
 def installGridLayer(**kwargs):
     # create proxy nodegraph
     # todo for some reason this registry doesn't work
+    # insert nodegraph grid layer
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
-
-    nodegraph_widget.__class__._NodegraphWidget__buildLayers = buildLayers(nodegraph_widget.__class__._NodegraphWidget__buildLayers)
+    nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
 
     # setup prefs
     from Katana import KatanaPrefs, Utils
 
+    # default values
+    enabled = True
+    grid_size_x = 128
+    grid_size_y = 64
+    color = (0.5, 0.5, 1, 0.3)
+    radius = 5
+    line_width = 1
+    draw_mode = 1
+
     KatanaPrefs.declareGroupPref(GRID_GROUP_PREF_NAME)
 
-    KatanaPrefs.declareColorPref(GRID_COLOR_PREF_NAME, (1, 1, 1, 0.05), 'Color of grid')
-    KatanaPrefs.declareBoolPref(GRID_ENABLED_PREF_NAME, False, helpText="Determines if the nodegraph grid is enabled")
-    # Prefs.declareIntPref((PrefNames.RENDERING_UPDATEMODE2D), (RenderGlobals.RENDERMODE_PROCESS),
-    #   'Specifies what UI actions will trigger a render of the currently viewed 2D node',
-    #   hints={'widget':'mapper',
-    #  'options':RenderGlobals.RENDERMODE_OPTIONS})
+    KatanaPrefs.declareColorPref(GRID_COLOR_PREF_NAME, color, 'Color of grid')
+    KatanaPrefs.declareBoolPref(GRID_ENABLED_PREF_NAME, enabled, helpText="Determines if the nodegraph grid is enabled")
     options = []
     for i, draw_mode in enumerate(GridUtils.DRAW_MODES):
         options.append(f"{draw_mode}:{i}|")
@@ -506,14 +504,16 @@ def installGridLayer(**kwargs):
 
     KatanaPrefs.declareIntPref(
         (GRID_DRAW_MODE_PREF_NAME),
-        0,
+        draw_mode,
         'Specifies the draw mode of the grid',
         hints={'widget': 'mapper', 'options': options}
     )
-    KatanaPrefs.declareIntPref(GRID_LINE_WIDTH_PREF_NAME, 1, helpText="Determines the grid line width")
-    KatanaPrefs.declareIntPref(GRID_RADIUS_PREF_NAME, 5, helpText="Determines the grid radius")
-    KatanaPrefs.declareIntPref(GRID_SIZE_X_PREF_NAME, 32, helpText="Determines the grid x spacing")
-    KatanaPrefs.declareIntPref(GRID_SIZE_Y_PREF_NAME, 16, helpText="Determines the grid y spacing")
+    KatanaPrefs.declareIntPref(GRID_LINE_WIDTH_PREF_NAME, line_width, helpText="Determines the grid line width")
+    KatanaPrefs.declareIntPref(GRID_RADIUS_PREF_NAME, radius, helpText="Determines the grid radius")
+    KatanaPrefs.declareIntPref(GRID_SIZE_X_PREF_NAME, grid_size_x, helpText="Determines the grid x spacing")
+    GridUtils.setGridSizeX(grid_size_x)
+    KatanaPrefs.declareIntPref(GRID_SIZE_Y_PREF_NAME, grid_size_y, helpText="Determines the grid y spacing")
+    GridUtils.setGridSizeY(grid_size_y)
     #
     #
     def gridPrefChangedEvent(*args, **kwargs):
