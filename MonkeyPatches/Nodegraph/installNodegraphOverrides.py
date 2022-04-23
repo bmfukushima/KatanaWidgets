@@ -46,6 +46,8 @@ from .nodeInteractionLayerOverrides import installNodegraphHotkeyOverrides
 from .linkConnectionLayerOverrides import installLinkConnectionLayerOverrides
 from .menuLayerOverride import installMenuLayerOverrides
 from .zoomInteractionLayerOverrides import installZoomLayerOverrides
+from .gridLayer import installGridLayer
+
 # link connection mouse move
 def installNodegraphOverrides(**kwargs):
     from Katana import Callbacks
@@ -53,3 +55,5 @@ def installNodegraphOverrides(**kwargs):
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installLinkConnectionLayerOverrides)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installMenuLayerOverrides)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installZoomLayerOverrides)
+    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGridLayer)
+
