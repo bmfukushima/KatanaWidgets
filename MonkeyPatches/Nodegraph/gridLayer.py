@@ -379,7 +379,7 @@ class GridUtils(object):
     """ PROPERTIES """
     @staticmethod
     def color():
-        return KatanaPrefs[GRID_COLOR_PREF_NAME]
+        return [*KatanaPrefs[GRID_COLOR_PREF_NAME]]
 
     @staticmethod
     def setColor(color):
