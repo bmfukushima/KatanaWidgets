@@ -14,13 +14,11 @@ from qtpy.QtWidgets import QWidget, QHBoxLayout
 from qtpy.QtCore import Qt, QTimer
 
 from OpenGL.GL import GL_BLEND, GL_LINES, glBegin, glColor4f, glDisable, glEnable, glEnd, glVertex2f, GL_POINTS, glPointSize, glLineWidth, GL_LINE_LOOP
+# setup prefs
+import QT4GLLayerStack
+from Katana import KatanaPrefs, UI4 Utils
+from UI4.App import Tabs
 
-try:
-    import QT4GLLayerStack
-    from Katana import KatanaPrefs, PrefNames, UI4
-    from UI4.App import Tabs
-except:
-    print("fail????")
 from cgwidgets.widgets import FrameInputWidgetContainer, BooleanInputWidget, IntInputWidget, ListInputWidget, LabelledInputWidget, FloatInputWidget
 from Utils2.widgetutils import getActiveNodegraphWidget
 from Utils2 import getFontSize
@@ -481,9 +479,6 @@ def installGridLayer(**kwargs):
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
     nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
 
-    # setup prefs
-    from Katana import KatanaPrefs, Utils
-
     # default values
     enabled = True
     grid_size_x = 128
@@ -536,19 +531,19 @@ def installGridLayer(**kwargs):
     # KatanaPrefs.declareBoolPref(pref_name, False, helpText="Determines if the nodegraph grid is enabled")
     KatanaPrefs.commit()
 
-
-def toggleGrid():
-    """ Toggles the visibility of the grid"""
-    nodegraph_widget = getActiveNodegraphWidget()
-    grid_layer = nodegraph_widget.getLayerByName("Grid Layer")
-    # Disable Grid
-    if grid_layer:
-        nodegraph_widget.removeLayer(grid_layer)
-    # Enable Grid
-    else:
-        grid_layer = GridLayer("Grid Layer", enabled=True)
-        nodegraph_widget.insertLayer(grid_layer, 2)
-    nodegraph_widget.idleUpdate()
+# TESTING
+# def toggleGrid():
+#     """ Toggles the visibility of the grid"""
+#     nodegraph_widget = getActiveNodegraphWidget()
+#     grid_layer = nodegraph_widget.getLayerByName("Grid Layer")
+#     # Disable Grid
+#     if grid_layer:
+#         nodegraph_widget.removeLayer(grid_layer)
+#     # Enable Grid
+#     else:
+#         grid_layer = GridLayer("Grid Layer", enabled=True)
+#         nodegraph_widget.insertLayer(grid_layer, 2)
+#     nodegraph_widget.idleUpdate()
 # #
 # g = GridGUIWidget()
 # g.show()
