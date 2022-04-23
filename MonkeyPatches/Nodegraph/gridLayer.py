@@ -1,7 +1,8 @@
 """ Todo:
-        - Add color to grid gui
         - Ladder Delegate... This has been broken forever...
         - Store grid settings for reuse?
+                Store attributes in this file?
+                Will get reset every time...
 """
 
 import inspect
@@ -13,7 +14,7 @@ from OpenGL.GL import GL_BLEND, GL_LINES, glBegin, glColor4f, glDisable, glEnabl
 import QT4GLLayerStack
 from Katana import KatanaPrefs, PrefNames, UI4
 
-from cgwidgets.widgets import FrameInputWidgetContainer, BooleanInputWidget, IntInputWidget, ListInputWidget, LabelledInputWidget
+from cgwidgets.widgets import FrameInputWidgetContainer, BooleanInputWidget, IntInputWidget, ListInputWidget, LabelledInputWidget, FloatInputWidget
 from Utils2.widgetutils import getActiveNodegraphWidget
 from Utils2 import getFontSize
 
@@ -37,10 +38,15 @@ class GridLayer(QT4GLLayerStack.Layer):
     SQUARE = 4
     ROUND_ARROW = 5
 
-    def __init__(self, *args, draw_mode=SQUARE, color=(1, 1, 1, 0.05), grid_size=(32, 16), line_width=1, radius=5, **kwargs):
+    def __init__(self, *args, draw_mode=SQUARE, color=(1, 1, 1, 0.05), grid_size=None, line_width=1, radius=5, **kwargs):
         (QT4GLLayerStack.Layer.__init__)(self, *args, **kwargs)
         self._color = color
         self._draw_mode = draw_mode
+        if not grid_size:
+            nodegraph_widget = getActiveNodegraphWidget()
+            floating_node_layer = nodegraph_widget.getLayerByName("Floating Nodes")
+            module = inspect.getmodule(floating_node_layer)
+            grid_size = (module.GRIDSIZEX, module.GRIDSIZEY)
         self._grid_size = grid_size
         self._line_width = line_width
         self._radius = radius
@@ -233,15 +239,23 @@ class GridGUIWidget(FrameInputWidgetContainer):
 
         # get default values
         if GridGUIWidget.gridLayer():
-            color = GridGUIWidget.gridLayer().color()
+            colorr = GridGUIWidget.gridLayer().color()[0]
+            colorg = GridGUIWidget.gridLayer().color()[1]
+            colorb = GridGUIWidget.gridLayer().color()[2]
+            colora = GridGUIWidget.gridLayer().color()[3]
             radius = GridGUIWidget.gridLayer().radius()
             line_width = GridGUIWidget.gridLayer().lineWidth()
             draw_mode = GridGUIWidget.gridLayer().drawMode()
             enabled = True
             grid_x_size = GridGUIWidget.gridLayer().gridSize()[0]
             grid_y_size = GridGUIWidget.gridLayer().gridSize()[1]
+
+        # first init
         else:
-            color = (1, 1, 1, 0.5)
+            colorr = 1
+            colorg = 1
+            colorb = 1
+            colora = 0.05
             radius = 5
             line_width = 1
             draw_mode = GridLayer.CROSSHAIR
@@ -270,15 +284,39 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._grid_widget = QWidget()
         self._grid_layout = QHBoxLayout(self._grid_widget)
         self._grid_size_x_widget = IntInputWidget()
-        self._grid_size_x_widget.setUserFinishedEditingEvent(self.setGridXSize)
-        self._grid_size_x_widget.setText(str(grid_x_size))
         self._grid_size_y_widget = IntInputWidget()
-        self._grid_size_y_widget.setUserFinishedEditingEvent(self.setGridYSize)
-        self._grid_size_y_widget.setText(str(grid_y_size))
         self._grid_layout.addWidget(self._grid_size_x_widget)
         self._grid_layout.addWidget(self._grid_size_y_widget)
-
         self._grid_size_widget_labelled_widget = LabelledInputWidget(name="Size", delegate_widget=self._grid_widget)
+
+        self._grid_size_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
+        self._grid_size_x_widget.setUserFinishedEditingEvent(self.setGridXSize)
+        self._grid_size_y_widget.setUserFinishedEditingEvent(self.setGridYSize)
+        self._grid_size_x_widget.setText(str(grid_x_size))
+        self._grid_size_y_widget.setText(str(grid_y_size))
+
+        # COLOR WIDGET
+        self._color_widget = QWidget()
+        self._color_layout = QHBoxLayout(self._color_widget)
+        self._colorr_widget = FloatInputWidget()
+        self._colorg_widget = FloatInputWidget()
+        self._colorb_widget = FloatInputWidget()
+        self._colora_widget = FloatInputWidget()
+        self._color_layout.addWidget(self._colorr_widget)
+        self._color_layout.addWidget(self._colorg_widget)
+        self._color_layout.addWidget(self._colorb_widget)
+        self._color_layout.addWidget(self._colora_widget)
+        self._color_labelled_widget = LabelledInputWidget(name="Color", delegate_widget=self._color_widget)
+
+        self._color_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
+        self._colorr_widget.setUserFinishedEditingEvent(self.setGridColorR)
+        self._colorg_widget.setUserFinishedEditingEvent(self.setGridColorG)
+        self._colorb_widget.setUserFinishedEditingEvent(self.setGridColorB)
+        self._colora_widget.setUserFinishedEditingEvent(self.setGridColorA)
+        self._colorr_widget.setText(str(colorr))
+        self._colorg_widget.setText(str(colorg))
+        self._colorb_widget.setText(str(colorb))
+        self._colora_widget.setText(str(colora))
 
         # MODE WIDGET
         self._draw_mode_widget = ListInputWidget()
@@ -294,6 +332,7 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self.addInputWidget(self._radius_widget_labelled_widget, self.setGridRadius)
         self.addInputWidget(self._line_width_widget_labelled_widget, self.setGridLineWidth)
         self.addInputWidget(self._draw_mode_widget_labelled_widget, self.setGridDrawMode)
+        self.addInputWidget(self._color_labelled_widget)
 
     @staticmethod
     def updateNodegraph():
@@ -325,7 +364,8 @@ class GridGUIWidget(FrameInputWidgetContainer):
         # Enable Grid
         else:
             grid_layer = GridLayer("Grid Layer", draw_mode=self.drawMode(), radius=self.radius(), line_width=self.lineWidth(), color=self.color(), enabled=True)
-            nodegraph_widget.appendLayer(grid_layer)
+            nodegraph_widget.insertLayer(grid_layer, 2)
+            # nodegraph_widget.appendLayer(grid_layer)
         GridGUIWidget.updateNodegraph()
 
     def drawMode(self):
@@ -337,10 +377,35 @@ class GridGUIWidget(FrameInputWidgetContainer):
         GridGUIWidget.updateNodegraph()
 
     def color(self):
-        return (1, 1, 1, 0.1)
+        return [
+            float(self._colorr_widget.text()),
+            float(self._colorg_widget.text()),
+            float(self._colorb_widget.text()),
+            float(self._colora_widget.text())
+        ]
 
-    def setGridColor(self, widget, value):
-        GridGUIWidget.gridLayer().setColor(value)
+    def setGridColorR(self, widget, value):
+        color = self.color()
+        color[0] = float(value)
+        GridGUIWidget.gridLayer().setColor(color)
+        GridGUIWidget.updateNodegraph()
+
+    def setGridColorG(self, widget, value):
+        color = self.color()
+        color[1] = float(value)
+        GridGUIWidget.gridLayer().setColor(color)
+        GridGUIWidget.updateNodegraph()
+
+    def setGridColorB(self, widget, value):
+        color = self.color()
+        color[2] = float(value)
+        GridGUIWidget.gridLayer().setColor(color)
+        GridGUIWidget.updateNodegraph()
+
+    def setGridColorA(self, widget, value):
+        color = self.color()
+        color[3] = float(value)
+        GridGUIWidget.gridLayer().setColor(color)
         GridGUIWidget.updateNodegraph()
 
     def radius(self):
@@ -410,6 +475,6 @@ class GridGUIWidget(FrameInputWidgetContainer):
 # grid_gui_widget.show()
 # centerWidgetOnCursor(grid_gui_widget)
 #
-
-
-
+#
+#
+#

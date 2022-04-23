@@ -129,7 +129,7 @@ def displayPopupParameters(hide_on_leave=False):
 
         # set popup widget style
         popup_widget.setIsMaskEnabled(True)
-        popup_widget.setMaskSize(QSize(800, 2000))
+        popup_widget.setMaskSize(scaleResolution(QSize(800, 2000)))
         popup_widget.setContentsMargins(0, 0, 0, 0)
         popup_widget.layout().setContentsMargins(0, 0, 0, 0)
         offset_x = scaleResolution(70)
@@ -158,7 +158,7 @@ def displayGridSettings(hide_on_leave=True):
     if not PopupWidget.doesPopupWidgetExist("gridSettings"):
         # create popup widget
         widget = GridGUIWidget()
-        size = scaleResolution(QSize(450, 275))
+        size = scaleResolution(QSize(600, 375))
         popup_widget = PopupWidget.constructPopupWidget(
             "gridSettings", widget, size=size, hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
         # setup style
@@ -172,7 +172,7 @@ def displayGridSettings(hide_on_leave=True):
 
         # set popup widget style
         popup_widget.setIsMaskEnabled(True)
-        popup_widget.setMaskSize(QSize(450, 550))
+        popup_widget.setMaskSize(scaleResolution(QSize(600, 750)))
         popup_widget.setContentsMargins(0, 0, 0, 0)
         popup_widget.layout().setContentsMargins(0, 0, 0, 0)
         offset_x = scaleResolution(70)
