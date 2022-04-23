@@ -6,10 +6,75 @@ from Katana import NodegraphAPI, Utils, DrawingModule, KatanaPrefs, PrefNames
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 from .portConnector import PortConnector
+from .gridLayer import GridUtils
 from Utils2 import widgetutils
+
+
+# def createDotNode(self):
+#     Utils.OpenGLTraceMarker.begin()
+#     basePorts = self.getBasePorts()
+#     if not basePorts:
+#         Utils.OpenGLTraceMarker.end()
+#         return False
+#     if len(basePorts) != 1:
+#         if basePorts[0].getType() == NodegraphAPI.Port.TYPE_PRODUCER:
+#             Utils.OpenGLTraceMarker.end()
+#             return False
+#     else:
+#         if NodegraphAPI.IsNodeLockedByParents(basePorts[0].getNode()):
+#             Utils.OpenGLTraceMarker.end()
+#             return False
+#         mousePos = self.layerStack().getMousePos()
+#         return mousePos or False
+#     from qtpy.QtGui import QCursor
+#     #mousePos = QCursor.pos()
+#     mousePos = self.layerStack().mapFromQTLocalToWorld(mousePos.x(), mousePos.y())
+#     rootview = self.layerStack().getCurrentNodeView()
+#     rootviewscale = self.layerStack().getViewScale()[0]
+#     parentNode = DrawingModule.nodeWorld_findGroupNodeOfClick(rootview, mousePos[0], mousePos[1], rootviewscale)
+#     if parentNode is not None:
+#         if parentNode.isContentLocked():
+#             Utils.OpenGLTraceMarker.end()
+#             return False
+#     a, r, x, y = DrawingModule.nodeWorld_getGroupNodeRelativeAndAbsoluteChildScales(rootview, parentNode, rootviewscale, mousePos[0], mousePos[1])
+#     Utils.UndoStack.OpenGroup('Create Dot Node')
+#     try:
+#         dot = NodegraphAPI.CreateNode('Dot', parentNode)
+#         if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
+#             GRIDSIZEX = GridUtils.gridSizeX()
+#             GRIDSIZEY = GridUtils.gridSizeY()
+#             xmod = x % GRIDSIZEX
+#             if xmod > GRIDSIZEX / 2.0:
+#                 xmod = (GRIDSIZEX - xmod) * -1
+#             ymod = y % GRIDSIZEY
+#             if ymod > GRIDSIZEY / 2.0:
+#                 ymod = (GRIDSIZEY - ymod) * -1
+#             x -= xmod
+#             y -= ymod
+#         else:
+#             NodegraphAPI.SetNodePosition(dot, (x, y))
+#             if basePorts[0].getType() == NodegraphAPI.Port.TYPE_PRODUCER:
+#                 basePorts[0].connect(dot.getInputPortByIndex(0))
+#                 outputPort = dot.getOutputPortByIndex(0)
+#                 self._LinkConnectionLayer__basePorts = [
+#                  self._LinkConnectionLayer__getPortDescription(outputPort, False)]
+#             else:
+#                 for port in basePorts:
+#                     port.connect(dot.getOutputPortByIndex(0))
+#
+#             inputPort = dot.getInputPortByIndex(0)
+#             self._LinkConnectionLayer__basePorts = [
+#              self._LinkConnectionLayer__getPortDescription(inputPort, False)]
+#         return True
+#     finally:
+#         Utils.UndoStack.CloseGroup()
+#
+#     Utils.OpenGLTraceMarker.end()
+
 
 def lastActiveNode():
     return widgetutils.katanaMainWindow()._link_connection_active_node
+
 
 def setLastActiveNode(node):
     widgetutils.katanaMainWindow()._link_connection_active_node = node
