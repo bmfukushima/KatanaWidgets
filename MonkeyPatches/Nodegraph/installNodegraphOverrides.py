@@ -39,7 +39,7 @@ Ctrl + LMB
   - `Forward Button` show next node view node
   - `Alt + Back Button` show root node as view node
   - `Alt + Forward Button` show parent node as view node
-- `Control + Alt + Shift + G` Show Grid
+- `Control + G` Show Grid
 """
 
 from .nodeInteractionLayerOverrides import installNodegraphHotkeyOverrides

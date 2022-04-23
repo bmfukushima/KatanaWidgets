@@ -353,19 +353,7 @@ def nodeInteractionKeyPressEvent(func):
             createBackdropNode(is_floating=True)
             return True
 
-        if event.key() == Qt.Key_G and event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier | Qt.AltModifier):
-            #
-            # from .gridLayer import GridLayer
-            # nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-            # grid_layer = nodegraph_widget.getLayerByName("Grid Layer")
-            # # Disable Grid
-            # if grid_layer:
-            #     nodegraph_widget.removeLayer(grid_layer)
-            # # Enable Grid
-            # else:
-            #     grid_layer = GridLayer("Grid Layer", enabled=True)
-            #     nodegraph_widget.appendLayer(grid_layer)
-            # nodegraph_widget.idleUpdate()
+        if event.key() == Qt.Key_G and event.modifiers() == (Qt.ControlModifier):
             displayGridSettings()
             return True
 

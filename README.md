@@ -72,7 +72,7 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   - `Forward Button` show next node view node
   - `Alt + Back Button` show parent node as view node
   - `Alt + Forward Button` show root node as view node
--`Control + Alt + Shift + G` Show Grid
+-`Control + G` Show  Grid Settings Dialogue
   
 ### [Macros](Macros/README.md) +
 - Cleanup Empty Groups

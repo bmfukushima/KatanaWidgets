@@ -3,6 +3,7 @@
         - Store grid settings for reuse?
                 Store attributes in this file?
                 Will get reset every time...
+        - Document...
 """
 
 import inspect
@@ -217,6 +218,7 @@ class GridLayer(QT4GLLayerStack.Layer):
 
 
 class GridGUIWidget(FrameInputWidgetContainer):
+    """ Popup GUI that is displayed when the user opens the Grid Settings Menu"""
     DRAW_OPTIONS_MAP = {
         "POINT": GridLayer.POINT,
         "CROSSHAIR": GridLayer.CROSSHAIR,
