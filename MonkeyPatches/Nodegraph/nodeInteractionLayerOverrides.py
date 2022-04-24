@@ -1,7 +1,9 @@
 """
 Todo
-    nodeutils.colorClosestNode
-        - needs to move to acceptinga list
+    * Backdrops
+        - Closest node colors on entry
+            Color all nodes inside of the backdrop node
+            Only when modifier is active
 """
 
 import os
@@ -10,19 +12,19 @@ import inspect
 from qtpy.QtCore import Qt, QSize, QPoint, QTimer, QEvent
 from qtpy.QtGui import QCursor
 
+from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile, LayeredMenuAPI
+from UI4.App import Tabs
+from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
+from UI4.Tabs.NodeGraphTab.Layers.NodeGraphViewInteractionLayer import NodeGraphViewInteractionLayer
+from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdropNodeDialog
+
 from cgwidgets.utils import scaleResolution
 from cgwidgets.settings import iColor
 from cgwidgets.widgets import PopupHotkeyMenu
 
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
-from Utils2 import nodeutils, widgetutils
+from Utils2 import nodeutils, widgetutils, nodegraphutils
 from Utils2.nodealignutils import AlignUtils
-from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile, LayeredMenuAPI
-from UI4.App import Tabs
-
-from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
-from UI4.Tabs.NodeGraphTab.Layers.NodeGraphViewInteractionLayer import NodeGraphViewInteractionLayer
-from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdropNodeDialog
 
 from .gridLayer import GridGUIWidget
 from .portConnector import PortConnector
@@ -196,7 +198,7 @@ def displayGridSettings(hide_on_leave=True):
     PopupWidget.togglePopupWidgetVisibility("gridSettings", pos=pos)
 
 
-def duplicateNodes(nodegraph_layer):
+def duplicateNodes(nodegraph_layer, nodes_to_duplicate=None):
     """ Duplicate selected nodes, or closest node to cursor
 
     Args:
@@ -204,8 +206,12 @@ def duplicateNodes(nodegraph_layer):
             Most likely the NodeInteractionLayer
         """
     selected_nodes = NodegraphAPI.GetAllSelectedNodes()
-    nodes_to_duplicate = [node for node in selected_nodes if not NodegraphAPI.IsNodeLockedByParents(node)]
 
+    # check selected nodes
+    if not nodes_to_duplicate:
+        nodes_to_duplicate = [node for node in selected_nodes if not NodegraphAPI.IsNodeLockedByParents(node)]
+
+    # no selected nodes, get closest node
     if not nodes_to_duplicate:
         nodes_to_duplicate = [nodeutils.getClosestNode()]
 
@@ -259,18 +265,34 @@ def nodeInteractionLayerMouseMoveEvent(func):
     """ Changes the color of the nearest node """
     def __nodeInteractionLayerMouseMoveEvent(self, event):
         def colorNearestNode():
-            if event.modifiers() == Qt.AltModifier:
-                closest_node = nodeutils.getClosestNode(has_input_ports=True)
-                if closest_node:
-                    upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
-                    nodeutils.colorClosestNode(upstream_nodes)
-            if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
-                closest_node = nodeutils.getClosestNode(has_output_ports=True)
-                if closest_node:
-                    downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
-                    nodeutils.colorClosestNode(downstream_nodes)
+            """ Colors the closest node to the cursor
+
+            If a combination of Alt | Alt+Shift is used, then it will
+            color the upstream/downstream nodes for selection aswell
+
+            note that this also happens in the "nodeInteractionKeyPressEvent"
+            """
+
+            """ Need to by pass for special functionality for backdrops"""
             if event.modifiers() == Qt.NoModifier:
                 nodeutils.colorClosestNode(has_output_ports=True)
+
+            if nodegraphutils.getBackdropNodeUnderCursor():
+                # todo color backdrop nodes on alt modifier
+                pass
+
+            else:
+                if event.modifiers() == Qt.AltModifier:
+                    closest_node = nodeutils.getClosestNode(has_input_ports=True)
+                    if closest_node:
+                        upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
+                        nodeutils.colorClosestNode(upstream_nodes)
+                if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
+                    closest_node = nodeutils.getClosestNode(has_output_ports=True)
+                    if closest_node:
+                        downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
+                        nodeutils.colorClosestNode(downstream_nodes)
+
 
         def unfreeze():
             self._is_frozen = False
@@ -293,9 +315,9 @@ def nodeInteractionLayerMouseMoveEvent(func):
     return __nodeInteractionLayerMouseMoveEvent
 
 
-def nodeInteractionMouseEvent(func):
+def nodeInteractionMousePressEvent(func):
     """ DUPLICATE NODES """
-    def __nodeInteractionMouseEvent(self, event):
+    def __nodeInteractionMousePressEvent(self, event):
         # Nodegraph Navigation
         if event.button() == Qt.ForwardButton and event.modifiers() == Qt.NoModifier:
             navigateNodegraph(FORWARD)
@@ -306,21 +328,50 @@ def nodeInteractionMouseEvent(func):
         if event.button() == Qt.BackButton and event.modifiers() == Qt.AltModifier:
             navigateNodegraph(UP)
 
-        # Duplicate nodes
-        if event.modifiers() == (Qt.ControlModifier) and event.button() == Qt.LeftButton:
-            duplicateNodes(self)
-            return True
+        """ Need to by pass for special functionality for backdrops"""
+        backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
+        if backdrop_node:
 
-        # Move nodes
-        if event.modifiers() == Qt.AltModifier and event.button() in [Qt.LeftButton]:
-            moveNodes(UP)
-            return True
-        if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier) and event.button() in [Qt.LeftButton]:
-            moveNodes(DOWN)
-            return True
+            # move backdrop
+            if event.modifiers() == (Qt.ControlModifier) and event.button() == Qt.LeftButton:
+                nodeutils.selectNodes([backdrop_node], is_exclusive=True)
+                nodeutils.floatNodes([backdrop_node])
+                return True
+            # duplicate backdrop and children
+            if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() == Qt.LeftButton:
+                nodes_to_duplicate = nodegraphutils.getBackdropChildren(backdrop_node)
+                duplicateNodes(self, nodes_to_duplicate=nodes_to_duplicate)
+                return True
+
+            # move backdrop and children
+            if event.modifiers() == (Qt.AltModifier) and event.button() == Qt.LeftButton:
+                nodes_to_move = nodegraphutils.getBackdropChildren(backdrop_node)
+                nodeutils.selectNodes(nodes_to_move, is_exclusive=True)
+                nodeutils.floatNodes(nodes_to_move)
+                return True
+
+            # todo backdrop event
+            #   ( Alt + LMB ) select and lift backdrop node + children
+            #   ( Alt + RMB ) resize backdrop
+            #   ( Ctrl + LMB ) Duplicate and lift
+            pass
+        else:
+            # Duplicate nodes
+            if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() == Qt.LeftButton:
+                duplicateNodes(self)
+                return True
+
+            # Move nodes
+            if event.modifiers() == Qt.AltModifier and event.button() in [Qt.LeftButton]:
+                moveNodes(UP)
+                return True
+            if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier) and event.button() in [Qt.LeftButton]:
+                moveNodes(DOWN)
+                return True
+
         return func(self, event)
 
-    return __nodeInteractionMouseEvent
+    return __nodeInteractionMousePressEvent
 
 
 def nodeInteractionKeyPressEvent(func):
@@ -335,16 +386,20 @@ def nodeInteractionKeyPressEvent(func):
             nodegraph_widget = widgetutils.getActiveNodegraphWidget()
             is_floating = nodegraph_widget.getLayerByName("Floating Nodes").enabled()
             if not is_floating:
-                if event.modifiers() == Qt.AltModifier:
-                    closest_node = nodeutils.getClosestNode(has_input_ports=True)
-                    if closest_node:
-                        upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
-                        nodeutils.colorClosestNode(upstream_nodes)
-                if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
-                    closest_node = nodeutils.getClosestNode(has_output_ports=True)
-                    if closest_node:
-                        downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
-                        nodeutils.colorClosestNode(downstream_nodes)
+                if nodegraphutils.getBackdropNodeUnderCursor():
+                    # todo color nodes
+                    pass
+                else:
+                    if event.modifiers() == Qt.AltModifier:
+                        closest_node = nodeutils.getClosestNode(has_input_ports=True)
+                        if closest_node:
+                            upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
+                            nodeutils.colorClosestNode(upstream_nodes)
+                    if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
+                        closest_node = nodeutils.getClosestNode(has_output_ports=True)
+                        if closest_node:
+                            downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
+                            nodeutils.colorClosestNode(downstream_nodes)
 
             if event.key() == 96:
                 PortConnector.actuateSelection()
@@ -438,7 +493,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
 
     node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(
         NodeInteractionLayer._NodeInteractionLayer__processKeyPress)
-    node_interaction_layer.__class__._NodeInteractionLayer__processMouseButtonPress = nodeInteractionMouseEvent(
+    node_interaction_layer.__class__._NodeInteractionLayer__processMouseButtonPress = nodeInteractionMousePressEvent(
         NodeInteractionLayer._NodeInteractionLayer__processMouseButtonPress)
     node_interaction_layer.__class__._NodeInteractionLayer__processMouseMove = nodeInteractionLayerMouseMoveEvent(
         NodeInteractionLayer._NodeInteractionLayer__processMouseMove)
@@ -447,7 +502,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
     nodegraph_view_interaction_layer = nodegraph_widget.getLayerByName("NodeGraphViewInteraction")
     nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(
         NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processKeyPress)
-    nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseButtonDown = nodeInteractionMouseEvent(
+    nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseButtonDown = nodeInteractionMousePressEvent(
         NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processMouseButtonDown)
     nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseMove = nodeInteractionLayerMouseMoveEvent(
         NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processMouseMove)

@@ -4,6 +4,7 @@ from .Utils2 import *
 from . import gsvutils
 from . import nodeutils
 from . import nodealignutils
+from . import nodegraphutils
 from . import paramutils
 from . import portutils
 from . import colors

@@ -1,8 +1,11 @@
+from qtpy.QtCore import QPoint
+
 from Katana import UI4
 from cgwidgets.utils import getWidgetUnderCursor
 
 def katanaMainWindow():
     return UI4.App.MainWindow.GetMainWindow()
+
 
 def getActiveNodegraphWidget():
     nodegraph_widget = isCursorOverNodeGraphWidget()
@@ -11,6 +14,7 @@ def getActiveNodegraphWidget():
 
     return nodegraph_widget
 
+
 def isCursorOverNodeGraphWidget():
     """ Determines if the cursor is over a nodegraph widget or not.
 
@@ -18,4 +22,5 @@ def isCursorOverNodeGraphWidget():
     if not hasattr(getWidgetUnderCursor(), "__module__"): return False
     if getWidgetUnderCursor().__module__.split(".")[-1] != "NodegraphWidget": return False
     return getWidgetUnderCursor()
+
 

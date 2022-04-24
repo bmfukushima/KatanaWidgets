@@ -275,8 +275,6 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
     if not cursor_pos: return
     group_node = nodegraph_widget.getGroupNodeUnderMouse()
     world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
-    # from qtpy.QtGui import QCursor
-    # world_pos = (QCursor.pos().x(), QCursor.pos().y())
     cursor_pos = QPoint(*nodegraph_widget.getPointAdjustedToGroupNodeSpace(group_node, world_pos))
 
     closest_node = None
