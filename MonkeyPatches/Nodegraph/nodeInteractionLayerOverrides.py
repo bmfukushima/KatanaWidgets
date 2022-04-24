@@ -223,43 +223,6 @@ def duplicateNodes(nodegraph_layer, nodes_to_duplicate=None):
         nodegraph_layer.layerStack().parent()._NodegraphPanel__nodegraphWidget.enableFloatingLayer()
 
 
-def moveNodes(direction=UP):
-    """ Selects and moves the nodes upstream or downstream of the selected node """
-
-    node_list = None
-    if direction == UP:
-        closest_node = nodeutils.getClosestNode(has_input_ports=True)
-        if closest_node:
-            node_list = AlignUtils.getUpstreamNodes(closest_node)
-    if direction == DOWN:
-        closest_node = nodeutils.getClosestNode(has_output_ports=True)
-        if closest_node:
-            node_list = AlignUtils.getDownstreamNodes(closest_node)
-
-    if node_list:
-        nodeutils.selectNodes(node_list)
-        nodeutils.floatNodes(node_list)
-
-
-def navigateNodegraph(direction):
-    """ Goes back/forward the node hierarchy history
-
-    Args:
-        direction (BACK | FORWARD): Determines which way
-    """
-    nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-    navigation_toolbar = nodegraph_widget.parent()._NodegraphPanel__navigationToolbar
-    if direction == FORWARD:
-        navigation_toolbar._NavigationToolbar__forwardButtonClicked()
-    if direction == BACK:
-        navigation_toolbar._NavigationToolbar__backButtonClicked()
-    if direction == HOME:
-        nodegraph_widget.setCurrentNodeView(NodegraphAPI.GetRootNode())
-    if direction == UP:
-        if nodegraph_widget.getCurrentNodeView() != NodegraphAPI.GetRootNode():
-            nodegraph_widget.setCurrentNodeView(nodegraph_widget.getCurrentNodeView().getParent())
-
-
 def glowNodes(event):
     """ Glows the nodes of the next selection possible selection
 
@@ -304,6 +267,83 @@ def glowNodes(event):
                 nodeutils.colorClosestNode(downstream_nodes)
 
 
+def moveNodes(direction=UP):
+    """ Selects and moves the nodes upstream or downstream of the selected node """
+
+    node_list = None
+    if direction == UP:
+        closest_node = nodeutils.getClosestNode(has_input_ports=True)
+        if closest_node:
+            node_list = AlignUtils.getUpstreamNodes(closest_node)
+    if direction == DOWN:
+        closest_node = nodeutils.getClosestNode(has_output_ports=True)
+        if closest_node:
+            node_list = AlignUtils.getDownstreamNodes(closest_node)
+
+    if node_list:
+        nodeutils.selectNodes(node_list)
+        nodeutils.floatNodes(node_list)
+
+
+def navigateNodegraph(direction):
+    """ Goes back/forward the node hierarchy history
+
+    Args:
+        direction (BACK | FORWARD): Determines which way
+    """
+    nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+    navigation_toolbar = nodegraph_widget.parent()._NodegraphPanel__navigationToolbar
+    if direction == FORWARD:
+        navigation_toolbar._NavigationToolbar__forwardButtonClicked()
+    if direction == BACK:
+        navigation_toolbar._NavigationToolbar__backButtonClicked()
+    if direction == HOME:
+        nodegraph_widget.setCurrentNodeView(NodegraphAPI.GetRootNode())
+    if direction == UP:
+        if nodegraph_widget.getCurrentNodeView() != NodegraphAPI.GetRootNode():
+            nodegraph_widget.setCurrentNodeView(nodegraph_widget.getCurrentNodeView().getParent())
+
+
+def resizeBackdropNode():
+
+    curr_cursor_pos, _ = nodegraphutils.getNodegraphCursorPos()
+    orig_attrs = widgetutils.katanaMainWindow()._backdrop_orig_attrs
+    node = NodegraphAPI.GetNode(orig_attrs["name"])
+    orig_node_pos = (orig_attrs["x"], orig_attrs["y"])
+    orig_cursor_pos = orig_attrs["orig_cursor_pos"]
+    quadrant = orig_attrs["quadrant"]
+    try:
+        orig_size = (orig_attrs["ns_sizeX"], orig_attrs["ns_sizeY"])
+    except KeyError:
+        orig_attrs["ns_sizeX"] = 128
+        orig_attrs["ns_sizeY"] = 64
+        orig_size = (128, 64)
+
+    print("======================= ", node)
+    print("quadrant == ", quadrant)
+    print("orig_cursor_pos == ", orig_cursor_pos)
+    print("curr_cursor_pos == ", curr_cursor_pos)
+    print("orig_node_pos == ", orig_node_pos)
+    print("orig size ==", orig_size)
+
+    offset_x = curr_cursor_pos.x() - orig_cursor_pos.x()
+    offset_y = curr_cursor_pos.y() - orig_cursor_pos.y()
+
+    # setup attrs
+    new_attrs = {}
+    for attr_name, attr_value in orig_attrs.items():
+        if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
+            new_attrs[attr_name.replace("ns_", "")] = attr_value
+
+    print(new_attrs)
+    new_attrs["sizeX"] += offset_x
+    new_attrs["sizeY"] += offset_y
+
+    nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
+    # offset center of node
+    # increase node size
+
+
 """ EVENTS"""
 def nodeInteractionLayerMouseMoveEvent(func):
     """ Changes the color of the nearest node """
@@ -322,7 +362,13 @@ def nodeInteractionLayerMouseMoveEvent(func):
             timer = QTimer()
             timer.start(delay_amount)
             timer.timeout.connect(unfreeze)
+
+            # run functions
             glowNodes(event)
+
+            # resize backdrop
+            if event.modifiers() == Qt.AltModifier and event.buttons() == Qt.RightButton:
+                resizeBackdropNode()
 
         return func(self, event)
 
@@ -363,8 +409,14 @@ def nodeInteractionMousePressEvent(func):
                 nodeutils.floatNodes(nodes_to_move)
                 return True
 
-            #   ( Alt + RMB ) resize backdrop
-            pass
+            # initialize backdrop resize event
+            if event.modifiers() == Qt.AltModifier and event.button() == Qt.RightButton:
+                quadrant = nodegraphutils.getBackdropQuadrantSelected(backdrop_node)
+                attrs = backdrop_node.getAttributes()
+                attrs["quadrant"] = quadrant
+                attrs["orig_cursor_pos"] = nodegraphutils.getNodegraphCursorPos()[0]
+                widgetutils.katanaMainWindow()._backdrop_orig_attrs = attrs
+
         else:
             # Duplicate nodes
             if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() == Qt.LeftButton:
