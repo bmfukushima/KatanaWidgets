@@ -219,14 +219,20 @@ def duplicateNodes(nodegraph_layer):
 
 def moveNodes(direction=UP):
     """ Selects and moves the nodes upstream or downstream of the selected node """
-    closest_node = nodeutils.getClosestNode()
-    if direction == UP:
-        node_list = AlignUtils.getUpstreamNodes(closest_node)
-    if direction == DOWN:
-        node_list = AlignUtils.getDownstreamNodes(closest_node)
 
-    nodeutils.selectNodes(node_list)
-    nodeutils.floatNodes(node_list)
+    node_list = None
+    if direction == UP:
+        closest_node = nodeutils.getClosestNode(has_input_ports=True)
+        if closest_node:
+            node_list = AlignUtils.getUpstreamNodes(closest_node)
+    if direction == DOWN:
+        closest_node = nodeutils.getClosestNode(has_output_ports=True)
+        if closest_node:
+            node_list = AlignUtils.getDownstreamNodes(closest_node)
+
+    if node_list:
+        nodeutils.selectNodes(node_list)
+        nodeutils.floatNodes(node_list)
 
 
 def navigateNodegraph(direction):
@@ -254,13 +260,15 @@ def nodeInteractionLayerMouseMoveEvent(func):
     def __nodeInteractionLayerMouseMoveEvent(self, event):
         def colorNearestNode():
             if event.modifiers() == Qt.AltModifier:
-                closest_node = nodeutils.getClosestNode()
-                upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
-                nodeutils.colorClosestNode(upstream_nodes)
+                closest_node = nodeutils.getClosestNode(has_input_ports=True)
+                if closest_node:
+                    upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
+                    nodeutils.colorClosestNode(upstream_nodes)
             if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
-                closest_node = nodeutils.getClosestNode()
-                downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
-                nodeutils.colorClosestNode(downstream_nodes)
+                closest_node = nodeutils.getClosestNode(has_output_ports=True)
+                if closest_node:
+                    downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
+                    nodeutils.colorClosestNode(downstream_nodes)
             if event.modifiers() == Qt.NoModifier:
                 nodeutils.colorClosestNode(has_output_ports=True)
 
@@ -328,13 +336,15 @@ def nodeInteractionKeyPressEvent(func):
             is_floating = nodegraph_widget.getLayerByName("Floating Nodes").enabled()
             if not is_floating:
                 if event.modifiers() == Qt.AltModifier:
-                    closest_node = nodeutils.getClosestNode()
-                    upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
-                    nodeutils.colorClosestNode(upstream_nodes)
+                    closest_node = nodeutils.getClosestNode(has_input_ports=True)
+                    if closest_node:
+                        upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
+                        nodeutils.colorClosestNode(upstream_nodes)
                 if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
-                    closest_node = nodeutils.getClosestNode()
-                    downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
-                    nodeutils.colorClosestNode(downstream_nodes)
+                    closest_node = nodeutils.getClosestNode(has_output_ports=True)
+                    if closest_node:
+                        downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
+                        nodeutils.colorClosestNode(downstream_nodes)
 
             if event.key() == 96:
                 PortConnector.actuateSelection()
