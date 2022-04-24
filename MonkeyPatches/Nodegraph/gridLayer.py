@@ -456,6 +456,10 @@ class GridUtils(object):
 
 def showEvent(func):
     def __showEvent(self, event):
+        # disable floating layer, as it for some reason inits as True...
+        self.getLayerByName("Floating Nodes").setEnabled(False)
+
+        # setup grid layer
         grid_layer = self.getLayerByName("Grid Layer")
         if not grid_layer:
             self._grid_layer = GridLayer("Grid Layer", enabled=True)

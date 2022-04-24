@@ -62,7 +62,7 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 - `V` node viewed moved to `W`
 - Full Screen changed from `Space` to `Ctrl + B`
   - `Space` is now used to increase widget sizes of new KatanaBebop widgets
-- `Ctrl + LMB` Duplicate selected nodes
+- `Ctrl + Shift + LMB` Duplicate selected nodes
 - `Alt + LMB` Move all nodes above closest node
 - `Alt + Shift + LMB` Move all nodes below closest node
 - `A` Alignment Menu
