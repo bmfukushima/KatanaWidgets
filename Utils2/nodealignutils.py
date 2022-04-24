@@ -696,8 +696,8 @@ class AlignUtils(object):
         for selected_node in selected_nodes:
             pos = NodegraphAPI.GetNodePosition(selected_node)
             offset = self.getNearestGridPoint(pos[0], pos[1])
-            xpos = (offset[0] * self._grid_size_x) + self._grid_size_x
-            ypos = (offset[1] * self._grid_size_y) + self._grid_size_y
+            xpos = (offset[0]) + self._grid_size_x
+            ypos = (offset[1]) + self._grid_size_y
 
             NodegraphAPI.SetNodePosition(selected_node, (xpos, ypos))
             self._aligned_nodes.append(selected_node)
@@ -771,8 +771,8 @@ class AlignUtils(object):
         for selected_node in selected_nodes:
             pos = NodegraphAPI.GetNodePosition(selected_node)
             offset = self.getNearestGridPoint(pos[0], pos[1])
-            xpos = (offset[0] * self._grid_size_x) + self._grid_size_x
-            ypos = (offset[1] * self._grid_size_y) + self._grid_size_y
+            xpos = (offset[0]) + self._grid_size_x
+            ypos = (offset[1]) + self._grid_size_y
 
             NodegraphAPI.SetNodePosition(selected_node, (xpos, ypos))
             self._aligned_nodes.append(selected_node)
@@ -964,14 +964,14 @@ class AlignUtils(object):
         x = int(x)
         y = int(y)
         if x % self._grid_size_x > (self._grid_size_x * .5):
-            x_offset = (x // self._grid_size_x)
+            x_offset = (x // self._grid_size_x) + 1
         else:
-            x_offset = (x // self._grid_size_x) - 1
+            x_offset = (x // self._grid_size_x)# - 1
         if y % self._grid_size_y > (self._grid_size_y * .5):
-            y_offset = (y // self._grid_size_y)
+            y_offset = (y // self._grid_size_y) + 1
         else:
-            y_offset = (y // self._grid_size_y) - 1
-        return (x_offset, y_offset)
+            y_offset = (y // self._grid_size_y)# - 1
+        return (x_offset * self._grid_size_x, y_offset * self._grid_size_y)
 
     def snapNodesToGrid(self, node_list=None):
         """ Snaps the nodes provided to the grid
@@ -987,6 +987,6 @@ class AlignUtils(object):
         for node in node_list:
             pos = NodegraphAPI.GetNodePosition(node)
             offset = self.getNearestGridPoint(pos[0], pos[1])
-            NodegraphAPI.SetNodePosition(node, ((offset[0] * self._grid_size_x) + self._grid_size_x, (offset[1] * self._grid_size_y) + self._grid_size_y))
+            NodegraphAPI.SetNodePosition(node, ((offset[0]) + self._grid_size_x, (offset[1]) + self._grid_size_y))
         Utils.UndoStack.CloseGroup()
 

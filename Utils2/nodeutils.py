@@ -229,11 +229,8 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
             them should be included
     """
 
-    if not nodegraph_widget:
-        widget_under_cursor = getWidgetUnderCursor()
-        if not hasattr(widget_under_cursor, "__module__"): return None
-        if widget_under_cursor.__module__.split(".")[-1] != "NodegraphWidget": return
-        nodegraph_widget = widget_under_cursor
+    from .widgetutils import getActiveNodegraphWidget
+    nodegraph_widget = getActiveNodegraphWidget()
     if not nodegraph_widget: return
 
     # populate node list

@@ -1,4 +1,4 @@
-from qtpy.QtCore import QTimer, Qt
+from qtpy.QtCore import QTimer, Qt, QPoint
 
 from Utils2 import nodeutils
 
@@ -7,8 +7,8 @@ from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 from .portConnector import PortConnector
 from .gridLayer import GridUtils
-from Utils2 import widgetutils
-
+from Utils2 import widgetutils, nodealignutils
+from Utils2.nodealignutils import AlignUtils
 
 # def createDotNode(self):
 #     Utils.OpenGLTraceMarker.begin()
@@ -70,6 +70,30 @@ from Utils2 import widgetutils
 #         Utils.UndoStack.CloseGroup()
 #
 #     Utils.OpenGLTraceMarker.end()
+def createDotNode(port):
+
+    from MonkeyPatches.Nodegraph.portConnector import PortConnector
+
+    """ Creates a dot node """
+    nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+    # get cursor position
+    cursor_pos = nodegraph_widget.getMousePos()
+    group_node = nodegraph_widget.getGroupNodeUnderMouse()
+    world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
+    cursor_pos = nodegraph_widget.getPointAdjustedToGroupNodeSpace(group_node, world_pos)
+    if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
+        cursor_pos = AlignUtils().getNearestGridPoint(cursor_pos[0], cursor_pos[1])
+
+    # create dot node
+    dot_node = NodegraphAPI.CreateNode("Dot", group_node)
+    NodegraphAPI.SetNodePosition(dot_node, [*cursor_pos])
+    dot_node.getInputPortByIndex(0).connect(port)
+
+    # update display
+    PortConnector.hideNoodle()
+    PortConnector.showNoodle(dot_node.getOutputPortByIndex(0))
+
+    return dot_node
 
 
 def lastActiveNode():
@@ -118,10 +142,8 @@ def linkConnectionLayerKeyPress(func):
             setLastActiveNode(last_active_node)
         if event.key() == Qt.Key_D:
             if not event.isAutoRepeat():
-                # todo place all nodes on dot create
-                self._LinkConnectionLayer__create_dot_node()
-                last_active_node = self.getBasePorts()[0].getNode()
-                setLastActiveNode(last_active_node)
+                dot_node = createDotNode(self.getBasePorts()[0])
+                setLastActiveNode(dot_node)
                 return True
 
         if event.key() == 96:
