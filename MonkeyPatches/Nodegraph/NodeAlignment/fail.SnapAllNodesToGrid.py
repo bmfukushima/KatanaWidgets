@@ -1,5 +1,5 @@
-from Utils2 import nodealignutils
+from Utils2.nodealignutils import AlignUtils
 import NodegraphAPI
 
 nodes = NodegraphAPI.GetAllNodes()
-nodealignutils.snapNodesToGrid(nodes)
+AlignUtils().snapNodesToGrid(nodes)

@@ -1,4 +1,4 @@
-from Utils2.nodealignutils import View
+from Utils2.nodealignutils import AlignUtils
 
 #View().selectDownstreamNodes()
-View().selectAllNodes(downstream=True)
+AlignUtils().selectAllNodes(downstream=True)

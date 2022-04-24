@@ -475,8 +475,8 @@ def installGridLayer(**kwargs):
 
     # default values
     enabled = True
-    grid_size_x = 128
-    grid_size_y = 64
+    grid_size_x = 200
+    grid_size_y = 100
     color = (0.5, 0.5, 1, 0.3)
     radius = 5
     line_width = 1

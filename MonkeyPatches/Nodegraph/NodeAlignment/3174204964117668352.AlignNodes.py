@@ -1,7 +1,7 @@
 import sys
-from Utils2.nodealignutils import View
+from Utils2.nodealignutils import AlignUtils
 '''
 View().alignDownstreamNodes()
 View().alignUpstreamNodes()
 '''
-View().alignAllNodes()
+AlignUtils().alignAllNodes()

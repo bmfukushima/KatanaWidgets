@@ -1,3 +1,3 @@
-from Utils2.nodealignutils import View
+from Utils2.nodealignutils import AlignUtils
 
-View().alignUpstreamNodes()
+AlignUtils().alignUpstreamNodes()

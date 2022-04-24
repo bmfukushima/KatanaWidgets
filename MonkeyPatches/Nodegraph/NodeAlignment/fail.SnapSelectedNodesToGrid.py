@@ -1,2 +1,2 @@
-from Utils2 import nodealignutils
-nodealignutils.snapNodesToGrid()
+from Utils2.nodealignutils import AlignUtils
+AlignUtils().snapNodesToGrid()
