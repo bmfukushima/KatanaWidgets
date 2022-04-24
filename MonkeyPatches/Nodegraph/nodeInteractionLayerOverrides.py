@@ -213,13 +213,14 @@ def duplicateNodes(nodegraph_layer):
 
 def moveNodes(direction=UP):
     """ Selects and moves the nodes upstream or downstream of the selected node """
-    from Utils2 import nodeutils, nodealignutils
+    from Utils2 import nodeutils
+    from Utils2.nodealignutils import AlignUtils
 
     closest_node = nodeutils.getClosestNode()
     if direction == UP:
-        node_list = nodealignutils.getUpstreamNodes(closest_node)
+        node_list = AlignUtils.getUpstreamNodes(closest_node)
     if direction == DOWN:
-        node_list = nodealignutils.getDownstreamNodes(closest_node)
+        node_list = AlignUtils.getDownstreamNodes(closest_node)
 
     nodeutils.selectNodes(node_list)
     nodeutils.floatNodes(node_list)
@@ -308,6 +309,10 @@ def nodeInteractionKeyPressEvent(func):
         # Suppress ~ key press
         # This is now handled by the script manager
         # Nodes --> PortSelector
+        # if event.modifiers() == Qt.AltModifier:
+        #     print('alt')
+        # if event.modifiers() == Qt.ControlModifier:
+        #     print('ctrl')
         if event.key() == 96:
             PortConnector.actuateSelection()
             return True
