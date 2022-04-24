@@ -88,34 +88,45 @@ def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=
             node.getSendPort(send_port_name).connect(node.getReturnPort(return_port_name))
 
 
-def colorClosestNode(exclude_nodes=[], has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False):
-    """ Sets the node color of the closest node to Normals Blue
+def colorClosestNode(highlighted_nodes=None, exclude_nodes=[], has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False):
+    """ Sets the node color of the nodes provided to Normals Blue.
 
     Args:
         exclude_nodes (list): of nodes to be excluded from the coloring process
-        include_dynamic_port_nodes (bool): include ports with dynamic ports (merge, switch, variableSwitch, etc)
         has_input_ports (bool): only include nodes that have valid input ports
         has_output_ports (bool): only include nodes that have valid output ports
+        highlighted_nodes (list): of nodes to set the color of
+        include_dynamic_port_nodes (bool): include ports with dynamic ports (merge, switch, variableSwitch, etc)
         """
     from .widgetutils import katanaMainWindow
 
-    closest_node = getClosestNode(
-        has_input_ports=has_input_ports, has_output_ports=has_output_ports, include_dynamic_port_nodes=include_dynamic_port_nodes, exclude_nodes=exclude_nodes)
+    # get the closest node
+    if not highlighted_nodes:
+        highlighted_nodes = getClosestNode(
+            has_input_ports=has_input_ports,
+            has_output_ports=has_output_ports,
+            include_dynamic_port_nodes=include_dynamic_port_nodes,
+            exclude_nodes=exclude_nodes
+        )
+        if highlighted_nodes:
+            highlighted_nodes = [highlighted_nodes]
 
     # remove old color
-    if hasattr(katanaMainWindow(), "_closest_node"):
-        # if closest_node == getattr(LinkConnectionLayer, "_closest_node"): return
-        removeGlowColor(katanaMainWindow()._closest_node)
+    if hasattr(katanaMainWindow(), "_highlighted_nodes"):
+        # if highlighted_nodes == getattr(LinkConnectionLayer, "_highlighted_nodes"): return
+        for node in katanaMainWindow()._highlighted_nodes:
+            removeGlowColor(node)
 
     # set new color
-    if closest_node:
-        NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorR", 0.5)
-        NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorG", 0.5)
-        NodegraphAPI.SetNodeShapeAttr(closest_node, "glowColorB", 1)
-        Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(closest_node), node=closest_node)
+    if highlighted_nodes:
+        for node in highlighted_nodes:
+            NodegraphAPI.SetNodeShapeAttr(node, "glowColorR", 0.5)
+            NodegraphAPI.SetNodeShapeAttr(node, "glowColorG", 0.5)
+            NodegraphAPI.SetNodeShapeAttr(node, "glowColorB", 1)
+            Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
 
         # update closest node
-        katanaMainWindow()._closest_node = closest_node
+        katanaMainWindow()._highlighted_nodes = highlighted_nodes
 
 
 def disconnectNode(node, input=False, output=False, reconnect=False):

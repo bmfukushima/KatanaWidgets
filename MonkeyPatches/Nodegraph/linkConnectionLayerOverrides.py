@@ -125,9 +125,9 @@ def linkConnectionLayerKeyPress(func):
 def exitLink(func):
     def __exitLink(self, *args):
         # remove glow color
-        if hasattr(LinkConnectionLayer, "_closest_node"):
-            nodeutils.removeGlowColor(LinkConnectionLayer._closest_node)
-            delattr(LinkConnectionLayer, "_closest_node")
+        if hasattr(LinkConnectionLayer, "_highlighted_nodes"):
+            nodeutils.removeGlowColor(LinkConnectionLayer._highlighted_nodes)
+            delattr(LinkConnectionLayer, "_highlighted_nodes")
 
         # toggle last active node flags
         widgetutils.katanaMainWindow()._is_link_creation_active = False

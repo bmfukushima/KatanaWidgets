@@ -1,7 +1,13 @@
+"""
+Todo
+    nodeutils.colorClosestNode
+        - needs to move to acceptinga list
+"""
+
 import os
 import inspect
 
-from qtpy.QtCore import Qt, QSize, QPoint, QTimer
+from qtpy.QtCore import Qt, QSize, QPoint, QTimer, QEvent
 from qtpy.QtGui import QCursor
 
 from cgwidgets.utils import scaleResolution
@@ -10,7 +16,7 @@ from cgwidgets.widgets import PopupHotkeyMenu
 
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 from Utils2 import nodeutils, widgetutils
-
+from Utils2.nodealignutils import AlignUtils
 from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile, LayeredMenuAPI
 from UI4.App import Tabs
 
@@ -213,9 +219,6 @@ def duplicateNodes(nodegraph_layer):
 
 def moveNodes(direction=UP):
     """ Selects and moves the nodes upstream or downstream of the selected node """
-    from Utils2 import nodeutils
-    from Utils2.nodealignutils import AlignUtils
-
     closest_node = nodeutils.getClosestNode()
     if direction == UP:
         node_list = AlignUtils.getUpstreamNodes(closest_node)
@@ -250,7 +253,16 @@ def nodeInteractionLayerMouseMoveEvent(func):
     """ Changes the color of the nearest node """
     def __nodeInteractionLayerMouseMoveEvent(self, event):
         def colorNearestNode():
-            nodeutils.colorClosestNode(has_output_ports=True)
+            if event.modifiers() == Qt.AltModifier:
+                closest_node = nodeutils.getClosestNode()
+                upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
+                nodeutils.colorClosestNode(upstream_nodes)
+            if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
+                closest_node = nodeutils.getClosestNode()
+                downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
+                nodeutils.colorClosestNode(downstream_nodes)
+            if event.modifiers() == Qt.NoModifier:
+                nodeutils.colorClosestNode(has_output_ports=True)
 
         def unfreeze():
             self._is_frozen = False
@@ -309,83 +321,94 @@ def nodeInteractionKeyPressEvent(func):
         # Suppress ~ key press
         # This is now handled by the script manager
         # Nodes --> PortSelector
-        # if event.modifiers() == Qt.AltModifier:
-        #     print('alt')
-        # if event.modifiers() == Qt.ControlModifier:
-        #     print('ctrl')
-        if event.key() == 96:
-            PortConnector.actuateSelection()
-            return True
 
-        # updating disable handler
-        if event.key() in [Qt.Key_D, Qt.Key_Q] and event.modifiers() == Qt.NoModifier:
-            disableNodes()
-            return True
-
-        # updating parameter view handler
-        if event.key() == Qt.Key_E:
-            if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
-                displayPopupParameters(hide_on_leave=False)
-                return True
-            elif event.modifiers() == Qt.AltModifier:
-                displayPopupParameters(hide_on_leave=True)
-                return True
-            elif event.modifiers() == Qt.NoModifier:
-                displayParameters()
-            return True
-
-        if event.key() == Qt.Key_F and event.modifiers() == Qt.NoModifier:
-            current_group = self.layerStack().getCurrentNodeView()
-            selected_nodes = [x for x in NodegraphAPI.GetAllSelectedNodes() if x.getParent() == current_group]
-            if selected_nodes:
-                self.frameSelection()
-            else:
-                self.layerStack().getLayerByName('Frame All').frameAll()
-            return True
-
-        if event.key() == Qt.Key_A and event.modifiers() == Qt.NoModifier:
-            current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-            file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
-            popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
-            popup_widget.show()
-            return True
-
-        if event.key() == Qt.Key_B and event.modifiers() == Qt.NoModifier:
-            createBackdropNode(is_floating=False)
-            return True
-
-        if event.key() == Qt.Key_B and event.modifiers() == Qt.NoModifier:
-            createBackdropNode(is_floating=True)
-            return True
-
-        if event.key() == Qt.Key_G and event.modifiers() == (Qt.ControlModifier):
-            displayGridSettings()
-            return True
-
-        if event.key() == Qt.Key_N and event.modifiers() == Qt.NoModifier:
+        if event.type() == QEvent.KeyPress:
+            # color node selection
             nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-            from UIPlugins.NMXMenu import NMXMenuPopulateCallback, NMXMenuActionCallback
-            NMXMenu = LayeredMenuAPI.LayeredMenu(
-                    NMXMenuPopulateCallback,
-                    NMXMenuActionCallback,
-                    'N',
-                    alwaysPopulate=True,
-                    onlyMatchWordStart=False
-                )
-            nodegraph_widget.showLayeredMenu(NMXMenu)
-            return True
+            is_floating = nodegraph_widget.getLayerByName("Floating Nodes").enabled()
+            if not is_floating:
+                if event.modifiers() == Qt.AltModifier:
+                    closest_node = nodeutils.getClosestNode()
+                    upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
+                    nodeutils.colorClosestNode(upstream_nodes)
+                if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
+                    closest_node = nodeutils.getClosestNode()
+                    downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
+                    nodeutils.colorClosestNode(downstream_nodes)
 
-        if event.key() == Qt.Key_W and event.modifiers() == Qt.NoModifier:
-            selected_nodes = NodegraphAPI.GetAllSelectedNodes()
-            if selected_nodes:
-                view_node = selected_nodes[0]
-            else:
-                view_node = nodeutils.getClosestNode()
+            if event.key() == 96:
+                PortConnector.actuateSelection()
+                return True
 
-            if view_node:
-                NodegraphAPI.SetNodeViewed(view_node, True, exclusive=True)
+            # updating disable handler
+            if event.key() in [Qt.Key_D, Qt.Key_Q] and event.modifiers() == Qt.NoModifier:
+                disableNodes()
+                return True
 
-            return True
+            # updating parameter view handler
+            if event.key() == Qt.Key_E:
+                if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
+                    displayPopupParameters(hide_on_leave=False)
+                    return True
+                elif event.modifiers() == Qt.AltModifier:
+                    displayPopupParameters(hide_on_leave=True)
+                    return True
+                elif event.modifiers() == Qt.NoModifier:
+                    displayParameters()
+                return True
+
+            if event.key() == Qt.Key_F and event.modifiers() == Qt.NoModifier:
+                current_group = self.layerStack().getCurrentNodeView()
+                selected_nodes = [x for x in NodegraphAPI.GetAllSelectedNodes() if x.getParent() == current_group]
+                if selected_nodes:
+                    self.frameSelection()
+                else:
+                    self.layerStack().getLayerByName('Frame All').frameAll()
+                return True
+
+            if event.key() == Qt.Key_A and event.modifiers() == Qt.NoModifier:
+                current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+                file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
+                popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
+                popup_widget.show()
+                return True
+
+            if event.key() == Qt.Key_B and event.modifiers() == Qt.NoModifier:
+                createBackdropNode(is_floating=False)
+                return True
+
+            if event.key() == Qt.Key_B and event.modifiers() == Qt.NoModifier:
+                createBackdropNode(is_floating=True)
+                return True
+
+            if event.key() == Qt.Key_G and event.modifiers() == (Qt.ControlModifier):
+                displayGridSettings()
+                return True
+
+            if event.key() == Qt.Key_N and event.modifiers() == Qt.NoModifier:
+                nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+                from UIPlugins.NMXMenu import NMXMenuPopulateCallback, NMXMenuActionCallback
+                NMXMenu = LayeredMenuAPI.LayeredMenu(
+                        NMXMenuPopulateCallback,
+                        NMXMenuActionCallback,
+                        'N',
+                        alwaysPopulate=True,
+                        onlyMatchWordStart=False
+                    )
+                nodegraph_widget.showLayeredMenu(NMXMenu)
+                return True
+
+            if event.key() == Qt.Key_W and event.modifiers() == Qt.NoModifier:
+                selected_nodes = NodegraphAPI.GetAllSelectedNodes()
+                if selected_nodes:
+                    view_node = selected_nodes[0]
+                else:
+                    view_node = nodeutils.getClosestNode()
+
+                if view_node:
+                    NodegraphAPI.SetNodeViewed(view_node, True, exclusive=True)
+
+                return True
 
         return func(self, event)
 

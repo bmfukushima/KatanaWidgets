@@ -452,10 +452,10 @@ class PortConnector():
             last_layer = nodegraph_widget.getLayers()[-1]
 
         # remove glow color
-        if hasattr(LinkConnectionLayer, "_closest_node"):
-            # if closest_node == getattr(LinkConnectionLayer, "_closest_node"): return
-            nodeutils.removeGlowColor(LinkConnectionLayer._closest_node)
-            delattr(LinkConnectionLayer, "_closest_node")
+        if hasattr(LinkConnectionLayer, "_highlighted_nodes"):
+            # if closest_node == getattr(LinkConnectionLayer, "_highlighted_nodes"): return
+            nodeutils.removeGlowColor(LinkConnectionLayer._highlighted_nodes)
+            delattr(LinkConnectionLayer, "_highlighted_nodes")
         # delattr(katanaMainWindow(), "_active_nodegraph_widget")
 
     @staticmethod
