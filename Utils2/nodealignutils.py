@@ -458,16 +458,16 @@ class IronTool(QtWidgets.QGraphicsRectItem):
                 for index, node in enumerate(selected_nodes):
                     if 'x' in direction:
                         if 'neg' in direction:
-                            xpos = init_offset[0] + (index * view.x_space)
+                            xpos = init_offset.x() + (index * view.x_space)
                         else:
-                            xpos = init_offset[0] - (index * view.x_space)
-                        ypos = init_offset[1]
+                            xpos = init_offset.x() - (index * view.x_space)
+                        ypos = init_offset.y()
                     elif 'y' in direction:
                         if 'neg' in direction:
-                            ypos = init_offset[1] - (index * view.y_space)
+                            ypos = init_offset.y() - (index * view.y_space)
                         else:
-                            ypos = init_offset[1] + (index * view.y_space)
-                        xpos = init_offset[0]
+                            ypos = init_offset.y() + (index * view.y_space)
+                        xpos = init_offset.x()
                     NodegraphAPI.SetNodePosition(
                         node,
                         ((xpos + 1) * view.x_grid, (ypos + 1) * view.y_grid)
@@ -700,8 +700,8 @@ class AlignUtils(object):
         for selected_node in selected_nodes:
             pos = NodegraphAPI.GetNodePosition(selected_node)
             offset = getNearestGridPoint(pos[0], pos[1])
-            xpos = (offset[0]) + self._grid_size_x
-            ypos = (offset[1]) + self._grid_size_y
+            xpos = (offset.x()) + self._grid_size_x
+            ypos = (offset.y()) + self._grid_size_y
 
             NodegraphAPI.SetNodePosition(selected_node, (xpos, ypos))
             self._aligned_nodes.append(selected_node)
@@ -777,8 +777,8 @@ class AlignUtils(object):
         for selected_node in selected_nodes:
             pos = NodegraphAPI.GetNodePosition(selected_node)
             offset = getNearestGridPoint(pos[0], pos[1])
-            xpos = (offset[0]) + self._grid_size_x
-            ypos = (offset[1]) + self._grid_size_y
+            xpos = (offset.x()) + self._grid_size_x
+            ypos = (offset.y()) + self._grid_size_y
 
             NodegraphAPI.SetNodePosition(selected_node, (xpos, ypos))
             self._aligned_nodes.append(selected_node)
@@ -972,6 +972,6 @@ class AlignUtils(object):
         for node in node_list:
             pos = NodegraphAPI.GetNodePosition(node)
             offset = getNearestGridPoint(pos[0], pos[1])
-            NodegraphAPI.SetNodePosition(node, ((offset[0]) + self._grid_size_x, (offset[1]) + self._grid_size_y))
+            NodegraphAPI.SetNodePosition(node, ((offset.x()) + self._grid_size_x, (offset.y()) + self._grid_size_y))
         Utils.UndoStack.CloseGroup()
 

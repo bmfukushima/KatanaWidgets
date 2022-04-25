@@ -19,13 +19,13 @@ def createDotNode(port):
     cursor_pos = nodegraph_widget.getMousePos()
     group_node = nodegraph_widget.getGroupNodeUnderMouse()
     world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
-    cursor_pos = nodegraph_widget.getPointAdjustedToGroupNodeSpace(group_node, world_pos)
+    cursor_pos = QPoint(*nodegraph_widget.getPointAdjustedToGroupNodeSpace(group_node, world_pos))
     if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
-        cursor_pos = nodegraphutils.getNearestGridPoint(cursor_pos[0], cursor_pos[1])
+        cursor_pos = nodegraphutils.getNearestGridPoint(cursor_pos.x(), cursor_pos.y())
 
     # create dot node
     dot_node = NodegraphAPI.CreateNode("Dot", group_node)
-    NodegraphAPI.SetNodePosition(dot_node, [*cursor_pos])
+    NodegraphAPI.SetNodePosition(dot_node, [cursor_pos.x(), cursor_pos.y()])
     dot_node.getInputPortByIndex(0).connect(port)
 
     # update display

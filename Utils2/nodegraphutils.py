@@ -123,12 +123,12 @@ def getNearestGridPoint(x, y):
     if x % grid_x_size > (grid_x_size * .5):
         x_offset = (x // grid_x_size) + 1
     else:
-        x_offset = (x // grid_x_size)# - 1
+        x_offset = (x // grid_x_size)
     if y % grid_y_size > (grid_y_size * .5):
         y_offset = (y // grid_y_size) + 1
     else:
-        y_offset = (y // grid_y_size)# - 1
-    return (x_offset * grid_x_size, y_offset * grid_y_size)
+        y_offset = (y // grid_y_size)
+    return QPoint(x_offset * grid_x_size, y_offset * grid_y_size)
 
 
 def getNodegraphCursorPos():

@@ -324,11 +324,25 @@ def resizeBackdropNode():
         if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
             new_attrs[attr_name.replace("ns_", "")] = attr_value
 
-    offset_x = curr_cursor_pos.x() - orig_cursor_pos.x()
-    offset_y = curr_cursor_pos.y() - orig_cursor_pos.y()
+    # Get offset
     if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
-        grid_x_size = KatanaPrefs[GRID_SIZE_X_PREF_NAME]
-        grid_y_size = KatanaPrefs[GRID_SIZE_Y_PREF_NAME]
+        # Todo need to calculate the accurate new size for the grid snapping
+        grid_pos = nodegraphutils.getNearestGridPoint(curr_cursor_pos.x(), curr_cursor_pos.y())
+        if quadrant == nodegraphutils.TOPRIGHT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
+            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
+        if quadrant == nodegraphutils.TOPLEFT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
+            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
+        if quadrant == nodegraphutils.BOTLEFT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
+            offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
+        if quadrant == nodegraphutils.BOTRIGHT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
+            offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
+    else:
+        offset_x = curr_cursor_pos.x() - orig_cursor_pos.x()
+        offset_y = curr_cursor_pos.y() - orig_cursor_pos.y()
 
     # update size
     if quadrant == nodegraphutils.TOPRIGHT:
@@ -350,15 +364,6 @@ def resizeBackdropNode():
     # node pos
     new_node_pos_x = orig_node_pos[0] + offset_x * 0.5
     new_node_pos_y = orig_node_pos[1] + offset_y * 0.5
-
-    # calculate for grid snap
-    if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
-        # Todo need to calculate the accurate new size for the grid snapping
-        nodegraphutils.getNearestGridPoint()
-        new_attrs["sizeX"] = (new_attrs["sizeX"] // grid_x_size) * grid_x_size
-        new_attrs["sizeY"] = (new_attrs["sizeY"] // grid_y_size) * grid_y_size
-        new_node_pos_x = (new_node_pos_x // (grid_x_size)) * (grid_x_size)
-        new_node_pos_y = (new_node_pos_y // (grid_y_size)) * (grid_y_size)
 
     nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
     NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
