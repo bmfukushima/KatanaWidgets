@@ -12,7 +12,7 @@ import inspect
 from qtpy.QtCore import Qt, QSize, QPoint, QTimer, QEvent
 from qtpy.QtGui import QCursor
 
-from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile, LayeredMenuAPI
+from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile, LayeredMenuAPI, PrefNames, KatanaPrefs
 from UI4.App import Tabs
 from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
 from UI4.Tabs.NodeGraphTab.Layers.NodeGraphViewInteractionLayer import NodeGraphViewInteractionLayer
@@ -26,7 +26,7 @@ from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 from Utils2 import nodeutils, widgetutils, nodegraphutils
 from Utils2.nodealignutils import AlignUtils
 
-from .gridLayer import GridGUIWidget
+from .gridLayer import GridGUIWidget, GRID_SIZE_X_PREF_NAME, GRID_SIZE_Y_PREF_NAME
 from .portConnector import PortConnector
 
 UP = 0
@@ -306,28 +306,17 @@ def navigateNodegraph(direction):
 
 def resizeBackdropNode():
 
+    # get attrs
     curr_cursor_pos, _ = nodegraphutils.getNodegraphCursorPos()
     orig_attrs = widgetutils.katanaMainWindow()._backdrop_orig_attrs
     node = NodegraphAPI.GetNode(orig_attrs["name"])
     orig_node_pos = (orig_attrs["x"], orig_attrs["y"])
     orig_cursor_pos = orig_attrs["orig_cursor_pos"]
     quadrant = orig_attrs["quadrant"]
-    try:
-        orig_size = (orig_attrs["ns_sizeX"], orig_attrs["ns_sizeY"])
-    except KeyError:
+    if "ns_sizeX" not in orig_attrs:
         orig_attrs["ns_sizeX"] = 128
+    if "ns_sizeY" not in orig_attrs:
         orig_attrs["ns_sizeY"] = 64
-        orig_size = (128, 64)
-
-    print("======================= ", node)
-    print("quadrant == ", quadrant)
-    print("orig_cursor_pos == ", orig_cursor_pos)
-    print("curr_cursor_pos == ", curr_cursor_pos)
-    print("orig_node_pos == ", orig_node_pos)
-    print("orig size ==", orig_size)
-
-    offset_x = curr_cursor_pos.x() - orig_cursor_pos.x()
-    offset_y = curr_cursor_pos.y() - orig_cursor_pos.y()
 
     # setup attrs
     new_attrs = {}
@@ -335,13 +324,43 @@ def resizeBackdropNode():
         if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
             new_attrs[attr_name.replace("ns_", "")] = attr_value
 
-    print(new_attrs)
-    new_attrs["sizeX"] += offset_x
-    new_attrs["sizeY"] += offset_y
+    offset_x = curr_cursor_pos.x() - orig_cursor_pos.x()
+    offset_y = curr_cursor_pos.y() - orig_cursor_pos.y()
+    if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
+        grid_x_size = KatanaPrefs[GRID_SIZE_X_PREF_NAME]
+        grid_y_size = KatanaPrefs[GRID_SIZE_Y_PREF_NAME]
+
+    # update size
+    if quadrant == nodegraphutils.TOPRIGHT:
+        new_attrs["sizeX"] += offset_x
+        new_attrs["sizeY"] += offset_y
+
+    if quadrant == nodegraphutils.TOPLEFT:
+        new_attrs["sizeX"] -= offset_x
+        new_attrs["sizeY"] += offset_y
+
+    if quadrant == nodegraphutils.BOTLEFT:
+        new_attrs["sizeX"] -= offset_x
+        new_attrs["sizeY"] -= offset_y
+
+    if quadrant == nodegraphutils.BOTRIGHT:
+        new_attrs["sizeX"] += offset_x
+        new_attrs["sizeY"] -= offset_y
+
+    # node pos
+    new_node_pos_x = orig_node_pos[0] + offset_x * 0.5
+    new_node_pos_y = orig_node_pos[1] + offset_y * 0.5
+
+    # calculate for grid snap
+    if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
+        # Todo need to calculate the accurate new size for the grid snapping
+        new_attrs["sizeX"] = (new_attrs["sizeX"] // grid_x_size) * grid_x_size
+        new_attrs["sizeY"] = (new_attrs["sizeY"] // grid_y_size) * grid_y_size
+        new_node_pos_x = (new_node_pos_x // (grid_x_size)) * (grid_x_size)
+        new_node_pos_y = (new_node_pos_y // (grid_y_size)) * (grid_y_size)
 
     nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
-    # offset center of node
-    # increase node size
+    NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
 
 
 """ EVENTS"""
