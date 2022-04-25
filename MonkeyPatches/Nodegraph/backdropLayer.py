@@ -1,4 +1,4 @@
-from OpenGL.GL import GL_BLEND, glBegin, glColor4f, glDisable, glEnable, glEnd, glVertex2f, GL_POINTS, glPointSize, GL_TRIANGLES, glLineWidth
+from OpenGL.GL import GL_BLEND, glBegin, glColor4f, glDisable, glEnable, glEnd, glVertex2f, GL_POINTS, glPointSize, GL_TRIANGLES, glLineWidth, GL_LINES
 from qtpy.QtWidgets import QApplication
 from qtpy.QtCore import Qt
 
@@ -21,6 +21,8 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         """ Determines the color that should be drawn"""
         if QApplication.keyboardModifiers() == Qt.AltModifier:
             if quadrant_entered == quadrant_to_color:
+                glColor4f(0.5, 0.5, 1, 1)
+            elif quadrant_entered == nodegraphutils.CENTER:
                 glColor4f(0.5, 0.5, 1, 1)
             else:
                 glColor4f(1, 1, 1, 0.2)
@@ -78,7 +80,6 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glEnable(GL_BLEND)
         glColor4f(1, 1, 1, 0.2)
         glPointSize(20)
-        glLineWidth(2)
 
         # Draw top right
         glBegin(GL_TRIANGLES)
@@ -143,9 +144,26 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
             node_x_pos + x_offset,
             node_y_pos + y_offset
         )
+        glEnd()
 
         # draw quadrant lines
+        glLineWidth(2)
+        glColor4f(1, 1, 1, 0.2)
+        glBegin(GL_LINES)
 
+        width_offset = node_width / 3
+        height_offset = node_height / 3
+        glVertex2f(zoom * (left + width_offset) + x_offset, (zoom * top) + y_offset)
+        glVertex2f(zoom * (left + width_offset) + x_offset, (zoom * bottom) + y_offset)
+
+        glVertex2f(zoom * (right - width_offset) + x_offset, (zoom * top) + y_offset)
+        glVertex2f(zoom * (right - width_offset) + x_offset, (zoom * bottom) + y_offset)
+
+        glVertex2f((zoom * left) + x_offset, zoom * (top - height_offset) + y_offset)
+        glVertex2f((zoom * right) + x_offset, zoom * (top - height_offset) + y_offset)
+
+        glVertex2f((zoom * left) + x_offset, zoom * (bottom + height_offset) + y_offset)
+        glVertex2f((zoom * right) + x_offset, zoom * (bottom + height_offset) + y_offset)
         glEnd()
 
         glDisable(GL_BLEND)
