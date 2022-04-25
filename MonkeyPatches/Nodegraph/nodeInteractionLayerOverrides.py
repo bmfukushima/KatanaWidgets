@@ -305,7 +305,7 @@ def navigateNodegraph(direction):
 
 
 def resizeBackdropNode():
-
+    """ Resizes the backdrop node when the user has done an Alt+RMB """
     # get attrs
     curr_cursor_pos, _ = nodegraphutils.getNodegraphCursorPos()
     orig_attrs = widgetutils.katanaMainWindow()._backdrop_orig_attrs
@@ -326,7 +326,6 @@ def resizeBackdropNode():
 
     # Get offset
     if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
-        # Todo need to calculate the accurate new size for the grid snapping
         grid_pos = nodegraphutils.getNearestGridPoint(curr_cursor_pos.x(), curr_cursor_pos.y())
         if quadrant == nodegraphutils.TOPRIGHT:
             offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
