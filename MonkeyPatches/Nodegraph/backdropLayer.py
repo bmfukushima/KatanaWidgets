@@ -21,21 +21,6 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
                 glColor4f(0.5, 0.5, 1, 1)
             else:
                 glColor4f(1, 1, 1, 0.2)
-        #     if quadrant_entered == nodegraphutils.TOPRIGHT:
-        #         glColor4f(0.5, 0.5, 1, 1)
-        #         return
-        #     if quadrant_entered == nodegraphutils.TOPLEFT:
-        #         glColor4f(0.5, 0.5, 1, 1)
-        #         return
-        #     if quadrant_entered == nodegraphutils.BOTLEFT:
-        #         glColor4f(0.5, 0.5, 1, 1)
-        #         return
-        #     if quadrant_entered == nodegraphutils.BOTRIGHT:
-        #         glColor4f(0.5, 0.5, 1, 1)
-        #         return
-        #
-        # print('4')
-        # glColor4f(1, 1, 1, 0.2)
 
     def paintGL(self):
         # get attrs
@@ -107,6 +92,8 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
 
         glEnd()
 
+        # Draw center dot
+        glColor4f(1, 1, 1, 0.2)
         glBegin(GL_POINTS)
         glVertex2f(
             node_x_pos + x_offset,
