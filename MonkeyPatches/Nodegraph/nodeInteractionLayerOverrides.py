@@ -325,7 +325,6 @@ def resizeBackdropNode():
         if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
             new_attrs[attr_name.replace("ns_", "")] = attr_value
 
-    print (f"quadrant == {quadrant}")
     # Get offset
     offset_x, offset_y = 0, 0
     if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
@@ -403,14 +402,14 @@ def resizeBackdropNode():
     if quadrant != nodegraphutils.CENTER:
         new_node_pos_x = orig_node_pos[0] + offset_x * 0.5
         new_node_pos_y = orig_node_pos[1] + offset_y * 0.5
+        NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
     else:
         # todo setup node positioning for center
         # really only might need it for snapping?
         pass
-    NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
+
 
     nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
-
 
 
 """ EVENTS"""
@@ -485,7 +484,7 @@ def nodeInteractionMousePressEvent(func):
                 attrs["quadrant"] = quadrant
                 attrs["orig_cursor_pos"] = nodegraphutils.getNodegraphCursorPos()[0]
                 widgetutils.katanaMainWindow()._backdrop_orig_attrs = attrs
-
+                widgetutils.katanaMainWindow()._backdrop_resize_active = True
         else:
             # Duplicate nodes
             if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() == Qt.LeftButton:
@@ -503,6 +502,14 @@ def nodeInteractionMousePressEvent(func):
         return func(self, event)
 
     return __nodeInteractionMousePressEvent
+
+
+def nodeInteractionMouseReleaseEvent(func):
+    """ DUPLICATE NODES """
+    def __nodeInteractionMouseReleaseEvent(self, event):
+        widgetutils.katanaMainWindow()._backdrop_resize_active = False
+        return func(self, event)
+    return __nodeInteractionMouseReleaseEvent
 
 
 def nodeInteractionKeyPressEvent(func):
@@ -629,6 +636,8 @@ def installNodegraphHotkeyOverrides(**kwargs):
         NodeInteractionLayer._NodeInteractionLayer__processKeyPress)
     node_interaction_layer.__class__._NodeInteractionLayer__processMouseButtonPress = nodeInteractionMousePressEvent(
         NodeInteractionLayer._NodeInteractionLayer__processMouseButtonPress)
+    node_interaction_layer.__class__._NodeInteractionLayer__processMouseButtonRelease = nodeInteractionMouseReleaseEvent(
+        NodeInteractionLayer._NodeInteractionLayer__processMouseButtonRelease)
     node_interaction_layer.__class__._NodeInteractionLayer__processMouseMove = nodeInteractionLayerMouseMoveEvent(
         NodeInteractionLayer._NodeInteractionLayer__processMouseMove)
 

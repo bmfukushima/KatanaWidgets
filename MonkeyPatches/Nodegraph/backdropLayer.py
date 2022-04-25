@@ -6,13 +6,16 @@ from qtpy.QtCore import Qt
 import QT4GLLayerStack
 
 from Katana import NodegraphAPI
-from Utils2 import nodegraphutils
+from Utils2 import nodegraphutils, widgetutils
 
 
 class BackdropPreviewLayer(QT4GLLayerStack.Layer):
     def __init__(self, *args, **kwargs):
         (QT4GLLayerStack.Layer.__init__)(self, *args, **kwargs)
-
+        if not hasattr(widgetutils.katanaMainWindow(), "_backdrop_resize_active"):
+            widgetutils.katanaMainWindow()._backdrop_resize_active = False
+        if not hasattr(widgetutils.katanaMainWindow(), "_backdrop_orig_attrs"):
+            widgetutils.katanaMainWindow()._backdrop_orig_attrs = {}
     @staticmethod
     def pickTriangleColor(quadrant_entered, quadrant_to_color):
         """ Determines the color that should be drawn"""
@@ -34,21 +37,33 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         x_offset = pos_x_offset + (-cam_x_pos * zoom)
         y_offset = pos_y_offset + (-cam_y_pos * zoom)
         size = 30
-        # create arbitrary point at nodegraph position 100, 100
+        resize_active = widgetutils.katanaMainWindow()._backdrop_resize_active
+        resize_backdrop_attrs = widgetutils.katanaMainWindow()._backdrop_orig_attrs
 
-        # get abkcdrop under cursor
+        # get backdrop under cursor
         backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
-        if not backdrop_node: return
+
+        if not backdrop_node and not resize_active: return
         if self.layerStack().getLayerByName("Floating Nodes").enabled(): return
 
-        quadrant = nodegraphutils.getBackdropQuadrantSelected(backdrop_node)
+        # This will be hit during resize events, and the cursor is no longer hovering over the backdrop node
+        if not backdrop_node:
+            backdrop_node = NodegraphAPI.GetNode(resize_backdrop_attrs["name"])
 
+        # determine quadrant
+        if resize_active:
+            quadrant = resize_backdrop_attrs["quadrant"]
+        else:
+            quadrant = nodegraphutils.getBackdropQuadrantSelected(backdrop_node)
+
+        # setup default sizes
         attrs = backdrop_node.getAttributes()
         if "ns_sizeX" not in attrs:
             attrs["ns_sizeX"] = 128
         if "ns_sizeY" not in attrs:
             attrs["ns_sizeY"] = 64
 
+        # get backdrop sizes
         node_width = attrs["ns_sizeX"]
         node_height = attrs["ns_sizeY"]
         node_x_pos = NodegraphAPI.GetNodePosition(backdrop_node)[0] * zoom
@@ -64,7 +79,6 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glColor4f(1, 1, 1, 0.2)
         glPointSize(20)
         glLineWidth(2)
-
 
         # Draw top right
         glBegin(GL_TRIANGLES)
@@ -129,6 +143,8 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
             node_x_pos + x_offset,
             node_y_pos + y_offset
         )
+
+        # draw quadrant lines
 
         glEnd()
 
