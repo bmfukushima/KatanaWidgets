@@ -325,63 +325,92 @@ def resizeBackdropNode():
         if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
             new_attrs[attr_name.replace("ns_", "")] = attr_value
 
-
+    print (f"quadrant == {quadrant}")
     # Get offset
+    offset_x, offset_y = 0, 0
     if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
         grid_pos = nodegraphutils.getNearestGridPoint(curr_cursor_pos.x(), curr_cursor_pos.y())
         if quadrant == nodegraphutils.TOPRIGHT:
             offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
             offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
-        if quadrant == nodegraphutils.TOPLEFT:
+        elif quadrant == nodegraphutils.TOP:
+            offset_x = 0
+            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
+        elif quadrant == nodegraphutils.TOPLEFT:
             offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
             offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
-        if quadrant == nodegraphutils.BOTLEFT:
+        elif quadrant == nodegraphutils.LEFT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
+            offset_y = 0
+        elif quadrant == nodegraphutils.BOTLEFT:
             offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
             offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
-        if quadrant == nodegraphutils.BOTRIGHT:
+        elif quadrant == nodegraphutils.BOT:
+            offset_x = 0
+            offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
+        elif quadrant == nodegraphutils.BOTRIGHT:
             offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
             offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
+        elif quadrant == nodegraphutils.RIGHT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
+            offset_y = 0
+        elif quadrant == nodegraphutils.CENTER:
+            # Todo update offset
+            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
+            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
     else:
         offset_x = curr_cursor_pos.x() - orig_cursor_pos.x()
         offset_y = curr_cursor_pos.y() - orig_cursor_pos.y()
 
     # update size
-    offset_x, offset_y = None, None
     if quadrant == nodegraphutils.TOPRIGHT:
         new_attrs["sizeX"] += offset_x
         new_attrs["sizeY"] += offset_y
 
-    if quadrant == nodegraphutils.TOP:
-        pass
+    elif quadrant == nodegraphutils.TOP:
+        new_attrs["sizeY"] += offset_y
+        offset_x = 0
 
-    if quadrant == nodegraphutils.TOPLEFT:
+    elif quadrant == nodegraphutils.TOPLEFT:
         new_attrs["sizeX"] -= offset_x
         new_attrs["sizeY"] += offset_y
 
-    if quadrant == nodegraphutils.LEFT:
-        pass
+    elif quadrant == nodegraphutils.LEFT:
+        new_attrs["sizeX"] -= offset_x
+        offset_y = 0
 
-    if quadrant == nodegraphutils.BOTLEFT:
+    elif quadrant == nodegraphutils.BOTLEFT:
         new_attrs["sizeX"] -= offset_x
         new_attrs["sizeY"] -= offset_y
 
-    if quadrant == nodegraphutils.BOT:
-        pass
+    elif quadrant == nodegraphutils.BOT:
+        new_attrs["sizeY"] -= offset_y
+        offset_x = 0
 
-    if quadrant == nodegraphutils.BOTRIGHT:
+    elif quadrant == nodegraphutils.BOTRIGHT:
         new_attrs["sizeX"] += offset_x
         new_attrs["sizeY"] -= offset_y
 
-    if quadrant == nodegraphutils.RIGHT:
-        pass
+    elif quadrant == nodegraphutils.RIGHT:
+        new_attrs["sizeX"] += offset_x
+        offset_y = 0
 
-    if offset_x and offset_y:
-        # node pos
+    elif quadrant == nodegraphutils.CENTER:
+        new_attrs["sizeX"] += offset_x
+        new_attrs["sizeY"] += offset_y
+
+    # node pos
+    if quadrant != nodegraphutils.CENTER:
         new_node_pos_x = orig_node_pos[0] + offset_x * 0.5
         new_node_pos_y = orig_node_pos[1] + offset_y * 0.5
+    else:
+        # todo setup node positioning for center
+        # really only might need it for snapping?
+        pass
+    NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
 
-        nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
-        NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
+    nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
+
 
 
 """ EVENTS"""
