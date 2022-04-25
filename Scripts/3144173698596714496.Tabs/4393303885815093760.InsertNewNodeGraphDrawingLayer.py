@@ -1,6 +1,7 @@
 """ Shows a basic example of how you can insert a new OpenGL drawing layer into the NodeGraph Tab """
 
 from OpenGL.GL import GL_BLEND, glBegin, glColor4f, glDisable, glEnable, glEnd, glVertex2f, GL_POINTS, glPointSize
+# setup prefs
 import QT4GLLayerStack
 
 class TestLayer(QT4GLLayerStack.Layer):
@@ -20,7 +21,10 @@ class TestLayer(QT4GLLayerStack.Layer):
         # create arbitrary point at nodegraph position 100, 100
         node_x_pos = 100 * zoom
         node_y_pos = 100 * zoom
-
+        # node = NodegraphAPI.GetNode("Backdrop")
+        # attrs = node.getAttributes()
+        # node_x_pos = attrs["x"]
+        # node_y_pos = attrs["y"]
         # draw point at location
         glEnable(GL_BLEND)
         glColor4f(0, 1, 0, 1)
@@ -28,8 +32,8 @@ class TestLayer(QT4GLLayerStack.Layer):
         glBegin(GL_POINTS)
 
         glVertex2f(
-            pos_x_offset + node_x_pos + (-cam_x_pos * zoom[0]),
-            pos_y_offset + node_y_pos + (-cam_y_pos * zoom[0])
+            pos_x_offset + node_x_pos + (-cam_x_pos * zoom),
+            pos_y_offset + node_y_pos + (-cam_y_pos * zoom)
         )
 
         glEnd()
@@ -43,6 +47,8 @@ nodegraph_widget.appendLayer(layer)
 # test_layer = nodegraph_widget.getLayerByName("Test")
 # nodegraph_widget.removeLayer(test_layer)
 # nodegraph_widget.getLayers()
+
+
 
 
 

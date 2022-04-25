@@ -1,9 +1,9 @@
 """
 Todo
     * Backdrops
-        - Closest node colors on entry
-            Color all nodes inside of the backdrop node
-            Only when modifier is active
+        - resize quadrants icons
+            - insert layer
+            - hover color
 """
 
 import os
@@ -26,8 +26,9 @@ from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 from Utils2 import nodeutils, widgetutils, nodegraphutils
 from Utils2.nodealignutils import AlignUtils
 
-from .gridLayer import GridGUIWidget, GRID_SIZE_X_PREF_NAME, GRID_SIZE_Y_PREF_NAME
+from .gridLayer import GridGUIWidget
 from .portConnector import PortConnector
+from .backdropLayer import BackdropPreviewLayer
 
 UP = 0
 DOWN = 1
@@ -324,6 +325,7 @@ def resizeBackdropNode():
         if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
             new_attrs[attr_name.replace("ns_", "")] = attr_value
 
+
     # Get offset
     if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
         grid_pos = nodegraphutils.getNearestGridPoint(curr_cursor_pos.x(), curr_cursor_pos.y())
@@ -551,6 +553,23 @@ def nodeInteractionKeyPressEvent(func):
     return __nodeInteractionKeyPressEvent
 
 
+def showEvent(func):
+    def __showEvent(self, event):
+        # disable floating layer, as it for some reason inits as True...
+        self.getLayerByName("Floating Nodes").setEnabled(False)
+
+        # setup grid layer
+        grid_layer = self.getLayerByName("Backdrop Preview Layer")
+        if not grid_layer:
+            self._grid_layer = BackdropPreviewLayer("Backdrop Preview Layer", enabled=True)
+
+            self.appendLayer(self._grid_layer)
+            # self.appendLayer(self._grid_layer)
+        return func(self, event)
+
+    return __showEvent
+
+
 def installNodegraphHotkeyOverrides(**kwargs):
     """ Installs the hotkey overrides """
     # Node interaction key press
@@ -558,6 +577,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
     # create proxy nodegraph
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
+    nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
 
     # NORMAL NODEGRAPH
     node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")
