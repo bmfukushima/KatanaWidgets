@@ -610,12 +610,11 @@ def showEvent(func):
         self.getLayerByName("Floating Nodes").setEnabled(False)
 
         # setup grid layer
-        grid_layer = self.getLayerByName("Backdrop Preview Layer")
-        if not grid_layer:
-            self._grid_layer = BackdropPreviewLayer("Backdrop Preview Layer", enabled=True)
+        backdrop_preview_layer = self.getLayerByName("Backdrop Preview Layer")
+        if not backdrop_preview_layer:
+            self._backdrop_preview_layer = BackdropPreviewLayer("Backdrop Preview Layer", enabled=True)
 
-            self.appendLayer(self._grid_layer)
-            # self.appendLayer(self._grid_layer)
+            self.appendLayer(self._backdrop_preview_layer)
         return func(self, event)
 
     return __showEvent

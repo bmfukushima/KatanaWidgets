@@ -5,7 +5,7 @@ from qtpy.QtCore import Qt
 # setup prefs
 import QT4GLLayerStack
 
-from Katana import NodegraphAPI
+from Katana import NodegraphAPI, Utils
 from Utils2 import nodegraphutils, widgetutils
 
 
@@ -49,12 +49,10 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         if self.layerStack().getLayerByName("Floating Nodes").enabled(): return
 
         # This will be hit during resize events, and the cursor is no longer hovering over the backdrop node
-        if not backdrop_node:
-            backdrop_node = NodegraphAPI.GetNode(resize_backdrop_attrs["name"])
-
         # determine quadrant
         if resize_active:
             quadrant = resize_backdrop_attrs["quadrant"]
+            backdrop_node = NodegraphAPI.GetNode(resize_backdrop_attrs["name"])
         else:
             quadrant = nodegraphutils.getBackdropQuadrantSelected(backdrop_node)
 
@@ -167,3 +165,17 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glEnd()
 
         glDisable(GL_BLEND)
+
+
+def calculateBackdropZDepth(args):
+    for arg in args:
+        if arg[0] == "node_setPosition":
+            node = arg[2]['node']
+            if node.getType() == "Backdrop":
+                # get intersecting backdrops
+                #
+                print(node)
+
+
+def installBackdropZDepth(**kwargs):
+    Utils.EventModule.RegisterCollapsedHandler(calculateBackdropZDepth, 'node_setPosition')
