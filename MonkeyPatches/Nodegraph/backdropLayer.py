@@ -64,36 +64,66 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glColor4f(1, 1, 1, 0.2)
         glPointSize(20)
         glLineWidth(2)
-        glBegin(GL_TRIANGLES)
+
 
         # Draw top right
+        glBegin(GL_TRIANGLES)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.TOPRIGHT)
         glVertex2f((zoom * right) + x_offset, (zoom * top) + y_offset)
         glVertex2f(zoom * (right - size) + x_offset, (zoom * top) + y_offset)
         glVertex2f((zoom * right) + x_offset, zoom * (top - size) + y_offset)
+        glEnd()
+
+        # Draw Top
+        BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.TOP)
+        glBegin(GL_POINTS)
+        glVertex2f(node_x_pos + x_offset, (zoom * top) + y_offset)
+        glEnd()
 
         # Draw top left
+        glBegin(GL_TRIANGLES)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.TOPLEFT)
         glVertex2f((zoom * left) + x_offset, (zoom * top) + y_offset)
         glVertex2f(zoom * (left + size) + x_offset, (zoom * top) + y_offset)
         glVertex2f((zoom * left) + x_offset, zoom * (top - size) + y_offset)
+        glEnd()
+
+        # Draw Left
+        BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.LEFT)
+        glBegin(GL_POINTS)
+        glVertex2f((zoom * left) + x_offset, node_y_pos + y_offset)
+        glEnd()
 
         # Draw bot left
+        glBegin(GL_TRIANGLES)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.BOTLEFT)
         glVertex2f((zoom * left) + x_offset, (zoom * bottom) + y_offset)
         glVertex2f(zoom * (left + size) + x_offset, (zoom * bottom) + y_offset)
         glVertex2f((zoom * left) + x_offset, zoom * (bottom + size) + y_offset)
+        glEnd()
 
-        # Draw top right
+        # draw bot
+        BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.BOT)
+        glBegin(GL_POINTS)
+        glVertex2f(node_x_pos + x_offset, (zoom * bottom) + y_offset)
+        glEnd()
+
+        # Draw bot right
+        glBegin(GL_TRIANGLES)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.BOTRIGHT)
         glVertex2f((zoom * right) + x_offset, (zoom * bottom) + y_offset)
         glVertex2f(zoom * (right - size) + x_offset, (zoom * bottom) + y_offset)
         glVertex2f((zoom * right) + x_offset, zoom * (bottom + size) + y_offset)
+        glEnd()
 
+        # draw right
+        BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.RIGHT)
+        glBegin(GL_POINTS)
+        glVertex2f((zoom * right) + x_offset, node_y_pos+ y_offset)
         glEnd()
 
         # Draw center dot
-        glColor4f(1, 1, 1, 0.2)
+        BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.CENTER)
         glBegin(GL_POINTS)
         glVertex2f(
             node_x_pos + x_offset,

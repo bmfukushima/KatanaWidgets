@@ -346,28 +346,42 @@ def resizeBackdropNode():
         offset_y = curr_cursor_pos.y() - orig_cursor_pos.y()
 
     # update size
+    offset_x, offset_y = None, None
     if quadrant == nodegraphutils.TOPRIGHT:
         new_attrs["sizeX"] += offset_x
         new_attrs["sizeY"] += offset_y
+
+    if quadrant == nodegraphutils.TOP:
+        pass
 
     if quadrant == nodegraphutils.TOPLEFT:
         new_attrs["sizeX"] -= offset_x
         new_attrs["sizeY"] += offset_y
 
+    if quadrant == nodegraphutils.LEFT:
+        pass
+
     if quadrant == nodegraphutils.BOTLEFT:
         new_attrs["sizeX"] -= offset_x
         new_attrs["sizeY"] -= offset_y
+
+    if quadrant == nodegraphutils.BOT:
+        pass
 
     if quadrant == nodegraphutils.BOTRIGHT:
         new_attrs["sizeX"] += offset_x
         new_attrs["sizeY"] -= offset_y
 
-    # node pos
-    new_node_pos_x = orig_node_pos[0] + offset_x * 0.5
-    new_node_pos_y = orig_node_pos[1] + offset_y * 0.5
+    if quadrant == nodegraphutils.RIGHT:
+        pass
 
-    nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
-    NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
+    if offset_x and offset_y:
+        # node pos
+        new_node_pos_x = orig_node_pos[0] + offset_x * 0.5
+        new_node_pos_y = orig_node_pos[1] + offset_y * 0.5
+
+        nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
+        NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
 
 
 """ EVENTS"""
