@@ -354,6 +354,7 @@ def resizeBackdropNode():
     # calculate for grid snap
     if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
         # Todo need to calculate the accurate new size for the grid snapping
+        nodegraphutils.getNearestGridPoint()
         new_attrs["sizeX"] = (new_attrs["sizeX"] // grid_x_size) * grid_x_size
         new_attrs["sizeY"] = (new_attrs["sizeY"] // grid_y_size) * grid_y_size
         new_node_pos_x = (new_node_pos_x // (grid_x_size)) * (grid_x_size)

@@ -243,6 +243,7 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
     from .widgetutils import getActiveNodegraphWidget
     nodegraph_widget = getActiveNodegraphWidget()
     if not nodegraph_widget: return
+    if not hasattr(nodegraph_widget, "getGroupNodeUnderMouse"): return
 
     # populate node list
     node_list = [node for node in nodegraph_widget.getGroupNodeUnderMouse().getChildren() if node.getType() != "Backdrop"]

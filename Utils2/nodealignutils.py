@@ -19,8 +19,7 @@ from qtpy import QtWidgets, QtGui, QtCore
 from Katana import UI4, NodegraphAPI, DrawingModule, NodeGraphView, Utils, KatanaPrefs
 
 from Utils2 import widgetutils
-GRID_SIZE_X_PREF_NAME = "nodegraph/grid/sizeX"
-GRID_SIZE_Y_PREF_NAME = "nodegraph/grid/sizeY"
+
 
 
 class MainWidget(QtWidgets.QWidget):
@@ -428,6 +427,7 @@ class IronTool(QtWidgets.QGraphicsRectItem):
         """
         aligns nodes to the nearest grid unit of the contact item
         """
+        from .nodegraphutils import getNearestGridPoint
         # Add selected nodes to list for ironing
         selected_nodes = self.getNodeList()
         view = self.getView()
@@ -656,6 +656,8 @@ def ironNodes():
 """ ALIGNMENT """
 class AlignUtils(object):
     def __init__(self):
+        from MonkeyPatches.Nodegraph.gridLayer import GRID_SIZE_X_PREF_NAME, GRID_SIZE_Y_PREF_NAME
+
         self._grid_size_x = KatanaPrefs[GRID_SIZE_X_PREF_NAME]
         self._grid_size_y = KatanaPrefs[GRID_SIZE_Y_PREF_NAME]
 
@@ -690,12 +692,14 @@ class AlignUtils(object):
         nodegraph_widget.parent().floatNodes(self._aligned_nodes)
 
     def alignDownstreamNodes(self):
+        from .nodegraphutils import getNearestGridPoint
+
         Utils.UndoStack.OpenGroup("Align Nodes")
         self._aligned_nodes = []
         selected_nodes = NodegraphAPI.GetAllSelectedNodes()
         for selected_node in selected_nodes:
             pos = NodegraphAPI.GetNodePosition(selected_node)
-            offset = self.getNearestGridPoint(pos[0], pos[1])
+            offset = getNearestGridPoint(pos[0], pos[1])
             xpos = (offset[0]) + self._grid_size_x
             ypos = (offset[1]) + self._grid_size_y
 
@@ -765,12 +769,14 @@ class AlignUtils(object):
                                 self.__alignUpstreamNodes(sibling_node, x=x, y=y, recursive=recursive)
 
     def alignUpstreamNodes(self):
+        from .nodegraphutils import getNearestGridPoint
+
         Utils.UndoStack.OpenGroup("Align Nodes")
         self._aligned_nodes = []
         selected_nodes = NodegraphAPI.GetAllSelectedNodes()
         for selected_node in selected_nodes:
             pos = NodegraphAPI.GetNodePosition(selected_node)
-            offset = self.getNearestGridPoint(pos[0], pos[1])
+            offset = getNearestGridPoint(pos[0], pos[1])
             xpos = (offset[0]) + self._grid_size_x
             ypos = (offset[1]) + self._grid_size_y
 
@@ -951,28 +957,6 @@ class AlignUtils(object):
 
         NodegraphAPI.SetNodePosition(node, (x, y))
 
-    def getNearestGridPoint(self, x, y):
-        """
-        @return: returns an offset of grid units (x, y)
-        @x: <float> or <int>
-        @y: <float> or <int>
-
-        This should be in the Nodegraph Coordinate System,
-        use self.mapToNodegraph() to convert to this sytem
-        """
-        # pos = NodegraphAPI.GetNodePosition(node)
-        x = int(x)
-        y = int(y)
-        if x % self._grid_size_x > (self._grid_size_x * .5):
-            x_offset = (x // self._grid_size_x) + 1
-        else:
-            x_offset = (x // self._grid_size_x)# - 1
-        if y % self._grid_size_y > (self._grid_size_y * .5):
-            y_offset = (y // self._grid_size_y) + 1
-        else:
-            y_offset = (y // self._grid_size_y)# - 1
-        return (x_offset * self._grid_size_x, y_offset * self._grid_size_y)
-
     def snapNodesToGrid(self, node_list=None):
         """ Snaps the nodes provided to the grid
 
@@ -980,13 +964,14 @@ class AlignUtils(object):
             node_list (list): of nodes to be snapped to the grid
                 If none is provided, it will use the currently selected nodes
         """
+        from .nodegraphutils import getNearestGridPoint
 
         Utils.UndoStack.OpenGroup("Snap Nodes to Grid")
         if not node_list:
             node_list = NodegraphAPI.GetAllSelectedNodes()
         for node in node_list:
             pos = NodegraphAPI.GetNodePosition(node)
-            offset = self.getNearestGridPoint(pos[0], pos[1])
+            offset = getNearestGridPoint(pos[0], pos[1])
             NodegraphAPI.SetNodePosition(node, ((offset[0]) + self._grid_size_x, (offset[1]) + self._grid_size_y))
         Utils.UndoStack.CloseGroup()
 

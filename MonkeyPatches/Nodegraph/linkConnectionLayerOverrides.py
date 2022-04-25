@@ -6,8 +6,7 @@ from Katana import NodegraphAPI, Utils, DrawingModule, KatanaPrefs, PrefNames
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 from .portConnector import PortConnector
-from Utils2 import widgetutils
-from Utils2.nodealignutils import AlignUtils
+from Utils2 import widgetutils, nodegraphutils
 
 
 def createDotNode(port):
@@ -22,7 +21,7 @@ def createDotNode(port):
     world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
     cursor_pos = nodegraph_widget.getPointAdjustedToGroupNodeSpace(group_node, world_pos)
     if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
-        cursor_pos = AlignUtils().getNearestGridPoint(cursor_pos[0], cursor_pos[1])
+        cursor_pos = nodegraphutils.getNearestGridPoint(cursor_pos[0], cursor_pos[1])
 
     # create dot node
     dot_node = NodegraphAPI.CreateNode("Dot", group_node)
