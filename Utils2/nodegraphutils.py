@@ -24,6 +24,84 @@ def getActiveBackdropNodes():
     active_backdrop_nodes = [backdrop_node for backdrop_node in backdrop_nodes if backdrop_node.getParent() == root_node]
     return list(set(active_backdrop_nodes))
 
+def getBackdropNodeCorners(backdrop_node):
+    """ Returns the 4 corners of the backdrop node provided
+
+    Returns (float, float, float, float): left, top, right, bottom"""
+    attrs = backdrop_node.getAttributes()
+    node_pos = NodegraphAPI.GetNodePosition(backdrop_node)
+    try:
+        width = attrs["ns_sizeX"]
+        height = attrs["ns_sizeY"]
+    except KeyError:
+        width = 128
+        height = 64
+
+    """ Calculate positions, the points are based off the standard cartesian
+    system, where 0 is in the upper right, and 3 is in the bottom right"""
+    left = node_pos[0] - (width * 0.5)
+    top = node_pos[1] + (height * 0.5)
+    right = node_pos[0] + (width * 0.5)
+    bottom = node_pos[1] - (height * 0.5)
+
+    return left, bottom, right, top
+
+
+def getIntersectingBackdropNodes(backdrop_node):
+    """ Gets all of the backdrop nodes intersecting with node provided
+
+    Args:
+        backdrop_node (Node): backdrop node to check intersections against
+
+    Returns (list): of backdrop nodes intersecting the current one
+    """
+    def doesBackdropIntersect(R1, R2):
+        if (R1[0]>=R2[2]) or (R1[2]<=R2[0]) or (R1[3]<=R2[1]) or (R1[1]>=R2[3]):
+            return False
+        else:
+            return True
+
+    orig_backdrop_node = getBackdropNodeCorners(backdrop_node)
+    backdrop_nodes = getActiveBackdropNodes()
+    intersecting_backdrop_nodes = []
+    for node in backdrop_nodes:
+        backdrop_to_check = getBackdropNodeCorners(node)
+        if doesBackdropIntersect(orig_backdrop_node, backdrop_to_check):
+            intersecting_backdrop_nodes.append(node)
+
+    return intersecting_backdrop_nodes
+
+
+
+def getBackdropNodesUnderCursor():
+    """ Returns a list of all of the backdrop nodes under the cursor"""
+    active_backdrop_nodes = getActiveBackdropNodes()
+    cursor_pos, _ = getNodegraphCursorPos()
+    backdrop_nodes = []
+    for backdrop_node in active_backdrop_nodes:
+        attrs = backdrop_node.getAttributes()
+        # position test
+        node_pos = NodegraphAPI.GetNodePosition(backdrop_node)
+
+        """ Need to duck type this as the ns_sizeXY is not created until the user
+        has resized the backdrop node"""
+        try:
+            width = attrs["ns_sizeX"]
+            height = attrs["ns_sizeY"]
+        except KeyError:
+            width = 128
+            height = 64
+        left = node_pos[0] - (width * 0.5)
+        top = node_pos[1] + (height * 0.5)
+        right = node_pos[0] + (width * 0.5)
+        bottom = node_pos[1] - (height * 0.5)
+
+        # position test
+        if left < cursor_pos.x() and cursor_pos.x() < right and bottom < cursor_pos.y() and cursor_pos.y() < top:
+            backdrop_nodes.append(backdrop_node)
+
+    return backdrop_nodes
+
 
 def getBackdropNodeUnderCursor():
     """ Returns the backdrop node under the cursor"""

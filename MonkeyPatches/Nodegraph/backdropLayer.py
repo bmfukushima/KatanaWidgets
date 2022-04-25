@@ -6,7 +6,7 @@ from qtpy.QtCore import Qt
 import QT4GLLayerStack
 
 from Katana import NodegraphAPI, Utils
-from Utils2 import nodegraphutils, widgetutils
+from Utils2 import nodegraphutils, widgetutils, nodeutils
 
 
 class BackdropPreviewLayer(QT4GLLayerStack.Layer):
@@ -172,9 +172,11 @@ def calculateBackdropZDepth(args):
         if arg[0] == "node_setPosition":
             node = arg[2]['node']
             if node.getType() == "Backdrop":
+                backdrop_nodes = nodegraphutils.getIntersectingBackdropNodes(node)
+                nodeutils.selectNodes(backdrop_nodes)
                 # get intersecting backdrops
                 #
-                print(node)
+                print(node, backdrop_nodes)
 
 
 def installBackdropZDepth(**kwargs):
