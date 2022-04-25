@@ -19,7 +19,7 @@ from qtpy import QtWidgets, QtGui, QtCore
 from Katana import UI4, NodegraphAPI, DrawingModule, NodeGraphView, Utils, KatanaPrefs
 
 from Utils2 import widgetutils
-
+from .nodegraphutils import getActiveBackdropNodes, getBackdropChildren
 
 
 class MainWidget(QtWidgets.QWidget):
@@ -844,43 +844,48 @@ class AlignUtils(object):
         node_list = []
         for node in NodegraphAPI.GetAllSelectedNodes():
             if downstream is True:
-                node_list += AlignUtils.getDownstreamNodes(node, node_list=[])
+                node_list += AlignUtils.getDownstreamNodes(node)
             if upstream is True:
-                node_list += AlignUtils.getUpstreamNodes(node, node_list=[])
+                node_list += AlignUtils.getUpstreamNodes(node)
         NodegraphAPI.SetAllSelectedNodes(node_list)
         widgetutils.getActiveNodegraphWidget().floatNodes(node_list)
 
     @staticmethod
-    def getDownstreamNodes(node, node_list=None):
-        output_ports = node.getOutputPorts()
-        if not node_list:
-            node_list = []
-        node_list.append(node)
-        for output_port in output_ports:
-            connected_ports = output_port.getConnectedPorts()
-            for output_port in connected_ports:
-                connected_node = output_port.getNode()
-                AlignUtils.getDownstreamNodes(
-                    connected_node,
-                    node_list=node_list
-                )
-        return list(set(node_list))
+    def __checkBackdropNodes(nodes):
+        """ Checks the nodes list for any background nodes whose children are in the list
+
+        Arg:
+            nodes (list): of nodes to see if any backdrop nodes children are in
+        """
+        backdrop_nodes = getActiveBackdropNodes()
+        for backdrop_node in backdrop_nodes:
+            is_valid = False
+            if backdrop_node in nodes: continue
+            for child in getBackdropChildren(backdrop_node):
+                if child == backdrop_node: continue
+                if child not in nodes:
+                    is_valid = True
+                    break
+            if is_valid:
+                nodes.append(backdrop_node)
+
+        return nodes
 
     @staticmethod
-    def getUpstreamNodes(node, node_list=None):
-        input_ports = node.getInputPorts()
-        if not node_list:
-            node_list = []
-        node_list.append(node)
-        for input_port in input_ports:
-            connected_ports = input_port.getConnectedPorts()
-            for input_port in connected_ports:
-                connected_node = input_port.getNode()
-                AlignUtils.getUpstreamNodes(
-                    connected_node,
-                    node_list=node_list
-                )
-        return list(set(node_list))
+    def getDownstreamNodes(node):
+        nodes = NodegraphAPI.Util.GetAllConnectedOutputs([node])
+        nodes.append(node)
+
+        nodes = AlignUtils.__checkBackdropNodes(nodes)
+        return nodes
+
+    @staticmethod
+    def getUpstreamNodes(node):
+        nodes = NodegraphAPI.Util.GetAllConnectedInputs([node])
+        nodes.append(node)
+
+        nodes = AlignUtils.__checkBackdropNodes(nodes)
+        return nodes
 
     @staticmethod
     def getAllUpstreamTerminalNodes(node, node_list=[]):

@@ -246,7 +246,7 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._align_offset_y_widget = IntInputWidget()
         self._align_layout.addWidget(self._align_offset_x_widget)
         self._align_layout.addWidget(self._align_offset_y_widget)
-        self._align_offset_widget_labelled_widget = LabelledInputWidget(name="Size", delegate_widget=self._align_widget)
+        self._align_offset_widget_labelled_widget = LabelledInputWidget(name="Align Offset", delegate_widget=self._align_widget, note="How many grid units to offset the nodes during alignment")
 
         self._align_offset_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
         self._align_offset_x_widget.setUserFinishedEditingEvent(self.setAlignOffsetX)

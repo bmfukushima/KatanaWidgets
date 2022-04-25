@@ -16,14 +16,19 @@ BOT = 6
 BOTRIGHT = 7
 RIGHT = 8
 
+def getActiveBackdropNodes():
+    """ Returns all of the backdrop nodes that are children of the currently viewed node """
+    cursor_pos, root_node = getNodegraphCursorPos()
+    if not cursor_pos: return []
+    backdrop_nodes = NodegraphAPI.GetAllNodesByType("Backdrop")
+    active_backdrop_nodes = [backdrop_node for backdrop_node in backdrop_nodes if backdrop_node.getParent() == root_node]
+    return list(set(active_backdrop_nodes))
+
 
 def getBackdropNodeUnderCursor():
     """ Returns the backdrop node under the cursor"""
-    cursor_pos, root_node = getNodegraphCursorPos()
-    if not cursor_pos: return None
-    backdrop_nodes = NodegraphAPI.GetAllNodesByType("Backdrop")
-    active_backdrop_nodes = [backdrop_node for backdrop_node in backdrop_nodes if backdrop_node.getParent() == root_node]
-
+    active_backdrop_nodes = getActiveBackdropNodes()
+    cursor_pos, _ = getNodegraphCursorPos()
     depth = -10000
     active_backdrop_node = None
     for backdrop_node in active_backdrop_nodes:
@@ -130,7 +135,6 @@ def getBackdropQuadrantSelected(backdrop_node):
 
         else:
             return CENTER
-
 
     return None
 
