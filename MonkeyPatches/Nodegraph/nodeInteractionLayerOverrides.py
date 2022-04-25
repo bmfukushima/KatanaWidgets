@@ -314,6 +314,7 @@ def resizeBackdropNode():
     orig_node_pos = (orig_attrs["x"], orig_attrs["y"])
     orig_cursor_pos = orig_attrs["orig_cursor_pos"]
     quadrant = orig_attrs["quadrant"]
+    
     if "ns_sizeX" not in orig_attrs:
         orig_attrs["ns_sizeX"] = 128
     if "ns_sizeY" not in orig_attrs:

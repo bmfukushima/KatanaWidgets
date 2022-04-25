@@ -128,10 +128,6 @@ def getBackdropQuadrantSelected(backdrop_node):
         elif point_00.x() < cursor_pos.x() and cursor_pos.y() < point_00.y() and point_02.y() < cursor_pos.y():
             return RIGHT
 
-        # Top Right
-        elif node_pos[0] < cursor_pos.x() and node_pos[1] < cursor_pos.y():
-            return TOPRIGHT
-
         else:
             return CENTER
 
