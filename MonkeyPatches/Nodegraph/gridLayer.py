@@ -27,7 +27,8 @@ GRID_LINE_WIDTH_PREF_NAME = "nodegraph/grid/lineWidth"
 GRID_RADIUS_PREF_NAME = "nodegraph/grid/radius"
 GRID_SIZE_X_PREF_NAME = "nodegraph/grid/sizeX"
 GRID_SIZE_Y_PREF_NAME = "nodegraph/grid/sizeY"
-
+ALIGN_X_OFFSET_PREF_NAME = "nodegraph/grid/alignXOffset"
+ALIGN_Y_OFFSET_PREF_NAME = "nodegraph/grid/alignYOffset"
 
 class GridLayer(QT4GLLayerStack.Layer):
     """ OpenGL Drawing layer to show the back ground grid
@@ -173,6 +174,8 @@ class GridGUIWidget(FrameInputWidgetContainer):
         enabled = GridUtils.isGridEnabled()
         grid_x_size = GridUtils.gridSizeX()
         grid_y_size = GridUtils.gridSizeY()
+        align_x_offset = GridUtils.alignOffsetX()
+        align_y_offset = GridUtils.alignOffsetY()
 
         # ENABLE WIDGET
         self._grid_button = BooleanInputWidget(text="Toggle Grid", is_selected=enabled)
@@ -236,6 +239,21 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._draw_mode_widget_labelled_widget = LabelledInputWidget(name="Mode", delegate_widget=self._draw_mode_widget)
         self._draw_mode_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
 
+        # ALIGN WIDGET
+        self._align_widget = QWidget()
+        self._align_layout = QHBoxLayout(self._align_widget)
+        self._align_offset_x_widget = IntInputWidget()
+        self._align_offset_y_widget = IntInputWidget()
+        self._align_layout.addWidget(self._align_offset_x_widget)
+        self._align_layout.addWidget(self._align_offset_y_widget)
+        self._align_offset_widget_labelled_widget = LabelledInputWidget(name="Size", delegate_widget=self._align_widget)
+
+        self._align_offset_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
+        self._align_offset_x_widget.setUserFinishedEditingEvent(self.setAlignOffsetX)
+        self._align_offset_y_widget.setUserFinishedEditingEvent(self.setAlignOffsetY)
+        self._align_offset_x_widget.setText(str(align_x_offset))
+        self._align_offset_y_widget.setText(str(align_y_offset))
+
         # SETUP LAYOUT
         self.addInputWidget(self._grid_button, self.setIsGridEnabled)
         self.addInputWidget(self._grid_size_widget_labelled_widget)
@@ -243,6 +261,7 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self.addInputWidget(self._line_width_widget_labelled_widget, self.setGridLineWidth)
         self.addInputWidget(self._draw_mode_widget_labelled_widget, self.setGridDrawMode)
         self.addInputWidget(self._color_labelled_widget)
+        self.addInputWidget(self._align_offset_widget_labelled_widget)
 
     def setGridColorR(self, widget, value):
         color = GridUtils.color()
@@ -276,6 +295,12 @@ class GridGUIWidget(FrameInputWidgetContainer):
     def setGridRadius(self, widget, value):
         GridUtils.setRadius(int(value))
 
+    def setAlignOffsetX(self, widget, value):
+        GridUtils.setAlignOffsetX(int(value))
+
+    def setAlignOffsetY(self, widget, value):
+        GridUtils.setAlignOffsetY(int(value))
+
     # Todo: Update for LinkConnectionLayer, not sure if necessary... but would be nice
     """ This is dynamically drawn... so would need to do a hack registry
     See in the LinkConnectionLayer Overrides
@@ -285,12 +310,6 @@ class GridGUIWidget(FrameInputWidgetContainer):
 
     def setGridSizeY(self, widget, value):
         GridUtils.setGridSizeY(int(value))
-
-        # update floating node layer grid size
-        nodegraph_widget = getActiveNodegraphWidget()
-        floating_node_layer = nodegraph_widget.getLayerByName("Floating Nodes")
-        module = inspect.getmodule(floating_node_layer)
-        module.GRIDSIZEY = int(value)
 
 
 class GridUtils(object):
@@ -349,6 +368,25 @@ class GridUtils(object):
         GridUtils.updateNodegraph()
 
     """ PROPERTIES """
+    @staticmethod
+    def alignOffsetX():
+        return KatanaPrefs[ALIGN_X_OFFSET_PREF_NAME]
+
+    @staticmethod
+    def setAlignOffsetX(align_offset):
+        KatanaPrefs[ALIGN_X_OFFSET_PREF_NAME] = align_offset
+        KatanaPrefs.commit()
+
+
+    @staticmethod
+    def alignOffsetY():
+        return KatanaPrefs[ALIGN_Y_OFFSET_PREF_NAME]
+
+    @staticmethod
+    def setAlignOffsetY(align_offset):
+        KatanaPrefs[ALIGN_Y_OFFSET_PREF_NAME] = align_offset
+        KatanaPrefs.commit()
+
     @staticmethod
     def color():
         return [*KatanaPrefs[GRID_COLOR_PREF_NAME]]
@@ -481,10 +519,13 @@ def installGridLayer(**kwargs):
     enabled = True
     grid_size_x = 200
     grid_size_y = 100
+    align_offset_x = 1
+    align_offset_y = 1
     color = (0.5, 0.5, 1, 0.3)
     radius = 5
     line_width = 1
     draw_mode = 1
+
 
     # setup preferences
     KatanaPrefs.declareGroupPref(GRID_GROUP_PREF_NAME)
@@ -508,6 +549,9 @@ def installGridLayer(**kwargs):
     GridUtils.setGridSizeX(grid_size_x)
     KatanaPrefs.declareIntPref(GRID_SIZE_Y_PREF_NAME, grid_size_y, helpText="Determines the grid y spacing")
     GridUtils.setGridSizeY(grid_size_y)
+    KatanaPrefs.declareIntPref(ALIGN_X_OFFSET_PREF_NAME, align_offset_x, helpText="Determines how many grid units to space the nodes during alignment")
+    KatanaPrefs.declareIntPref(ALIGN_Y_OFFSET_PREF_NAME, align_offset_y, helpText="Determines how many grid units to space the nodes during alignment")
+
     #
     #
     def gridPrefChangedEvent(*args, **kwargs):

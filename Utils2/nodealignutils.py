@@ -656,14 +656,15 @@ def ironNodes():
 """ ALIGNMENT """
 class AlignUtils(object):
     def __init__(self):
-        from MonkeyPatches.Nodegraph.gridLayer import GRID_SIZE_X_PREF_NAME, GRID_SIZE_Y_PREF_NAME
+        from MonkeyPatches.Nodegraph.gridLayer import (
+            GRID_SIZE_X_PREF_NAME, GRID_SIZE_Y_PREF_NAME, ALIGN_X_OFFSET_PREF_NAME, ALIGN_Y_OFFSET_PREF_NAME)
 
         self._grid_size_x = KatanaPrefs[GRID_SIZE_X_PREF_NAME]
         self._grid_size_y = KatanaPrefs[GRID_SIZE_Y_PREF_NAME]
 
         # number of grid units to offset by
-        GRID_SPACE_X = 1
-        GRID_SPACE_Y = 1
+        GRID_SPACE_X = KatanaPrefs[ALIGN_X_OFFSET_PREF_NAME]
+        GRID_SPACE_Y = KatanaPrefs[ALIGN_Y_OFFSET_PREF_NAME]
 
         self._grid_offset_x = self._grid_size_x * GRID_SPACE_X
         self._grid_offset_y = (self._grid_size_y * GRID_SPACE_Y) * -1
