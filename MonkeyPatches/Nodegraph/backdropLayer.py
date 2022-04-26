@@ -1,4 +1,18 @@
-from OpenGL.GL import GL_BLEND, glBegin, glColor4f, glDisable, glEnable, glEnd, glVertex2f, GL_POINTS, glPointSize, GL_TRIANGLES, glLineWidth, GL_LINES
+from OpenGL.GL import (
+    GL_BLEND,
+    glBegin,
+    glColor4f,
+    glDisable,
+    glEnable,
+    glEnd,
+    glVertex2f,
+    GL_POINTS,
+    glPointSize,
+    GL_TRIANGLES,
+    glLineWidth,
+    GL_LINES,
+    GL_TRIANGLE_FAN
+)
 from qtpy.QtWidgets import QApplication
 from qtpy.QtCore import Qt
 
@@ -19,13 +33,16 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
     @staticmethod
     def pickTriangleColor(quadrant_entered, quadrant_to_color):
         """ Determines the color that should be drawn"""
+        default_color = (0.5, 0.5, 0.5, 1)
         if QApplication.keyboardModifiers() == Qt.AltModifier:
             if quadrant_entered == quadrant_to_color:
                 glColor4f(0.5, 0.5, 1, 1)
             elif quadrant_entered == nodegraphutils.CENTER:
                 glColor4f(0.5, 0.5, 1, 1)
             else:
-                glColor4f(1, 1, 1, 0.2)
+                glColor4f(*default_color)
+        else:
+            glColor4f(*default_color)
 
     def paintGL(self):
         # get attrs
@@ -38,7 +55,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         zoom = self.layerStack().getViewScale()[0]
         x_offset = pos_x_offset + (-cam_x_pos * zoom)
         y_offset = pos_y_offset + (-cam_y_pos * zoom)
-        size = 30
+
         resize_active = widgetutils.katanaMainWindow()._backdrop_resize_active
         resize_backdrop_attrs = widgetutils.katanaMainWindow()._backdrop_orig_attrs
 
@@ -66,82 +83,101 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         # get backdrop sizes
         node_width = attrs["ns_sizeX"]
         node_height = attrs["ns_sizeY"]
-        node_x_pos = NodegraphAPI.GetNodePosition(backdrop_node)[0] * zoom
-        node_y_pos = NodegraphAPI.GetNodePosition(backdrop_node)[1] * zoom
+        indicator_x_size = node_width * 0.05
+        indicator_y_size = node_height * 0.05
+        indicator_width = 6
+        i = indicator_width * 0.5
+        node_x_pos = NodegraphAPI.GetNodePosition(backdrop_node)[0]
+        node_y_pos = NodegraphAPI.GetNodePosition(backdrop_node)[1]
 
-        left = (NodegraphAPI.GetNodePosition(backdrop_node)[0] - (node_width * 0.5))
-        right = (NodegraphAPI.GetNodePosition(backdrop_node)[0] + (node_width * 0.5))
-        bottom = (NodegraphAPI.GetNodePosition(backdrop_node)[1] - (node_height * 0.5))
-        top = (NodegraphAPI.GetNodePosition(backdrop_node)[1] + (node_height * 0.5))
+        left = (node_x_pos - (node_width * 0.5))
+        right = (node_x_pos + (node_width * 0.5))
+        bottom = (node_y_pos - (node_height * 0.5))
+        top = (node_y_pos + (node_height * 0.5))
 
         # draw point at location
         glEnable(GL_BLEND)
-        glColor4f(1, 1, 1, 0.2)
         glPointSize(20)
+        glLineWidth(indicator_width)
 
         # Draw top right
-        glBegin(GL_TRIANGLES)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.TOPRIGHT)
-        glVertex2f((zoom * right) + x_offset, (zoom * top) + y_offset)
-        glVertex2f(zoom * (right - size) + x_offset, (zoom * top) + y_offset)
-        glVertex2f((zoom * right) + x_offset, zoom * (top - size) + y_offset)
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(zoom * (right + i) + x_offset, zoom * (top + i) + y_offset)
+        glVertex2f(zoom * (right - indicator_x_size) + x_offset, zoom * (top + i) + y_offset)
+        glVertex2f(zoom * (right - indicator_x_size) + x_offset, zoom * (top - i) + y_offset)
+        glVertex2f(zoom * (right - i) + x_offset, zoom * (top- i) + y_offset)
+        glVertex2f(zoom * (right - i) + x_offset, zoom * (top - indicator_y_size) + y_offset)
+        glVertex2f(zoom * (right + i) + x_offset, zoom * (top - indicator_y_size) + y_offset)
         glEnd()
 
         # Draw Top
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.TOP)
-        glBegin(GL_POINTS)
-        glVertex2f(node_x_pos + x_offset, (zoom * top) + y_offset)
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(zoom * (node_x_pos - indicator_x_size) + x_offset, zoom * (top + i) + y_offset)
+        glVertex2f(zoom * (node_x_pos + indicator_x_size) + x_offset, zoom * (top + i) + y_offset)
+        glVertex2f(zoom * (node_x_pos + indicator_x_size) + x_offset, zoom * (top - i) + y_offset)
+        glVertex2f(zoom * (node_x_pos - indicator_x_size) + x_offset, zoom * (top - i) + y_offset)
         glEnd()
 
         # Draw top left
-        glBegin(GL_TRIANGLES)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.TOPLEFT)
-        glVertex2f((zoom * left) + x_offset, (zoom * top) + y_offset)
-        glVertex2f(zoom * (left + size) + x_offset, (zoom * top) + y_offset)
-        glVertex2f((zoom * left) + x_offset, zoom * (top - size) + y_offset)
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(zoom * (left - i) + x_offset, zoom * (top + i) + y_offset)
+        glVertex2f(zoom * (left + indicator_x_size) + x_offset, zoom * (top + i) + y_offset)
+        glVertex2f(zoom * (left + indicator_x_size) + x_offset, zoom * (top - i) + y_offset)
+        glVertex2f(zoom * (left + i) + x_offset, zoom * (top - i) + y_offset)
+        glVertex2f(zoom * (left + i) + x_offset, zoom * (top - indicator_y_size) + y_offset)
+        glVertex2f(zoom * (left - i) + x_offset, zoom * (top - indicator_y_size) + y_offset)
         glEnd()
 
-        # Draw Left
+        # aaa Draw Left
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.LEFT)
-        glBegin(GL_POINTS)
-        glVertex2f((zoom * left) + x_offset, node_y_pos + y_offset)
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(zoom * (left - i) + x_offset, zoom * (node_y_pos - indicator_y_size) + y_offset)
+        glVertex2f(zoom * (left + i) + x_offset, zoom * (node_y_pos - indicator_y_size) + y_offset)
+        glVertex2f(zoom * (left + i) + x_offset, zoom * (node_y_pos + indicator_y_size) + y_offset)
+        glVertex2f(zoom * (left - i) + x_offset, zoom * (node_y_pos + indicator_y_size) + y_offset)
         glEnd()
 
         # Draw bot left
-        glBegin(GL_TRIANGLES)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.BOTLEFT)
-        glVertex2f((zoom * left) + x_offset, (zoom * bottom) + y_offset)
-        glVertex2f(zoom * (left + size) + x_offset, (zoom * bottom) + y_offset)
-        glVertex2f((zoom * left) + x_offset, zoom * (bottom + size) + y_offset)
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(zoom * (left - i) + x_offset, zoom * (bottom - i) + y_offset)
+        glVertex2f(zoom * (left + indicator_x_size) + x_offset, zoom * (bottom - i) + y_offset)
+        glVertex2f(zoom * (left + indicator_x_size) + x_offset, zoom * (bottom + i) + y_offset)
+        glVertex2f(zoom * (left + i) + x_offset, zoom * (bottom + i) + y_offset)
+        glVertex2f(zoom * (left + i) + x_offset, zoom * (bottom + indicator_y_size) + y_offset)
+        glVertex2f(zoom * (left - i) + x_offset, zoom * (bottom + indicator_y_size) + y_offset)
         glEnd()
 
         # draw bot
+        glBegin(GL_TRIANGLE_FAN)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.BOT)
-        glBegin(GL_POINTS)
-        glVertex2f(node_x_pos + x_offset, (zoom * bottom) + y_offset)
+        glVertex2f(zoom * (node_x_pos - indicator_x_size) + x_offset, zoom * (bottom + i) + y_offset)
+        glVertex2f(zoom * (node_x_pos + indicator_x_size) + x_offset, zoom * (bottom + i) + y_offset)
+        glVertex2f(zoom * (node_x_pos + indicator_x_size) + x_offset, zoom * (bottom - i) + y_offset)
+        glVertex2f(zoom * (node_x_pos - indicator_x_size) + x_offset, zoom * (bottom - i) + y_offset)
         glEnd()
 
         # Draw bot right
-        glBegin(GL_TRIANGLES)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.BOTRIGHT)
-        glVertex2f((zoom * right) + x_offset, (zoom * bottom) + y_offset)
-        glVertex2f(zoom * (right - size) + x_offset, (zoom * bottom) + y_offset)
-        glVertex2f((zoom * right) + x_offset, zoom * (bottom + size) + y_offset)
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(zoom * (right + i) + x_offset, zoom * (bottom - i) + y_offset)
+        glVertex2f(zoom * (right - indicator_x_size) + x_offset, zoom * (bottom - i) + y_offset)
+        glVertex2f(zoom * (right - indicator_x_size) + x_offset, zoom * (bottom + i) + y_offset)
+        glVertex2f(zoom * (right - i) + x_offset, zoom * (bottom + i) + y_offset)
+        glVertex2f(zoom * (right - i) + x_offset, zoom * (bottom + indicator_y_size) + y_offset)
+        glVertex2f(zoom * (right + i) + x_offset, zoom * (bottom + indicator_y_size) + y_offset)
         glEnd()
 
-        # draw right
+        # aaa draw right
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.RIGHT)
-        glBegin(GL_POINTS)
-        glVertex2f((zoom * right) + x_offset, node_y_pos+ y_offset)
-        glEnd()
-
-        # Draw center dot
-        BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.CENTER)
-        glBegin(GL_POINTS)
-        glVertex2f(
-            node_x_pos + x_offset,
-            node_y_pos + y_offset
-        )
+        glBegin(GL_TRIANGLE_FAN)
+        glVertex2f(zoom * (right - i) + x_offset, zoom * (node_y_pos - indicator_y_size) + y_offset)
+        glVertex2f(zoom * (right + i) + x_offset, zoom * (node_y_pos - indicator_y_size) + y_offset)
+        glVertex2f(zoom * (right + i) + x_offset, zoom * (node_y_pos + indicator_y_size) + y_offset)
+        glVertex2f(zoom * (right - i) + x_offset, zoom * (node_y_pos + indicator_y_size) + y_offset)
         glEnd()
 
         # draw quadrant lines
@@ -163,7 +199,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glVertex2f((zoom * left) + x_offset, zoom * (bottom + height_offset) + y_offset)
         glVertex2f((zoom * right) + x_offset, zoom * (bottom + height_offset) + y_offset)
         glEnd()
-
+        glLineWidth(1)
         glDisable(GL_BLEND)
 
 

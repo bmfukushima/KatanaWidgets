@@ -20,6 +20,7 @@ def isCursorOverNodeGraphWidget():
 
     If it is, it will return the nodegraph widget.  If it is not, it will return None"""
     if not hasattr(getWidgetUnderCursor(), "__module__"): return False
+
     if getWidgetUnderCursor().__module__.split(".")[-1] != "NodegraphWidget": return False
     return getWidgetUnderCursor()
 
