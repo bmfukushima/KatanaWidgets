@@ -452,10 +452,14 @@ def nodeInteractionLayerMouseMoveEvent(func):
                 resizeBackdropNode()
 
             if event.buttons() == Qt.LeftButton:
-                if not self.layerStack().getLayerByName("Floating Nodes").enabled():
-                    backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
-                    nodes_to_float = nodegraphutils.getBackdropChildren(backdrop_node)
-                    nodeutils.floatNodes(nodes_to_float)
+                # check if floating, or node hit
+                if self.layerStack().getLayerByName("Floating Nodes").enabled(): return func(self, event)
+                if nodegraphutils.nodeClicked(self.layerStack()): return func(self, event)
+
+                # float backdrop and children
+                backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
+                nodes_to_float = nodegraphutils.getBackdropChildren(backdrop_node)
+                nodeutils.floatNodes(nodes_to_float)
 
         return func(self, event)
 
@@ -479,10 +483,7 @@ def nodeInteractionMousePressEvent(func):
         backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
         if backdrop_node:
             # Bypass if user has clicked on a node
-            mouse_pos = self.layerStack().mapFromQTLocalToWorld(self.layerStack().getMousePos().x(), self.layerStack().getMousePos().y())
-            hits = self.layerStack().hitTestPoint(mouse_pos)
-            hit_types = set((x[0] for x in hits))
-            if "NODE" in hit_types: return func(self, event)
+            if nodegraphutils.nodeClicked(self.layerStack()): return func(self, event)
 
             # move backdrop
             if event.modifiers() == (Qt.ControlModifier) and event.button() == Qt.LeftButton:

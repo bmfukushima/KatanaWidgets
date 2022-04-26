@@ -37,26 +37,30 @@ def getBackdropArea(backdrop_node):
     return width * height
 
 
-def getBackdropNodeCorners(backdrop_node):
+def getNodeCorners(node):
     """ Returns the 4 corners of the backdrop node provided
 
     Returns (float, float, float, float): left, top, right, bottom"""
-    attrs = backdrop_node.getAttributes()
-    node_pos = NodegraphAPI.GetNodePosition(backdrop_node)
-    try:
-        width = attrs["ns_sizeX"]
-        height = attrs["ns_sizeY"]
-    except KeyError:
-        width = 128
-        height = 64
 
-    """ Calculate positions, the points are based off the standard cartesian
-    system, where 0 is in the upper right, and 3 is in the bottom right"""
-    left = node_pos[0] - (width * 0.5)
-    top = node_pos[1] + (height * 0.5)
-    right = node_pos[0] + (width * 0.5)
-    bottom = node_pos[1] - (height * 0.5)
+    # Is backdrop
+    if node.getType() == "Backdrop":
+        attrs = node.getAttributes()
+        node_pos = NodegraphAPI.GetNodePosition(node)
+        try:
+            width = attrs["ns_sizeX"]
+            height = attrs["ns_sizeY"]
+        except KeyError:
+            width = 128
+            height = 64
 
+        """ Calculate positions, the points are based off the standard cartesian
+        system, where 0 is in the upper right, and 3 is in the bottom right"""
+        left = node_pos[0] - (width * 0.5)
+        top = node_pos[1] + (height * 0.5)
+        right = node_pos[0] + (width * 0.5)
+        bottom = node_pos[1] - (height * 0.5)
+    else:
+        left, bottom, right, top = DrawingModule.nodeWorld_getBoundsOfListOfNodes([node], addPadding=False)
     return left, bottom, right, top
 
 
@@ -82,11 +86,11 @@ def getIntersectingBackdropNodes(backdrop_node):
     #     else:
     #         return True
 
-    orig_backdrop_node = getBackdropNodeCorners(backdrop_node)
+    orig_backdrop_node = getNodeCorners(backdrop_node)
     backdrop_nodes = getActiveBackdropNodes()
     intersecting_backdrop_nodes = []
     for node in backdrop_nodes:
-        backdrop_to_check = getBackdropNodeCorners(node)
+        backdrop_to_check = getNodeCorners(node)
         if getBackdropIntersectionAmount(orig_backdrop_node, backdrop_to_check):
             intersecting_backdrop_nodes.append(node)
 
@@ -238,46 +242,28 @@ def getBackdropQuadrantSelected(backdrop_node):
     return None
 
 
-def getBackdropChildren(backdrop_node):
-    """ Returns a set of all of the children that are contained inside of the backdrop node
-
-    Args:
-        backdrop_node (Node): Backdrop node to check
-
-    Returns (set)
-        """
-    child_nodes = findBackdropChildren(backdrop_node)
-    child_backdrop_nodes = {childNode for childNode in child_nodes if childNode.getBaseType() == 'Backdrop' if childNode.getBaseType() == 'Backdrop'}
-    descendantNodes = set(child_nodes) - child_backdrop_nodes
-    backdrop_node_sq_area = calcNodeAreaSq(backdrop_node)
-    for child_backdrop_node in child_backdrop_nodes:
-        child_node_sq_area = calcNodeAreaSq(child_backdrop_node)
-        if child_node_sq_area < backdrop_node_sq_area:
-            descendantNodes.add(child_backdrop_node)
-            descendantNodes |= getBackdropChildren(child_backdrop_node)
-
-    descendantNodes.add(backdrop_node)
-    return descendantNodes
-
-
-def findBackdropChildren(backdrop_node):
-    """ Returns a list of all of the children underneath the backdrop node provided
-
-    Args:
-        backdrop_node (Node): node to get children of
-
-    Returns (list): of nodes
-    """
+def getBackdropChildren(backdrop_node, include_backdrop=True):
     from .widgetutils import getActiveNodegraphWidget
+
+    # get all children
     nodegraph_widget = getActiveNodegraphWidget()
-    l, b, r, t = DrawingModule.nodeWorld_getBoundsOfListOfNodes([backdrop_node], addPadding=False)
-    child_nodes = nodegraph_widget.hitTestBox((l, b), (r, t), viewNode=backdrop_node.getParent())
-    return [ node for node in child_nodes if node is not None ]
+    if not nodegraph_widget: return
+    root_node = nodegraph_widget.getGroupNodeUnderMouse()
+    children = root_node.getChildren()
+    l1, b1, r1, t1 = getNodeCorners(backdrop_node)
 
+    # initialize backdrop children list
+    backdrop_children = []
+    if include_backdrop:
+        backdrop_children.append(backdrop_node)
 
-def calcNodeAreaSq(node):
-    l, b, r, t = DrawingModule.nodeWorld_getBoundsOfListOfNodes([node], addPadding=False)
-    return (r - l) ** 2 + (t - b) ** 2
+    # hit test children to backdrop area
+    for child in children:
+        l2, b2, r2, t2 = getNodeCorners(child)
+        if l1 < l2 < r2 < r1 and b1 < b2 < t2 < t1:
+            backdrop_children.append(child)
+
+    return backdrop_children
 
 
 def getNearestGridPoint(x, y):
@@ -323,6 +309,13 @@ def getNodegraphCursorPos():
 
     return cursor_pos, group_node
 
+
+def nodeClicked(nodegraph_widget):
+    # Bypass if user has clicked on a node
+    mouse_pos = nodegraph_widget.mapFromQTLocalToWorld(nodegraph_widget.getMousePos().x(), nodegraph_widget.getMousePos().y())
+    hits = nodegraph_widget.hitTestPoint(mouse_pos)
+    hit_types = set((x[0] for x in hits))
+    if "NODE" in hit_types: return True
 
 def updateBackdropDisplay(node, attrs=None):
     """ Hacky method to refresh a backdrop nodes by selecting/unselecting it
