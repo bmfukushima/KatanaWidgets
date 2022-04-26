@@ -343,25 +343,34 @@ class PortConnector():
 
             # SINGULAR INPUT PORT
             elif len(node.getInputPorts()) == 1:
-                input_port = node.getInputPortByIndex(0)
-                is_connected = portutils.isPortConnected(input_port)
+                # MULTIPLE INPUT PORTS
+                if node.getType() in nodeutils.dynamicInputPortNodes():
+                    katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
+                        node, port_type=INPUT_PORT, selected_port=base_ports[0], display_warning=display_warning,
+                        is_recursive_selection=is_recursive_selection)
+                    katanaMainWindow()._port_popup_menu.show()
+                    centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
 
-                # prompt user to connect
-                if display_warning and is_connected:
-
-                    katanaMainWindow()._display_warning_widget = OverridePortWarningButtonPopupWidget(
-                        node, input_port, base_ports[0], is_recursive_selection=is_recursive_selection)
-                    katanaMainWindow()._display_warning_widget.show()
-                    centerWidgetOnCursor(katanaMainWindow()._display_warning_widget)
-
-                # automagically connect
+                # NORMAL NODE
                 else:
-                    for base_port in base_ports:
-                        input_port.connect(base_port)
-                    PortConnector.hideNoodle()
+                    input_port = node.getInputPortByIndex(0)
+                    is_connected = portutils.isPortConnected(input_port)
 
-                    if is_recursive_selection:
-                        PortConnector.actuateSelection(node=node)
+                    # prompt user to connect
+                    if display_warning and is_connected:
+                        katanaMainWindow()._display_warning_widget = OverridePortWarningButtonPopupWidget(
+                            node, input_port, base_ports[0], is_recursive_selection=is_recursive_selection)
+                        katanaMainWindow()._display_warning_widget.show()
+                        centerWidgetOnCursor(katanaMainWindow()._display_warning_widget)
+
+                    # automagically connect
+                    else:
+                        for base_port in base_ports:
+                            input_port.connect(base_port)
+                        PortConnector.hideNoodle()
+
+                        if is_recursive_selection:
+                            PortConnector.actuateSelection(node=node)
 
             # MULTIPLE INPUT PORTS
             elif 1 < len(node.getInputPorts()):

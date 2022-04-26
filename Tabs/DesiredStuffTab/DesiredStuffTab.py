@@ -119,44 +119,47 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
             # get object name
             if arg[0] in ["node_delete", "parameter_deleteChild"]:
                 Utils.UndoStack.OpenGroup("Delete Node Graph Pins")
-                if arg[0] == "node_delete":
-                    node_name = arg[2]["oldName"]
-                    IS_NODE = True
-                if arg[0] == "parameter_deleteChild":
-                    param_name = arg[2]["paramName"] + "." + arg[2]["childName"]
-                    node_name = arg[2]["node"].getName()
-                    IS_NODE = False
+                try:
+                    if arg[0] == "node_delete":
+                        node_name = arg[2]["oldName"]
+                        IS_NODE = True
+                    if arg[0] == "parameter_deleteChild":
+                        param_name = arg[2]["paramName"] + "." + arg[2]["childName"]
+                        node_name = arg[2]["node"].getName()
+                        IS_NODE = False
 
-                # update active displays
-                for desirable_stuff_widget in self.desiredStuffFrame().activeDelegateWidgets():
-                    # update internal data
-                    for index in desirable_stuff_widget.getAllIndexes():
-                        item = index.internalPointer()
-                        if item.getArg("node") == node_name:
-                            if IS_NODE:
-                                desirable_stuff_widget.deleteItem(item, event_update=True)
-                            else:
-                                if item.hasArg("param"):
-                                    if item.getArg("param") == param_name:
-                                        desirable_stuff_widget.deleteItem(item, event_update=True)
+                    # update active displays
+                    for desirable_stuff_widget in self.desiredStuffFrame().activeDelegateWidgets():
+                        # update internal data
+                        for index in desirable_stuff_widget.getAllIndexes():
+                            item = index.internalPointer()
+                            if item.getArg("node") == node_name:
+                                if IS_NODE:
+                                    desirable_stuff_widget.deleteItem(item, event_update=True)
+                                else:
+                                    if item.hasArg("param"):
+                                        if item.getArg("param") == param_name:
+                                            desirable_stuff_widget.deleteItem(item, event_update=True)
 
-                # update project settings meta data
-                for child in DesiredStuffTab.desiredStuffParam().getChildren():
-                    data = json.loads(child.getValue(0))
-                    num_children = len(data["data"])
-                    for i, object_data in enumerate(reversed(data["data"])):
-                        i = num_children - i - 1
-                        if object_data["node"] == node_name:
-                            if IS_NODE:
-                                del data["data"][i]
-                            else:
-                                if object_data["param"] == param_name:
-                                    del data["data"][i]
+                    # update project settings meta data
+                    for child in DesiredStuffTab.desiredStuffParam().getChildren():
+                        if child:
+                            data = json.loads(child.getValue(0))
+                            num_children = len(data["data"])
+                            for i, object_data in enumerate(reversed(data["data"])):
+                                i = num_children - i - 1
+                                if object_data["node"] == node_name:
+                                    if IS_NODE:
+                                        del data["data"][i]
+                                    else:
+                                        if object_data["param"] == param_name:
+                                            del data["data"][i]
 
-                    child.setValue(json.dumps(data), 0)
-
-                self.desiredStuffFrame().updateDelegateDisplay()
-                Utils.UndoStack.CloseGroup()
+                            child.setValue(json.dumps(data), 0)
+    
+                    self.desiredStuffFrame().updateDelegateDisplay()
+                finally:
+                    Utils.UndoStack.CloseGroup()
 
     def updateObjectNameEvent(self, args):
         """ Updates the desired objects names when a nodes name is changed """

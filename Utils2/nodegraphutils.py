@@ -148,12 +148,13 @@ def getBackdropNodeUnderCursor():
         bottom = node_pos[1] - (height * 0.5)
 
         # position test
-        if left < cursor_pos.x() and cursor_pos.x() < right and bottom < cursor_pos.y() and cursor_pos.y() < top:
-            # depth test
-            if "ns_zDepth" in attrs:
-                if depth < attrs["ns_zDepth"]:
-                    active_backdrop_node = backdrop_node
-                    depth = attrs["ns_zDepth"]
+        if cursor_pos:
+            if left < cursor_pos.x() and cursor_pos.x() < right and bottom < cursor_pos.y() and cursor_pos.y() < top:
+                # depth test
+                if "ns_zDepth" in attrs:
+                    if depth < attrs["ns_zDepth"]:
+                        active_backdrop_node = backdrop_node
+                        depth = attrs["ns_zDepth"]
 
     return active_backdrop_node
 

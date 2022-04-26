@@ -869,7 +869,7 @@ class AlignUtils(object):
                     is_valid = False
                     break
             if is_valid:
-                nodes.append(backdrop_node)
+                nodes.insert(0, backdrop_node)
 
         return nodes
 
