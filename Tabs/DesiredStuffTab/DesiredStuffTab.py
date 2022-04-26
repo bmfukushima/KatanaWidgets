@@ -156,7 +156,7 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
                                             del data["data"][i]
 
                             child.setValue(json.dumps(data), 0)
-    
+
                     self.desiredStuffFrame().updateDelegateDisplay()
                 finally:
                     Utils.UndoStack.CloseGroup()

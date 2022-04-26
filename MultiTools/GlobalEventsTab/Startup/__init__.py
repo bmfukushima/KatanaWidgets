@@ -7,6 +7,8 @@ PARAM_LOCATION = "KatanaBebop.GlobalEventsData"
 def cleanupGlobalEvents(**kwargs):
     """ Destroys all global events"""
     from Katana import UI4, NodegraphAPI
+    Utils.UndoStack.DisableCapture()
+
     # get attrs
     node = NodegraphAPI.GetRootNode()
     events_data = node.getParameter(PARAM_LOCATION + ".data")
@@ -27,6 +29,7 @@ def cleanupGlobalEvents(**kwargs):
         paramutils.createParamAtLocation(PARAM_LOCATION + ".data", node, paramutils.STRING, initial_value="{}")
         paramutils.createParamAtLocation(PARAM_LOCATION + ".scripts", node, paramutils.GROUP)
 
+    Utils.UndoStack.EnableCapture()
 
 def createDataParamsOnSceneLoad(*args, **kwargs):
     """Creates the parameters that store the event data on scene load/new scene """
