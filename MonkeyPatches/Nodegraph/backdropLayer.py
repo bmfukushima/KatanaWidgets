@@ -83,24 +83,59 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         # get backdrop sizes
         node_width = attrs["ns_sizeX"]
         node_height = attrs["ns_sizeY"]
-        indicator_x_size = node_width * 0.05
-        indicator_y_size = node_height * 0.05
-        indicator_width = 6
-        i = indicator_width * 0.5
         node_x_pos = NodegraphAPI.GetNodePosition(backdrop_node)[0]
         node_y_pos = NodegraphAPI.GetNodePosition(backdrop_node)[1]
+
+        width_offset = node_width / 3
+        height_offset = node_height / 3
 
         left = (node_x_pos - (node_width * 0.5))
         right = (node_x_pos + (node_width * 0.5))
         bottom = (node_y_pos - (node_height * 0.5))
         top = (node_y_pos + (node_height * 0.5))
 
+        # get indicator sizes
+        indicator_x_size = node_width * 0.05
+        indicator_y_size = node_height * 0.05
+        i = 3
+        ii = i * 2
+        iii = i * 3
+        if indicator_x_size < 2 * ii:
+            indicator_x_size = 2 * ii
+        if indicator_y_size < 2 * ii:
+            indicator_y_size = 2 * ii
+
         # draw point at location
         glEnable(GL_BLEND)
         glPointSize(20)
-        glLineWidth(indicator_width)
+        glLineWidth(ii)
 
-        # Draw top right
+        # DRAW CENTER
+        glBegin(GL_TRIANGLES)
+        BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.CENTER)
+        # CENTER | TOP LEFT
+        glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (top - height_offset) + y_offset)
+        glVertex2f(zoom * (right - width_offset - iii) + x_offset, zoom * (top - height_offset) + y_offset)
+        glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (top - height_offset - iii) + y_offset)
+
+        # CENTER | TOP LEFT
+        glVertex2f(zoom * (left + width_offset) + x_offset, zoom * (top - height_offset) + y_offset)
+        glVertex2f(zoom * (left + width_offset + iii) + x_offset, zoom * (top - height_offset) + y_offset)
+        glVertex2f(zoom * (left + width_offset) + x_offset, zoom * (top - height_offset - iii) + y_offset)
+
+        # CENTER | BOT LEFT
+        glVertex2f(zoom * (left + width_offset) + x_offset, zoom * (bottom + height_offset) + y_offset)
+        glVertex2f(zoom * (left + width_offset + iii) + x_offset, zoom * (bottom + height_offset) + y_offset)
+        glVertex2f(zoom * (left + width_offset) + x_offset, zoom * (bottom + height_offset + iii) + y_offset)
+
+        # CENTER | BOT RIGHT
+        glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (bottom + height_offset) + y_offset)
+        glVertex2f(zoom * (right - width_offset - iii) + x_offset, zoom * (bottom + height_offset) + y_offset)
+        glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (bottom + height_offset + iii) + y_offset)
+
+        glEnd()
+
+        # TOP RIGHT
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.TOPRIGHT)
         glBegin(GL_TRIANGLE_FAN)
         glVertex2f(zoom * (right + i) + x_offset, zoom * (top + i) + y_offset)
@@ -111,7 +146,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glVertex2f(zoom * (right + i) + x_offset, zoom * (top - indicator_y_size) + y_offset)
         glEnd()
 
-        # Draw Top
+        # TOP
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.TOP)
         glBegin(GL_TRIANGLE_FAN)
         glVertex2f(zoom * (node_x_pos - indicator_x_size) + x_offset, zoom * (top + i) + y_offset)
@@ -120,7 +155,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glVertex2f(zoom * (node_x_pos - indicator_x_size) + x_offset, zoom * (top - i) + y_offset)
         glEnd()
 
-        # Draw top left
+        # TOP LEFT
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.TOPLEFT)
         glBegin(GL_TRIANGLE_FAN)
         glVertex2f(zoom * (left - i) + x_offset, zoom * (top + i) + y_offset)
@@ -131,7 +166,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glVertex2f(zoom * (left - i) + x_offset, zoom * (top - indicator_y_size) + y_offset)
         glEnd()
 
-        # aaa Draw Left
+        # LEFT
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.LEFT)
         glBegin(GL_TRIANGLE_FAN)
         glVertex2f(zoom * (left - i) + x_offset, zoom * (node_y_pos - indicator_y_size) + y_offset)
@@ -140,7 +175,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glVertex2f(zoom * (left - i) + x_offset, zoom * (node_y_pos + indicator_y_size) + y_offset)
         glEnd()
 
-        # Draw bot left
+        # BOT LEFT
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.BOTLEFT)
         glBegin(GL_TRIANGLE_FAN)
         glVertex2f(zoom * (left - i) + x_offset, zoom * (bottom - i) + y_offset)
@@ -151,7 +186,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glVertex2f(zoom * (left - i) + x_offset, zoom * (bottom + indicator_y_size) + y_offset)
         glEnd()
 
-        # draw bot
+        # BOT
         glBegin(GL_TRIANGLE_FAN)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.BOT)
         glVertex2f(zoom * (node_x_pos - indicator_x_size) + x_offset, zoom * (bottom + i) + y_offset)
@@ -160,7 +195,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glVertex2f(zoom * (node_x_pos - indicator_x_size) + x_offset, zoom * (bottom - i) + y_offset)
         glEnd()
 
-        # Draw bot right
+        # BOT RIGHT
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.BOTRIGHT)
         glBegin(GL_TRIANGLE_FAN)
         glVertex2f(zoom * (right + i) + x_offset, zoom * (bottom - i) + y_offset)
@@ -171,7 +206,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glVertex2f(zoom * (right + i) + x_offset, zoom * (bottom + indicator_y_size) + y_offset)
         glEnd()
 
-        # aaa draw right
+        # RIGHT
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.RIGHT)
         glBegin(GL_TRIANGLE_FAN)
         glVertex2f(zoom * (right - i) + x_offset, zoom * (node_y_pos - indicator_y_size) + y_offset)
@@ -180,13 +215,11 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glVertex2f(zoom * (right - i) + x_offset, zoom * (node_y_pos + indicator_y_size) + y_offset)
         glEnd()
 
-        # draw quadrant lines
+        # QUADRANT LINES
         glLineWidth(2)
         glColor4f(1, 1, 1, 0.2)
         glBegin(GL_LINES)
 
-        width_offset = node_width / 3
-        height_offset = node_height / 3
         glVertex2f(zoom * (left + width_offset) + x_offset, (zoom * top) + y_offset)
         glVertex2f(zoom * (left + width_offset) + x_offset, (zoom * bottom) + y_offset)
 
@@ -199,6 +232,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glVertex2f((zoom * left) + x_offset, zoom * (bottom + height_offset) + y_offset)
         glVertex2f((zoom * right) + x_offset, zoom * (bottom + height_offset) + y_offset)
         glEnd()
+
         glLineWidth(1)
         glDisable(GL_BLEND)
 
