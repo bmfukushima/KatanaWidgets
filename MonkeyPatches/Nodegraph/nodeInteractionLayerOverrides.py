@@ -498,6 +498,24 @@ def nodeInteractionMousePressEvent(func):
                 attrs["orig_cursor_pos"] = nodegraphutils.getNodegraphCursorPos()[0]
                 widgetutils.katanaMainWindow()._backdrop_orig_attrs = attrs
                 widgetutils.katanaMainWindow()._backdrop_resize_active = True
+                return True
+
+            # Select backdrop and children
+            if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton:
+                # if selected lift
+                if backdrop_node in NodegraphAPI.GetAllSelectedNodes():
+                    nodeutils.floatNodes([backdrop_node])
+                # if not selected, select
+                else:
+                    nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
+                    nodeutils.selectNodes(nodes_to_select, is_exclusive=True)
+                return True
+
+            # Append backdrop and children to current selection
+            if event.modifiers() == Qt.ShiftModifier and event.button() == Qt.LeftButton:
+                nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
+                nodeutils.selectNodes(nodes_to_select)
+                return True
         else:
             # Duplicate nodes
             if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() == Qt.LeftButton:
@@ -659,6 +677,10 @@ def installNodegraphHotkeyOverrides(**kwargs):
         NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processKeyPress)
     nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseButtonDown = nodeInteractionMousePressEvent(
         NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processMouseButtonDown)
+    # has no release...
+    # doesn't matter as this is only setting the backdrop release attr, which won't even work on this layer =\
+    # nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseButtonRelease = nodeInteractionMouseReleaseEvent(
+    #     NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processMouseButtonRelease)
     nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processMouseMove = nodeInteractionLayerMouseMoveEvent(
         NodeGraphViewInteractionLayer._NodeGraphViewInteractionLayer__processMouseMove)
 
