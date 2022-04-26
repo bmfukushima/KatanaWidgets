@@ -24,6 +24,19 @@ def getActiveBackdropNodes():
     active_backdrop_nodes = [backdrop_node for backdrop_node in backdrop_nodes if backdrop_node.getParent() == root_node]
     return list(set(active_backdrop_nodes))
 
+
+def getBackdropArea(backdrop_node):
+    attrs = backdrop_node.getAttributes()
+    try:
+        width = attrs["ns_sizeX"]
+        height = attrs["ns_sizeY"]
+    except KeyError:
+        width = 128
+        height = 64
+
+    return width * height
+
+
 def getBackdropNodeCorners(backdrop_node):
     """ Returns the 4 corners of the backdrop node provided
 
@@ -47,6 +60,14 @@ def getBackdropNodeCorners(backdrop_node):
     return left, bottom, right, top
 
 
+def getBackdropIntersectionAmount(backdrop1, backdrop2):
+    dx = min(backdrop1[2], backdrop2[2]) - max(backdrop1[0], backdrop2[0])
+    dy = min(backdrop1[3], backdrop2[3]) - max(backdrop1[1], backdrop2[1])
+    if (dx >= 0) and (dy >= 0):
+        return dx * dy
+    return None
+
+
 def getIntersectingBackdropNodes(backdrop_node):
     """ Gets all of the backdrop nodes intersecting with node provided
 
@@ -55,22 +76,21 @@ def getIntersectingBackdropNodes(backdrop_node):
 
     Returns (list): of backdrop nodes intersecting the current one
     """
-    def doesBackdropIntersect(R1, R2):
-        if (R1[0]>=R2[2]) or (R1[2]<=R2[0]) or (R1[3]<=R2[1]) or (R1[1]>=R2[3]):
-            return False
-        else:
-            return True
+    # def doesBackdropIntersect(R1, R2):
+    #     if (R1[0]>=R2[2]) or (R1[2]<=R2[0]) or (R1[3]<=R2[1]) or (R1[1]>=R2[3]):
+    #         return False
+    #     else:
+    #         return True
 
     orig_backdrop_node = getBackdropNodeCorners(backdrop_node)
     backdrop_nodes = getActiveBackdropNodes()
     intersecting_backdrop_nodes = []
     for node in backdrop_nodes:
         backdrop_to_check = getBackdropNodeCorners(node)
-        if doesBackdropIntersect(orig_backdrop_node, backdrop_to_check):
+        if getBackdropIntersectionAmount(orig_backdrop_node, backdrop_to_check):
             intersecting_backdrop_nodes.append(node)
 
     return intersecting_backdrop_nodes
-
 
 
 def getBackdropNodesUnderCursor():
@@ -266,7 +286,7 @@ def getNodegraphCursorPos():
     from .widgetutils import getActiveNodegraphWidget
     nodegraph_widget = getActiveNodegraphWidget()
     # get cursor position
-    if not hasattr(nodegraph_widget, "getMousePos"): return
+    if not hasattr(nodegraph_widget, "getMousePos"): return None, None
     cursor_pos = nodegraph_widget.getMousePos()
     group_node = nodegraph_widget.getGroupNodeUnderMouse()
     if not cursor_pos: return QPoint(0, 0), group_node
