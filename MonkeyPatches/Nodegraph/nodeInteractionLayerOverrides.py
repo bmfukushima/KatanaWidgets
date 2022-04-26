@@ -451,6 +451,12 @@ def nodeInteractionLayerMouseMoveEvent(func):
             if event.modifiers() == Qt.AltModifier and event.buttons() == Qt.RightButton:
                 resizeBackdropNode()
 
+            if event.buttons() == Qt.LeftButton:
+                if not self.layerStack().getLayerByName("Floating Nodes").enabled():
+                    backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
+                    nodes_to_float = nodegraphutils.getBackdropChildren(backdrop_node)
+                    nodeutils.floatNodes(nodes_to_float)
+
         return func(self, event)
 
     return __nodeInteractionLayerMouseMoveEvent
