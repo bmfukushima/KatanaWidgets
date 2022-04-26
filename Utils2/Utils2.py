@@ -137,7 +137,7 @@ def isLicenseValid():
             license_files.append(os.environ["KATANABEBOPLICENSE"])
         except KeyError:
             pass
-
+        print(license_files)
         is_license_valid, filepath = checkLicenseFiles(license_files)
         if is_license_valid:
             expiry_date = licenseDate(filepath)

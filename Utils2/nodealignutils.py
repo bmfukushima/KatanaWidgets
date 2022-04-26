@@ -859,12 +859,14 @@ class AlignUtils(object):
         """
         backdrop_nodes = getActiveBackdropNodes()
         for backdrop_node in backdrop_nodes:
-            is_valid = False
+            children = [node for node in getBackdropChildren(backdrop_node) if node.getType() != "Backdrop"]
+            if len(children) == 0: continue
+
+            is_valid = True
             if backdrop_node in nodes: continue
-            for child in getBackdropChildren(backdrop_node):
-                if child == backdrop_node: continue
+            for child in children:
                 if child not in nodes:
-                    is_valid = True
+                    is_valid = False
                     break
             if is_valid:
                 nodes.append(backdrop_node)

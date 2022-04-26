@@ -473,8 +473,7 @@ def nodeInteractionMousePressEvent(func):
         backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
         if backdrop_node:
             # Bypass if user has clicked on a node
-            mouse_pos = self.layerStack().mapFromQTLocalToWorld(
-                self.layerStack().getMousePos().x(), self.layerStack().getMousePos().y())
+            mouse_pos = self.layerStack().mapFromQTLocalToWorld(self.layerStack().getMousePos().x(), self.layerStack().getMousePos().y())
             hits = self.layerStack().hitTestPoint(mouse_pos)
             hit_types = set((x[0] for x in hits))
             if "NODE" in hit_types: return func(self, event)
