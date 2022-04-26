@@ -180,7 +180,7 @@ def floatNodes(node_list):
     """
     from .widgetutils import getActiveNodegraphWidget
     nodegraph_widget = getActiveNodegraphWidget()
-    nodegraph_widget.parent().floatNodes(node_list)
+    nodegraph_widget.parent().floatNodes(list(node_list))
 
 
 def getConnectedNodeChildren(parent_node, port=0):

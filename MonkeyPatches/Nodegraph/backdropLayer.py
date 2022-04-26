@@ -266,6 +266,10 @@ def calculateBackdropZDepth(args):
                     backdrop_node_area_list.append((backdrop_node, nodegraphutils.getBackdropArea(backdrop_node)))
                 backdrop_node_area_list = sortBackdropByArea(backdrop_node_area_list, 1)
 
+                # Need to reselect the backdrops as the get deselected somewhere in here
+                # and I'm to lazy to actually figure this out
+                selected_backdrops = []
+
                 # set backdrops zdepth
                 for i, item in enumerate(backdrop_node_area_list):
                     node = item[0]
@@ -275,10 +279,14 @@ def calculateBackdropZDepth(args):
                     for attr_name, attr_value in node.getAttributes().items():
                         if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
                             new_attrs[attr_name.replace("ns_", "")] = attr_value
+                        if attr_name == "selected":
+                            selected_backdrops.append(node)
 
                     # update backdrops zdepth
                     new_attrs["zDepth"] = i + 1
                     nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
+
+                    nodeutils.selectNodes(selected_backdrops)
 
 
 def installBackdropZDepth(**kwargs):

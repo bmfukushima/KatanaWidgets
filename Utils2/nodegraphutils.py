@@ -239,19 +239,45 @@ def getBackdropQuadrantSelected(backdrop_node):
 
 
 def getBackdropChildren(backdrop_node):
+    """ Returns a set of all of the children that are contained inside of the backdrop node
+
+    Args:
+        backdrop_node (Node): Backdrop node to check
+
+    Returns (set)
+        """
+    child_nodes = findBackdropChildren(backdrop_node)
+    child_backdrop_nodes = {childNode for childNode in child_nodes if childNode.getBaseType() == 'Backdrop' if childNode.getBaseType() == 'Backdrop'}
+    descendantNodes = set(child_nodes) - child_backdrop_nodes
+    backdrop_node_sq_area = calcNodeAreaSq(backdrop_node)
+    for child_backdrop_node in child_backdrop_nodes:
+        child_node_sq_area = calcNodeAreaSq(child_backdrop_node)
+        if child_node_sq_area < backdrop_node_sq_area:
+            descendantNodes.add(child_backdrop_node)
+            descendantNodes |= getBackdropChildren(child_backdrop_node)
+
+    descendantNodes.add(backdrop_node)
+    return descendantNodes
+
+
+def findBackdropChildren(backdrop_node):
+    """ Returns a list of all of the children underneath the backdrop node provided
+
+    Args:
+        backdrop_node (Node): node to get children of
+
+    Returns (list): of nodes
+    """
     from .widgetutils import getActiveNodegraphWidget
     nodegraph_widget = getActiveNodegraphWidget()
+    l, b, r, t = DrawingModule.nodeWorld_getBoundsOfListOfNodes([backdrop_node], addPadding=False)
+    child_nodes = nodegraph_widget.hitTestBox((l, b), (r, t), viewNode=backdrop_node.getParent())
+    return [ node for node in child_nodes if node is not None ]
 
-    l, b, r, t = DrawingModule.nodeWorld_getBoundsOfListOfNodes([backdrop_node])
-    children = nodegraph_widget.hitTestBox(
-        (l, b),
-        (r, t),
-        viewNode=backdrop_node.getParent()
-    )
 
-    selected_nodes = [node for node in children if node is not None]
-
-    return selected_nodes
+def calcNodeAreaSq(node):
+    l, b, r, t = DrawingModule.nodeWorld_getBoundsOfListOfNodes([node], addPadding=False)
+    return (r - l) ** 2 + (t - b) ** 2
 
 
 def getNearestGridPoint(x, y):
