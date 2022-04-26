@@ -99,7 +99,6 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         indicator_y_size = node_height * 0.05
         i = 3
         ii = i * 2
-        iii = i * 3
         if indicator_x_size < 2 * ii:
             indicator_x_size = 2 * ii
         if indicator_y_size < 2 * ii:
@@ -115,23 +114,23 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.CENTER)
         # CENTER | TOP LEFT
         glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (top - height_offset) + y_offset)
-        glVertex2f(zoom * (right - width_offset - iii) + x_offset, zoom * (top - height_offset) + y_offset)
-        glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (top - height_offset - iii) + y_offset)
+        glVertex2f(zoom * (right - width_offset - indicator_x_size) + x_offset, zoom * (top - height_offset) + y_offset)
+        glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (top - height_offset - indicator_y_size) + y_offset)
 
         # CENTER | TOP LEFT
         glVertex2f(zoom * (left + width_offset) + x_offset, zoom * (top - height_offset) + y_offset)
-        glVertex2f(zoom * (left + width_offset + iii) + x_offset, zoom * (top - height_offset) + y_offset)
-        glVertex2f(zoom * (left + width_offset) + x_offset, zoom * (top - height_offset - iii) + y_offset)
+        glVertex2f(zoom * (left + width_offset + indicator_x_size) + x_offset, zoom * (top - height_offset) + y_offset)
+        glVertex2f(zoom * (left + width_offset) + x_offset, zoom * (top - height_offset - indicator_y_size) + y_offset)
 
         # CENTER | BOT LEFT
         glVertex2f(zoom * (left + width_offset) + x_offset, zoom * (bottom + height_offset) + y_offset)
-        glVertex2f(zoom * (left + width_offset + iii) + x_offset, zoom * (bottom + height_offset) + y_offset)
-        glVertex2f(zoom * (left + width_offset) + x_offset, zoom * (bottom + height_offset + iii) + y_offset)
+        glVertex2f(zoom * (left + width_offset + indicator_x_size) + x_offset, zoom * (bottom + height_offset) + y_offset)
+        glVertex2f(zoom * (left + width_offset) + x_offset, zoom * (bottom + height_offset + indicator_y_size) + y_offset)
 
         # CENTER | BOT RIGHT
         glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (bottom + height_offset) + y_offset)
-        glVertex2f(zoom * (right - width_offset - iii) + x_offset, zoom * (bottom + height_offset) + y_offset)
-        glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (bottom + height_offset + iii) + y_offset)
+        glVertex2f(zoom * (right - width_offset - indicator_x_size) + x_offset, zoom * (bottom + height_offset) + y_offset)
+        glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (bottom + height_offset + indicator_y_size) + y_offset)
 
         glEnd()
 

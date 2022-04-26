@@ -1,1 +1,0 @@
-NodegraphAPI.CreateNode("Group", NodegraphAPI.GetRootNode())

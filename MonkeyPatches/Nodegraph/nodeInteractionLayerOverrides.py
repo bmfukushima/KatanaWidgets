@@ -472,11 +472,19 @@ def nodeInteractionMousePressEvent(func):
         """ Need to by pass for special functionality for backdrops"""
         backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
         if backdrop_node:
+            # Bypass if user has clicked on a node
+            mouse_pos = self.layerStack().mapFromQTLocalToWorld(
+                self.layerStack().getMousePos().x(), self.layerStack().getMousePos().y())
+            hits = self.layerStack().hitTestPoint(mouse_pos)
+            hit_types = set((x[0] for x in hits))
+            if "NODE" in hit_types: return func(self, event)
+
             # move backdrop
             if event.modifiers() == (Qt.ControlModifier) and event.button() == Qt.LeftButton:
                 nodeutils.selectNodes([backdrop_node], is_exclusive=True)
                 nodeutils.floatNodes([backdrop_node])
                 return True
+
             # duplicate backdrop and children
             if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() == Qt.LeftButton:
                 nodes_to_duplicate = nodegraphutils.getBackdropChildren(backdrop_node)
@@ -504,7 +512,8 @@ def nodeInteractionMousePressEvent(func):
             if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton:
                 # if selected lift
                 if backdrop_node in NodegraphAPI.GetAllSelectedNodes():
-                    nodeutils.floatNodes([backdrop_node])
+                    nodes_to_float = nodegraphutils.getBackdropChildren(backdrop_node)
+                    nodeutils.floatNodes(nodes_to_float)
                 # if not selected, select
                 else:
                     nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
