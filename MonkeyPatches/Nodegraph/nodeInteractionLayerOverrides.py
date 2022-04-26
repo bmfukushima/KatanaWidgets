@@ -314,7 +314,7 @@ def resizeBackdropNode():
     orig_node_pos = (orig_attrs["x"], orig_attrs["y"])
     orig_cursor_pos = orig_attrs["orig_cursor_pos"]
     quadrant = orig_attrs["quadrant"]
-
+    min_size = 100
     if "ns_sizeX" not in orig_attrs:
         orig_attrs["ns_sizeX"] = 128
     if "ns_sizeY" not in orig_attrs:
@@ -399,10 +399,22 @@ def resizeBackdropNode():
         new_attrs["sizeX"] += offset_x
         new_attrs["sizeY"] += offset_y
 
+    # set min size
+    if new_attrs["sizeX"] < min_size:
+        new_attrs["sizeX"] = min_size
+    if new_attrs["sizeY"] < min_size:
+        new_attrs["sizeY"] = min_size
+
     # node pos
     if quadrant != nodegraphutils.CENTER:
         new_node_pos_x = orig_node_pos[0] + offset_x * 0.5
         new_node_pos_y = orig_node_pos[1] + offset_y * 0.5
+
+        # check min size
+        if new_attrs["sizeX"] == min_size:
+            new_node_pos_x = NodegraphAPI.GetNodePosition(node)[0]
+        if new_attrs["sizeY"] == min_size:
+            new_node_pos_y = NodegraphAPI.GetNodePosition(node)[1]
         NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
     else:
         # todo setup node positioning for center
