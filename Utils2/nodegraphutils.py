@@ -133,7 +133,6 @@ def getBackdropNodeUnderCursor():
         attrs = backdrop_node.getAttributes()
         # position test
         node_pos = NodegraphAPI.GetNodePosition(backdrop_node)
-
         """ Need to duck type this as the ns_sizeXY is not created until the user
         has resized the backdrop node"""
         try:
@@ -311,8 +310,14 @@ def nodeClicked(nodegraph_widget):
     # Bypass if user has clicked on a node
     mouse_pos = nodegraph_widget.mapFromQTLocalToWorld(nodegraph_widget.getMousePos().x(), nodegraph_widget.getMousePos().y())
     hits = nodegraph_widget.hitTestPoint(mouse_pos)
-    hit_types = set((x[0] for x in hits))
-    if "NODE" in hit_types: return True
+    for hit in hits:
+        for node in hit[1].values():
+            if node.getType() != "Backdrop":
+                return True
+
+    return False
+    # hit_types = set((x[0] for x in hits))
+    # if "NODE" in hit_types: return True
 
 def updateBackdropDisplay(node, attrs=None):
     """ Hacky method to refresh a backdrop nodes by selecting/unselecting it

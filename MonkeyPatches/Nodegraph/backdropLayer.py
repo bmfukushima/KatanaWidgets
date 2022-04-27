@@ -29,8 +29,6 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
             widgetutils.katanaMainWindow()._backdrop_resize_active = False
         if not hasattr(widgetutils.katanaMainWindow(), "_backdrop_orig_attrs"):
             widgetutils.katanaMainWindow()._backdrop_orig_attrs = {}
-        if not hasattr(widgetutils.katanaMainWindow(), "_backdrop_node_clicked"):
-            widgetutils.katanaMainWindow()._backdrop_node_clicked = False
 
     @staticmethod
     def pickTriangleColor(quadrant_entered, quadrant_to_color):

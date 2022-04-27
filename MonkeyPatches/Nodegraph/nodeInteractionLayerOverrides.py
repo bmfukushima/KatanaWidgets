@@ -415,7 +415,6 @@ def resizeBackdropNode():
         # really only might need it for snapping?
         pass
 
-
     nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
 
 
@@ -447,7 +446,6 @@ def nodeInteractionLayerMouseMoveEvent(func):
 
             if event.buttons() == Qt.LeftButton:
                 # check if floating, or node hit
-                if widgetutils.katanaMainWindow()._backdrop_node_clicked: return func(self, event)
                 if self.layerStack().getLayerByName("Floating Nodes").enabled(): return func(self, event)
 
                 backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
@@ -509,9 +507,7 @@ def nodeInteractionMousePressEvent(func):
             # Select backdrop and children
             if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton:
                 # If node clicked, bypass
-                if nodegraphutils.nodeClicked(self.layerStack()):
-                    widgetutils.katanaMainWindow()._backdrop_node_clicked = True
-                    return func(self, event)
+                if nodegraphutils.nodeClicked(self.layerStack()): return func(self, event)
 
                 # # If backdrop clicked, select and pickup
                 if backdrop_node in NodegraphAPI.GetAllSelectedNodes():
@@ -520,6 +516,7 @@ def nodeInteractionMousePressEvent(func):
                 else:
                     nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
                     nodeutils.selectNodes(nodes_to_select, is_exclusive=True)
+
                 return True
 
             # Append backdrop and children to current selection
@@ -550,7 +547,6 @@ def nodeInteractionMouseReleaseEvent(func):
     """ DUPLICATE NODES """
     def __nodeInteractionMouseReleaseEvent(self, event):
         widgetutils.katanaMainWindow()._backdrop_resize_active = False
-        widgetutils.katanaMainWindow()._backdrop_node_clicked = False
         return func(self, event)
     return __nodeInteractionMouseReleaseEvent
 
