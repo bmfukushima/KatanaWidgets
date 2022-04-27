@@ -415,6 +415,9 @@ def resizeBackdropNode():
         # really only might need it for snapping?
         pass
 
+
+    new_attrs["zDepth"] = 1 / (new_attrs["sizeX"] * new_attrs["sizeY"])
+
     nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
 
 

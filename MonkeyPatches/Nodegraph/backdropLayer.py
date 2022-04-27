@@ -236,6 +236,31 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glDisable(GL_BLEND)
 
 
+def updateBackdropZDepth(backdrop_node):
+    """ Updates the backdrop nodes zDepth based off of its area.
+
+    The small the area, the larger the zDepth
+
+    Args:
+        backdrop_node (Node): backdrop node to be updated"""
+    orig_attrs = backdrop_node.getAttributes()
+    if "ns_sizeX" not in orig_attrs:
+        orig_attrs["ns_sizeX"] = 128
+    if "ns_sizeY" not in orig_attrs:
+        orig_attrs["ns_sizeY"] = 64
+
+    # clone backdrops attrs
+    new_attrs = {}
+    for attr_name, attr_value in orig_attrs.items():
+        if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
+            new_attrs[attr_name.replace("ns_", "")] = attr_value
+
+    area = orig_attrs["ns_sizeX"] * orig_attrs["ns_sizeY"]
+    new_attrs["zDepth"] = 1 / area
+
+    nodegraphutils.updateBackdropDisplay(backdrop_node, attrs=new_attrs)
+
+
 def sortBackdropByArea(backdrop_list, sort_index=0):
     """ Simple bubble sort to sort the backdrops into ascending order by area"""
     # We set swapped to True so the loop looks runs at least once
@@ -273,18 +298,13 @@ def calculateBackdropZDepth(args):
                 # set backdrops zdepth
                 for i, item in enumerate(backdrop_node_area_list):
                     node = item[0]
+                    updateBackdropZDepth(node)
 
                     # clone backdrops attrs
                     new_attrs = {}
-                    for attr_name, attr_value in node.getAttributes().items():
-                        if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
-                            new_attrs[attr_name.replace("ns_", "")] = attr_value
-                        if attr_name == "selected":
+                    if "selected" in node.getAttributes():
+                        if node.getAttributes()["selected"]:
                             selected_backdrops.append(node)
-
-                    # update backdrops zdepth
-                    new_attrs["zDepth"] = i + 1
-                    nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
 
                     nodeutils.selectNodes(selected_backdrops)
 

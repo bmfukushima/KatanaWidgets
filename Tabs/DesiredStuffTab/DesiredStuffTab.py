@@ -49,8 +49,8 @@ TODO:
 """
 import json
 
-from qtpy.QtWidgets import QVBoxLayout, QSizePolicy, QApplication
-from qtpy.QtCore import Qt, QModelIndex
+from qtpy.QtWidgets import QVBoxLayout, QSizePolicy
+from qtpy.QtCore import Qt
 
 from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, LabelledInputWidget, OverlayInputWidget
 from cgwidgets.views import AbstractDragDropListView
@@ -158,6 +158,11 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
                             child.setValue(json.dumps(data), 0)
 
                     self.desiredStuffFrame().updateDelegateDisplay()
+                except AttributeError:
+                    pass
+                except RuntimeError:
+                    # frame has been deleted, when opening new files
+                    pass
                 finally:
                     Utils.UndoStack.CloseGroup()
 
@@ -165,18 +170,27 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         """ Updates the desired objects names when a nodes name is changed """
         for arg in args:
             # get data
-            old_name = arg[2]["oldName"]
-            new_name = arg[2]["newName"]
-            if arg[0] == "node_setName":
-                node = arg[2][NODE]
-                self.updateObjectName(node, NODE, old_name, new_name)
+            Utils.UndoStack.OpenGroup("Rename Node Graph Pins")
+            try:
+                old_name = arg[2]["oldName"]
+                new_name = arg[2]["newName"]
+                if arg[0] == "node_setName":
+                    node = arg[2][NODE]
+                    self.updateObjectName(node, NODE, old_name, new_name)
 
-            if arg[0] == "parameter_setName":
-                param = arg[2][PARAM]
-                parent_path = ".".join(param.getFullName().split(".")[1:])
-                old_name = parent_path.replace(new_name, old_name)
-                new_name = parent_path
-                self.updateObjectName(param, PARAM, old_name, new_name)
+                if arg[0] == "parameter_setName":
+                    param = arg[2][PARAM]
+                    parent_path = ".".join(param.getFullName().split(".")[1:])
+                    old_name = parent_path.replace(new_name, old_name)
+                    new_name = parent_path
+                    self.updateObjectName(param, PARAM, old_name, new_name)
+            except AttributeError:
+                pass
+            except RuntimeError:
+                # frame has been deleted, when opening new files
+                pass
+            finally:
+                Utils.UndoStack.CloseGroup()
 
     def updateObjectName(self, obj, object_type, old_name, new_name):
         """ Updates the metadata when a desired objects name has changed in the Nodegraph
