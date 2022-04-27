@@ -2,10 +2,6 @@ from qtpy.QtCore import QPoint
 
 from Katana import NodegraphAPI, DrawingModule, Utils, KatanaPrefs
 
-# backdrop_nodes = NodegraphAPI.GetAllNodesByType("Backdrop")
-#
-# pos, root_node = getNodegraphCursorPos()
-# active_backdrop_nodes = [backdrop_node for backdrop_node in backdrop_nodes if backdrop_node.getParent() == root_node]
 CENTER = 0
 TOPRIGHT = 1
 TOP = 2
@@ -41,7 +37,7 @@ def getNodeCorners(node):
     """ Returns the 4 corners of the backdrop node provided
 
     Returns (float, float, float, float): left, top, right, bottom"""
-
+    if not node: return 0, 0, 0, 0
     # Is backdrop
     if node.getType() == "Backdrop":
         attrs = node.getAttributes()
@@ -248,6 +244,7 @@ def getBackdropChildren(backdrop_node, include_backdrop=True):
     # get all children
     nodegraph_widget = getActiveNodegraphWidget()
     if not nodegraph_widget: return
+    if not backdrop_node: return []
     root_node = nodegraph_widget.getGroupNodeUnderMouse()
     children = root_node.getChildren()
     l1, b1, r1, t1 = getNodeCorners(backdrop_node)

@@ -1,5 +1,3 @@
-from qtpy.QtCore import QPoint
-
 from Katana import UI4
 from cgwidgets.utils import getWidgetUnderCursor
 

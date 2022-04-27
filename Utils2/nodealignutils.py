@@ -1,13 +1,6 @@
-"""
-- Align All
-    Root node not being aligned
-    Potentially store node dictionary with offsets...
-        check against dictionary
-        if it is overlapping... 
-            offset and recurse up/down?
-
+""" Setup ironing, finish refactor
 Iron Trajectory is set by direction when you pass through first node...
-
+    this should be the current direction of the mouse
 """
 
 import platform

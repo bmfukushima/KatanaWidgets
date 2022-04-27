@@ -1,15 +1,7 @@
-"""
-Todo
-    * Backdrops
-        - resize quadrants icons
-            - insert layer
-            - hover color
-"""
-
 import os
 import inspect
 
-from qtpy.QtCore import Qt, QSize, QPoint, QTimer, QEvent
+from qtpy.QtCore import Qt, QSize, QPoint, QTimer
 from qtpy.QtGui import QCursor
 
 from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile, LayeredMenuAPI, PrefNames, KatanaPrefs
@@ -310,6 +302,8 @@ def resizeBackdropNode():
     # get attrs
     curr_cursor_pos, _ = nodegraphutils.getNodegraphCursorPos()
     orig_attrs = widgetutils.katanaMainWindow()._backdrop_orig_attrs
+    if "name" not in orig_attrs: return
+
     node = NodegraphAPI.GetNode(orig_attrs["name"])
     orig_node_pos = (orig_attrs["x"], orig_attrs["y"])
     orig_cursor_pos = orig_attrs["orig_cursor_pos"]
@@ -453,10 +447,9 @@ def nodeInteractionLayerMouseMoveEvent(func):
 
             if event.buttons() == Qt.LeftButton:
                 # check if floating, or node hit
+                if widgetutils.katanaMainWindow()._backdrop_node_clicked: return func(self, event)
                 if self.layerStack().getLayerByName("Floating Nodes").enabled(): return func(self, event)
-                if nodegraphutils.nodeClicked(self.layerStack()): return func(self, event)
 
-                # float backdrop and children
                 backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
                 nodes_to_float = nodegraphutils.getBackdropChildren(backdrop_node)
                 nodeutils.floatNodes(nodes_to_float)
@@ -483,7 +476,6 @@ def nodeInteractionMousePressEvent(func):
         backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
         if backdrop_node:
             # Bypass if user has clicked on a node
-            if nodegraphutils.nodeClicked(self.layerStack()): return func(self, event)
 
             # move backdrop
             if event.modifiers() == (Qt.ControlModifier) and event.button() == Qt.LeftButton:
@@ -498,7 +490,7 @@ def nodeInteractionMousePressEvent(func):
                 return True
 
             # move backdrop and children
-            if event.modifiers() == (Qt.AltModifier) and event.button() == Qt.LeftButton:
+            if event.modifiers() == Qt.AltModifier and event.button() == Qt.LeftButton:
                 nodes_to_move = nodegraphutils.getBackdropChildren(backdrop_node)
                 nodeutils.selectNodes(nodes_to_move, is_exclusive=True)
                 nodeutils.floatNodes(nodes_to_move)
@@ -516,11 +508,15 @@ def nodeInteractionMousePressEvent(func):
 
             # Select backdrop and children
             if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton:
-                # if selected lift
+                # If node clicked, bypass
+                if nodegraphutils.nodeClicked(self.layerStack()):
+                    widgetutils.katanaMainWindow()._backdrop_node_clicked = True
+                    return func(self, event)
+
+                # # If backdrop clicked, select and pickup
                 if backdrop_node in NodegraphAPI.GetAllSelectedNodes():
                     nodes_to_float = nodegraphutils.getBackdropChildren(backdrop_node)
                     nodeutils.floatNodes(nodes_to_float)
-                # if not selected, select
                 else:
                     nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
                     nodeutils.selectNodes(nodes_to_select, is_exclusive=True)
@@ -554,6 +550,7 @@ def nodeInteractionMouseReleaseEvent(func):
     """ DUPLICATE NODES """
     def __nodeInteractionMouseReleaseEvent(self, event):
         widgetutils.katanaMainWindow()._backdrop_resize_active = False
+        widgetutils.katanaMainWindow()._backdrop_node_clicked = False
         return func(self, event)
     return __nodeInteractionMouseReleaseEvent
 
