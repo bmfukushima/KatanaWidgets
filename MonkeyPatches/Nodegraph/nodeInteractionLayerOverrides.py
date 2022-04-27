@@ -422,35 +422,12 @@ def resizeBackdropNode():
 def nodeInteractionLayerMouseMoveEvent(func):
     """ Changes the color of the nearest node """
     def __nodeInteractionLayerMouseMoveEvent(self, event):
-        def unfreeze():
-            self._is_frozen = False
+        # run functions
+        glowNodes(event)
 
-        delay_amount = 100
-        # setup frozen attr
-        if not hasattr(self, "_is_frozen"):
-            self._is_frozen = False
-
-        # run events on timer
-        if not self._is_frozen:
-            # setup timer
-            timer = QTimer()
-            timer.start(delay_amount)
-            timer.timeout.connect(unfreeze)
-
-            # run functions
-            glowNodes(event)
-
-            # resize backdrop
-            if event.modifiers() == Qt.AltModifier and event.buttons() == Qt.RightButton:
-                resizeBackdropNode()
-
-            if event.buttons() == Qt.LeftButton:
-                # check if floating, or node hit
-                if self.layerStack().getLayerByName("Floating Nodes").enabled(): return func(self, event)
-
-                backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
-                nodes_to_float = nodegraphutils.getBackdropChildren(backdrop_node)
-                nodeutils.floatNodes(nodes_to_float)
+        # resize backdrop
+        if event.modifiers() == Qt.AltModifier and event.buttons() == Qt.RightButton:
+            resizeBackdropNode()
 
         return func(self, event)
 
@@ -516,7 +493,6 @@ def nodeInteractionMousePressEvent(func):
                 else:
                     nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
                     nodeutils.selectNodes(nodes_to_select, is_exclusive=True)
-
                 return True
 
             # Append backdrop and children to current selection
@@ -548,6 +524,7 @@ def nodeInteractionMouseReleaseEvent(func):
     def __nodeInteractionMouseReleaseEvent(self, event):
         widgetutils.katanaMainWindow()._backdrop_resize_active = False
         return func(self, event)
+
     return __nodeInteractionMouseReleaseEvent
 
 
