@@ -11,8 +11,7 @@ import math
 from qtpy import QtWidgets, QtGui, QtCore
 from Katana import UI4, NodegraphAPI, DrawingModule, NodeGraphView, Utils, KatanaPrefs
 
-from Utils2 import widgetutils
-from .nodegraphutils import getActiveBackdropNodes, getBackdropChildren
+from Utils2 import widgetutils, nodegraphutils
 
 
 class MainWidget(QtWidgets.QWidget):
@@ -674,7 +673,7 @@ class AlignUtils(object):
         self._aligned_nodes = []
         if len(NodegraphAPI.GetAllSelectedNodes()) == 0: return
         node = NodegraphAPI.GetAllSelectedNodes()[0]
-        root_node = AlignUtils.getTreeRootNode(node)
+        root_node = nodegraphutils.getTreeRootNode(node)
 
         # if x and y:
         NodegraphAPI.SetNodePosition(root_node, (x * self._grid_offset_x, y * self._grid_offset_y))
@@ -830,116 +829,6 @@ class AlignUtils(object):
                             for output_port in output_ports[1:]:
                                 sibling_node = output_port.getNode()
                                 self.__alignDownstreamNodes(sibling_node, x=x, y=y, recursive=recursive)
-
-    """ SELECTION """
-    def selectAllNodes(self, upstream=False, downstream=False):
-        from .nodegraphutils import floatNodes
-        node_list = []
-        for node in NodegraphAPI.GetAllSelectedNodes():
-            if downstream is True:
-                node_list += AlignUtils.getDownstreamNodes(node)
-            if upstream is True:
-                node_list += AlignUtils.getUpstreamNodes(node)
-        NodegraphAPI.SetAllSelectedNodes(node_list)
-        floatNodes(node_list)
-
-    @staticmethod
-    def __checkBackdropNodes(nodes):
-        """ Checks the nodes list for any background nodes whose children are in the list
-
-        Arg:
-            nodes (list): of nodes to see if any backdrop nodes children are in
-        """
-        backdrop_nodes = getActiveBackdropNodes()
-        for backdrop_node in backdrop_nodes:
-            children = [node for node in getBackdropChildren(backdrop_node) if node.getType() != "Backdrop"]
-            if len(children) == 0: continue
-
-            is_valid = True
-            if backdrop_node in nodes: continue
-            for child in children:
-                if child not in nodes:
-                    is_valid = False
-                    break
-            if is_valid:
-                nodes.insert(0, backdrop_node)
-
-        return nodes
-
-    @staticmethod
-    def getDownstreamNodes(node):
-        nodes = NodegraphAPI.Util.GetAllConnectedOutputs([node])
-        nodes.append(node)
-
-        nodes = AlignUtils.__checkBackdropNodes(nodes)
-        return nodes
-
-    @staticmethod
-    def getUpstreamNodes(node):
-        nodes = NodegraphAPI.Util.GetAllConnectedInputs([node])
-        nodes.append(node)
-
-        nodes = AlignUtils.__checkBackdropNodes(nodes)
-        return nodes
-
-    @staticmethod
-    def getAllUpstreamTerminalNodes(node, node_list=[]):
-        """ Gets all nodes upstream of a specific node that have no input nodes
-
-        Args:
-            node (Node): node to search from
-
-        Returns (list): of nodes with no inputs
-        """
-        children = node.getInputPorts()
-        if 0 < len(children):
-            for input_port in children:
-                connected_ports = input_port.getConnectedPorts()
-                for port in connected_ports:
-                    node = port.getNode()
-                    AlignUtils.getAllUpstreamTerminalNodes(node, node_list=node_list)
-                    terminal = True
-                    for input_port in node.getInputPorts():
-                        if 0 < len(input_port.getConnectedPorts()):
-                            terminal = False
-                    if terminal is True:
-                        node_list.append(node)
-
-        return list(set(node_list))
-
-    @staticmethod
-    def getTreeRootNode(node):
-        """ Returns the Root Node of this specific Nodegraph Tree aka the upper left node
-
-        Args:
-            node (Node): node to start searching from
-        """
-
-        def getFirstNode(input_ports):
-            """
-            gets the first node connected to a node...
-            @ports <port> getConnectedPorts()
-            """
-            for input_port in input_ports:
-                connected_ports = input_port.getConnectedPorts()
-                if len(connected_ports) > 0:
-                    for port in connected_ports:
-                        node = port.getNode()
-                        if node:
-                            return node
-
-            return None
-
-        input_ports = node.getInputPorts()
-        if len(input_ports) > 0:
-            # get first node
-            first_node = getFirstNode(input_ports)
-            if first_node:
-                return AlignUtils.getTreeRootNode(first_node)
-            else:
-                return node
-        else:
-            return node
 
     """ SNAP TO GRID """
     def snapNodeToGrid(self, node):

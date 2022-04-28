@@ -249,14 +249,14 @@ def glowNodes(event):
         if event.modifiers() == Qt.AltModifier:
             closest_node = nodegraphutils.getClosestNode(has_input_ports=True)
             if closest_node:
-                upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
+                upstream_nodes = nodegraphutils.getUpstreamNodes(closest_node)
                 nodeutils.colorClosestNode(upstream_nodes)
 
         # move downstream nodes
         if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
             closest_node = nodegraphutils.getClosestNode(has_output_ports=True)
             if closest_node:
-                downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
+                downstream_nodes = nodegraphutils.getDownstreamNodes(closest_node)
                 nodeutils.colorClosestNode(downstream_nodes)
 
 
@@ -267,11 +267,11 @@ def moveNodes(direction=UP):
     if direction == UP:
         closest_node = nodegraphutils.getClosestNode(has_input_ports=True)
         if closest_node:
-            node_list = AlignUtils.getUpstreamNodes(closest_node)
+            node_list = nodegraphutils.getUpstreamNodes(closest_node)
     if direction == DOWN:
         closest_node = nodegraphutils.getClosestNode(has_output_ports=True)
         if closest_node:
-            node_list = AlignUtils.getDownstreamNodes(closest_node)
+            node_list = nodegraphutils.getDownstreamNodes(closest_node)
 
     if node_list:
         nodegraphutils.selectNodes(node_list)

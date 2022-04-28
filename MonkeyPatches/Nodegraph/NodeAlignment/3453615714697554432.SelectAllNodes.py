@@ -1,2 +1,2 @@
-from Utils2.nodealignutils import AlignUtils
-AlignUtils().selectAllNodes(upstream=True, downstream=True)
+from Utils2 import nodegraphutils
+nodegraphutils.selectAllNodes(upstream=True, downstream=True)
