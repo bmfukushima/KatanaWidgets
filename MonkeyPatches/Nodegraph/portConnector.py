@@ -26,7 +26,7 @@ from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 from cgwidgets.widgets import ButtonInputWidgetContainer, ButtonInputWidget, FrameInputWidgetContainer
 from cgwidgets.utils import centerWidgetOnCursor, setAsBorderless, setAsTransparent, getWidgetUnderCursor, isCursorOverWidget
-from Utils2 import nodeutils, portutils, getFontSize
+from Utils2 import nodeutils, portutils, getFontSize, nodegraphutils
 from Utils2.widgetutils import katanaMainWindow
 
 
@@ -209,7 +209,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
             self.addButton(port.getName(), port.getName(), self.portSelectedEvent)
 
         if port_type == INPUT_PORT:
-            if node.getType() in nodeutils.dynamicInputPortNodes():
+            if node.getType() in nodegraphutils.dynamicInputPortNodes():
                 self.addButton("< New >", "< New >", self.createNewPortEvent)
 
     """ PROPERTIES """
@@ -320,7 +320,7 @@ class PortConnector():
         # SELECT PORT
         else:
             if not node:
-                node = nodeutils.getClosestNode(has_output_ports=True, nodegraph_widget=nodegraph_widget)
+                node = nodegraphutils.getClosestNode(has_output_ports=True)
                 if not node: return
             PortConnector.setActiveNodegraphWidget(nodegraph_widget)
             PortConnector.selectPortEvent(node=node)
@@ -332,7 +332,7 @@ class PortConnector():
         if link_connection_layer:
             base_ports = link_connection_layer.getBasePorts()
             exclude_nodes = [base_ports[0].getNode()]
-            node = nodeutils.getClosestNode(has_input_ports=True, include_dynamic_port_nodes=True, exclude_nodes=exclude_nodes)
+            node = nodegraphutils.getClosestNode(has_input_ports=True, include_dynamic_port_nodes=True, exclude_nodes=exclude_nodes)
             if not node: return
 
             if len(node.getInputPorts()) == 0:
@@ -344,7 +344,7 @@ class PortConnector():
             # SINGULAR INPUT PORT
             elif len(node.getInputPorts()) == 1:
                 # MULTIPLE INPUT PORTS
-                if node.getType() in nodeutils.dynamicInputPortNodes():
+                if node.getType() in nodegraphutils.dynamicInputPortNodes():
                     katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
                         node, port_type=INPUT_PORT, selected_port=base_ports[0], display_warning=display_warning,
                         is_recursive_selection=is_recursive_selection)
@@ -387,7 +387,7 @@ class PortConnector():
             node (Node): to display ports of
         """
         if not node:
-            node = nodeutils.getClosestNode(has_output_ports=True)
+            node = nodegraphutils.getClosestNode(has_output_ports=True)
             if not node: return
 
         # NO OUTPUT PORTS

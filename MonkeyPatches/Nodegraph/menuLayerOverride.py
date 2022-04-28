@@ -6,7 +6,7 @@ from UI4.Tabs.NodeGraphTab.Layers.NodeCreationMenuLayer import NodeCreationMenuL
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 from UI4.App import Tabs
 
-from Utils2 import nodeutils, widgetutils
+from Utils2 import widgetutils, nodegraphutils
 
 def menuLayerActionOverride(func):
     def __menuLayerActionOverride(self):
@@ -84,7 +84,7 @@ def nodeEntryChosen(func):
 
                 # connect nodes
                 if len(node.getInputPorts()) == 0:
-                    if node.getType() in nodeutils.dynamicInputPortNodes():
+                    if node.getType() in nodegraphutils.dynamicInputPortNodes():
                         input_port = node.addInputPort("i0")
                 else:
                     input_port = node.getInputPortByIndex(0)

@@ -17,8 +17,7 @@ from qtpy.QtCore import Qt
 
 # setup prefs
 import QT4GLLayerStack
-
-from Katana import NodegraphAPI, Utils
+from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs
 from Utils2 import nodegraphutils, widgetutils, nodeutils
 
 
@@ -236,47 +235,6 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         glDisable(GL_BLEND)
 
 
-def updateBackdropZDepth(backdrop_node):
-    """ Updates the backdrop nodes zDepth based off of its area.
-
-    The small the area, the larger the zDepth
-
-    Args:
-        backdrop_node (Node): backdrop node to be updated"""
-    orig_attrs = backdrop_node.getAttributes()
-    if "ns_sizeX" not in orig_attrs:
-        orig_attrs["ns_sizeX"] = 128
-    if "ns_sizeY" not in orig_attrs:
-        orig_attrs["ns_sizeY"] = 64
-
-    # clone backdrops attrs
-    new_attrs = {}
-    for attr_name, attr_value in orig_attrs.items():
-        if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
-            new_attrs[attr_name.replace("ns_", "")] = attr_value
-
-    area = orig_attrs["ns_sizeX"] * orig_attrs["ns_sizeY"]
-    new_attrs["zDepth"] = 1 / area
-
-    nodegraphutils.updateBackdropDisplay(backdrop_node, attrs=new_attrs)
-
-
-def sortBackdropByArea(backdrop_list, sort_index=0):
-    """ Simple bubble sort to sort the backdrops into ascending order by area"""
-    # We set swapped to True so the loop looks runs at least once
-    swapped = True
-    while swapped:
-        swapped = False
-        for i in range(len(backdrop_list) - 1):
-            if backdrop_list[i][sort_index] < backdrop_list[i + 1][sort_index]:
-                # Swap the elements
-                backdrop_list[i], backdrop_list[i + 1] = backdrop_list[i + 1], backdrop_list[i]
-                # Set the flag to True so we'll loop again
-                swapped = True
-
-    return backdrop_list
-
-
 def calculateBackdropZDepth(args):
     """ When a backdrop is placed, this will sort their zdepth by total area """
     for arg in args:
@@ -306,7 +264,172 @@ def calculateBackdropZDepth(args):
                         if node.getAttributes()["selected"]:
                             selected_backdrops.append(node)
 
-                    nodeutils.selectNodes(selected_backdrops)
+                    nodegraphutils.selectNodes(selected_backdrops)
+
+
+def resizeBackdropNode():
+    """ Resizes the backdrop node when the user has done an Alt+RMB """
+    # get attrs
+    curr_cursor_pos, _ = nodegraphutils.getNodegraphCursorPos()
+    orig_attrs = widgetutils.katanaMainWindow()._backdrop_orig_attrs
+    if "name" not in orig_attrs: return
+
+    node = NodegraphAPI.GetNode(orig_attrs["name"])
+    orig_node_pos = (orig_attrs["x"], orig_attrs["y"])
+    orig_cursor_pos = orig_attrs["orig_cursor_pos"]
+    quadrant = orig_attrs["quadrant"]
+    min_size = 100
+    if "ns_sizeX" not in orig_attrs:
+        orig_attrs["ns_sizeX"] = 128
+    if "ns_sizeY" not in orig_attrs:
+        orig_attrs["ns_sizeY"] = 64
+
+    # setup attrs
+    new_attrs = {}
+    for attr_name, attr_value in orig_attrs.items():
+        if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
+            new_attrs[attr_name.replace("ns_", "")] = attr_value
+
+    # Get offset
+    offset_x, offset_y = 0, 0
+    if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
+        grid_pos = nodegraphutils.getNearestGridPoint(curr_cursor_pos.x(), curr_cursor_pos.y())
+        if quadrant == nodegraphutils.TOPRIGHT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
+            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
+        elif quadrant == nodegraphutils.TOP:
+            offset_x = 0
+            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
+        elif quadrant == nodegraphutils.TOPLEFT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
+            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
+        elif quadrant == nodegraphutils.LEFT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
+            offset_y = 0
+        elif quadrant == nodegraphutils.BOTLEFT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
+            offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
+        elif quadrant == nodegraphutils.BOT:
+            offset_x = 0
+            offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
+        elif quadrant == nodegraphutils.BOTRIGHT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
+            offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
+        elif quadrant == nodegraphutils.RIGHT:
+            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
+            offset_y = 0
+        elif quadrant == nodegraphutils.CENTER:
+            # Todo update offset
+            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
+            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
+    else:
+        offset_x = curr_cursor_pos.x() - orig_cursor_pos.x()
+        offset_y = curr_cursor_pos.y() - orig_cursor_pos.y()
+
+    # update size
+    if quadrant == nodegraphutils.TOPRIGHT:
+        new_attrs["sizeX"] += offset_x
+        new_attrs["sizeY"] += offset_y
+
+    elif quadrant == nodegraphutils.TOP:
+        new_attrs["sizeY"] += offset_y
+        offset_x = 0
+
+    elif quadrant == nodegraphutils.TOPLEFT:
+        new_attrs["sizeX"] -= offset_x
+        new_attrs["sizeY"] += offset_y
+
+    elif quadrant == nodegraphutils.LEFT:
+        new_attrs["sizeX"] -= offset_x
+        offset_y = 0
+
+    elif quadrant == nodegraphutils.BOTLEFT:
+        new_attrs["sizeX"] -= offset_x
+        new_attrs["sizeY"] -= offset_y
+
+    elif quadrant == nodegraphutils.BOT:
+        new_attrs["sizeY"] -= offset_y
+        offset_x = 0
+
+    elif quadrant == nodegraphutils.BOTRIGHT:
+        new_attrs["sizeX"] += offset_x
+        new_attrs["sizeY"] -= offset_y
+
+    elif quadrant == nodegraphutils.RIGHT:
+        new_attrs["sizeX"] += offset_x
+        offset_y = 0
+
+    elif quadrant == nodegraphutils.CENTER:
+        new_attrs["sizeX"] += offset_x
+        new_attrs["sizeY"] += offset_y
+
+    # set min size
+    if new_attrs["sizeX"] < min_size:
+        new_attrs["sizeX"] = min_size
+    if new_attrs["sizeY"] < min_size:
+        new_attrs["sizeY"] = min_size
+
+    # node pos
+    if quadrant != nodegraphutils.CENTER:
+        new_node_pos_x = orig_node_pos[0] + offset_x * 0.5
+        new_node_pos_y = orig_node_pos[1] + offset_y * 0.5
+
+        # check min size
+        if new_attrs["sizeX"] == min_size:
+            new_node_pos_x = NodegraphAPI.GetNodePosition(node)[0]
+        if new_attrs["sizeY"] == min_size:
+            new_node_pos_y = NodegraphAPI.GetNodePosition(node)[1]
+        NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
+    else:
+        # todo setup node positioning for center
+        # really only might need it for snapping?
+        pass
+
+
+    new_attrs["zDepth"] = 1 / (new_attrs["sizeX"] * new_attrs["sizeY"])
+
+    nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
+
+
+def sortBackdropByArea(backdrop_list, sort_index=0):
+    """ Simple bubble sort to sort the backdrops into ascending order by area"""
+    # We set swapped to True so the loop looks runs at least once
+    swapped = True
+    while swapped:
+        swapped = False
+        for i in range(len(backdrop_list) - 1):
+            if backdrop_list[i][sort_index] < backdrop_list[i + 1][sort_index]:
+                # Swap the elements
+                backdrop_list[i], backdrop_list[i + 1] = backdrop_list[i + 1], backdrop_list[i]
+                # Set the flag to True so we'll loop again
+                swapped = True
+
+    return backdrop_list
+
+
+def updateBackdropZDepth(backdrop_node):
+    """ Updates the backdrop nodes zDepth based off of its area.
+
+    The small the area, the larger the zDepth
+
+    Args:
+        backdrop_node (Node): backdrop node to be updated"""
+    orig_attrs = backdrop_node.getAttributes()
+    if "ns_sizeX" not in orig_attrs:
+        orig_attrs["ns_sizeX"] = 128
+    if "ns_sizeY" not in orig_attrs:
+        orig_attrs["ns_sizeY"] = 64
+
+    # clone backdrops attrs
+    new_attrs = {}
+    for attr_name, attr_value in orig_attrs.items():
+        if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
+            new_attrs[attr_name.replace("ns_", "")] = attr_value
+
+    area = orig_attrs["ns_sizeX"] * orig_attrs["ns_sizeY"]
+    new_attrs["zDepth"] = 1 / area
+
+    nodegraphutils.updateBackdropDisplay(backdrop_node, attrs=new_attrs)
 
 
 def installBackdropZDepth(**kwargs):

@@ -1,6 +1,10 @@
+import math
+
 from qtpy.QtCore import QPoint
 
 from Katana import NodegraphAPI, DrawingModule, Utils, KatanaPrefs
+
+from cgwidgets.utils import getWidgetUnderCursor
 
 CENTER = 0
 TOPRIGHT = 1
@@ -12,6 +16,16 @@ BOT = 6
 BOTRIGHT = 7
 RIGHT = 8
 
+def clearNodeSelection():
+    for node in NodegraphAPI.GetAllSelectedNodes():
+        NodegraphAPI.SetNodeSelected(node, False)
+
+#
+def dynamicInputPortNodes():
+    """ Returns a list of nodes that can have additional ports added by the user"""
+    return ["Merge", "VariableSwitch", "Switch"]
+
+
 def getActiveBackdropNodes():
     """ Returns all of the backdrop nodes that are children of the currently viewed node """
     cursor_pos, root_node = getNodegraphCursorPos()
@@ -19,6 +33,96 @@ def getActiveBackdropNodes():
     backdrop_nodes = NodegraphAPI.GetAllNodesByType("Backdrop")
     active_backdrop_nodes = [backdrop_node for backdrop_node in backdrop_nodes if backdrop_node.getParent() == root_node]
     return list(set(active_backdrop_nodes))
+
+
+def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False, exclude_nodes=[]):
+    """ Returns the closest node to the cursor
+
+    # Todo need to make this work for entered group nodes
+
+    Args:
+        exclude_nodes (list): list of nodes to not include in the search
+        has_input_ports (bool): determines if the node is required to have an input port
+        has_output_ports (bool): determines if the node is required to have an output port
+        include_dynamic_port_nodes (bool): Determines if nodes with no input ports, but the possibility of having
+            them should be included
+    """
+    from .widgetutils import getActiveNodegraphWidget
+
+    nodegraph_widget = getActiveNodegraphWidget()
+    if not nodegraph_widget: return
+    if not hasattr(nodegraph_widget, "getGroupNodeUnderMouse"): return
+
+    # populate node list
+    node_list = [node for node in nodegraph_widget.getGroupNodeUnderMouse().getChildren() if node.getType() != "Backdrop"]
+
+    if has_output_ports:
+        node_list = [node for node in node_list if 0 < len(node.getOutputPorts())]
+
+    if has_input_ports:
+        _node_list = []
+        for node in node_list:
+            if 0 < len(node.getInputPorts()):
+                _node_list.append(node)
+            else:
+                if include_dynamic_port_nodes:
+                    if node.getType() in dynamicInputPortNodes():
+                        _node_list.append(node)
+
+        # update node list
+        if has_output_ports:
+            node_list += _node_list
+        else:
+            node_list = _node_list
+
+    for node in exclude_nodes:
+        if node in node_list:
+            node_list.remove(node)
+
+    # get cursor position
+    cursor_pos = nodegraph_widget.getMousePos()
+    if not cursor_pos: return
+    group_node = nodegraph_widget.getGroupNodeUnderMouse()
+    world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
+    cursor_pos = QPoint(*nodegraph_widget.getPointAdjustedToGroupNodeSpace(group_node, world_pos))
+
+    closest_node = None
+    mag = None
+    for node in node_list:
+        # compare vector distance...
+        node_pos = NodegraphAPI.GetNodePosition(node)
+        x = node_pos[0] - cursor_pos.x()
+        y = node_pos[1] - cursor_pos.y()
+        new_mag = math.sqrt(x*x + y*y)
+        if mag == None:
+            mag = new_mag
+            closest_node = node
+        elif new_mag < mag:
+            mag = new_mag
+            closest_node = node
+
+    return closest_node
+
+#
+def getFocusedGroupNode(nodegraph_widget=None):
+    """ Returns the group node currently under the cursor
+
+    Args:
+        nodegraph_widget (NodegraphWidget): if none provided, will get the one
+            under the cursor
+    """
+    widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
+    if widget_under_cursor != "NodegraphWidget": return
+
+    if not nodegraph_widget:
+        nodegraph_widget = getWidgetUnderCursor()
+
+    cursor_pos = nodegraph_widget.getMousePos()
+    if not cursor_pos:
+        cursor_pos = QPoint(0, 0)
+    world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
+
+    return DrawingModule.nodeWorld_findGroupNodeOfClick(nodegraph_widget.getCurrentNodeView(), world_pos[0], world_pos[1], nodegraph_widget.getViewScale()[0])
 
 
 def getBackdropArea(backdrop_node):
@@ -306,7 +410,19 @@ def getNodegraphCursorPos():
     return cursor_pos, group_node
 
 
+def floatNodes(node_list):
+    """ Floats the nodes in the list provided
+
+    Args:
+        node_list (list): of nodes to be floated
+    """
+    from .widgetutils import getActiveNodegraphWidget
+    nodegraph_widget = getActiveNodegraphWidget()
+    nodegraph_widget.parent().floatNodes(list(node_list))
+
+
 def nodeClicked(nodegraph_widget):
+    """ Determines if the user has clicked on a node in the nodegraph"""
     # Bypass if user has clicked on a node
     mouse_pos = nodegraph_widget.mapFromQTLocalToWorld(nodegraph_widget.getMousePos().x(), nodegraph_widget.getMousePos().y())
     hits = nodegraph_widget.hitTestPoint(mouse_pos)
@@ -316,8 +432,23 @@ def nodeClicked(nodegraph_widget):
                 return True
 
     return False
-    # hit_types = set((x[0] for x in hits))
-    # if "NODE" in hit_types: return True
+
+#
+def selectNodes(node_list, is_exclusive=False):
+    """ Select all of the nodes in the list provided
+
+    Args:
+        node_list (list): of nodes to select
+        is_exclusive (bool): determines if these nodes should be exclusive, or appended to
+            the current selection
+
+    """
+    if is_exclusive:
+        clearNodeSelection()
+
+    for node in node_list:
+        NodegraphAPI.SetNodeSelected(node, True)
+
 
 def updateBackdropDisplay(node, attrs=None):
     """ Hacky method to refresh a backdrop nodes by selecting/unselecting it

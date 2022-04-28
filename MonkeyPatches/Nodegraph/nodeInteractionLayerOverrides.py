@@ -1,7 +1,7 @@
 import os
 import inspect
 
-from qtpy.QtCore import Qt, QSize, QPoint, QTimer
+from qtpy.QtCore import Qt, QSize, QPoint
 from qtpy.QtGui import QCursor
 
 from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile, LayeredMenuAPI, PrefNames, KatanaPrefs
@@ -20,7 +20,7 @@ from Utils2.nodealignutils import AlignUtils
 
 from .gridLayer import GridGUIWidget
 from .portConnector import PortConnector
-from .backdropLayer import BackdropPreviewLayer
+from .backdropLayer import BackdropPreviewLayer, resizeBackdropNode
 
 UP = 0
 DOWN = 1
@@ -108,7 +108,7 @@ def displayPopupParameters(hide_on_leave=False):
     # preflight
     selected_nodes = NodegraphAPI.GetAllSelectedNodes()
     if len(selected_nodes) == 0:
-        selected_nodes = list(filter(None, [nodeutils.getClosestNode()]))
+        selected_nodes = list(filter(None, [nodegraphutils.getClosestNode()]))
 
     if len(selected_nodes) == 0: return
 
@@ -159,7 +159,7 @@ def displayGridSettings(hide_on_leave=True):
     if not PopupWidget.doesPopupWidgetExist("gridSettings"):
         # create popup widget
         widget = GridGUIWidget()
-        size = scaleResolution(QSize(600, 375))
+        size = scaleResolution(QSize(600, 425))
         popup_widget = PopupWidget.constructPopupWidget(
             "gridSettings", widget, size=size, hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
         # setup style
@@ -173,7 +173,7 @@ def displayGridSettings(hide_on_leave=True):
 
         # set popup widget style
         popup_widget.setIsMaskEnabled(True)
-        popup_widget.setMaskSize(scaleResolution(QSize(600, 750)))
+        popup_widget.setMaskSize(scaleResolution(QSize(600, 850)))
         popup_widget.setContentsMargins(0, 0, 0, 0)
         popup_widget.layout().setContentsMargins(0, 0, 0, 0)
         offset_x = scaleResolution(70)
@@ -206,10 +206,10 @@ def duplicateNodes(nodegraph_layer, nodes_to_duplicate=None):
 
     # no selected nodes, get closest node
     if not nodes_to_duplicate:
-        nodes_to_duplicate = [nodeutils.getClosestNode()]
+        nodes_to_duplicate = [nodegraphutils.getClosestNode()]
 
     duplicated_nodes = NodegraphAPI.Util.DuplicateNodes(nodes_to_duplicate)
-    nodeutils.selectNodes(duplicated_nodes, is_exclusive=True)
+    nodegraphutils.selectNodes(duplicated_nodes, is_exclusive=True)
 
     if duplicated_nodes:
         nodegraph_layer.layerStack().parent().prepareFloatingLayerWithPasteBounds(duplicated_nodes)
@@ -247,14 +247,14 @@ def glowNodes(event):
     else:
         # move upstream nodes
         if event.modifiers() == Qt.AltModifier:
-            closest_node = nodeutils.getClosestNode(has_input_ports=True)
+            closest_node = nodegraphutils.getClosestNode(has_input_ports=True)
             if closest_node:
                 upstream_nodes = AlignUtils.getUpstreamNodes(closest_node)
                 nodeutils.colorClosestNode(upstream_nodes)
 
         # move downstream nodes
         if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
-            closest_node = nodeutils.getClosestNode(has_output_ports=True)
+            closest_node = nodegraphutils.getClosestNode(has_output_ports=True)
             if closest_node:
                 downstream_nodes = AlignUtils.getDownstreamNodes(closest_node)
                 nodeutils.colorClosestNode(downstream_nodes)
@@ -265,17 +265,17 @@ def moveNodes(direction=UP):
 
     node_list = None
     if direction == UP:
-        closest_node = nodeutils.getClosestNode(has_input_ports=True)
+        closest_node = nodegraphutils.getClosestNode(has_input_ports=True)
         if closest_node:
             node_list = AlignUtils.getUpstreamNodes(closest_node)
     if direction == DOWN:
-        closest_node = nodeutils.getClosestNode(has_output_ports=True)
+        closest_node = nodegraphutils.getClosestNode(has_output_ports=True)
         if closest_node:
             node_list = AlignUtils.getDownstreamNodes(closest_node)
 
     if node_list:
-        nodeutils.selectNodes(node_list)
-        nodeutils.floatNodes(node_list)
+        nodegraphutils.selectNodes(node_list)
+        nodegraphutils.floatNodes(node_list)
 
 
 def navigateNodegraph(direction):
@@ -295,130 +295,6 @@ def navigateNodegraph(direction):
     if direction == UP:
         if nodegraph_widget.getCurrentNodeView() != NodegraphAPI.GetRootNode():
             nodegraph_widget.setCurrentNodeView(nodegraph_widget.getCurrentNodeView().getParent())
-
-
-def resizeBackdropNode():
-    """ Resizes the backdrop node when the user has done an Alt+RMB """
-    # get attrs
-    curr_cursor_pos, _ = nodegraphutils.getNodegraphCursorPos()
-    orig_attrs = widgetutils.katanaMainWindow()._backdrop_orig_attrs
-    if "name" not in orig_attrs: return
-
-    node = NodegraphAPI.GetNode(orig_attrs["name"])
-    orig_node_pos = (orig_attrs["x"], orig_attrs["y"])
-    orig_cursor_pos = orig_attrs["orig_cursor_pos"]
-    quadrant = orig_attrs["quadrant"]
-    min_size = 100
-    if "ns_sizeX" not in orig_attrs:
-        orig_attrs["ns_sizeX"] = 128
-    if "ns_sizeY" not in orig_attrs:
-        orig_attrs["ns_sizeY"] = 64
-
-    # setup attrs
-    new_attrs = {}
-    for attr_name, attr_value in orig_attrs.items():
-        if attr_name not in ["quadrant", "orig_cursor_pos", "selected"]:
-            new_attrs[attr_name.replace("ns_", "")] = attr_value
-
-    # Get offset
-    offset_x, offset_y = 0, 0
-    if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
-        grid_pos = nodegraphutils.getNearestGridPoint(curr_cursor_pos.x(), curr_cursor_pos.y())
-        if quadrant == nodegraphutils.TOPRIGHT:
-            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
-            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
-        elif quadrant == nodegraphutils.TOP:
-            offset_x = 0
-            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
-        elif quadrant == nodegraphutils.TOPLEFT:
-            offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
-            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
-        elif quadrant == nodegraphutils.LEFT:
-            offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
-            offset_y = 0
-        elif quadrant == nodegraphutils.BOTLEFT:
-            offset_x = grid_pos.x() - (orig_node_pos[0] - new_attrs["sizeX"] * 0.5)
-            offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
-        elif quadrant == nodegraphutils.BOT:
-            offset_x = 0
-            offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
-        elif quadrant == nodegraphutils.BOTRIGHT:
-            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
-            offset_y = grid_pos.y() - (orig_node_pos[1] - new_attrs["sizeY"] * 0.5)
-        elif quadrant == nodegraphutils.RIGHT:
-            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
-            offset_y = 0
-        elif quadrant == nodegraphutils.CENTER:
-            # Todo update offset
-            offset_x = grid_pos.x() - (orig_node_pos[0] + new_attrs["sizeX"] * 0.5)
-            offset_y = grid_pos.y() - (orig_node_pos[1] + new_attrs["sizeY"] * 0.5)
-    else:
-        offset_x = curr_cursor_pos.x() - orig_cursor_pos.x()
-        offset_y = curr_cursor_pos.y() - orig_cursor_pos.y()
-
-    # update size
-    if quadrant == nodegraphutils.TOPRIGHT:
-        new_attrs["sizeX"] += offset_x
-        new_attrs["sizeY"] += offset_y
-
-    elif quadrant == nodegraphutils.TOP:
-        new_attrs["sizeY"] += offset_y
-        offset_x = 0
-
-    elif quadrant == nodegraphutils.TOPLEFT:
-        new_attrs["sizeX"] -= offset_x
-        new_attrs["sizeY"] += offset_y
-
-    elif quadrant == nodegraphutils.LEFT:
-        new_attrs["sizeX"] -= offset_x
-        offset_y = 0
-
-    elif quadrant == nodegraphutils.BOTLEFT:
-        new_attrs["sizeX"] -= offset_x
-        new_attrs["sizeY"] -= offset_y
-
-    elif quadrant == nodegraphutils.BOT:
-        new_attrs["sizeY"] -= offset_y
-        offset_x = 0
-
-    elif quadrant == nodegraphutils.BOTRIGHT:
-        new_attrs["sizeX"] += offset_x
-        new_attrs["sizeY"] -= offset_y
-
-    elif quadrant == nodegraphutils.RIGHT:
-        new_attrs["sizeX"] += offset_x
-        offset_y = 0
-
-    elif quadrant == nodegraphutils.CENTER:
-        new_attrs["sizeX"] += offset_x
-        new_attrs["sizeY"] += offset_y
-
-    # set min size
-    if new_attrs["sizeX"] < min_size:
-        new_attrs["sizeX"] = min_size
-    if new_attrs["sizeY"] < min_size:
-        new_attrs["sizeY"] = min_size
-
-    # node pos
-    if quadrant != nodegraphutils.CENTER:
-        new_node_pos_x = orig_node_pos[0] + offset_x * 0.5
-        new_node_pos_y = orig_node_pos[1] + offset_y * 0.5
-
-        # check min size
-        if new_attrs["sizeX"] == min_size:
-            new_node_pos_x = NodegraphAPI.GetNodePosition(node)[0]
-        if new_attrs["sizeY"] == min_size:
-            new_node_pos_y = NodegraphAPI.GetNodePosition(node)[1]
-        NodegraphAPI.SetNodePosition(node, (new_node_pos_x, new_node_pos_y))
-    else:
-        # todo setup node positioning for center
-        # really only might need it for snapping?
-        pass
-
-
-    new_attrs["zDepth"] = 1 / (new_attrs["sizeX"] * new_attrs["sizeY"])
-
-    nodegraphutils.updateBackdropDisplay(node, attrs=new_attrs)
 
 
 """ EVENTS"""
@@ -457,8 +333,8 @@ def nodeInteractionMousePressEvent(func):
 
             # move backdrop
             if event.modifiers() == (Qt.ControlModifier) and event.button() == Qt.LeftButton:
-                nodeutils.selectNodes([backdrop_node], is_exclusive=True)
-                nodeutils.floatNodes([backdrop_node])
+                nodegraphutils.selectNodes([backdrop_node], is_exclusive=True)
+                nodegraphutils.floatNodes([backdrop_node])
                 return True
 
             # duplicate backdrop and children
@@ -470,8 +346,8 @@ def nodeInteractionMousePressEvent(func):
             # move backdrop and children
             if event.modifiers() == Qt.AltModifier and event.button() == Qt.LeftButton:
                 nodes_to_move = nodegraphutils.getBackdropChildren(backdrop_node)
-                nodeutils.selectNodes(nodes_to_move, is_exclusive=True)
-                nodeutils.floatNodes(nodes_to_move)
+                nodegraphutils.selectNodes(nodes_to_move, is_exclusive=True)
+                nodegraphutils.floatNodes(nodes_to_move)
                 return True
 
             # initialize backdrop resize event
@@ -492,16 +368,16 @@ def nodeInteractionMousePressEvent(func):
                 # # If backdrop clicked, select and pickup
                 if backdrop_node in NodegraphAPI.GetAllSelectedNodes():
                     nodes_to_float = nodegraphutils.getBackdropChildren(backdrop_node)
-                    nodeutils.floatNodes(nodes_to_float)
+                    nodegraphutils.floatNodes(nodes_to_float)
                 else:
                     nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
-                    nodeutils.selectNodes(nodes_to_select, is_exclusive=True)
+                    nodegraphutils.selectNodes(nodes_to_select, is_exclusive=True)
                 return True
 
             # Append backdrop and children to current selection
             if event.modifiers() == Qt.ShiftModifier and event.button() == Qt.LeftButton:
                 nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
-                nodeutils.selectNodes(nodes_to_select)
+                nodegraphutils.selectNodes(nodes_to_select)
                 return True
         else:
             # Duplicate nodes
@@ -541,7 +417,25 @@ def nodeInteractionKeyPressEvent(func):
         if not is_floating:
             glowNodes(event)
 
-        # Process Key Presses
+        # Todo: alt/shift ~ modifiers are suppressed somehow this is
+        # being handle in the script manager
+        # if event.key() == 96 and event.modifiers() == Qt.AltModifier:
+        #     print("alt")
+        #     return True
+        # if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
+        #     print("alt + shift")
+        #     if event.key() == 96:
+        #         print("and press?")
+        #         return True
+        # if event.modifiers() == (Qt.ShiftModifier):
+        #     print("shift")
+        #     if event.key() == Qt.Key_A:
+        #         print("a")
+        #     if event.key() == 96:
+        #         print("and press?")
+        #         return True
+
+        # # Process Key Presses
         if event.key() == 96:
             # Shift+~ and Alt+Shift+~ are handled by the script manager
             PortConnector.actuateSelection()
@@ -610,7 +504,7 @@ def nodeInteractionKeyPressEvent(func):
             if selected_nodes:
                 view_node = selected_nodes[0]
             else:
-                view_node = nodeutils.getClosestNode()
+                view_node = nodegraphutils.getClosestNode()
 
             if view_node:
                 NodegraphAPI.SetNodeViewed(view_node, True, exclusive=True)

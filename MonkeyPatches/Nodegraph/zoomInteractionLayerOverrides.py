@@ -13,6 +13,8 @@ def zoomInteractionLayerProcessEvent(func):
                     if nodegraphutils.getBackdropNodeUnderCursor():
                         return False
 
+        # if event.type() == QEvent.KeyPress:
+        #     return False
         return func(self, event)
 
     return __zoomInteractionLayerProcessEvent

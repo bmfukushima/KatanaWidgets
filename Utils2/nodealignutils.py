@@ -669,6 +669,7 @@ class AlignUtils(object):
             x (int): How many grid units the node should be offset
             y (int): How many grid units the node should be offset
         """
+        from .nodegraphutils import floatNodes
         Utils.UndoStack.OpenGroup("Align Nodes")
         self._aligned_nodes = []
         if len(NodegraphAPI.GetAllSelectedNodes()) == 0: return
@@ -682,11 +683,10 @@ class AlignUtils(object):
         self.__alignDownstreamNodes(root_node, x, y, recursive=True)
         Utils.UndoStack.CloseGroup()
 
-        nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-        nodegraph_widget.parent().floatNodes(self._aligned_nodes)
+        floatNodes(self._aligned_nodes)
 
     def alignDownstreamNodes(self):
-        from .nodegraphutils import getNearestGridPoint
+        from .nodegraphutils import getNearestGridPoint, floatNodes
 
         Utils.UndoStack.OpenGroup("Align Nodes")
         self._aligned_nodes = []
@@ -715,7 +715,7 @@ class AlignUtils(object):
         Utils.UndoStack.CloseGroup()
 
         nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-        nodegraph_widget.parent().floatNodes(self._aligned_nodes)
+        floatNodes(self._aligned_nodes)
 
     def __alignDownstreamNodes(self, node, x=0, y=0, recursive=False):
         """ Algorithm to align all of the nodes in the tree selected
@@ -763,7 +763,7 @@ class AlignUtils(object):
                                 self.__alignUpstreamNodes(sibling_node, x=x, y=y, recursive=recursive)
 
     def alignUpstreamNodes(self):
-        from .nodegraphutils import getNearestGridPoint
+        from .nodegraphutils import getNearestGridPoint, floatNodes
 
         Utils.UndoStack.OpenGroup("Align Nodes")
         self._aligned_nodes = []
@@ -787,8 +787,7 @@ class AlignUtils(object):
                     NodegraphAPI.SetNodePosition(node, (offset_xpos, offset_ypos))
         Utils.UndoStack.CloseGroup()
 
-        nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-        nodegraph_widget.parent().floatNodes(self._aligned_nodes)
+        floatNodes(self._aligned_nodes)
 
     def __alignUpstreamNodes(self, node, x=0, y=0, recursive=False):
         """ Algorithm to align all of the nodes in the tree selected
@@ -834,6 +833,7 @@ class AlignUtils(object):
 
     """ SELECTION """
     def selectAllNodes(self, upstream=False, downstream=False):
+        from .nodegraphutils import floatNodes
         node_list = []
         for node in NodegraphAPI.GetAllSelectedNodes():
             if downstream is True:
@@ -841,7 +841,7 @@ class AlignUtils(object):
             if upstream is True:
                 node_list += AlignUtils.getUpstreamNodes(node)
         NodegraphAPI.SetAllSelectedNodes(node_list)
-        widgetutils.getActiveNodegraphWidget().floatNodes(node_list)
+        floatNodes(node_list)
 
     @staticmethod
     def __checkBackdropNodes(nodes):
