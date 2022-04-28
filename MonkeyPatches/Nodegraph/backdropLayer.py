@@ -1,3 +1,12 @@
+""" The Backdrop Layer is an additional OpenGL layered inserted into the NodeGraph Tab
+This layer will allow the user to do advanced manipulations on backdrop nodes.
+
+(Alt + RMB) to resize the node
+(Alt + LMB) to move the node and all children
+(Ctrl + LMB) move node
+(LMB) select node and children
+"""
+
 from OpenGL.GL import (
     GL_BLEND,
     glBegin,
