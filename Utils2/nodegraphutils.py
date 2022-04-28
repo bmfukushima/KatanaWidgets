@@ -140,7 +140,7 @@ def getBackdropArea(backdrop_node):
 def getNodeCorners(node):
     """ Returns the 4 corners of the backdrop node provided
 
-    Returns (float, float, float, float): left, top, right, bottom"""
+    Returns (float, float, float, float): left, bottom, right, top"""
     if not node: return 0, 0, 0, 0
     # Is backdrop
     if node.getType() == "Backdrop":
@@ -165,6 +165,11 @@ def getNodeCorners(node):
 
 
 def getBackdropIntersectionAmount(backdrop1, backdrop2):
+    """ Returns the intersection amount of two rectangles
+
+    Assuming they are a list of (left, bottom, right, top)
+
+    """
     dx = min(backdrop1[2], backdrop2[2]) - max(backdrop1[0], backdrop2[0])
     dy = min(backdrop1[3], backdrop2[3]) - max(backdrop1[1], backdrop2[1])
     if (dx >= 0) and (dy >= 0):

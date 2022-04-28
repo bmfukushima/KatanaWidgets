@@ -42,12 +42,13 @@ Ctrl + LMB
 - `Control + G` Show Grid
 """
 
-from .backdropLayer import installBackdropZDepth
+from .backdropLayer import installBackdropLayer
 from .nodeInteractionLayerOverrides import installNodegraphHotkeyOverrides
 from .linkConnectionLayerOverrides import installLinkConnectionLayerOverrides
 from .menuLayerOverride import installMenuLayerOverrides
 from .zoomInteractionLayerOverrides import installZoomLayerOverrides
 from .gridLayer import installGridLayer
+from .nodeIronLayer import installNodeIronLayer
 
 # link connection mouse move
 def installNodegraphOverrides(**kwargs):
@@ -57,4 +58,5 @@ def installNodegraphOverrides(**kwargs):
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installMenuLayerOverrides)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installZoomLayerOverrides)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGridLayer)
-    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installBackdropZDepth)
+    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installBackdropLayer)
+    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installNodeIronLayer)

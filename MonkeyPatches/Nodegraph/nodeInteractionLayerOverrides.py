@@ -206,6 +206,7 @@ def duplicateNodes(nodegraph_layer, nodes_to_duplicate=None):
 
     # no selected nodes, get closest node
     if not nodes_to_duplicate:
+        if not nodegraphutils.getClosestNode(): return
         nodes_to_duplicate = [nodegraphutils.getClosestNode()]
 
     duplicated_nodes = NodegraphAPI.Util.DuplicateNodes(nodes_to_duplicate)
@@ -516,20 +517,20 @@ def nodeInteractionKeyPressEvent(func):
     return __nodeInteractionKeyPressEvent
 
 
-def showEvent(func):
-    def __showEvent(self, event):
-        # disable floating layer, as it for some reason inits as True...
-        self.getLayerByName("Floating Nodes").setEnabled(False)
-
-        # setup grid layer
-        backdrop_preview_layer = self.getLayerByName("Backdrop Preview Layer")
-        if not backdrop_preview_layer:
-            self._backdrop_preview_layer = BackdropPreviewLayer("Backdrop Preview Layer", enabled=True)
-
-            self.appendLayer(self._backdrop_preview_layer)
-        return func(self, event)
-
-    return __showEvent
+# def showEvent(func):
+#     def __showEvent(self, event):
+#         # disable floating layer, as it for some reason inits as True...
+#         self.getLayerByName("Floating Nodes").setEnabled(False)
+#
+#         # setup grid layer
+#         backdrop_preview_layer = self.getLayerByName("Backdrop Preview Layer")
+#         if not backdrop_preview_layer:
+#             self._backdrop_preview_layer = BackdropPreviewLayer("Backdrop Preview Layer", enabled=True)
+#
+#             self.appendLayer(self._backdrop_preview_layer)
+#         return func(self, event)
+#
+#     return __showEvent
 
 
 def installNodegraphHotkeyOverrides(**kwargs):
@@ -539,7 +540,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
     # create proxy nodegraph
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
-    nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
+    #nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
 
     # NORMAL NODEGRAPH
     node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")

@@ -26,7 +26,8 @@ from qtpy.QtCore import Qt
 
 # setup prefs
 import QT4GLLayerStack
-from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs
+from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs, UI4
+from UI4.App import Tabs
 from Utils2 import nodegraphutils, widgetutils, nodeutils
 
 
@@ -441,5 +442,25 @@ def updateBackdropZDepth(backdrop_node):
     nodegraphutils.updateBackdropDisplay(backdrop_node, attrs=new_attrs)
 
 
-def installBackdropZDepth(**kwargs):
+def showEvent(func):
+    def __showEvent(self, event):
+        # disable floating layer, as it for some reason inits as True...
+        self.getLayerByName("Floating Nodes").setEnabled(False)
+
+        # setup grid layer
+        backdrop_preview_layer = self.getLayerByName("Backdrop Preview Layer")
+        if not backdrop_preview_layer:
+            self._backdrop_preview_layer = BackdropPreviewLayer("Backdrop Preview Layer", enabled=True)
+
+            self.appendLayer(self._backdrop_preview_layer)
+        return func(self, event)
+
+    return __showEvent
+
+
+def installBackdropLayer(**kwargs):
+    nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
+    nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
+    nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
+
     Utils.EventModule.RegisterCollapsedHandler(calculateBackdropZDepth, 'node_setPosition')
