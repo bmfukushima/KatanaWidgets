@@ -23,10 +23,13 @@ from OpenGL.GL import (
 )
 from qtpy.QtWidgets import QApplication
 from qtpy.QtCore import Qt
+from qtpy.QtGui import QCursor
 
 # setup prefs
 import QT4GLLayerStack
+from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdropNodeDialog
 from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs, UI4
+
 from UI4.App import Tabs
 from Utils2 import nodegraphutils, widgetutils, nodeutils
 
@@ -243,6 +246,54 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
 
         glLineWidth(1)
         glDisable(GL_BLEND)
+
+
+def createBackdropNode(is_floating=False):
+    """ Creates a backdrop node around the current selection"""
+    Utils.UndoStack.OpenGroup("Create Backdrop")
+
+    # get nodegraph
+    nodegraph_widget = widgetutils.isCursorOverNodeGraphWidget()
+    if not nodegraph_widget:
+        nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
+
+    # create backdrop and fit around selection
+    current_group = nodegraph_widget.getCurrentNodeView()
+    backdrop_node = NodegraphAPI.CreateNode("Backdrop", current_group)
+    NodegraphAPI.SetNodeSelected(backdrop_node, True)
+    nodegraph_widget.fitBackdropNode()
+
+    # float if no nodes selected
+    if len(NodegraphAPI.GetAllSelectedNodes()) == 1 or is_floating:
+        nodegraph_widget.parent().floatNodes(NodegraphAPI.GetAllSelectedNodes())
+
+    # prompt user for setting the node color
+    def previewCallback(node, attr_dict):
+        """ Callback run when the user updates a parameter in the backdrop node
+
+        Args:
+            node (Node): backdrop node to be updated
+            attr_dict (dict): attributes to be updated
+            """
+        # get nodegraph
+        nodegraph_widget = widgetutils.isCursorOverNodeGraphWidget()
+        if not nodegraph_widget:
+            nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
+
+        for attrName, attrValue in attr_dict.items():
+            DrawingModule.nodeWorld_setShapeAttr(node, attrName, attrValue)
+            DrawingModule.nodeWorld_setShapeAttr(node, "update", 1)
+
+            for layerStack in nodegraph_widget.getAllNodeGraphWidgets():
+                layerStack.setNGVShapeAttrs(node, attr_dict)
+            # this gives us live updates
+            nodegraph_widget.idleUpdate()
+
+    d = EditBackdropNodeDialog(backdrop_node, previewCallback=previewCallback)
+    d.exec_()
+    d.close()
+    d.move(QCursor.pos())
+    Utils.UndoStack.CloseGroup()
 
 
 def calculateBackdropZDepth(args):
