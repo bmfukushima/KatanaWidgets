@@ -465,6 +465,9 @@ def nodeInteractionKeyReleaseEvent(self, event):
             file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
             popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
             popup_widget.show()
+
+            # need to make sure this releases
+            nodegraphutils.setCurrentKeyPressed(None)
             return True
 
     nodegraphutils.setCurrentKeyPressed(None)
