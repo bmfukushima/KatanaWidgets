@@ -366,6 +366,16 @@ def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynami
     return closest_node
 
 
+def setCurrentKeyPressed(key):
+    from .widgetutils import katanaMainWindow
+    katanaMainWindow()._nodegraph_key_press = key
+
+
+def getCurrentKeyPressed():
+    from .widgetutils import katanaMainWindow
+    return katanaMainWindow()._nodegraph_key_press
+
+
 def getDownstreamNodes(node):
     nodes = NodegraphAPI.Util.GetAllConnectedOutputs([node])
     nodes.append(node)

@@ -2,6 +2,15 @@
         * remove keypress private function
             - how to suppress menu hotkey events
 
+Notes:
+    In order to create a key + lmb event, you'll need to
+        1.) Register key in keypress event with
+            nodegraphutils.setCurrentKeyPressed(Qt.Key)
+        2.) Register mouse press in nodeInteractionMousePressEvent
+        3.) Release key in nodeInteractionMouseReleaseEvent
+            Note: you should probably use a timer here, to ensure
+                the user actually picks the key up, and a release event doesn't trigger.
+
 Attributes:
     _nodegraph_key_press (Qt.KEY): Currently pressed key (last key if multiple are pressed)
     _node_iron_active (bool): Determines if an ironing event is currently happening
@@ -247,10 +256,6 @@ def nodeInteractionEvent(func):
     return __nodeInteractionEvent
 
 
-def getCurrentKeyPressed():
-    return widgetutils.katanaMainWindow()._nodegraph_key_press
-
-
 def nodeInteractionMouseMoveEvent(self, event):
     # run functions
     glowNodes(event)
@@ -296,7 +301,7 @@ def nodeInteractionMousePressEvent(self, event):
             return True
 
         # start iron
-        if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton and getCurrentKeyPressed() == Qt.Key_A:
+        if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton and nodegraphutils.getCurrentKeyPressed() == Qt.Key_A:
             Utils.UndoStack.OpenGroup("Align Nodes")
             widgetutils.katanaMainWindow()._node_iron_active = True
             return True
@@ -406,7 +411,7 @@ def nodeInteractionKeyPressEvent(func):
 
         if event.key() == Qt.Key_A and event.modifiers() == Qt.NoModifier:
             if event.isAutoRepeat(): return True
-            widgetutils.katanaMainWindow()._nodegraph_key_press = event.key()
+            nodegraphutils.setCurrentKeyPressed(event.key())
             return True
 
         if event.key() == Qt.Key_B and event.modifiers() == Qt.NoModifier:
@@ -462,14 +467,14 @@ def nodeInteractionKeyReleaseEvent(self, event):
             popup_widget.show()
             return True
 
-    widgetutils.katanaMainWindow()._nodegraph_key_press = None
+    nodegraphutils.setCurrentKeyPressed(None)
 
     return False
 
 
 def showEvent(func):
     def __showEvent(self, event):
-        widgetutils.katanaMainWindow()._nodegraph_key_press = None
+        nodegraphutils.setCurrentKeyPressed(None)
         return func(self, event)
 
     return __showEvent
