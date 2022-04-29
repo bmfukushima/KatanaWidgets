@@ -17,9 +17,10 @@ def isCursorOverNodeGraphWidget():
     """ Determines if the cursor is over a nodegraph widget or not.
 
     If it is, it will return the nodegraph widget.  If it is not, it will return None"""
-    if not hasattr(getWidgetUnderCursor(), "__module__"): return False
-    if not getWidgetUnderCursor(): return False
-    if getWidgetUnderCursor().__module__.split(".")[-1] != "NodegraphWidget": return False
-    return getWidgetUnderCursor()
+    widget_under_cursor = getWidgetUnderCursor()
+    if not widget_under_cursor: return False
+    if not hasattr(widget_under_cursor, "__module__"): return False
+    if widget_under_cursor.__module__.split(".")[-1] != "NodegraphWidget": return False
+    return widget_under_cursor
 
 

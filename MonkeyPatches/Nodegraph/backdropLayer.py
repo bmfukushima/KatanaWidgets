@@ -22,7 +22,7 @@ from OpenGL.GL import (
     GL_TRIANGLE_FAN
 )
 from qtpy.QtWidgets import QApplication
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt, QEvent
 from qtpy.QtGui import QCursor
 
 # setup prefs
@@ -493,6 +493,19 @@ def updateBackdropZDepth(backdrop_node):
     nodegraphutils.updateBackdropDisplay(backdrop_node, attrs=new_attrs)
 
 
+def processEvent(func):
+    """ Overrides the process event for the sticky note interaction layer """
+    def __processEvent(self, event):
+        if event.type() == QEvent.MouseButtonPress:
+            if event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier:
+                backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
+                NodegraphAPI.SetNodeSelected(backdrop_node, not NodegraphAPI.IsNodeSelected(backdrop_node))
+                return True
+        return func(self, event)
+
+    return __processEvent
+
+
 def showEvent(func):
     def __showEvent(self, event):
         # disable floating layer, as it for some reason inits as True...
@@ -513,5 +526,9 @@ def installBackdropLayer(**kwargs):
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
     nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
+
+    # override interactions
+    backdrop_interaction_layer = nodegraph_widget.getLayerByName("Backdrop Node Interaction")
+    backdrop_interaction_layer.__class__.processEvent = processEvent(backdrop_interaction_layer.__class__.processEvent)
 
     Utils.EventModule.RegisterCollapsedHandler(calculateBackdropZDepth, 'node_setPosition')

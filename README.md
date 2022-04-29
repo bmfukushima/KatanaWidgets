@@ -74,12 +74,13 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   - `Alt + Forward Button` show root node as view node
 -`Control + G` Show  Grid Settings Dialogue
 - `B` Create new backdrop
-  - `Alt + RMB` Resize backdrop
-  - `Alt + LMB` Select and float backdrop and children
   - `LMB` Select backdrop and children
-  - `Alt + LMB` Select and float backdrop and children
-  - `Ctrl + LMB` Select and float only backdrop
-  - `Shift + LMB` Append backdrop and children to current selection
+  - `Alt + LMB` Select and float backdrop and selected children
+  - `Alt + Shift + LMB` Select and float backdrop and all children
+  - `Ctrl + LMB` Select / Deselect backdrop
+  - `Ctrl + Alt + LMB` Select and float backdrop
+  - `Shift + LMB` Append/Remove backdrop and children to current selection
+  - `Alt + RMB` Resize backdrop
 ### [Macros](Macros/README.md) +
 - Cleanup Empty Groups
 - Frustum
