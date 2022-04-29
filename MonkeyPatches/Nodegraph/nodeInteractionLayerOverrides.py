@@ -304,6 +304,7 @@ def nodeInteractionMousePressEvent(self, event):
         if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton and nodegraphutils.getCurrentKeyPressed() == Qt.Key_A:
             Utils.UndoStack.OpenGroup("Align Nodes")
             widgetutils.katanaMainWindow()._node_iron_active = True
+            widgetutils.katanaMainWindow()._node_iron_finishing = False
             return True
 
     return False
@@ -316,11 +317,10 @@ def nodeInteractionMouseReleaseEvent(self, event):
             """ Need to run a delayed timer here, to ensure that when
             the user lifts up the A+LMB, that it doesn't accidently
             register a AlignMenu on release because they have slow fingers"""
-            widgetutils.katanaMainWindow()._node_iron_active = False
-            widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
-            self.layerStack().idleUpdate()
+            widgetutils.katanaMainWindow()._node_iron_finishing = False
             delattr(self, "_timer")
 
+        widgetutils.katanaMainWindow()._node_iron_finishing = True
         # if only one node is ironed, then automatically do an align upstream/downstream depending
         # on the direction of the swipe
         ironed_nodes = widgetutils.katanaMainWindow()._node_iron_aligned_nodes
@@ -338,8 +338,12 @@ def nodeInteractionMouseReleaseEvent(self, event):
             nodegraphutils.floatNodes(widgetutils.katanaMainWindow()._node_iron_aligned_nodes)
 
         self._timer = QTimer()
-        self._timer.start(150)
+        self._timer.start(500)
         self._timer.timeout.connect(deactiveNodeIron)
+
+        widgetutils.katanaMainWindow()._node_iron_active = False
+        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+        self.layerStack().idleUpdate()
 
         # QApplication.processEvents()
         Utils.UndoStack.CloseGroup()
@@ -460,7 +464,7 @@ def nodeInteractionKeyReleaseEvent(self, event):
     if event.isAutoRepeat(): return True
     if event.key() == Qt.Key_A:
         # display align menu
-        if not widgetutils.katanaMainWindow()._node_iron_active:
+        if not widgetutils.katanaMainWindow()._node_iron_finishing and not widgetutils.katanaMainWindow()._node_iron_active:
             current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
             file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
             popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
@@ -477,6 +481,7 @@ def nodeInteractionKeyReleaseEvent(self, event):
 
 def showEvent(func):
     def __showEvent(self, event):
+
         nodegraphutils.setCurrentKeyPressed(None)
         return func(self, event)
 
