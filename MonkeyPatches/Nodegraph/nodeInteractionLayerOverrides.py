@@ -308,7 +308,8 @@ def nodeInteractionLayerMouseMoveEvent(func):
         # resize backdrop
         if event.modifiers() == Qt.AltModifier and event.buttons() == Qt.RightButton:
             resizeBackdropNode()
-
+        if widgetutils.katanaMainWindow()._node_iron_active:
+            self.layerStack().idleUpdate()
         return func(self, event)
 
     return __nodeInteractionLayerMouseMoveEvent
@@ -394,6 +395,11 @@ def nodeInteractionMousePressEvent(func):
                 moveNodes(DOWN)
                 return True
 
+            # start node iron
+            if event.modifiers() == (Qt.ControlModifier | Qt.AltModifier | Qt.ShiftModifier) and event.button() in [Qt.LeftButton]:
+                widgetutils.katanaMainWindow()._node_iron_active = True
+                return True
+                # return False
         return func(self, event)
 
     return __nodeInteractionMousePressEvent
@@ -402,7 +408,15 @@ def nodeInteractionMousePressEvent(func):
 def nodeInteractionMouseReleaseEvent(func):
     """ DUPLICATE NODES """
     def __nodeInteractionMouseReleaseEvent(self, event):
+        # reset backdrop attrs
         widgetutils.katanaMainWindow()._backdrop_resize_active = False
+
+        # reset node iron attrs
+        widgetutils.katanaMainWindow()._node_iron_active = False
+        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+
+        # update view
+        self.layerStack().idleUpdate()
         return func(self, event)
 
     return __nodeInteractionMouseReleaseEvent
