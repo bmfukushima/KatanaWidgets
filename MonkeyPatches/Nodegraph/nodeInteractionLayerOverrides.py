@@ -409,12 +409,14 @@ def nodeInteractionMouseReleaseEvent(func):
     """ DUPLICATE NODES """
     def __nodeInteractionMouseReleaseEvent(self, event):
         # reset backdrop attrs
-        widgetutils.katanaMainWindow()._backdrop_resize_active = False
+        if widgetutils.katanaMainWindow()._backdrop_resize_active:
+            widgetutils.katanaMainWindow()._backdrop_resize_active = False
 
         # reset node iron attrs
-        nodegraphutils.floatNodes(widgetutils.katanaMainWindow()._node_iron_aligned_nodes)
-        widgetutils.katanaMainWindow()._node_iron_active = False
-        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+        if widgetutils.katanaMainWindow()._node_iron_active:
+            nodegraphutils.floatNodes(widgetutils.katanaMainWindow()._node_iron_aligned_nodes)
+            widgetutils.katanaMainWindow()._node_iron_active = False
+            widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
 
         # update view
         self.layerStack().idleUpdate()
