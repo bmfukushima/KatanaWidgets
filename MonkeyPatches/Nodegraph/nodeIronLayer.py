@@ -4,29 +4,19 @@ As the user swipes through nodes using CTRL+ALT+SHIFT+LMB, all
 of the nodes hit will be aligned to the first node, based off
 of the direction of the cursor as it passed through the second node.
 
-Todo:
-    - Fast swipes not registering due to polling.
-    - Use the getCursorPoints() call and interpolate lines to determine if nodes are hit?
-    - Can add number of samples between points
-    - This is actually the same algo that can be used for the cutting links tool...
+todo:
+    - draw cursor
+    - add search radius (nodegraphutils)
 """
 import math
 
 from OpenGL.GL import (
-    GL_BLEND,
-    glClear,
     glBegin,
     GL_POINTS,
     glColor4f,
-    glDisable,
-    glEnable,
     glEnd,
     glVertex2f,
     glPointSize,
-    GL_TRIANGLES,
-    glLineWidth,
-    GL_LINES,
-    GL_TRIANGLE_FAN
 )
 from qtpy.QtWidgets import QApplication
 from qtpy.QtCore import Qt, QPoint, QEvent, QTimer
@@ -93,6 +83,7 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
             if mouse_pos:
                 window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1] - mouse_pos.y())
 
+                # todo draw something more interesting than a dot...
                 # draw crosshair
                 radius = 10
                 glColor4f(0.5, 0.5, 1, 1)

@@ -532,12 +532,14 @@ def interpolatePoints(p0, p1):
 
     This assumes the topleft is 0,0
     and the bottom right is 1,1
+
+    # todo add a radius?
     Args:
         p0 (QPoint):
         p1 (QPoint):
 
     Returns (list): of QPoints
-        """
+    """
 
     step_size = 1
     x_offset = math.fabs(math.fabs(p1.x()) - math.fabs(p0.x()))
