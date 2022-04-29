@@ -270,9 +270,9 @@ def nodeInteractionMousePressEvent(self, event):
     if event.button() == Qt.BackButton and event.modifiers() == Qt.AltModifier:
         navigateNodegraph(UP)
         return True
+
     """ Need to by pass for special functionality for backdrops"""
     backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
-
     if not backdrop_node:
         # Duplicate nodes
         if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() == Qt.LeftButton:
@@ -290,6 +290,7 @@ def nodeInteractionMousePressEvent(self, event):
 
         # start node iron
         if event.modifiers() == (Qt.ControlModifier | Qt.AltModifier | Qt.ShiftModifier) and event.button() in [Qt.LeftButton]:
+            Utils.UndoStack.OpenGroup("Align Nodes")
             widgetutils.katanaMainWindow()._node_iron_active = True
             return True
 
@@ -302,6 +303,7 @@ def nodeInteractionMouseReleaseEvent(self, event):
         nodegraphutils.floatNodes(widgetutils.katanaMainWindow()._node_iron_aligned_nodes)
         widgetutils.katanaMainWindow()._node_iron_active = False
         widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+        Utils.UndoStack.CloseGroup()
 
     # update view
     self.layerStack().idleUpdate()
