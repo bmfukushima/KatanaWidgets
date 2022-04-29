@@ -1,12 +1,16 @@
 """ Todo:
         * remove keypress private function
             - how to suppress menu hotkey events
+
+Attributes:
+    _nodegraph_key_press (Qt.KEY): Currently pressed key (last key if multiple are pressed)
+    _node_iron_active (bool): Determines if an ironing event is currently happening
 """
 
 import os
 import inspect
 
-from qtpy.QtCore import Qt, QSize, QPoint, QEvent
+from qtpy.QtCore import Qt, QSize, QPoint, QEvent, QTimer
 from qtpy.QtGui import QCursor
 
 from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile, LayeredMenuAPI, PrefNames, KatanaPrefs
@@ -18,16 +22,12 @@ from cgwidgets.widgets import PopupHotkeyMenu
 
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 from Utils2 import nodeutils, widgetutils, nodegraphutils
+from Utils2.nodealignutils import AlignUtils
 
 from .gridLayer import GridGUIWidget
 from .portConnector import PortConnector
 from .backdropLayer import createBackdropNode
 
-UP = 0
-DOWN = 1
-BACK = 2
-FORWARD = 4
-HOME = 8
 
 """ UTILS """
 def disableNodes():
@@ -188,15 +188,15 @@ def glowNodes(event):
                 nodeutils.colorClosestNode(downstream_nodes)
 
 
-def moveNodes(direction=UP):
+def moveNodes(direction=nodegraphutils.UP):
     """ Selects and moves the nodes upstream or downstream of the selected node """
 
     node_list = None
-    if direction == UP:
+    if direction == nodegraphutils.UP:
         closest_node = nodegraphutils.getClosestNode(has_input_ports=True)
         if closest_node:
             node_list = nodegraphutils.getUpstreamNodes(closest_node)
-    if direction == DOWN:
+    if direction == nodegraphutils.DOWN:
         closest_node = nodegraphutils.getClosestNode(has_output_ports=True)
         if closest_node:
             node_list = nodegraphutils.getDownstreamNodes(closest_node)
@@ -214,13 +214,13 @@ def navigateNodegraph(direction):
     """
     nodegraph_widget = widgetutils.getActiveNodegraphWidget()
     navigation_toolbar = nodegraph_widget.parent()._NodegraphPanel__navigationToolbar
-    if direction == FORWARD:
+    if direction == nodegraphutils.FORWARD:
         navigation_toolbar._NavigationToolbar__forwardButtonClicked()
-    if direction == BACK:
+    if direction == nodegraphutils.BACK:
         navigation_toolbar._NavigationToolbar__backButtonClicked()
-    if direction == HOME:
+    if direction == nodegraphutils.HOME:
         nodegraph_widget.setCurrentNodeView(NodegraphAPI.GetRootNode())
-    if direction == UP:
+    if direction == nodegraphutils.UP:
         if nodegraph_widget.getCurrentNodeView() != NodegraphAPI.GetRootNode():
             nodegraph_widget.setCurrentNodeView(nodegraph_widget.getCurrentNodeView().getParent())
 
@@ -237,6 +237,8 @@ def nodeInteractionEvent(func):
             if nodeInteractionMouseReleaseEvent(self, event): return True
         if event.type() == QEvent.MouseMove:
             if nodeInteractionMouseMoveEvent(self, event): return True
+        if event.type() == QEvent.KeyRelease:
+            if nodeInteractionKeyReleaseEvent(self, event): return True
         # if event.type() == QEvent.KeyPress:
         #     if nodeInteractionKeyPressEvent(self, event): return True
 
@@ -245,11 +247,15 @@ def nodeInteractionEvent(func):
     return __nodeInteractionEvent
 
 
+def getCurrentKeyPressed():
+    return widgetutils.katanaMainWindow()._nodegraph_key_press
+
+
 def nodeInteractionMouseMoveEvent(self, event):
     # run functions
     glowNodes(event)
 
-    # iron nodes
+    # update node iron
     if widgetutils.katanaMainWindow()._node_iron_active:
         self.layerStack().idleUpdate()
 
@@ -259,16 +265,16 @@ def nodeInteractionMouseMoveEvent(self, event):
 def nodeInteractionMousePressEvent(self, event):
     # Nodegraph Navigation
     if event.button() == Qt.ForwardButton and event.modifiers() == Qt.NoModifier:
-        navigateNodegraph(FORWARD)
+        navigateNodegraph(nodegraphutils.FORWARD)
         return True
     if event.button() == Qt.BackButton and event.modifiers() == Qt.NoModifier:
-        navigateNodegraph(BACK)
+        navigateNodegraph(nodegraphutils.BACK)
         return True
     if event.button() == Qt.ForwardButton and event.modifiers() == Qt.AltModifier:
-        navigateNodegraph(HOME)
+        navigateNodegraph(nodegraphutils.HOME)
         return True
     if event.button() == Qt.BackButton and event.modifiers() == Qt.AltModifier:
-        navigateNodegraph(UP)
+        navigateNodegraph(nodegraphutils.UP)
         return True
 
     """ Need to by pass for special functionality for backdrops"""
@@ -279,17 +285,18 @@ def nodeInteractionMousePressEvent(self, event):
             nodegraphutils.duplicateNodes(self)
             return True
 
-        # Move nodes
+        # select/move nodes above current node
         if event.modifiers() == Qt.AltModifier and event.button() in [Qt.LeftButton]:
-            moveNodes(UP)
+            moveNodes(nodegraphutils.UP)
             return True
 
+        # select nodes below current node
         if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier) and event.button() in [Qt.LeftButton]:
-            moveNodes(DOWN)
+            moveNodes(nodegraphutils.DOWN)
             return True
 
-        # start node iron
-        if event.modifiers() == (Qt.ControlModifier | Qt.AltModifier | Qt.ShiftModifier) and event.button() in [Qt.LeftButton]:
+        # start iron
+        if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton and getCurrentKeyPressed() == Qt.Key_A:
             Utils.UndoStack.OpenGroup("Align Nodes")
             widgetutils.katanaMainWindow()._node_iron_active = True
             return True
@@ -300,9 +307,36 @@ def nodeInteractionMousePressEvent(self, event):
 def nodeInteractionMouseReleaseEvent(self, event):
     # reset node iron attrs
     if widgetutils.katanaMainWindow()._node_iron_active:
-        nodegraphutils.floatNodes(widgetutils.katanaMainWindow()._node_iron_aligned_nodes)
-        widgetutils.katanaMainWindow()._node_iron_active = False
-        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+        def deactiveNodeIron():
+            """ Need to run a delayed timer here, to ensure that when
+            the user lifts up the A+LMB, that it doesn't accidently
+            register a AlignMenu on release because they have slow fingers"""
+            widgetutils.katanaMainWindow()._node_iron_active = False
+            widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+            self.layerStack().idleUpdate()
+            delattr(self, "_timer")
+
+        # if only one node is ironed, then automatically do an align upstream/downstream depending
+        # on the direction of the swipe
+        ironed_nodes = widgetutils.katanaMainWindow()._node_iron_aligned_nodes
+        if len(ironed_nodes) == 1:
+            nodegraphutils.selectNodes(ironed_nodes, True)
+            iron_layer = self.layerStack().getLayerByName("Node Iron Layer")
+            trajectory = iron_layer.getCursorTrajectory()
+            if trajectory == nodegraphutils.UP:
+                AlignUtils().alignUpstreamNodes()
+            elif trajectory == nodegraphutils.DOWN:
+                AlignUtils().alignDownstreamNodes()
+
+        # iron nodes
+        if 1 < len(ironed_nodes):
+            nodegraphutils.floatNodes(widgetutils.katanaMainWindow()._node_iron_aligned_nodes)
+
+        self._timer = QTimer()
+        self._timer.start(150)
+        self._timer.timeout.connect(deactiveNodeIron)
+
+        # QApplication.processEvents()
         Utils.UndoStack.CloseGroup()
 
     # update view
@@ -371,10 +405,8 @@ def nodeInteractionKeyPressEvent(func):
             return True
 
         if event.key() == Qt.Key_A and event.modifiers() == Qt.NoModifier:
-            current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-            file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
-            popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
-            popup_widget.show()
+            if event.isAutoRepeat(): return True
+            widgetutils.katanaMainWindow()._nodegraph_key_press = event.key()
             return True
 
         if event.key() == Qt.Key_B and event.modifiers() == Qt.NoModifier:
@@ -419,6 +451,31 @@ def nodeInteractionKeyPressEvent(func):
     return __nodeInteractionKeyPressEvent
 
 
+def nodeInteractionKeyReleaseEvent(self, event):
+    if event.isAutoRepeat(): return True
+    if event.key() == Qt.Key_A:
+        # display align menu
+        if not widgetutils.katanaMainWindow()._node_iron_active:
+            current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+            file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
+            popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
+            popup_widget.show()
+            return True
+
+    widgetutils.katanaMainWindow()._nodegraph_key_press = None
+
+    return False
+
+
+def showEvent(func):
+    def __showEvent(self, event):
+        widgetutils.katanaMainWindow()._nodegraph_key_press = None
+        return func(self, event)
+
+    return __showEvent
+
+
+
 def installNodegraphHotkeyOverrides(**kwargs):
     """ Installs the hotkey overrides """
     # Node interaction key press
@@ -426,6 +483,7 @@ def installNodegraphHotkeyOverrides(**kwargs):
     # create proxy nodegraph
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
+    nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
 
     # NORMAL NODEGRAPH
     node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")

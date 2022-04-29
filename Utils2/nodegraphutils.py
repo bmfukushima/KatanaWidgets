@@ -42,6 +42,10 @@ RIGHT = 8
 UP = 2
 DOWN = 6
 
+FORWARD = 2
+BACK = 6
+HOME = 0
+
 def clearNodeSelection():
     for node in NodegraphAPI.GetAllSelectedNodes():
         NodegraphAPI.SetNodeSelected(node, False)
@@ -681,7 +685,7 @@ def updateBackdropDisplay(node, attrs=None):
         NodegraphAPI.SetNodeSelected(node, False)
 
 
-def updateCursorTrajectory(p0, p1):
+def getCursorTrajectory(p0, p1):
     """ Gets the current trajectory of the cursor
 
     Args:

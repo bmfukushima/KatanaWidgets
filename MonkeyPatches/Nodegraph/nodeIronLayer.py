@@ -78,10 +78,13 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
         if widgetutils.katanaMainWindow()._node_iron_active:
             # create point on cursor
             mouse_pos = self.layerStack().getMousePos()
-
             # align nodes
             if mouse_pos:
                 window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1] - mouse_pos.y())
+                if len(self.getAlignedNodes()) == 0:
+                    if 1 < len(self.getCursorPoints()):
+                        self._cursor_trajectory = nodegraphutils.getCursorTrajectory(self.getCursorPoints()[0], self.getCursorPoints()[-1])
+                        # print('updating trajectory to..', self._cursor_trajectory)
 
                 # todo draw something more interesting than a dot...
                 # draw crosshair
@@ -107,7 +110,7 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
 
                             # set direction
                             if len(self.getAlignedNodes()) == 1:
-                                self._cursor_trajectory = nodegraphutils.updateCursorTrajectory(self.getCursorPoints()[0], self.getCursorPoints()[-1])
+                                self._cursor_trajectory = nodegraphutils.getCursorTrajectory(self.getCursorPoints()[0], self.getCursorPoints()[-1])
 
                             # iron node
                             if 0 < len(self.getAlignedNodes()):
