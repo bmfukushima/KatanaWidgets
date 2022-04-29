@@ -1,3 +1,26 @@
+""" When dealing with the nodegraph...
+
+Node Graph is return as
+    top left = 0, 0
+    bottom right = 1, 1
+
+View is returned as
+    bottom left = 0,0
+    top right = 1,1
+
+world = nodegraph coordinates
+    bottom left = 0,0
+    top right = 1,1
+local = Qt Local coordinates
+    top left = 0, 0
+    bottom right = 1, 1
+window = view coordinates
+    bottom left = 0,0
+    top right = 1,1
+"""
+
+
+
 import math
 
 from qtpy.QtCore import QPoint
@@ -15,6 +38,9 @@ BOTLEFT = 5
 BOT = 6
 BOTRIGHT = 7
 RIGHT = 8
+
+UP = 2
+DOWN = 6
 
 def clearNodeSelection():
     for node in NodegraphAPI.GetAllSelectedNodes():
@@ -35,94 +61,29 @@ def getActiveBackdropNodes():
     return list(set(active_backdrop_nodes))
 
 
-def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False, exclude_nodes=[]):
-    """ Returns the closest node to the cursor
-
-    # Todo need to make this work for entered group nodes
+def getAllUpstreamTerminalNodes(node, node_list=[]):
+    """ Gets all nodes upstream of a specific node that have no input nodes
 
     Args:
-        exclude_nodes (list): list of nodes to not include in the search
-        has_input_ports (bool): determines if the node is required to have an input port
-        has_output_ports (bool): determines if the node is required to have an output port
-        include_dynamic_port_nodes (bool): Determines if nodes with no input ports, but the possibility of having
-            them should be included
+        node (Node): node to search from
+
+    Returns (list): of nodes with no inputs
     """
-    from .widgetutils import getActiveNodegraphWidget
+    children = node.getInputPorts()
+    if 0 < len(children):
+        for input_port in children:
+            connected_ports = input_port.getConnectedPorts()
+            for port in connected_ports:
+                node = port.getNode()
+                getAllUpstreamTerminalNodes(node, node_list=node_list)
+                terminal = True
+                for input_port in node.getInputPorts():
+                    if 0 < len(input_port.getConnectedPorts()):
+                        terminal = False
+                if terminal is True:
+                    node_list.append(node)
 
-    nodegraph_widget = getActiveNodegraphWidget()
-    if not nodegraph_widget: return
-    if not hasattr(nodegraph_widget, "getGroupNodeUnderMouse"): return
-
-    # populate node list
-    node_list = [node for node in nodegraph_widget.getGroupNodeUnderMouse().getChildren() if node.getType() != "Backdrop"]
-
-    if has_output_ports:
-        node_list = [node for node in node_list if 0 < len(node.getOutputPorts())]
-
-    if has_input_ports:
-        _node_list = []
-        for node in node_list:
-            if 0 < len(node.getInputPorts()):
-                _node_list.append(node)
-            else:
-                if include_dynamic_port_nodes:
-                    if node.getType() in dynamicInputPortNodes():
-                        _node_list.append(node)
-
-        # update node list
-        if has_output_ports:
-            node_list += _node_list
-        else:
-            node_list = _node_list
-
-    for node in exclude_nodes:
-        if node in node_list:
-            node_list.remove(node)
-
-    # get cursor position
-    cursor_pos = nodegraph_widget.getMousePos()
-    if not cursor_pos: return
-    group_node = nodegraph_widget.getGroupNodeUnderMouse()
-    world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
-    cursor_pos = QPoint(*nodegraph_widget.getPointAdjustedToGroupNodeSpace(group_node, world_pos))
-
-    closest_node = None
-    mag = None
-    for node in node_list:
-        # compare vector distance...
-        node_pos = NodegraphAPI.GetNodePosition(node)
-        x = node_pos[0] - cursor_pos.x()
-        y = node_pos[1] - cursor_pos.y()
-        new_mag = math.sqrt(x*x + y*y)
-        if mag == None:
-            mag = new_mag
-            closest_node = node
-        elif new_mag < mag:
-            mag = new_mag
-            closest_node = node
-
-    return closest_node
-
-#
-def getFocusedGroupNode(nodegraph_widget=None):
-    """ Returns the group node currently under the cursor
-
-    Args:
-        nodegraph_widget (NodegraphWidget): if none provided, will get the one
-            under the cursor
-    """
-    widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
-    if widget_under_cursor != "NodegraphWidget": return
-
-    if not nodegraph_widget:
-        nodegraph_widget = getWidgetUnderCursor()
-
-    cursor_pos = nodegraph_widget.getMousePos()
-    if not cursor_pos:
-        cursor_pos = QPoint(0, 0)
-    world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
-
-    return DrawingModule.nodeWorld_findGroupNodeOfClick(nodegraph_widget.getCurrentNodeView(), world_pos[0], world_pos[1], nodegraph_widget.getViewScale()[0])
+    return list(set(node_list))
 
 
 def getBackdropArea(backdrop_node):
@@ -137,69 +98,29 @@ def getBackdropArea(backdrop_node):
     return width * height
 
 
-def getNodeCorners(node):
-    """ Returns the 4 corners of the backdrop node provided
+def getBackdropChildren(backdrop_node, include_backdrop=True):
+    from .widgetutils import getActiveNodegraphWidget
 
-    Returns (float, float, float, float): left, bottom, right, top"""
-    if not node: return 0, 0, 0, 0
-    # Is backdrop
-    if node.getType() == "Backdrop":
-        attrs = node.getAttributes()
-        node_pos = NodegraphAPI.GetNodePosition(node)
-        try:
-            width = attrs["ns_sizeX"]
-            height = attrs["ns_sizeY"]
-        except KeyError:
-            width = 128
-            height = 64
+    # get all children
+    nodegraph_widget = getActiveNodegraphWidget()
+    if not nodegraph_widget: return
+    if not backdrop_node: return []
+    root_node = nodegraph_widget.getGroupNodeUnderMouse()
+    children = root_node.getChildren()
+    l1, b1, r1, t1 = getNodeCorners(backdrop_node)
 
-        """ Calculate positions, the points are based off the standard cartesian
-        system, where 0 is in the upper right, and 3 is in the bottom right"""
-        left = node_pos[0] - (width * 0.5)
-        top = node_pos[1] + (height * 0.5)
-        right = node_pos[0] + (width * 0.5)
-        bottom = node_pos[1] - (height * 0.5)
-    else:
-        left, bottom, right, top = DrawingModule.nodeWorld_getBoundsOfListOfNodes([node], addPadding=False)
-    return left, bottom, right, top
+    # initialize backdrop children list
+    backdrop_children = []
+    if include_backdrop:
+        backdrop_children.append(backdrop_node)
 
+    # hit test children to backdrop area
+    for child in children:
+        l2, b2, r2, t2 = getNodeCorners(child)
+        if l1 < l2 < r2 < r1 and b1 < b2 < t2 < t1:
+            backdrop_children.append(child)
 
-def getBackdropIntersectionAmount(backdrop1, backdrop2):
-    """ Returns the intersection amount of two rectangles
-
-    Assuming they are a list of (left, bottom, right, top)
-
-    """
-    dx = min(backdrop1[2], backdrop2[2]) - max(backdrop1[0], backdrop2[0])
-    dy = min(backdrop1[3], backdrop2[3]) - max(backdrop1[1], backdrop2[1])
-    if (dx >= 0) and (dy >= 0):
-        return dx * dy
-    return None
-
-
-def getIntersectingBackdropNodes(backdrop_node):
-    """ Gets all of the backdrop nodes intersecting with node provided
-
-    Args:
-        backdrop_node (Node): backdrop node to check intersections against
-
-    Returns (list): of backdrop nodes intersecting the current one
-    """
-    # def doesBackdropIntersect(R1, R2):
-    #     if (R1[0]>=R2[2]) or (R1[2]<=R2[0]) or (R1[3]<=R2[1]) or (R1[1]>=R2[3]):
-    #         return False
-    #     else:
-    #         return True
-
-    orig_backdrop_node = getNodeCorners(backdrop_node)
-    backdrop_nodes = getActiveBackdropNodes()
-    intersecting_backdrop_nodes = []
-    for node in backdrop_nodes:
-        backdrop_to_check = getNodeCorners(node)
-        if getBackdropIntersectionAmount(orig_backdrop_node, backdrop_to_check):
-            intersecting_backdrop_nodes.append(node)
-
-    return intersecting_backdrop_nodes
+    return backdrop_children
 
 
 def getBackdropNodesUnderCursor():
@@ -346,29 +267,140 @@ def getBackdropQuadrantSelected(backdrop_node):
     return None
 
 
-def getBackdropChildren(backdrop_node, include_backdrop=True):
+def getClosestNode(has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False, exclude_nodes=[]):
+    """ Returns the closest node to the cursor
+
+    # Todo need to make this work for entered group nodes
+
+    Args:
+        exclude_nodes (list): list of nodes to not include in the search
+        has_input_ports (bool): determines if the node is required to have an input port
+        has_output_ports (bool): determines if the node is required to have an output port
+        include_dynamic_port_nodes (bool): Determines if nodes with no input ports, but the possibility of having
+            them should be included
+    """
     from .widgetutils import getActiveNodegraphWidget
 
-    # get all children
     nodegraph_widget = getActiveNodegraphWidget()
     if not nodegraph_widget: return
-    if not backdrop_node: return []
-    root_node = nodegraph_widget.getGroupNodeUnderMouse()
-    children = root_node.getChildren()
-    l1, b1, r1, t1 = getNodeCorners(backdrop_node)
+    if not hasattr(nodegraph_widget, "getGroupNodeUnderMouse"): return
 
-    # initialize backdrop children list
-    backdrop_children = []
-    if include_backdrop:
-        backdrop_children.append(backdrop_node)
+    # populate node list
+    node_list = [node for node in nodegraph_widget.getGroupNodeUnderMouse().getChildren() if node.getType() != "Backdrop"]
 
-    # hit test children to backdrop area
-    for child in children:
-        l2, b2, r2, t2 = getNodeCorners(child)
-        if l1 < l2 < r2 < r1 and b1 < b2 < t2 < t1:
-            backdrop_children.append(child)
+    if has_output_ports:
+        node_list = [node for node in node_list if 0 < len(node.getOutputPorts())]
 
-    return backdrop_children
+    if has_input_ports:
+        _node_list = []
+        for node in node_list:
+            if 0 < len(node.getInputPorts()):
+                _node_list.append(node)
+            else:
+                if include_dynamic_port_nodes:
+                    if node.getType() in dynamicInputPortNodes():
+                        _node_list.append(node)
+
+        # update node list
+        if has_output_ports:
+            node_list += _node_list
+        else:
+            node_list = _node_list
+
+    for node in exclude_nodes:
+        if node in node_list:
+            node_list.remove(node)
+
+    # get cursor position
+    cursor_pos = nodegraph_widget.getMousePos()
+    if not cursor_pos: return
+    group_node = nodegraph_widget.getGroupNodeUnderMouse()
+    world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
+    cursor_pos = QPoint(*nodegraph_widget.getPointAdjustedToGroupNodeSpace(group_node, world_pos))
+
+    closest_node = None
+    mag = None
+    for node in node_list:
+        # compare vector distance...
+        node_pos = NodegraphAPI.GetNodePosition(node)
+        x = node_pos[0] - cursor_pos.x()
+        y = node_pos[1] - cursor_pos.y()
+        new_mag = math.sqrt(x*x + y*y)
+        if mag == None:
+            mag = new_mag
+            closest_node = node
+        elif new_mag < mag:
+            mag = new_mag
+            closest_node = node
+
+    return closest_node
+
+
+def getDownstreamNodes(node):
+    nodes = NodegraphAPI.Util.GetAllConnectedOutputs([node])
+    nodes.append(node)
+
+    nodes = __checkBackdropNodes(nodes)
+    return nodes
+
+
+def getFocusedGroupNode(nodegraph_widget=None):
+    """ Returns the group node currently under the cursor
+
+    Args:
+        nodegraph_widget (NodegraphWidget): if none provided, will get the one
+            under the cursor
+    """
+    widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
+    if widget_under_cursor != "NodegraphWidget": return
+
+    if not nodegraph_widget:
+        nodegraph_widget = getWidgetUnderCursor()
+
+    cursor_pos = nodegraph_widget.getMousePos()
+    if not cursor_pos:
+        cursor_pos = QPoint(0, 0)
+    world_pos = nodegraph_widget.mapFromQTLocalToWorld(cursor_pos.x(), cursor_pos.y())
+
+    return DrawingModule.nodeWorld_findGroupNodeOfClick(nodegraph_widget.getCurrentNodeView(), world_pos[0], world_pos[1], nodegraph_widget.getViewScale()[0])
+
+
+def getBackdropIntersectionAmount(backdrop1, backdrop2):
+    """ Returns the intersection amount of two rectangles
+
+    Assuming they are a list of (left, bottom, right, top)
+
+    """
+    dx = min(backdrop1[2], backdrop2[2]) - max(backdrop1[0], backdrop2[0])
+    dy = min(backdrop1[3], backdrop2[3]) - max(backdrop1[1], backdrop2[1])
+    if (dx >= 0) and (dy >= 0):
+        return dx * dy
+    return None
+
+
+def getIntersectingBackdropNodes(backdrop_node):
+    """ Gets all of the backdrop nodes intersecting with node provided
+
+    Args:
+        backdrop_node (Node): backdrop node to check intersections against
+
+    Returns (list): of backdrop nodes intersecting the current one
+    """
+    # def doesBackdropIntersect(R1, R2):
+    #     if (R1[0]>=R2[2]) or (R1[2]<=R2[0]) or (R1[3]<=R2[1]) or (R1[1]>=R2[3]):
+    #         return False
+    #     else:
+    #         return True
+
+    orig_backdrop_node = getNodeCorners(backdrop_node)
+    backdrop_nodes = getActiveBackdropNodes()
+    intersecting_backdrop_nodes = []
+    for node in backdrop_nodes:
+        backdrop_to_check = getNodeCorners(node)
+        if getBackdropIntersectionAmount(orig_backdrop_node, backdrop_to_check):
+            intersecting_backdrop_nodes.append(node)
+
+    return intersecting_backdrop_nodes
 
 
 def getNearestGridPoint(x, y):
@@ -397,6 +429,33 @@ def getNearestGridPoint(x, y):
     return QPoint(x_offset * grid_x_size, y_offset * grid_y_size)
 
 
+def getNodeCorners(node):
+    """ Returns the 4 corners of the backdrop node provided
+
+    Returns (float, float, float, float): left, bottom, right, top"""
+    if not node: return 0, 0, 0, 0
+    # Is backdrop
+    if node.getType() == "Backdrop":
+        attrs = node.getAttributes()
+        node_pos = NodegraphAPI.GetNodePosition(node)
+        try:
+            width = attrs["ns_sizeX"]
+            height = attrs["ns_sizeY"]
+        except KeyError:
+            width = 128
+            height = 64
+
+        """ Calculate positions, the points are based off the standard cartesian
+        system, where 0 is in the upper right, and 3 is in the bottom right"""
+        left = node_pos[0] - (width * 0.5)
+        top = node_pos[1] + (height * 0.5)
+        right = node_pos[0] + (width * 0.5)
+        bottom = node_pos[1] - (height * 0.5)
+    else:
+        left, bottom, right, top = DrawingModule.nodeWorld_getBoundsOfListOfNodes([node], addPadding=False)
+    return left, bottom, right, top
+
+
 def getNodegraphCursorPos():
     """ Gets the position of the cursor relative to the current cartesian system the mouse is over
 
@@ -415,6 +474,48 @@ def getNodegraphCursorPos():
     return cursor_pos, group_node
 
 
+def getUpstreamNodes(node):
+    nodes = NodegraphAPI.Util.GetAllConnectedInputs([node])
+    nodes.append(node)
+
+    nodes = __checkBackdropNodes(nodes)
+    return nodes
+
+
+def getTreeRootNode(node):
+    """ Returns the Root Node of this specific Nodegraph Tree aka the upper left node
+
+    Args:
+        node (Node): node to start searching from
+    """
+
+    def getFirstNode(input_ports):
+        """
+        gets the first node connected to a node...
+        @ports <port> getConnectedPorts()
+        """
+        for input_port in input_ports:
+            connected_ports = input_port.getConnectedPorts()
+            if len(connected_ports) > 0:
+                for port in connected_ports:
+                    node = port.getNode()
+                    if node:
+                        return node
+
+        return None
+
+    input_ports = node.getInputPorts()
+    if len(input_ports) > 0:
+        # get first node
+        first_node = getFirstNode(input_ports)
+        if first_node:
+            return getTreeRootNode(first_node)
+        else:
+            return node
+    else:
+        return node
+
+
 def floatNodes(node_list):
     """ Floats the nodes in the list provided
 
@@ -424,6 +525,43 @@ def floatNodes(node_list):
     from .widgetutils import getActiveNodegraphWidget
     nodegraph_widget = getActiveNodegraphWidget()
     nodegraph_widget.parent().floatNodes(list(node_list))
+
+
+def interpolatePoints(p0, p1):
+    """ creates a list of points between the two points provided
+
+    This assumes the topleft is 0,0
+    and the bottom right is 1,1
+    Args:
+        p0 (QPoint):
+        p1 (QPoint):
+
+    Returns (list): of QPoints
+        """
+
+    step_size = 1
+    x_offset = math.fabs(math.fabs(p1.x()) - math.fabs(p0.x()))
+    y_offset = math.fabs(math.fabs(p1.y()) - math.fabs(p0.y()))
+    num_steps = int(max(x_offset, y_offset) // step_size) + 1
+
+    if y_offset < x_offset:
+        y_offset_per_step = y_offset / num_steps
+        x_offset_per_step = step_size
+    else:
+        y_offset_per_step = step_size
+        x_offset_per_step = x_offset / num_steps
+
+    points = []
+    for x in range(num_steps):
+        points.append(QPoint(
+            p0.x() + x_offset_per_step*x,
+            p0.y() + y_offset_per_step*x)
+        )
+
+    points.insert(0, p0)
+    points.insert(1, p1)
+
+    return points
 
 
 def nodeClicked(nodegraph_widget):
@@ -438,7 +576,47 @@ def nodeClicked(nodegraph_widget):
 
     return False
 
-#
+
+def pointsHitTestNode(point_list, nodegraph_widget=None):
+    """ Takes a list of points, and creates a hit test of them
+
+    list(
+        tuple("TYPE", {"type": object})
+    )
+    Args:
+        point_list:
+
+    Returns (list): of nodes
+
+    """
+    from .widgetutils import getActiveNodegraphWidget
+    if not nodegraph_widget:
+        nodegraph_widget = getActiveNodegraphWidget()
+    hit_list = set()
+    for point in point_list:
+        hit_pos = nodegraph_widget.mapFromQTLocalToWorld(point.x(), point.y())
+        hits = nodegraph_widget.hitTestPoint(hit_pos)
+        for hit in hits:
+            if hit[0] == "NODE":
+                node = hit[1]["node"]
+                if node.getType() != "Backdrop":
+                    hit_list.add(node)
+
+    return hit_list
+
+
+def selectAllNodes(upstream=False, downstream=False):
+    from .nodegraphutils import floatNodes
+    node_list = []
+    for node in NodegraphAPI.GetAllSelectedNodes():
+        if downstream is True:
+            node_list += getDownstreamNodes(node)
+        if upstream is True:
+            node_list += getUpstreamNodes(node)
+    NodegraphAPI.SetAllSelectedNodes(node_list)
+    floatNodes(node_list)
+
+
 def selectNodes(node_list, is_exclusive=False):
     """ Select all of the nodes in the list provided
 
@@ -475,16 +653,43 @@ def updateBackdropDisplay(node, attrs=None):
         NodegraphAPI.SetNodeSelected(node, False)
 
 
-def selectAllNodes(upstream=False, downstream=False):
-    from .nodegraphutils import floatNodes
-    node_list = []
-    for node in NodegraphAPI.GetAllSelectedNodes():
-        if downstream is True:
-            node_list += getDownstreamNodes(node)
-        if upstream is True:
-            node_list += getUpstreamNodes(node)
-    NodegraphAPI.SetAllSelectedNodes(node_list)
-    floatNodes(node_list)
+def updateCursorTrajectory(p0, p1):
+    """ Gets the current trajectory of the cursor
+
+    Args:
+        p0 (QPoint)
+        p1 (QPoint)
+    stores the last time/pos coordinates of the mouse move
+    prior to it hitting the first node.
+    """
+
+    _cursor_trajectory = RIGHT
+    y_offset = p0.y() - p1.y()
+    x_offset = p0.x() - p1.x()
+    # cursor travelling left/right
+    if math.fabs(y_offset) < math.fabs(x_offset):
+        if x_offset < 0:
+            _cursor_trajectory = RIGHT
+        elif 0 < x_offset:
+            _cursor_trajectory = LEFT
+
+    # cursor travelling up/down
+    if math.fabs(x_offset) < math.fabs(y_offset):
+        if y_offset < 0:
+            _cursor_trajectory = DOWN
+        elif 0 < y_offset:
+            _cursor_trajectory = UP
+
+    return _cursor_trajectory
+
+
+
+
+
+
+
+
+
 
 
 def __checkBackdropNodes(nodes):
@@ -510,76 +715,3 @@ def __checkBackdropNodes(nodes):
     return nodes
 
 
-def getDownstreamNodes(node):
-    nodes = NodegraphAPI.Util.GetAllConnectedOutputs([node])
-    nodes.append(node)
-
-    nodes = __checkBackdropNodes(nodes)
-    return nodes
-
-
-def getUpstreamNodes(node):
-    nodes = NodegraphAPI.Util.GetAllConnectedInputs([node])
-    nodes.append(node)
-
-    nodes = __checkBackdropNodes(nodes)
-    return nodes
-
-
-def getAllUpstreamTerminalNodes(node, node_list=[]):
-    """ Gets all nodes upstream of a specific node that have no input nodes
-
-    Args:
-        node (Node): node to search from
-
-    Returns (list): of nodes with no inputs
-    """
-    children = node.getInputPorts()
-    if 0 < len(children):
-        for input_port in children:
-            connected_ports = input_port.getConnectedPorts()
-            for port in connected_ports:
-                node = port.getNode()
-                getAllUpstreamTerminalNodes(node, node_list=node_list)
-                terminal = True
-                for input_port in node.getInputPorts():
-                    if 0 < len(input_port.getConnectedPorts()):
-                        terminal = False
-                if terminal is True:
-                    node_list.append(node)
-
-    return list(set(node_list))
-
-
-def getTreeRootNode(node):
-    """ Returns the Root Node of this specific Nodegraph Tree aka the upper left node
-
-    Args:
-        node (Node): node to start searching from
-    """
-
-    def getFirstNode(input_ports):
-        """
-        gets the first node connected to a node...
-        @ports <port> getConnectedPorts()
-        """
-        for input_port in input_ports:
-            connected_ports = input_port.getConnectedPorts()
-            if len(connected_ports) > 0:
-                for port in connected_ports:
-                    node = port.getNode()
-                    if node:
-                        return node
-
-        return None
-
-    input_ports = node.getInputPorts()
-    if len(input_ports) > 0:
-        # get first node
-        first_node = getFirstNode(input_ports)
-        if first_node:
-            return getTreeRootNode(first_node)
-        else:
-            return node
-    else:
-        return node

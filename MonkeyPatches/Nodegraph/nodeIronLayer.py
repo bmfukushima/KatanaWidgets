@@ -1,7 +1,14 @@
-""" Todo
-        - How to release nodes from list? Pen up not working?
-        - Direction from node --> cursor?
-        - Can't draw because of band selection not updating?
+""" The iron node layer allows users to "iron" their nodes
+
+As the user swipes through nodes using CTRL+ALT+SHIFT+LMB, all
+of the nodes hit will be aligned to the first node, based off
+of the direction of the cursor as it passed through the second node.
+
+Todo:
+    - Fast swipes not registering due to polling.
+    - Use the getCursorPoints() call and interpolate lines to determine if nodes are hit?
+    - Can add number of samples between points
+    - This is actually the same algo that can be used for the cutting links tool...
 """
 import math
 
@@ -32,14 +39,19 @@ from Utils2 import nodegraphutils, widgetutils, nodeutils
 
 
 class NodeIronLayer(QT4GLLayerStack.Layer):
-    LEFT = "left"
-    DOWN = "down"
-    RIGHT = "right"
-    UP = "up"
+    """
+
+    Attributes:
+        cursor_trajectory (NodeIronLayer.DIRECTION): direction to position the nodes
+        last_cursor_points (list): of QPoints that hold the last 5 cursor positions
+            This is used for calculating the cursors trajectory
+        _node_iron_aligned_nodes (list): of nodes that have been aligned
+        _node_iron_active (bool): determines if this event is active or not
+    """
+
     def __init__(self, *args, **kwargs):
         (QT4GLLayerStack.Layer.__init__)(self, *args, **kwargs)
-        self._aligned_nodes = []
-        self._cursor_direction = NodeIronLayer.RIGHT
+        self._cursor_trajectory = nodegraphutils.RIGHT
         self._last_cursor_points = []
         if not hasattr(widgetutils.katanaMainWindow(), "_node_iron_aligned_nodes"):
             widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
@@ -56,47 +68,21 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
     def getAlignYPos(self):
         return NodegraphAPI.GetNodePosition(self.getAlignedNodes()[-1])[1]
 
-    def getCursorPoints(self):
-        return self._last_cursor_points
-
-    def getCursorDirection(self):
-        """ Returns the direction that the cursor is currently travelling
-
-        Returns (NodeIronLayer.DIRECTION)"""
-        direction = NodeIronLayer.RIGHT
-        if 1 < len(self.getCursorPoints()):
-            p0 = self.getCursorPoints()[0]
-            p1 = self.getCursorPoints()[-1]
-            y_offset = p0.y() - p1.y()
-            x_offset = p0.x() - p1.x()
-            # cursor travelling left/right
-            if math.fabs(y_offset) < math.fabs(x_offset):
-                if x_offset < 0:
-                    direction = NodeIronLayer.RIGHT
-                elif 0 < x_offset:
-                    direction = NodeIronLayer.LEFT
-
-            # cursor travelling up/down
-            if math.fabs(x_offset) < math.fabs(y_offset):
-                if y_offset < 0:
-                    direction = NodeIronLayer.UP
-                elif 0 < y_offset:
-                    direction = NodeIronLayer.DOWN
-
-        return direction
-
-    def updateCursorDirection(self):
-        """
-        stores the last time/pos coordinates of the mouse move
-        prior to it hitting the first node.
-        """
-        trajectory_list = self._last_cursor_points
-        mouse_pos = self.layerStack().getMousePos()
-        nodegraph_pos = QPoint(*self.layerStack().mapFromQTLocalToWorld(mouse_pos.x(), mouse_pos.y()))
-        trajectory_list.append(nodegraph_pos)
+    def addCursorPoint(self, point):
+        self._last_cursor_points.append(point)
 
         if 5 < len(self._last_cursor_points):
             self._last_cursor_points = self._last_cursor_points[-5:]
+
+    def getCursorPoints(self):
+        return self._last_cursor_points
+
+    def getCursorTrajectory(self):
+        """ Returns the direction that the cursor is currently travelling
+
+        Returns (NodeIronLayer.DIRECTION)"""
+
+        return self._cursor_trajectory
 
     def paintGL(self):
         if widgetutils.katanaMainWindow()._node_iron_active:
@@ -105,8 +91,8 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
 
             # align nodes
             if mouse_pos:
-                window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1]-mouse_pos.y())
-                self.updateCursorDirection()
+                window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1] - mouse_pos.y())
+
                 # draw crosshair
                 radius = 10
                 glColor4f(0.5, 0.5, 1, 1)
@@ -116,50 +102,52 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
                 glEnd()
 
                 # iron nodes
-                nodegraph_pos = self.layerStack().mapFromQTLocalToWorld(mouse_pos.x(), mouse_pos.y())
+                if 0 < len(self.getCursorPoints()):
+                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos)
+                    node_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack())
 
-                hits = self.layerStack().hitTestPoint(nodegraph_pos)
-                for hit in hits:
-                    for node in hit[1].values():
-                        if node.getType() != "Backdrop":
-                            # first node
-                            if node not in self.getAlignedNodes():
-                                if len(self.getAlignedNodes()) == 0:
-                                    if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
-                                        from Utils2.nodealignutils import AlignUtils
-                                        AlignUtils().snapNodeToGrid(node)
+                    for node in node_hits:
+                        # first node
+                        if node not in self.getAlignedNodes():
+                            if len(self.getAlignedNodes()) == 0:
+                                if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
+                                    from Utils2.nodealignutils import AlignUtils
+                                    AlignUtils().snapNodeToGrid(node)
 
-                                if 0 < len(self.getAlignedNodes()):
-                                    from .gridLayer import (
-                                        GRID_SIZE_X_PREF_NAME, GRID_SIZE_Y_PREF_NAME, ALIGN_X_OFFSET_PREF_NAME, ALIGN_Y_OFFSET_PREF_NAME)
-                                    # GRID_SIZE_X_PREF_NAME = "nodegraph/grid/sizeX"
-                                    # GRID_SIZE_Y_PREF_NAME = "nodegraph/grid/sizeY"
-                                    # ALIGN_X_OFFSET_PREF_NAME = "nodegraph/grid/alignXOffset"
-                                    # ALIGN_Y_OFFSET_PREF_NAME = "nodegraph/grid/alignYOffset"
-                                    offset_x = KatanaPrefs[GRID_SIZE_X_PREF_NAME] * KatanaPrefs[ALIGN_X_OFFSET_PREF_NAME]
-                                    offset_y = KatanaPrefs[GRID_SIZE_Y_PREF_NAME] * KatanaPrefs[ALIGN_Y_OFFSET_PREF_NAME]
+                            # set direction
+                            if len(self.getAlignedNodes()) == 1:
+                                self._cursor_trajectory = nodegraphutils.updateCursorTrajectory(self.getCursorPoints()[0], self.getCursorPoints()[-1])
 
-                                    if self.getCursorDirection() == NodeIronLayer.RIGHT:
-                                        xpos = self.getAlignXPos() + offset_x
-                                        ypos = self.getAlignYPos()
-                                    if self.getCursorDirection() == NodeIronLayer.LEFT:
-                                        xpos = self.getAlignXPos() - offset_x
-                                        ypos = self.getAlignYPos()
-                                    if self.getCursorDirection() == NodeIronLayer.UP:
-                                        xpos = self.getAlignXPos()
-                                        ypos = self.getAlignYPos() + offset_y
-                                    if self.getCursorDirection() == NodeIronLayer.DOWN:
-                                        xpos = self.getAlignXPos()
-                                        ypos = self.getAlignYPos() - offset_y
+                            # iron node
+                            if 0 < len(self.getAlignedNodes()):
+                                from .gridLayer import (
+                                    GRID_SIZE_X_PREF_NAME, GRID_SIZE_Y_PREF_NAME, ALIGN_X_OFFSET_PREF_NAME, ALIGN_Y_OFFSET_PREF_NAME)
 
-                                    try:
-                                        NodegraphAPI.SetNodePosition(node, (xpos, ypos))
-                                    except AttributeError:
-                                        # node marked for deletion
-                                        pass
+                                offset_x = KatanaPrefs[GRID_SIZE_X_PREF_NAME] * KatanaPrefs[ALIGN_X_OFFSET_PREF_NAME]
+                                offset_y = KatanaPrefs[GRID_SIZE_Y_PREF_NAME] * KatanaPrefs[ALIGN_Y_OFFSET_PREF_NAME]
 
-                                self.getAlignedNodes().append(node)
+                                if self.getCursorTrajectory() == nodegraphutils.RIGHT:
+                                    xpos = self.getAlignXPos() + offset_x
+                                    ypos = self.getAlignYPos()
+                                if self.getCursorTrajectory() == nodegraphutils.LEFT:
+                                    xpos = self.getAlignXPos() - offset_x
+                                    ypos = self.getAlignYPos()
+                                if self.getCursorTrajectory() == nodegraphutils.UP:
+                                    xpos = self.getAlignXPos()
+                                    ypos = self.getAlignYPos() + offset_y
+                                if self.getCursorTrajectory() == nodegraphutils.DOWN:
+                                    xpos = self.getAlignXPos()
+                                    ypos = self.getAlignYPos() - offset_y
 
+                                try:
+                                    NodegraphAPI.SetNodePosition(node, (xpos, ypos))
+                                except AttributeError:
+                                    # node marked for deletion
+                                    pass
+
+                            self.getAlignedNodes().append(node)
+
+                self.addCursorPoint(mouse_pos)
 def showEvent(func):
     def __showEvent(self, event):
         # disable floating layer, as it for some reason inits as True...

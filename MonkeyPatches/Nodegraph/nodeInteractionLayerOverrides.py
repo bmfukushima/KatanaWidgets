@@ -412,6 +412,7 @@ def nodeInteractionMouseReleaseEvent(func):
         widgetutils.katanaMainWindow()._backdrop_resize_active = False
 
         # reset node iron attrs
+        nodegraphutils.floatNodes(widgetutils.katanaMainWindow()._node_iron_aligned_nodes)
         widgetutils.katanaMainWindow()._node_iron_active = False
         widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
 
