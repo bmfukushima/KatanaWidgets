@@ -1,5 +1,6 @@
 import os
 import inspect
+import math
 
 from qtpy.QtCore import Qt, QSize, QPoint
 from qtpy.QtGui import QCursor
@@ -9,7 +10,7 @@ from UI4.App import Tabs
 from UI4.Tabs.NodeGraphTab.Layers.NodeInteractionLayer import NodeInteractionLayer
 from UI4.Tabs.NodeGraphTab.Layers.NodeGraphViewInteractionLayer import NodeGraphViewInteractionLayer
 from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdropNodeDialog
-
+from UI4.Tabs.NodeGraphTab.Layers.BandSelectionLayer import BandSelectionLayer
 from cgwidgets.utils import scaleResolution
 from cgwidgets.settings import iColor
 from cgwidgets.widgets import PopupHotkeyMenu
@@ -310,6 +311,24 @@ def nodeInteractionLayerMouseMoveEvent(func):
             resizeBackdropNode()
         if widgetutils.katanaMainWindow()._node_iron_active:
             self.layerStack().idleUpdate()
+
+        if hasattr(widgetutils.katanaMainWindow(), "_nodegraph_click_pos"):
+            p0 = widgetutils.katanaMainWindow()._nodegraph_click_pos
+            p1 = self.layerStack().getMousePos()
+            magnitude = math.sqrt(
+                  math.pow(p0.x() - p1.x(), 2)
+                + math.pow(p0.y() - p1.y(), 2)
+            )
+
+            if 30 < magnitude:
+                mouse_pos = self.layerStack().mapFromQTLocalToWorld(event.x(), event.y())
+                if event.modifiers() == Qt.NoModifier:
+                    self.layerStack().appendLayer(BandSelectionLayer(mouse_pos, False, enabled=True))
+                if event.modifiers() == Qt.ShiftModifier:
+                    self.layerStack().appendLayer(BandSelectionLayer(mouse_pos, True, enabled=True))
+
+                delattr(widgetutils.katanaMainWindow(), "_nodegraph_click_pos")
+
         return func(self, event)
 
     return __nodeInteractionLayerMouseMoveEvent
@@ -352,6 +371,11 @@ def nodeInteractionMousePressEvent(func):
                 nodegraphutils.floatNodes(nodes_to_move)
                 return True
 
+            # Select backdrop and children OR start band selection
+            if event.modifiers() in [Qt.NoModifier, Qt.ControlModifier] and event.button() == Qt.LeftButton:
+                widgetutils.katanaMainWindow()._nodegraph_click_pos = self.layerStack().getMousePos()
+                return True
+
             # initialize backdrop resize event
             if event.modifiers() == Qt.AltModifier and event.button() == Qt.RightButton:
                 quadrant = nodegraphutils.getBackdropQuadrantSelected(backdrop_node)
@@ -362,25 +386,6 @@ def nodeInteractionMousePressEvent(func):
                 widgetutils.katanaMainWindow()._backdrop_resize_active = True
                 return True
 
-            # Select backdrop and children
-            if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton:
-                # If node clicked, bypass
-                if nodegraphutils.nodeClicked(self.layerStack()): return func(self, event)
-
-                # # If backdrop clicked, select and pickup
-                if backdrop_node in NodegraphAPI.GetAllSelectedNodes():
-                    nodes_to_float = nodegraphutils.getBackdropChildren(backdrop_node)
-                    nodegraphutils.floatNodes(nodes_to_float)
-                else:
-                    nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
-                    nodegraphutils.selectNodes(nodes_to_select, is_exclusive=True)
-                return True
-
-            # Append backdrop and children to current selection
-            if event.modifiers() == Qt.ShiftModifier and event.button() == Qt.LeftButton:
-                nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
-                nodegraphutils.selectNodes(nodes_to_select)
-                return True
         else:
             # Duplicate nodes
             if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier) and event.button() == Qt.LeftButton:
@@ -408,6 +413,7 @@ def nodeInteractionMousePressEvent(func):
 def nodeInteractionMouseReleaseEvent(func):
     """ DUPLICATE NODES """
     def __nodeInteractionMouseReleaseEvent(self, event):
+
         # reset backdrop attrs
         if widgetutils.katanaMainWindow()._backdrop_resize_active:
             widgetutils.katanaMainWindow()._backdrop_resize_active = False
@@ -418,6 +424,24 @@ def nodeInteractionMouseReleaseEvent(func):
             widgetutils.katanaMainWindow()._node_iron_active = False
             widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
 
+        if hasattr(widgetutils.katanaMainWindow(), "_nodegraph_click_pos"):
+            # If node clicked, bypass
+            if nodegraphutils.nodeClicked(self.layerStack()): return func(self, event)
+
+            backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
+            if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton:
+                # # If backdrop clicked, select and pickup
+                if backdrop_node in NodegraphAPI.GetAllSelectedNodes():
+                    nodes_to_float = nodegraphutils.getBackdropChildren(backdrop_node)
+                    nodegraphutils.floatNodes(nodes_to_float)
+                else:
+                    nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
+                    nodegraphutils.selectNodes(nodes_to_select, is_exclusive=True)
+            if event.modifiers() == Qt.ShiftModifier and event.button() == Qt.LeftButton:
+                nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
+                nodegraphutils.selectNodes(nodes_to_select)
+
+            delattr(widgetutils.katanaMainWindow(), "_nodegraph_click_pos")
         # update view
         self.layerStack().idleUpdate()
         return func(self, event)
