@@ -40,7 +40,14 @@ Ctrl + LMB
   - `Alt + Back Button` show root node as view node
   - `Alt + Forward Button` show parent node as view node
 - `Control + G` Show Grid
--
+- `B` Create new backdrop
+  - `LMB` Select backdrop and children
+  - `Alt + LMB` Select and float backdrop and selected children
+  - `Alt + Shift + LMB` Select and float backdrop and all children
+  - `Ctrl + LMB` Select / Deselect backdrop
+  - `Ctrl + Alt + LMB` Select and float backdrop
+  - `Shift + LMB` Append/Remove backdrop and children to current selection
+  - `Alt + RMB` Resize backdrop
 """
 
 from .backdropLayer import installBackdropLayer

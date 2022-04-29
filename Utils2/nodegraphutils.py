@@ -46,6 +46,32 @@ def clearNodeSelection():
     for node in NodegraphAPI.GetAllSelectedNodes():
         NodegraphAPI.SetNodeSelected(node, False)
 
+
+def duplicateNodes(nodegraph_layer, nodes_to_duplicate=None):
+    """ Duplicate selected nodes, or closest node to cursor
+
+    Args:
+        nodegraph_layer (NodeGraphLayer): Current layer of the Nodegraph.
+            Most likely the NodeInteractionLayer
+        """
+    selected_nodes = NodegraphAPI.GetAllSelectedNodes()
+
+    # check selected nodes
+    if not nodes_to_duplicate:
+        nodes_to_duplicate = [node for node in selected_nodes if not NodegraphAPI.IsNodeLockedByParents(node)]
+
+    # no selected nodes, get closest node
+    if not nodes_to_duplicate:
+        if not getClosestNode(): return
+        nodes_to_duplicate = [getClosestNode()]
+
+    duplicated_nodes = NodegraphAPI.Util.DuplicateNodes(nodes_to_duplicate)
+    selectNodes(duplicated_nodes, is_exclusive=True)
+
+    if duplicated_nodes:
+        nodegraph_layer.layerStack().parent().prepareFloatingLayerWithPasteBounds(duplicated_nodes)
+        nodegraph_layer.layerStack().parent()._NodegraphPanel__nodegraphWidget.enableFloatingLayer()
+
 #
 def dynamicInputPortNodes():
     """ Returns a list of nodes that can have additional ports added by the user"""
