@@ -14,6 +14,9 @@ Notes:
 Attributes:
     _nodegraph_key_press (Qt.KEY): Currently pressed key (last key if multiple are pressed)
     _node_iron_active (bool): Determines if an ironing event is currently happening
+    _node_iron_finishing (bool): Determines if the ironing event is currently finishing
+        This will suppress the align menu from being able to be shown for 1 second after
+        an ironing event has finished.
 """
 
 import os

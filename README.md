@@ -66,6 +66,7 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 - `Alt + LMB` Move all nodes above closest node
 - `Alt + Shift + LMB` Move all nodes below closest node
 - `A` Alignment Menu
+- `A + LMB` Press and hold `A` and LMB to swipe to align nodes to the first one
 - `S` GSV Popup Menu
 - Back/Forward buttons
   - `Back Button` show previous node as view node
@@ -81,6 +82,7 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
   - `Ctrl + Alt + LMB` Select and float backdrop
   - `Shift + LMB` Append/Remove backdrop and children to current selection
   - `Alt + RMB` Resize backdrop
+
 ### [Macros](Macros/README.md) +
 - Cleanup Empty Groups
 - Frustum
