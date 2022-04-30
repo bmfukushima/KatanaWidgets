@@ -567,6 +567,7 @@ def nodeInteractionMousePressEvent(self, event):
         if event.modifiers() in [Qt.NoModifier, Qt.ShiftModifier] and event.button() == Qt.LeftButton:
             # check to make sure the user didn't hit a node, if they hit a node, do default behavior
             if nodegraphutils.nodeClicked(self.layerStack()): return False
+            if nodegraphutils.getCurrentKeyPressed() == Qt.Key_A: return False
             widgetutils.katanaMainWindow()._nodegraph_click_pos = self.layerStack().getMousePos()
             return True
 

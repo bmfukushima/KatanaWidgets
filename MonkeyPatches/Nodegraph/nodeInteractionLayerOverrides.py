@@ -291,7 +291,6 @@ def nodeInteractionMousePressEvent(self, event):
         navigateNodegraph(nodegraphutils.HOME)
         return True
     elif event.button() == Qt.BackButton and event.modifiers() == Qt.AltModifier:
-        print("up")
         navigateNodegraph(nodegraphutils.UP)
         return True
 
@@ -313,19 +312,20 @@ def nodeInteractionMousePressEvent(self, event):
             moveNodes(nodegraphutils.DOWN)
             return True
 
-        # start iron
-        if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton and nodegraphutils.getCurrentKeyPressed() == Qt.Key_A:
-            Utils.UndoStack.OpenGroup("Align Nodes")
-            # ensure that iron was deactivated (because I code bad)
-            widgetutils.katanaMainWindow()._node_iron_finishing = False
-            self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
-            widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+    # start iron
 
-            # activate iron
-            widgetutils.katanaMainWindow()._node_iron_active = True
-            QApplication.setOverrideCursor(Qt.BlankCursor)
+    if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton and nodegraphutils.getCurrentKeyPressed() == Qt.Key_A:
+        Utils.UndoStack.OpenGroup("Align Nodes")
+        # ensure that iron was deactivated (because I code bad)
+        widgetutils.katanaMainWindow()._node_iron_finishing = False
+        self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
+        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
 
-            return True
+        # activate iron
+        widgetutils.katanaMainWindow()._node_iron_active = True
+        QApplication.setOverrideCursor(Qt.BlankCursor)
+
+        return True
 
     return False
 
