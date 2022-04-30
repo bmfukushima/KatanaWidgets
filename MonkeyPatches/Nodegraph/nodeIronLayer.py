@@ -9,7 +9,7 @@ import math
 from OpenGL.GL import (
     glBegin,
     glLineWidth,
-    GL_POINTS,
+    GL_LINE_STRIP,
     GL_LINE_LOOP,
     glColor4f,
     glEnd,
@@ -87,23 +87,32 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
             mouse_pos = self.layerStack().getMousePos()
             # align nodes
             if mouse_pos:
-                window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1] - mouse_pos.y())
+                # set initial trajectory
                 if len(self.getAlignedNodes()) == 0:
                     if 1 < len(self.getCursorPoints()):
                         self._cursor_trajectory = nodegraphutils.getCursorTrajectory(self.getCursorPoints()[0], self.getCursorPoints()[-1])
 
-                # draw crosshair
+                # get attrs
+                window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1] - mouse_pos.y())
                 radius = 10
                 glColor4f(0.75, 0.75, 1, 1)
                 glPointSize(radius * 2)
                 glLineWidth(2)
-                glBegin(GL_LINE_LOOP)
 
-                glVertex2f(window_pos.x() - 10, window_pos.y())
-                glVertex2f(window_pos.x(), window_pos.y() + 10)
-                glVertex2f(window_pos.x() + 10, window_pos.y())
-                glVertex2f(window_pos.x(), window_pos.y() - 10)
+                # draw crosshair
+                glBegin(GL_LINE_LOOP)
+                glVertex2f(window_pos.x() - radius, window_pos.y())
+                glVertex2f(window_pos.x(), window_pos.y() + radius)
+                glVertex2f(window_pos.x() + radius, window_pos.y())
+                glVertex2f(window_pos.x(), window_pos.y() - radius)
                 glEnd()
+
+                # draw trajectory
+                if 0 < len(self.getCursorPoints()):
+                    glBegin(GL_LINE_STRIP)
+                    for point in self.getCursorPoints():
+                        glVertex2f(point.x(), self.layerStack().getWindowSize()[1] - point.y())
+                    glEnd()
 
                 # iron nodes
                 if 0 < len(self.getCursorPoints()):

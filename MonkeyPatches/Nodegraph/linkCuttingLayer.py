@@ -12,6 +12,7 @@ from OpenGL.GL import (
     glLineWidth,
     GL_POINTS,
     GL_LINES,
+    glRotatef,
     GL_LINE_LOOP,
     GL_LINE_STRIP,
     glColor4f,
@@ -76,28 +77,27 @@ class LinkCuttingLayer(QT4GLLayerStack.Layer):
             mouse_pos = self.layerStack().getMousePos()
             # align nodes
             if mouse_pos:
+                # get attrs
                 window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1] - mouse_pos.y())
+                radius = 10
+                glColor4f(0.75, 0.75, 1, 1)
+                # glColor4f(1, 1, 0, 1)
+                glPointSize(1)
+                glLineWidth(2)
 
                 # draw crosshair
-                radius = 10
-                # glColor4f(0.75, 0.75, 1, 1)
-                glColor4f(1, 1, 0, 1)
-                glPointSize(radius * 2)
-                glLineWidth(2)
                 glBegin(GL_LINE_LOOP)
-                glVertex2f(window_pos.x() - 10, window_pos.y())
-                glVertex2f(window_pos.x(), window_pos.y() + 10)
-                glVertex2f(window_pos.x() + 10, window_pos.y())
-                glVertex2f(window_pos.x(), window_pos.y() - 10)
+                glVertex2f(window_pos.x() - radius, window_pos.y())
+                glVertex2f(window_pos.x(), window_pos.y() + radius)
+                glVertex2f(window_pos.x() + radius, window_pos.y())
+                glVertex2f(window_pos.x(), window_pos.y() - radius)
                 glEnd()
 
+                # get trajectory
                 if 0 < len(self.getCursorPoints()):
-                    # print(self.getCursorPoints()[-1], window_pos)
                     glBegin(GL_LINE_STRIP)
                     for point in self.getCursorPoints():
                         glVertex2f(point.x(), self.layerStack().getWindowSize()[1] - point.y())
-                    #glVertex2f(self.getCursorPoints()[-1].x(), self.getCursorPoints()[-1].y())
-                    # glVertex2f(mouse_pos.x(), mouse_pos.y())
                     glEnd()
 
                 # iron nodes
