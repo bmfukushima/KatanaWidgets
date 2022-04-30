@@ -565,26 +565,45 @@ def floatNodes(node_list):
     nodegraph_widget.parent().floatNodes(list(node_list))
 
 
-def interpolatePoints(p0, p1, radius=10):
+def interpolatePoints(p0, p1, radius=1, step_size=1):
     """ creates a list of points between the two points provided
 
     This assumes the topleft is 0,0
     and the bottom right is 1,1
 
     # todo add a radius?
+    # todo need to determine orientation of points
     Args:
         p0 (QPoint):
         p1 (QPoint):
+        radius (int): radius to check
+        step_size (int): interpolation between points
 
     Returns (list): of QPoints
     """
     if p0 == p1: return [p0]
+    if p0.x() == p1.x(): return [p0, p1]
+    if p0.y() == p1.y(): return [p0, p1]
+    # compute offset of extension of end to compensate for radius
+    width = p0.x() - p1.x()
+    height = p0.y() - p1.y()
+    mag = math.sqrt(math.pow(width, 2) + math.pow(height, 2))
+    uX = (width/mag) * radius       # end offset x
+    uY = (height/mag) * radius      # end offset y
+    p1 = QPoint(p1.x() - uX, p1.y() - uY)
 
-    step_size = 1
+    # offset points to create two parrallel lines
+    theta = math.atan(height / width)
+    x_radius_offset = math.sin(theta) * radius
+    y_radius_offset = math.cos(theta) * radius
 
-    x_offset = math.fabs(math.fabs(p1.x()) - math.fabs(p0.x()))
-    y_offset = math.fabs(math.fabs(p1.y()) - math.fabs(p0.y()))
+    p0A = QPoint(int(p0.x() - x_radius_offset), int(p0.y() + y_radius_offset))
+    p0B = QPoint(int(p1.x() - x_radius_offset), int(p1.y() + y_radius_offset))
+
+    x_offset = math.fabs(width) + uX
+    y_offset = math.fabs(height) + uY
     num_steps = int(max(x_offset, y_offset) // step_size) + 1
+    if num_steps == 1: return [p0, p1]
 
     # determine the offset per step
     if y_offset < x_offset:
@@ -603,11 +622,71 @@ def interpolatePoints(p0, p1, radius=10):
     points = []
     for i in range(num_steps):
         points.append(QPoint(
-            p0.x() + x_offset_per_step * i,
-            p0.y() + y_offset_per_step * i)
+            p0A.x() + x_offset_per_step * i,
+            p0A.y() + y_offset_per_step * i)
+        )
+        points.append(QPoint(
+            p0B.x() + x_offset_per_step * i,
+            p0B.y() + y_offset_per_step * i)
         )
 
+    # points.insert(0, p0)
+    # points.insert(1, p1)
+
     return points
+
+
+# def interpolatePoints(p0, p1, radius=10):
+#     """ creates a list of points between the two points provided
+#
+#     This assumes the topleft is 0,0
+#     and the bottom right is 1,1
+#
+#     # todo add a radius?
+#     Args:
+#         p0 (QPoint):
+#         p1 (QPoint):
+#
+#     Returns (list): of QPoints
+#     """
+#     if p0 == p1: return [p0]
+#
+#     width = p0.x() - p1.x()
+#     height = p0.y() - p1.y()
+#     theta = math.atan(height / width)
+#     x_radius_offset = math.sin(theta) * radius
+#     y_radius_offset = math.cos(theta) * radius
+#     print(p0, p1)
+#
+#     # get attrs
+#     step_size = 1
+#
+#     x_offset = math.fabs(math.fabs(p1.x()) - math.fabs(p0.x()))
+#     y_offset = math.fabs(math.fabs(p1.y()) - math.fabs(p0.y()))
+#     num_steps = int(max(x_offset, y_offset) // step_size) + 1
+#
+#     # determine the offset per step
+#     if y_offset < x_offset:
+#         y_offset_per_step = y_offset / (num_steps - 1)
+#         x_offset_per_step = step_size
+#     else:
+#         y_offset_per_step = step_size
+#         x_offset_per_step = x_offset / (num_steps - 1)
+#
+#     # determine which way the step should go depending on the point order
+#     if 0 < width:
+#         x_offset_per_step *= -1
+#     if 0 < height:
+#         y_offset_per_step *= -1
+#
+#     points = []
+#     for i in range(num_steps):
+#         points.append(QPoint(
+#             p0.x() + x_offset_per_step * i,
+#             p0.y() + y_offset_per_step * i)
+#         )
+#
+#     return points
 
 
 def nodeClicked(nodegraph_widget):

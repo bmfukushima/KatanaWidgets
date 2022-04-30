@@ -110,7 +110,7 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
 
                 # iron nodes
                 if 0 < len(self.getCursorPoints()):
-                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos)
+                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=radius, step_size=5)
                     node_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack())
 
                     for node in node_hits:
