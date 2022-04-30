@@ -506,7 +506,8 @@ def backdropInteractionEvent(func):
         if event.type() == QEvent.MouseButtonPress:
             if event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier:
                 backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
-                NodegraphAPI.SetNodeSelected(backdrop_node, not NodegraphAPI.IsNodeSelected(backdrop_node))
+                if backdrop_node:
+                    NodegraphAPI.SetNodeSelected(backdrop_node, not NodegraphAPI.IsNodeSelected(backdrop_node))
                 return True
         return func(self, event)
 

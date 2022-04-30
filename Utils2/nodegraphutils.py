@@ -91,6 +91,13 @@ def getActiveBackdropNodes():
     return list(set(active_backdrop_nodes))
 
 
+def getAllUpstreamNodes(node):
+    nodes = NodegraphAPI.Util.GetAllConnectedInputs([node])
+    nodes = __checkBackdropNodes(nodes)
+    nodes.insert(0, node)
+    return nodes
+
+
 def getAllUpstreamTerminalNodes(node, node_list=[]):
     """ Gets all nodes upstream of a specific node that have no input nodes
 
@@ -114,6 +121,13 @@ def getAllUpstreamTerminalNodes(node, node_list=[]):
                     node_list.append(node)
 
     return list(set(node_list))
+
+
+def getAllDownstreamNodes(node):
+    nodes = NodegraphAPI.Util.GetAllConnectedOutputs([node])
+    nodes = __checkBackdropNodes(nodes)
+    nodes.insert(0, node)
+    return nodes
 
 
 def getBackdropArea(backdrop_node):
@@ -376,14 +390,6 @@ def getCurrentKeyPressed():
     return katanaMainWindow()._nodegraph_key_press
 
 
-def getDownstreamNodes(node):
-    nodes = NodegraphAPI.Util.GetAllConnectedOutputs([node])
-    nodes.append(node)
-
-    nodes = __checkBackdropNodes(nodes)
-    return nodes
-
-
 def getFocusedGroupNode(nodegraph_widget=None):
     """ Returns the group node currently under the cursor
 
@@ -512,14 +518,6 @@ def getNodegraphCursorPos():
     cursor_pos = QPoint(*nodegraph_widget.getPointAdjustedToGroupNodeSpace(group_node, world_pos))
 
     return cursor_pos, group_node
-
-
-def getUpstreamNodes(node):
-    nodes = NodegraphAPI.Util.GetAllConnectedInputs([node])
-    nodes.append(node)
-
-    nodes = __checkBackdropNodes(nodes)
-    return nodes
 
 
 def getTreeRootNode(node):
@@ -660,9 +658,9 @@ def selectAllNodes(upstream=False, downstream=False):
     node_list = []
     for node in NodegraphAPI.GetAllSelectedNodes():
         if downstream is True:
-            node_list += getDownstreamNodes(node)
+            node_list += getAllDownstreamNodes(node)
         if upstream is True:
-            node_list += getUpstreamNodes(node)
+            node_list += getAllUpstreamNodes(node)
     NodegraphAPI.SetAllSelectedNodes(node_list)
     floatNodes(node_list)
 
@@ -731,15 +729,6 @@ def getCursorTrajectory(p0, p1):
             _cursor_trajectory = UP
 
     return _cursor_trajectory
-
-
-
-
-
-
-
-
-
 
 
 def __checkBackdropNodes(nodes):
