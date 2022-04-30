@@ -23,7 +23,7 @@ from qtpy.QtCore import Qt, QPoint, QEvent, QTimer
 import QT4GLLayerStack
 from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs, UI4
 from UI4.App import Tabs
-from Utils2 import nodegraphutils, widgetutils
+from Utils2 import nodegraphutils, widgetutils, nodeutils
 from Utils2.nodealignutils import AlignUtils
 
 
@@ -204,6 +204,7 @@ def nodeInteractionMousePressEvent(self, event):
         # activate iron
         widgetutils.katanaMainWindow()._node_iron_active = True
         QApplication.setOverrideCursor(Qt.BlankCursor)
+        nodeutils.removeNodePreviewColors()
 
         return True
 

@@ -178,22 +178,22 @@ def glowNodes(event):
     if widgetutils.katanaMainWindow()._backdrop_resize_active: return
 
     if event.modifiers() == Qt.NoModifier:
-        nodeutils.colorClosestNode(has_output_ports=True)
+        nodeutils.setNodePreviewColor(has_output_ports=True)
     backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
     if backdrop_node:
         # move backdrop
         # if event.modifiers() == (Qt.ControlModifier):
-        #     nodeutils.colorClosestNode([backdrop_node])
+        #     nodeutils.setNodePreviewColor([backdrop_node])
 
         # duplicate backdrop and children
         if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier):
             backdrop_node_children = nodegraphutils.getBackdropChildren(backdrop_node)
-            nodeutils.colorClosestNode(backdrop_node_children)
+            nodeutils.setNodePreviewColor(backdrop_node_children)
 
         # move backdrop and children
         if event.modifiers() == (Qt.AltModifier):
             backdrop_node_children = nodegraphutils.getBackdropChildren(backdrop_node)
-            nodeutils.colorClosestNode(backdrop_node_children)
+            nodeutils.setNodePreviewColor(backdrop_node_children)
 
     else:
         # move upstream nodes
@@ -201,14 +201,14 @@ def glowNodes(event):
             closest_node = nodegraphutils.getClosestNode(has_input_ports=True)
             if closest_node:
                 upstream_nodes = nodegraphutils.getAllUpstreamNodes(closest_node)
-                nodeutils.colorClosestNode(upstream_nodes)
+                nodeutils.setNodePreviewColor(upstream_nodes)
 
         # move downstream nodes
         if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
             closest_node = nodegraphutils.getClosestNode(has_output_ports=True)
             if closest_node:
                 downstream_nodes = nodegraphutils.getAllDownstreamNodes(closest_node)
-                nodeutils.colorClosestNode(downstream_nodes)
+                nodeutils.setNodePreviewColor(downstream_nodes)
 
 
 def moveNodes(direction=nodegraphutils.UP):

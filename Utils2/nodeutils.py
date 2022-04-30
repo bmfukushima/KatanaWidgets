@@ -78,7 +78,7 @@ def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=
             node.getSendPort(send_port_name).connect(node.getReturnPort(return_port_name))
 
 
-def colorClosestNode(highlighted_nodes=None, exclude_nodes=[], has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False):
+def setNodePreviewColor(highlighted_nodes=None, exclude_nodes=[], has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False):
     """ Sets the node color of the nodes provided to Normals Blue.
 
     Args:
@@ -103,7 +103,6 @@ def colorClosestNode(highlighted_nodes=None, exclude_nodes=[], has_input_ports=F
 
     # remove old color
     if hasattr(katanaMainWindow(), "_highlighted_nodes"):
-        # if highlighted_nodes == getattr(LinkConnectionLayer, "_highlighted_nodes"): return
         for node in katanaMainWindow()._highlighted_nodes:
             removeGlowColor(node)
 
@@ -117,6 +116,15 @@ def colorClosestNode(highlighted_nodes=None, exclude_nodes=[], has_input_ports=F
 
         # update closest node
         katanaMainWindow()._highlighted_nodes = highlighted_nodes
+
+
+def removeNodePreviewColors():
+    from .widgetutils import katanaMainWindow
+
+    # remove old color
+    if hasattr(katanaMainWindow(), "_highlighted_nodes"):
+        for node in katanaMainWindow()._highlighted_nodes:
+            removeGlowColor(node)
 
 
 def disconnectNode(node, input=False, output=False, reconnect=False):

@@ -37,7 +37,7 @@ import QT4GLLayerStack
 from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdropNodeDialog
 from UI4.Tabs.NodeGraphTab.Layers.BandSelectionLayer import BandSelectionLayer
 
-from Utils2 import nodegraphutils, widgetutils
+from Utils2 import nodegraphutils, widgetutils, nodeutils
 
 
 class BackdropPreviewLayer(QT4GLLayerStack.Layer):
@@ -618,6 +618,7 @@ def nodeInteractionMousePressEvent(self, event):
             attrs["orig_cursor_pos"] = nodegraphutils.getNodegraphCursorPos()[0]
             widgetutils.katanaMainWindow()._backdrop_orig_attrs = attrs
             widgetutils.katanaMainWindow()._backdrop_resize_active = True
+            nodeutils.removeNodePreviewColors()
             return True
 
     return False
