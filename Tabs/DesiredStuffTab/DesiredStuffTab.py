@@ -57,7 +57,7 @@ from cgwidgets.views import AbstractDragDropListView
 from cgwidgets.utils import getWidgetAncestor
 from cgwidgets.settings import attrs
 
-from Katana import UI4 , NodegraphAPI, Utils
+from Katana import UI4 , NodegraphAPI, Utils, Callbacks
 from Widgets2 import NodeViewWidget
 from Utils2 import nodeutils, getFontSize, paramutils, NODE, PARAM, getValidName
 
@@ -71,16 +71,31 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         # create main widget
         self._desired_stuff_frame = DesirableStuffFrame(self)
 
+        self._is_frozen = False
         # setup main layout
         QVBoxLayout(self)
+        Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, self.freeze)
+        Utils.EventModule.RegisterCollapsedHandler(self.thaw, 'nodegraph_loadEnd')
+
         self.layout().addWidget(self._desired_stuff_frame)
         Utils.EventModule.RegisterCollapsedHandler(self.desiredStuffFrame().populate, 'nodegraph_setRootNode')
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'node_setName')
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'parameter_setName')
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectDeleteEvent, 'parameter_deleteChild')
-        Utils.EventModule.RegisterCollapsedHandler(self.updateObjectDeleteEvent, 'node_delete')
 
+        # todo this is causing the error...
+        Utils.EventModule.RegisterCollapsedHandler(self.updateObjectDeleteEvent, 'node_delete')
+        #
         self.desiredStuffFrame().populate()
+
+    def freeze(self, *args, **kwargs):
+        self._is_frozen = True
+
+    def thaw(self, *args, **kwargs):
+        self._is_frozen = False
+
+    def isFrozen(self):
+        return self._is_frozen
 
     """ UTILS """
     @staticmethod
@@ -115,6 +130,8 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
     """ EVENTS  """
     def updateObjectDeleteEvent(self, args):
         """ Updates the metadata when a node/parameter has been deleted"""
+        # todo need to suppress this on scene open
+        if self.isFrozen(): return
         for arg in args:
             # get object name
             if arg[0] in ["node_delete", "parameter_deleteChild"]:
@@ -129,18 +146,18 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
                         IS_NODE = False
 
                     # update active displays
-                    for desirable_stuff_widget in self.desiredStuffFrame().activeDelegateWidgets():
-                        # update internal data
-                        for index in desirable_stuff_widget.getAllIndexes():
-                            item = index.internalPointer()
-                            if item.getArg("node") == node_name:
-                                if IS_NODE:
-                                    desirable_stuff_widget.deleteItem(item, event_update=True)
-                                else:
-                                    if item.hasArg("param"):
-                                        if item.getArg("param") == param_name:
-                                            desirable_stuff_widget.deleteItem(item, event_update=True)
-
+                    if self.desiredStuffFrame():
+                        for desirable_stuff_widget in self.desiredStuffFrame().activeDelegateWidgets():
+                            # update internal data
+                            for index in desirable_stuff_widget.getAllIndexes():
+                                item = index.internalPointer()
+                                if item.getArg("node") == node_name:
+                                    if IS_NODE:
+                                        desirable_stuff_widget.deleteItem(item, event_update=True)
+                                    else:
+                                        if item.hasArg("param"):
+                                            if item.getArg("param") == param_name:
+                                                desirable_stuff_widget.deleteItem(item, event_update=True)
                     # update project settings meta data
                     for child in DesiredStuffTab.desiredStuffParam().getChildren():
                         if child:
@@ -156,7 +173,6 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
                                             del data["data"][i]
 
                             child.setValue(json.dumps(data), 0)
-
                     self.desiredStuffFrame().updateDelegateDisplay()
                 except AttributeError:
                     pass
