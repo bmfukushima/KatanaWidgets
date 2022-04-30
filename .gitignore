@@ -5,6 +5,7 @@ __pycache__/
 **.pyc
 *.pyc
 .idea
+license.txt
 
 # C extensions
 *.so
