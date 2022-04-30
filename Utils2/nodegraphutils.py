@@ -580,28 +580,34 @@ def interpolatePoints(p0, p1):
 
     Returns (list): of QPoints
     """
+    if p0 == p1: return [p0]
 
     step_size = 1
+
     x_offset = math.fabs(math.fabs(p1.x()) - math.fabs(p0.x()))
     y_offset = math.fabs(math.fabs(p1.y()) - math.fabs(p0.y()))
     num_steps = int(max(x_offset, y_offset) // step_size) + 1
 
+    # determine the offset per step
     if y_offset < x_offset:
-        y_offset_per_step = y_offset / num_steps
+        y_offset_per_step = y_offset / (num_steps - 1)
         x_offset_per_step = step_size
     else:
         y_offset_per_step = step_size
-        x_offset_per_step = x_offset / num_steps
+        x_offset_per_step = x_offset / (num_steps - 1)
+
+    # determine which way the step should go depending on the point order
+    if 0 < p0.x() - p1.x():
+        x_offset_per_step *= -1
+    if 0 < p0.y() - p1.y():
+        y_offset_per_step *= -1
 
     points = []
-    for x in range(num_steps):
+    for i in range(num_steps):
         points.append(QPoint(
-            p0.x() + x_offset_per_step*x,
-            p0.y() + y_offset_per_step*x)
+            p0.x() + x_offset_per_step * i,
+            p0.y() + y_offset_per_step * i)
         )
-
-    points.insert(0, p0)
-    points.insert(1, p1)
 
     return points
 
@@ -634,10 +640,12 @@ def pointsHitTestNode(point_list, nodegraph_widget=None):
     from .widgetutils import getActiveNodegraphWidget
     if not nodegraph_widget:
         nodegraph_widget = getActiveNodegraphWidget()
+
     hit_list = set()
     for point in point_list:
         hit_pos = nodegraph_widget.mapFromQTLocalToWorld(point.x(), point.y())
         hits = nodegraph_widget.hitTestPoint(hit_pos)
+
         for hit in hits:
             if hit[0] == "NODE":
                 node = hit[1]["node"]

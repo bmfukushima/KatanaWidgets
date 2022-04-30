@@ -67,6 +67,9 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
     def getCursorPoints(self):
         return self._last_cursor_points
 
+    def resetCursorPoints(self):
+        self._last_cursor_points = []
+
     def getCursorTrajectory(self):
         """ Returns the direction that the cursor is currently travelling
 
@@ -142,6 +145,8 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
                             self.getAlignedNodes().append(node)
 
                 self.addCursorPoint(mouse_pos)
+
+
 def showEvent(func):
     def __showEvent(self, event):
         # disable floating layer, as it for some reason inits as True...

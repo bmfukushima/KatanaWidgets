@@ -306,8 +306,14 @@ def nodeInteractionMousePressEvent(self, event):
         # start iron
         if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton and nodegraphutils.getCurrentKeyPressed() == Qt.Key_A:
             Utils.UndoStack.OpenGroup("Align Nodes")
-            widgetutils.katanaMainWindow()._node_iron_active = True
+            # ensure that iron was deactivated (because I code bad)
             widgetutils.katanaMainWindow()._node_iron_finishing = False
+            self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
+            widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+
+            # activate iron
+            widgetutils.katanaMainWindow()._node_iron_active = True
+
             return True
 
     return False
@@ -344,8 +350,11 @@ def nodeInteractionMouseReleaseEvent(self, event):
         self._timer.start(500)
         self._timer.timeout.connect(deactiveNodeIron)
 
+        # deactive iron
+        self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
         widgetutils.katanaMainWindow()._node_iron_active = False
         widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+
         self.layerStack().idleUpdate()
 
         # QApplication.processEvents()
