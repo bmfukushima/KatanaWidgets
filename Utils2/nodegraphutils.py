@@ -568,11 +568,14 @@ def floatNodes(node_list):
 def interpolatePoints(p0, p1, radius=1, step_size=1):
     """ creates a list of points between the two points provided
 
-    This assumes the topleft is 0,0
-    and the bottom right is 1,1
+    This works by
+        1.) Offsetting the end point by the radius provided in the direction of travel
+        2.) Expanding the two points to create two parallel lines
+        3.) Computing the amount of x/y offset for each step on the line
+        4.) Running through the number of steps, and adding the x/y offset to starting point
 
-    # todo add a radius?
-    # todo need to determine orientation of points
+    This assumes the topleft is 0,0, the bottom right is 1,1, and all points are positive
+
     Args:
         p0 (QPoint):
         p1 (QPoint):
@@ -605,7 +608,7 @@ def interpolatePoints(p0, p1, radius=1, step_size=1):
     num_steps = int(max(x_offset, y_offset) // step_size) + 1
     if num_steps == 1: return [p0, p1]
 
-    # determine the offset per step
+    # determine how far to offset in the x, y directions for each step
     if y_offset < x_offset:
         y_offset_per_step = y_offset / (num_steps - 1)
         x_offset_per_step = step_size
