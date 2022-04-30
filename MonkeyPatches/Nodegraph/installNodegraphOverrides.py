@@ -51,7 +51,7 @@ Ctrl + LMB
 """
 
 from .backdropLayer import installBackdropLayer
-from .nodeInteractionLayerOverrides import installNodegraphHotkeyOverrides
+from .nodeInteractionLayerOverrides import installNodeInteractionLayerOverrides
 from .linkConnectionLayerOverrides import installLinkConnectionLayerOverrides
 from .menuLayerOverride import installMenuLayerOverrides
 from .zoomInteractionLayerOverrides import installZoomLayerOverrides
@@ -61,7 +61,7 @@ from .nodeIronLayer import installNodeIronLayer
 # link connection mouse move
 def installNodegraphOverrides(**kwargs):
     from Katana import Callbacks
-    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installNodegraphHotkeyOverrides)
+    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installNodeInteractionLayerOverrides)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installLinkConnectionLayerOverrides)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installMenuLayerOverrides)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installZoomLayerOverrides)

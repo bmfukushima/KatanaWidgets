@@ -154,6 +154,112 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
 
                 self.addCursorPoint(mouse_pos)
 
+""" EVENTS"""
+def nodeInteractionEvent(func):
+    """ Each event type requires calling its own private methods
+    Doing this will probably just obfuscate the shit out of the code...
+    """
+    def __nodeInteractionEvent(self, event):
+        if event.type() == QEvent.MouseButtonPress:
+            if nodeInteractionMousePressEvent(self, event): return True
+        if event.type() == QEvent.MouseButtonRelease:
+            if nodeInteractionMouseReleaseEvent(self, event): return True
+        if event.type() == QEvent.MouseMove:
+            if nodeInteractionMouseMoveEvent(self, event): return True
+
+        return func(self, event)
+
+    return __nodeInteractionEvent
+
+
+def nodeInteractionMouseMoveEvent(self, event):
+    # update node iron
+    if widgetutils.katanaMainWindow()._node_iron_active:
+        self.layerStack().idleUpdate()
+
+    return False
+
+
+def nodeInteractionMousePressEvent(self, event):
+    # start iron
+    if (
+        event.modifiers() == Qt.NoModifier
+        and event.button() == Qt.LeftButton
+        and nodegraphutils.getCurrentKeyPressed() == Qt.Key_A
+    ):
+        Utils.UndoStack.OpenGroup("Align Nodes")
+        # ensure that iron was deactivated (because I code bad)
+        widgetutils.katanaMainWindow()._node_iron_finishing = False
+        self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
+        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+
+        # activate iron
+        widgetutils.katanaMainWindow()._node_iron_active = True
+        QApplication.setOverrideCursor(Qt.BlankCursor)
+
+        return True
+
+    return False
+
+
+def nodeInteractionMouseReleaseEvent(self, event):
+    # reset node iron attrs
+    if widgetutils.katanaMainWindow()._node_iron_active:
+        def deactiveNodeIron():
+            """ Need to run a delayed timer here, to ensure that when
+            the user lifts up the A+LMB, that it doesn't accidently
+            register a AlignMenu on release because they have slow fingers"""
+            widgetutils.katanaMainWindow()._node_iron_finishing = False
+            delattr(self, "_timer")
+
+        widgetutils.katanaMainWindow()._node_iron_finishing = True
+        # if only one node is ironed, then automatically do an align upstream/downstream depending
+        # on the direction of the swipe
+        ironed_nodes = widgetutils.katanaMainWindow()._node_iron_aligned_nodes
+        if len(ironed_nodes) == 1:
+            nodegraphutils.selectNodes(ironed_nodes, True)
+            iron_layer = self.layerStack().getLayerByName("Node Iron Layer")
+            trajectory = iron_layer.getCursorTrajectory()
+            if trajectory in [nodegraphutils.UP, nodegraphutils.RIGHT]:
+                AlignUtils().alignUpstreamNodes()
+            elif trajectory in [nodegraphutils.DOWN, nodegraphutils.LEFT]:
+                AlignUtils().alignDownstreamNodes()
+
+        # iron nodes
+        if 1 < len(ironed_nodes):
+            nodegraphutils.floatNodes(widgetutils.katanaMainWindow()._node_iron_aligned_nodes)
+
+        self._timer = QTimer()
+        self._timer.start(500)
+        self._timer.timeout.connect(deactiveNodeIron)
+
+        # deactive iron
+        self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
+        widgetutils.katanaMainWindow()._node_iron_active = False
+        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+        QApplication.restoreOverrideCursor()
+
+        self.layerStack().idleUpdate()
+
+        # QApplication.processEvents()
+        Utils.UndoStack.CloseGroup()
+
+    # update view
+    self.layerStack().idleUpdate()
+    return False
+
+
+def nodeInteractionKeyPressEvent(func):
+    def __nodeInteractionKeyPressEvent(self, event):
+        if event.key() == Qt.Key_A and event.modifiers() == Qt.NoModifier:
+            if event.isAutoRepeat(): return True
+            nodegraphutils.setCurrentKeyPressed(event.key())
+            return True
+
+        return func(self, event)
+
+    return __nodeInteractionKeyPressEvent
+
 
 def showEvent(func):
     def __showEvent(self, event):
@@ -175,12 +281,8 @@ def installNodeIronLayer(**kwargs):
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
     nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
 
-
-# nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
-# layer = NodeIronLayer("Test", enabled=True)
-# nodegraph_widget.appendLayer(layer)
-
-# nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
-# test_layer = nodegraph_widget.getLayerByName("Test")
-# nodegraph_widget.removeLayer(test_layer)
-# nodegraph_widget.getLayers()
+    # install events
+    node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")
+    node_interaction_layer.__class__.processEvent = nodeInteractionEvent(node_interaction_layer.__class__.processEvent)
+    node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(
+        node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress)

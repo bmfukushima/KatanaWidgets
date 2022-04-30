@@ -253,8 +253,6 @@ def nodeInteractionEvent(func):
     def __nodeInteractionEvent(self, event):
         if event.type() == QEvent.MouseButtonPress:
             if nodeInteractionMousePressEvent(self, event): return True
-        if event.type() == QEvent.MouseButtonRelease:
-            if nodeInteractionMouseReleaseEvent(self, event): return True
         if event.type() == QEvent.MouseMove:
             if nodeInteractionMouseMoveEvent(self, event): return True
         if event.type() == QEvent.KeyRelease:
@@ -270,10 +268,6 @@ def nodeInteractionEvent(func):
 def nodeInteractionMouseMoveEvent(self, event):
     # run functions
     glowNodes(event)
-
-    # update node iron
-    if widgetutils.katanaMainWindow()._node_iron_active:
-        self.layerStack().idleUpdate()
 
     return False
 
@@ -312,74 +306,15 @@ def nodeInteractionMousePressEvent(self, event):
             moveNodes(nodegraphutils.DOWN)
             return True
 
-    # start iron
-
-    if event.modifiers() == Qt.NoModifier and event.button() == Qt.LeftButton and nodegraphutils.getCurrentKeyPressed() == Qt.Key_A:
-        Utils.UndoStack.OpenGroup("Align Nodes")
-        # ensure that iron was deactivated (because I code bad)
-        widgetutils.katanaMainWindow()._node_iron_finishing = False
-        self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
-        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
-
-        # activate iron
-        widgetutils.katanaMainWindow()._node_iron_active = True
-        QApplication.setOverrideCursor(Qt.BlankCursor)
-
-        return True
-
-    return False
-
-
-def nodeInteractionMouseReleaseEvent(self, event):
-    # reset node iron attrs
-    if widgetutils.katanaMainWindow()._node_iron_active:
-        def deactiveNodeIron():
-            """ Need to run a delayed timer here, to ensure that when
-            the user lifts up the A+LMB, that it doesn't accidently
-            register a AlignMenu on release because they have slow fingers"""
-            widgetutils.katanaMainWindow()._node_iron_finishing = False
-            delattr(self, "_timer")
-
-        widgetutils.katanaMainWindow()._node_iron_finishing = True
-        # if only one node is ironed, then automatically do an align upstream/downstream depending
-        # on the direction of the swipe
-        ironed_nodes = widgetutils.katanaMainWindow()._node_iron_aligned_nodes
-        if len(ironed_nodes) == 1:
-            nodegraphutils.selectNodes(ironed_nodes, True)
-            iron_layer = self.layerStack().getLayerByName("Node Iron Layer")
-            trajectory = iron_layer.getCursorTrajectory()
-            if trajectory in [nodegraphutils.UP, nodegraphutils.RIGHT]:
-                AlignUtils().alignUpstreamNodes()
-            elif trajectory in [nodegraphutils.DOWN, nodegraphutils.LEFT]:
-                AlignUtils().alignDownstreamNodes()
-
-        # iron nodes
-        if 1 < len(ironed_nodes):
-            nodegraphutils.floatNodes(widgetutils.katanaMainWindow()._node_iron_aligned_nodes)
-
-        self._timer = QTimer()
-        self._timer.start(500)
-        self._timer.timeout.connect(deactiveNodeIron)
-
-        # deactive iron
-        self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
-        widgetutils.katanaMainWindow()._node_iron_active = False
-        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
-        QApplication.restoreOverrideCursor()
-
-        self.layerStack().idleUpdate()
-
-        # QApplication.processEvents()
-        Utils.UndoStack.CloseGroup()
-
-    # update view
-    self.layerStack().idleUpdate()
     return False
 
 
 def nodeInteractionKeyPressEvent(func):
     def __nodeInteractionKeyPressEvent(self, event):
         """ This needs to go here to keep the variable in scope"""
+        if event.isAutoRepeat(): return True
+        nodegraphutils.setCurrentKeyPressed(event.key())
+
         # color node selection
         nodegraph_widget = widgetutils.getActiveNodegraphWidget()
         is_floating = nodegraph_widget.getLayerByName("Floating Nodes").enabled()
@@ -435,11 +370,6 @@ def nodeInteractionKeyPressEvent(func):
                 self.frameSelection()
             else:
                 self.layerStack().getLayerByName('Frame All').frameAll()
-            return True
-
-        if event.key() == Qt.Key_A and event.modifiers() == Qt.NoModifier:
-            if event.isAutoRepeat(): return True
-            nodegraphutils.setCurrentKeyPressed(event.key())
             return True
 
         if event.key() == Qt.Key_B and event.modifiers() == Qt.NoModifier:
@@ -505,7 +435,6 @@ def nodeInteractionKeyReleaseEvent(self, event):
 
 def showEvent(func):
     def __showEvent(self, event):
-
         nodegraphutils.setCurrentKeyPressed(None)
         return func(self, event)
 
@@ -513,7 +442,7 @@ def showEvent(func):
 
 
 
-def installNodegraphHotkeyOverrides(**kwargs):
+def installNodeInteractionLayerOverrides(**kwargs):
     """ Installs the hotkey overrides """
     # Node interaction key press
 
