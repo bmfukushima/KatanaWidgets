@@ -173,6 +173,10 @@ def glowNodes(event):
     """
 
     """ Need to by pass for special functionality for backdrops"""
+    if widgetutils.katanaMainWindow()._node_iron_active: return
+    if widgetutils.katanaMainWindow()._link_cutting_active: return
+    if widgetutils.katanaMainWindow()._backdrop_resize_active: return
+
     if event.modifiers() == Qt.NoModifier:
         nodeutils.colorClosestNode(has_output_ports=True)
     backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()

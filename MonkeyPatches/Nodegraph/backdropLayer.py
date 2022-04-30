@@ -63,6 +63,9 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
             glColor4f(*default_color)
 
     def paintGL(self):
+        if widgetutils.katanaMainWindow()._node_iron_active: return
+        if widgetutils.katanaMainWindow()._link_cutting_active: return
+
         # get attrs
         cam_x_pos = self.layerStack().getEyePoint()[0]
         cam_y_pos = self.layerStack().getEyePoint()[1]

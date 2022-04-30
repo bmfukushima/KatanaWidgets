@@ -737,12 +737,13 @@ def pointsHitTestNode(point_list, nodegraph_widget=None, hit_type=NODE):
         hits = nodegraph_widget.hitTestPoint(hit_pos)
 
         for hit in hits:
-            if hit[0] == NODE:
-                node = hit[1]["node"]
-                if node.getType() != "Backdrop":
-                    hit_list.add(node)
-            if hit[0] == LINK:
-                hit_list.add((hit[1]["portA"], hit[1]["portB"]))
+            if hit[0] == hit_type or hit_type == ALL:
+                if hit[0] == NODE:
+                    node = hit[1]["node"]
+                    if node.getType() != "Backdrop":
+                        hit_list.add(node)
+                if hit[0] == LINK:
+                    hit_list.add((hit[1]["portA"], hit[1]["portB"]))
 
     return hit_list
 
