@@ -43,6 +43,9 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
         (QT4GLLayerStack.Layer.__init__)(self, *args, **kwargs)
         self._cursor_trajectory = nodegraphutils.RIGHT
         self._last_cursor_points = []
+        if not hasattr(widgetutils.katanaMainWindow(), "_node_iron_finishing"):
+            widgetutils.katanaMainWindow()._node_iron_finishing = False
+
         if not hasattr(widgetutils.katanaMainWindow(), "_node_iron_aligned_nodes"):
             widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
 

@@ -565,8 +565,16 @@ def nodeInteractionMousePressEvent(self, event):
         # move backdrop
         # Select backdrop and children OR start band selection
         if event.modifiers() in [Qt.NoModifier, Qt.ShiftModifier] and event.button() == Qt.LeftButton:
-            widgetutils.katanaMainWindow()._nodegraph_click_pos = self.layerStack().getMousePos()
-            return True
+            # check to make sure the user didn't hit a node, if they hit a node, do default behavior
+            mouse_pos = self.layerStack().getMousePos()
+            hit_pos = self.layerStack().mapFromQTLocalToWorld(mouse_pos.x(), mouse_pos.y())
+            node_hits = self.layerStack().hitTestPoint(hit_pos)
+
+            if 0 < len(node_hits):
+                return False
+            else:
+                widgetutils.katanaMainWindow()._nodegraph_click_pos = self.layerStack().getMousePos()
+                return True
 
         if event.modifiers() == Qt.ControlModifier and event.button() == Qt.LeftButton:
             # this is now handled on the StickyNoteInteractionLayer
