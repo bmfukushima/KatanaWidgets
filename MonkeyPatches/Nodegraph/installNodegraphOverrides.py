@@ -57,6 +57,7 @@ from .menuLayerOverride import installMenuLayerOverrides
 from .zoomInteractionLayerOverrides import installZoomLayerOverrides
 from .gridLayer import installGridLayer
 from .nodeIronLayer import installNodeIronLayer
+from .linkCuttingLayer import installLinkCuttingLayer
 
 # link connection mouse move
 def installNodegraphOverrides(**kwargs):
@@ -68,3 +69,4 @@ def installNodegraphOverrides(**kwargs):
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installGridLayer)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installBackdropLayer)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installNodeIronLayer)
+    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installLinkCuttingLayer)

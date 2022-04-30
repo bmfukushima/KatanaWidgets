@@ -42,7 +42,6 @@ from cgwidgets.widgets import PopupHotkeyMenu
 
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
 from Utils2 import nodeutils, widgetutils, nodegraphutils
-from Utils2.nodealignutils import AlignUtils
 
 from .gridLayer import GridGUIWidget
 from .portConnector import PortConnector

@@ -46,6 +46,11 @@ FORWARD = 2
 BACK = 6
 HOME = 0
 
+LINK = "LINK"
+PORT = "PORT"
+NODE = "NODE"
+ALL = "ALL"
+
 def clearNodeSelection():
     for node in NodegraphAPI.GetAllSelectedNodes():
         NodegraphAPI.SetNodeSelected(node, False)
@@ -705,16 +710,21 @@ def nodeClicked(nodegraph_widget):
     return False
 
 
-def pointsHitTestNode(point_list, nodegraph_widget=None):
+def pointsHitTestNode(point_list, nodegraph_widget=None, hit_type=NODE):
     """ Takes a list of points, and creates a hit test of them
 
     list(
-        tuple("TYPE", {"type": object})
+        tuple("TYPE", {"type": object}),
+        ('LINK', {'node': <GafferThree GafferNode 'GafferThree3'>, 'portA': <Port Consumer 'in'>, 'portB': <Port Producer 'out'>})
+        ('PORT', {'node': <GafferThree GafferNode 'GafferThree3'>, 'portA': <Port Producer 'out'>}),
+        ('NODE', {'node': <MaterialAssign GenericAssign 'MaterialAssign'>}),
     )
     Args:
         point_list:
 
-    Returns (list): of nodes
+    Returns (list): of
+        if NODE, nodes
+        if LINK, tuple(port, port)
 
     """
     from .widgetutils import getActiveNodegraphWidget
@@ -727,10 +737,12 @@ def pointsHitTestNode(point_list, nodegraph_widget=None):
         hits = nodegraph_widget.hitTestPoint(hit_pos)
 
         for hit in hits:
-            if hit[0] == "NODE":
+            if hit[0] == NODE:
                 node = hit[1]["node"]
                 if node.getType() != "Backdrop":
                     hit_list.add(node)
+            if hit[0] == LINK:
+                hit_list.add((hit[1]["portA"], hit[1]["portB"]))
 
     return hit_list
 
