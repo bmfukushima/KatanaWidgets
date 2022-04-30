@@ -68,23 +68,23 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
 
     def __init__(self, parent=None):
         super(DesiredStuffTab, self).__init__(parent)
-        # create main widget
-        self._desired_stuff_frame = DesirableStuffFrame(self)
-
         self._is_frozen = False
+
         # setup main layout
         QVBoxLayout(self)
-        Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, self.freeze)
-        Utils.EventModule.RegisterCollapsedHandler(self.thaw, 'nodegraph_loadEnd')
-
+        self._desired_stuff_frame = DesirableStuffFrame(self)
         self.layout().addWidget(self._desired_stuff_frame)
+
+        # events
         Utils.EventModule.RegisterCollapsedHandler(self.desiredStuffFrame().populate, 'nodegraph_setRootNode')
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'node_setName')
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectNameEvent, 'parameter_setName')
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectDeleteEvent, 'parameter_deleteChild')
-
-        # todo this is causing the error...
         Utils.EventModule.RegisterCollapsedHandler(self.updateObjectDeleteEvent, 'node_delete')
+
+        Callbacks.addCallback(Callbacks.Type.onSceneAboutToLoad, self.freeze)
+        Utils.EventModule.RegisterCollapsedHandler(self.thaw, 'nodegraph_loadEnd')
+
         #
         self.desiredStuffFrame().populate()
 
