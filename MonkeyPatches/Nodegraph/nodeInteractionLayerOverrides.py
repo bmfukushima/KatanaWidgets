@@ -348,9 +348,9 @@ def nodeInteractionMouseReleaseEvent(self, event):
             nodegraphutils.selectNodes(ironed_nodes, True)
             iron_layer = self.layerStack().getLayerByName("Node Iron Layer")
             trajectory = iron_layer.getCursorTrajectory()
-            if trajectory == nodegraphutils.UP:
+            if trajectory in [nodegraphutils.UP, nodegraphutils.RIGHT]:
                 AlignUtils().alignUpstreamNodes()
-            elif trajectory == nodegraphutils.DOWN:
+            elif trajectory in [nodegraphutils.DOWN, nodegraphutils.LEFT]:
                 AlignUtils().alignDownstreamNodes()
 
         # iron nodes

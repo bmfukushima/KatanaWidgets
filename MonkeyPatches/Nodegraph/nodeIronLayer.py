@@ -92,9 +92,7 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
                 if len(self.getAlignedNodes()) == 0:
                     if 1 < len(self.getCursorPoints()):
                         self._cursor_trajectory = nodegraphutils.getCursorTrajectory(self.getCursorPoints()[0], self.getCursorPoints()[-1])
-                        # print('updating trajectory to..', self._cursor_trajectory)
 
-                # todo draw something more interesting than a dot...
                 # draw crosshair
                 radius = 10
                 glColor4f(0.75, 0.75, 1, 1)
