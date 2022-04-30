@@ -566,15 +566,9 @@ def nodeInteractionMousePressEvent(self, event):
         # Select backdrop and children OR start band selection
         if event.modifiers() in [Qt.NoModifier, Qt.ShiftModifier] and event.button() == Qt.LeftButton:
             # check to make sure the user didn't hit a node, if they hit a node, do default behavior
-            mouse_pos = self.layerStack().getMousePos()
-            hit_pos = self.layerStack().mapFromQTLocalToWorld(mouse_pos.x(), mouse_pos.y())
-            node_hits = self.layerStack().hitTestPoint(hit_pos)
-
-            if 0 < len(node_hits):
-                return False
-            else:
-                widgetutils.katanaMainWindow()._nodegraph_click_pos = self.layerStack().getMousePos()
-                return True
+            if nodegraphutils.nodeClicked(self.layerStack()): return False
+            widgetutils.katanaMainWindow()._nodegraph_click_pos = self.layerStack().getMousePos()
+            return True
 
         if event.modifiers() == Qt.ControlModifier and event.button() == Qt.LeftButton:
             # this is now handled on the StickyNoteInteractionLayer
@@ -645,6 +639,7 @@ def nodeInteractionMouseReleaseEvent(self, event):
                 nodes_to_deselect = nodegraphutils.getBackdropChildren(backdrop_node)
                 for node in nodes_to_deselect:
                     NodegraphAPI.SetNodeSelected(node, False)
+
             else:
                 nodes_to_select = nodegraphutils.getBackdropChildren(backdrop_node)
                 nodegraphutils.selectNodes(nodes_to_select)

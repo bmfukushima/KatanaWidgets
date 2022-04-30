@@ -1,6 +1,12 @@
 """ Todo:
-        * remove keypress private function
-            - how to suppress menu hotkey events
+        * remove private function
+            - keyPress
+                - how to suppress menu hotkey events
+            - navigation menu
+        * navigation menu
+            - Fix up button
+            - Add alt + button for menu...
+        * add cutting widget
 
 Notes:
     In order to create a key + lmb event, you'll need to
@@ -228,13 +234,13 @@ def navigateNodegraph(direction):
     navigation_toolbar = nodegraph_widget.parent()._NodegraphPanel__navigationToolbar
     if direction == nodegraphutils.FORWARD:
         navigation_toolbar._NavigationToolbar__forwardButtonClicked()
-    if direction == nodegraphutils.BACK:
+    elif direction == nodegraphutils.BACK:
         navigation_toolbar._NavigationToolbar__backButtonClicked()
-    if direction == nodegraphutils.HOME:
+    elif direction == nodegraphutils.HOME:
         nodegraph_widget.setCurrentNodeView(NodegraphAPI.GetRootNode())
-    if direction == nodegraphutils.UP:
-        if nodegraph_widget.getCurrentNodeView() != NodegraphAPI.GetRootNode():
-            nodegraph_widget.setCurrentNodeView(nodegraph_widget.getCurrentNodeView().getParent())
+    elif direction == nodegraphutils.UP:
+        # if nodegraph_widget.getCurrentNodeView() != NodegraphAPI.GetRootNode():
+        nodegraph_widget.setCurrentNodeView(nodegraph_widget.getCurrentNodeView().getParent())
 
 
 """ EVENTS"""
@@ -275,13 +281,15 @@ def nodeInteractionMousePressEvent(self, event):
     if event.button() == Qt.ForwardButton and event.modifiers() == Qt.NoModifier:
         navigateNodegraph(nodegraphutils.FORWARD)
         return True
-    if event.button() == Qt.BackButton and event.modifiers() == Qt.NoModifier:
+    elif event.button() == Qt.BackButton and event.modifiers() == Qt.NoModifier:
         navigateNodegraph(nodegraphutils.BACK)
         return True
-    if event.button() == Qt.ForwardButton and event.modifiers() == Qt.AltModifier:
+    elif event.button() == Qt.ForwardButton and event.modifiers() == Qt.AltModifier:
+        print('home')
         navigateNodegraph(nodegraphutils.HOME)
         return True
-    if event.button() == Qt.BackButton and event.modifiers() == Qt.AltModifier:
+    elif event.button() == Qt.BackButton and event.modifiers() == Qt.AltModifier:
+        print("up")
         navigateNodegraph(nodegraphutils.UP)
         return True
 
