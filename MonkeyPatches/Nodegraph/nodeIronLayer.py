@@ -12,7 +12,9 @@ import math
 
 from OpenGL.GL import (
     glBegin,
+    glLineWidth,
     GL_POINTS,
+    GL_LINE_LOOP,
     glColor4f,
     glEnd,
     glVertex2f,
@@ -95,10 +97,15 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
                 # todo draw something more interesting than a dot...
                 # draw crosshair
                 radius = 10
-                glColor4f(0.5, 0.5, 1, 1)
+                glColor4f(0.75, 0.75, 1, 1)
                 glPointSize(radius * 2)
-                glBegin(GL_POINTS)
-                glVertex2f(window_pos.x(), window_pos.y())
+                glLineWidth(2)
+                glBegin(GL_LINE_LOOP)
+
+                glVertex2f(window_pos.x() - 10, window_pos.y())
+                glVertex2f(window_pos.x(), window_pos.y() + 10)
+                glVertex2f(window_pos.x() + 10, window_pos.y())
+                glVertex2f(window_pos.x(), window_pos.y() - 10)
                 glEnd()
 
                 # iron nodes

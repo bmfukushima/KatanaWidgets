@@ -565,7 +565,7 @@ def floatNodes(node_list):
     nodegraph_widget.parent().floatNodes(list(node_list))
 
 
-def interpolatePoints(p0, p1):
+def interpolatePoints(p0, p1, radius=10):
     """ creates a list of points between the two points provided
 
     This assumes the topleft is 0,0

@@ -28,8 +28,10 @@ Attributes:
 import os
 import inspect
 
+from qtpy.QtWidgets import QApplication
 from qtpy.QtCore import Qt, QSize, QPoint, QEvent, QTimer
 from qtpy.QtGui import QCursor
+
 
 from Katana import NodegraphAPI, Utils, UI4, DrawingModule, KatanaFile, LayeredMenuAPI, PrefNames, KatanaPrefs
 from UI4.App import Tabs
@@ -321,6 +323,7 @@ def nodeInteractionMousePressEvent(self, event):
 
             # activate iron
             widgetutils.katanaMainWindow()._node_iron_active = True
+            QApplication.setOverrideCursor(Qt.BlankCursor)
 
             return True
 
@@ -362,6 +365,7 @@ def nodeInteractionMouseReleaseEvent(self, event):
         self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
         widgetutils.katanaMainWindow()._node_iron_active = False
         widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
+        QApplication.restoreOverrideCursor()
 
         self.layerStack().idleUpdate()
 

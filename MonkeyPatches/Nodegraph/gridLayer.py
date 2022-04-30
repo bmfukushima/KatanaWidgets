@@ -47,98 +47,100 @@ class GridLayer(QT4GLLayerStack.Layer):
 
     """ EVENTS"""
     def drawGrid(self):
-        if KatanaPrefs[GRID_ENABLED_PREF_NAME]:
-            self.layerStack().applyWorldSpace()
-            GRIDSIZEX = GridUtils.gridSizeX()
-            GRIDSIZEY = GridUtils.gridSizeY()
+        if not KatanaPrefs[GRID_ENABLED_PREF_NAME]: return
 
-            leftBottom = self.layerStack().mapFromQTLocalToWorld(0, 0)
-            rightTop = self.layerStack().mapFromQTLocalToWorld(self.layerStack().width(), self.layerStack().height())
-            left = int(leftBottom[0] / GRIDSIZEX)
-            right = int(rightTop[0] / GRIDSIZEX) + 1
-            top = int(leftBottom[1] / GRIDSIZEY) + 1
-            bottom = int(rightTop[1] / GRIDSIZEY)
-            glEnable(GL_BLEND)
+        self.layerStack().applyWorldSpace()
+        GRIDSIZEX = GridUtils.gridSizeX()
+        GRIDSIZEY = GridUtils.gridSizeY()
 
-            glColor4f(*GridUtils.color())
+        leftBottom = self.layerStack().mapFromQTLocalToWorld(0, 0)
+        rightTop = self.layerStack().mapFromQTLocalToWorld(self.layerStack().width(), self.layerStack().height())
+        left = int(leftBottom[0] / GRIDSIZEX)
+        right = int(rightTop[0] / GRIDSIZEX) + 1
+        top = int(leftBottom[1] / GRIDSIZEY) + 1
+        bottom = int(rightTop[1] / GRIDSIZEY)
+        glEnable(GL_BLEND)
 
-            # Setting cap on number of cross sections to reduce lag
-            num_dots = (right-left) * (top-bottom)
-            if 50000 < num_dots: return
+        glColor4f(*GridUtils.color())
 
-            # Points
-            if GridUtils.drawMode() == GridUtils.POINT:
-                glPointSize(GridUtils.radius())
-                glBegin(GL_POINTS)
-                for x in range(min(left, right), max(left, right)):
-                    for y in range(min(top, bottom), max(top, bottom)):
-                        glVertex2f(x * GRIDSIZEX, y * GRIDSIZEY)
-                glEnd()
+        # Setting cap on number of cross sections to reduce lag
+        num_dots = (right-left) * (top-bottom)
+        if 50000 < num_dots: return
 
-            # Crosshair
-            if GridUtils.drawMode() == GridUtils.CROSSHAIR:
-                glLineWidth(GridUtils.lineWidth())
-                glBegin(GL_LINES)
-                for x in range(min(left, right), max(left, right)):
-                    for y in range(min(top, bottom), max(top, bottom)):
-                        l = (x * GRIDSIZEX) - GridUtils.radius()
-                        r = (x * GRIDSIZEX) + GridUtils.radius()
-                        t = (y * GRIDSIZEY) + GridUtils.radius()
-                        b = (y * GRIDSIZEY) - GridUtils.radius()
+        # Points
+        if GridUtils.drawMode() == GridUtils.POINT:
+            glPointSize(GridUtils.radius())
+            glBegin(GL_POINTS)
+            for x in range(min(left, right), max(left, right)):
+                for y in range(min(top, bottom), max(top, bottom)):
+                    glVertex2f(x * GRIDSIZEX, y * GRIDSIZEY)
+            glEnd()
 
-                        glVertex2f(l, y * GRIDSIZEY)
-                        glVertex2f(r, y * GRIDSIZEY)
-                        glVertex2f(x * GRIDSIZEX, t)
-                        glVertex2f(x * GRIDSIZEX, b)
-                glEnd()
+        # Crosshair
+        if GridUtils.drawMode() == GridUtils.CROSSHAIR:
+            glLineWidth(GridUtils.lineWidth())
+            glBegin(GL_LINES)
+            for x in range(min(left, right), max(left, right)):
+                for y in range(min(top, bottom), max(top, bottom)):
+                    l = (x * GRIDSIZEX) - GridUtils.radius()
+                    r = (x * GRIDSIZEX) + GridUtils.radius()
+                    t = (y * GRIDSIZEY) + GridUtils.radius()
+                    b = (y * GRIDSIZEY) - GridUtils.radius()
 
-            # Diamond
-            if GridUtils.drawMode() == GridUtils.DIAMOND:
-                glLineWidth(GridUtils.lineWidth())
-                for x in range(min(left, right), max(left, right)):
-                    for y in range(min(top, bottom), max(top, bottom)):
-                        l = (x * GRIDSIZEX) - GridUtils.radius()
-                        r = (x * GRIDSIZEX) + GridUtils.radius()
-                        t = (y * GRIDSIZEY) + GridUtils.radius()
-                        b = (y * GRIDSIZEY) - GridUtils.radius()
-                        glBegin(GL_LINE_LOOP)
-                        glVertex2f(l, y * GRIDSIZEY)
-                        glVertex2f(x * GRIDSIZEX, t)
-                        glVertex2f(r, y * GRIDSIZEY)
-                        glVertex2f(x * GRIDSIZEX, b)
-                        glEnd()
+                    glVertex2f(l, y * GRIDSIZEY)
+                    glVertex2f(r, y * GRIDSIZEY)
+                    glVertex2f(x * GRIDSIZEX, t)
+                    glVertex2f(x * GRIDSIZEX, b)
+            glEnd()
 
-            if GridUtils.drawMode() == GridUtils.SQUARE:
-                glLineWidth(GridUtils.lineWidth())
-                for x in range(min(left, right), max(left, right)):
-                    for y in range(min(top, bottom), max(top, bottom)):
-                        l = (x * GRIDSIZEX) - GridUtils.radius()
-                        r = (x * GRIDSIZEX) + GridUtils.radius()
-                        t = (y * GRIDSIZEY) + GridUtils.radius()
-                        b = (y * GRIDSIZEY) - GridUtils.radius()
-                        glBegin(GL_LINE_LOOP)
-                        glVertex2f(l, b)
-                        glVertex2f(l, t)
-                        glVertex2f(r, t)
-                        glVertex2f(r, b)
-                        glVertex2f(l, b)
+        # Diamond
+        if GridUtils.drawMode() == GridUtils.DIAMOND:
+            glLineWidth(GridUtils.lineWidth())
+            for x in range(min(left, right), max(left, right)):
+                for y in range(min(top, bottom), max(top, bottom)):
+                    l = (x * GRIDSIZEX) - GridUtils.radius()
+                    r = (x * GRIDSIZEX) + GridUtils.radius()
+                    t = (y * GRIDSIZEY) + GridUtils.radius()
+                    b = (y * GRIDSIZEY) - GridUtils.radius()
+                    glBegin(GL_LINE_LOOP)
+                    glVertex2f(l, y * GRIDSIZEY)
+                    glVertex2f(x * GRIDSIZEX, t)
+                    glVertex2f(r, y * GRIDSIZEY)
+                    glVertex2f(x * GRIDSIZEX, b)
+                    glEnd()
 
-                        glEnd()
+        # Square
+        if GridUtils.drawMode() == GridUtils.SQUARE:
+            glLineWidth(GridUtils.lineWidth())
+            for x in range(min(left, right), max(left, right)):
+                for y in range(min(top, bottom), max(top, bottom)):
+                    l = (x * GRIDSIZEX) - GridUtils.radius()
+                    r = (x * GRIDSIZEX) + GridUtils.radius()
+                    t = (y * GRIDSIZEY) + GridUtils.radius()
+                    b = (y * GRIDSIZEY) - GridUtils.radius()
+                    glBegin(GL_LINE_LOOP)
+                    glVertex2f(l, b)
+                    glVertex2f(l, t)
+                    glVertex2f(r, t)
+                    glVertex2f(r, b)
+                    glVertex2f(l, b)
 
-            # Grid
-            if GridUtils.drawMode() == GridUtils.LINE:
-                glLineWidth(GridUtils.lineWidth())
-                glBegin(GL_LINES)
-                for x in range(left, right):
-                    glVertex2f(x * GRIDSIZEX, leftBottom[1])
-                    glVertex2f(x * GRIDSIZEX, rightTop[1])
+                    glEnd()
 
-                for x in range(bottom, top):
-                    glVertex2f(leftBottom[0], x * GRIDSIZEY)
-                    glVertex2f(rightTop[0], x * GRIDSIZEY)
-                glEnd()
+        # Grid
+        if GridUtils.drawMode() == GridUtils.LINE:
+            glLineWidth(GridUtils.lineWidth())
+            glBegin(GL_LINES)
+            for x in range(left, right):
+                glVertex2f(x * GRIDSIZEX, leftBottom[1])
+                glVertex2f(x * GRIDSIZEX, rightTop[1])
 
-            glDisable(GL_BLEND)
+            for x in range(bottom, top):
+                glVertex2f(leftBottom[0], x * GRIDSIZEY)
+                glVertex2f(rightTop[0], x * GRIDSIZEY)
+            glEnd()
+
+        glDisable(GL_BLEND)
 
     def paintGL(self):
         def unfreeze():
