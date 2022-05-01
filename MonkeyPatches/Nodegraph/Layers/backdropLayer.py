@@ -134,6 +134,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
         # DRAW CENTER
         glBegin(GL_TRIANGLES)
         BackdropPreviewLayer.pickTriangleColor(quadrant, nodegraphutils.CENTER)
+
         # CENTER | TOP LEFT
         glVertex2f(zoom * (right - width_offset) + x_offset, zoom * (top - height_offset) + y_offset)
         glVertex2f(zoom * (right - width_offset - indicator_x_size) + x_offset, zoom * (top - height_offset) + y_offset)

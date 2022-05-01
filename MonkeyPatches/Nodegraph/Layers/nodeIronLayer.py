@@ -31,7 +31,7 @@ from .AbstractGestureLayer import (
 )
 
 LAYER_NAME = "Node Iron Layer"
-ATTR_NAME = "_node_iron_layer"
+ATTR_NAME = "_node_iron"
 
 
 class NodeIronLayer(AbstractGestureLayer):
@@ -48,40 +48,56 @@ class NodeIronLayer(AbstractGestureLayer):
     """
 
     def __init__(self, *args, **kwargs):
-        super(NodeIronLayer, self).__init__(*args, **kwargs)
-        if not hasattr(widgetutils.katanaMainWindow(), "_node_iron_finishing"):
-            widgetutils.katanaMainWindow()._node_iron_finishing = False
-
-        if not hasattr(widgetutils.katanaMainWindow(), "_node_iron_aligned_nodes"):
-            widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
-
-        if not hasattr(widgetutils.katanaMainWindow(), "_node_iron_active"):
-            widgetutils.katanaMainWindow()._node_iron_active = False
-
-    def getAlignedNodes(self):
-        return widgetutils.katanaMainWindow()._node_iron_aligned_nodes
+        super(NodeIronLayer, self).__init__(
+            *args,
+            attr_name=ATTR_NAME,
+            actuation_key=Qt.Key_A,
+            undo_name="Align Nodes",
+            **kwargs)
 
     def getAlignXPos(self):
-        return NodegraphAPI.GetNodePosition(self.getAlignedNodes()[-1])[0]
+        return NodegraphAPI.GetNodePosition(self.getHits()[-1])[0]
 
     def getAlignYPos(self):
-        return NodegraphAPI.GetNodePosition(self.getAlignedNodes()[-1])[1]
+        return NodegraphAPI.GetNodePosition(self.getHits()[-1])[1]
+
+    def getCursorTrajectory(self):
+        """ Returns the direction that the cursor is currently travelling
+
+        Returns (LinkCuttingLayer.DIRECTION)"""
+
+        return self._cursor_trajectory
+
+    def mouseReleaseEvent(self, event):
+        if self.isActive():
+            ironed_nodes = self.getHits()
+            if len(ironed_nodes) == 1:
+                nodegraphutils.selectNodes(ironed_nodes, is_exclusive=True)
+                trajectory = self.getCursorTrajectory()
+                if trajectory in [nodegraphutils.UP, nodegraphutils.RIGHT]:
+                    AlignUtils().alignUpstreamNodes()
+                elif trajectory in [nodegraphutils.DOWN, nodegraphutils.LEFT]:
+                    AlignUtils().alignDownstreamNodes()
+
+            # iron nodes
+            if 1 < len(ironed_nodes):
+                nodegraphutils.floatNodes(ironed_nodes)
+
+        return AbstractGestureLayer.mouseReleaseEvent(self, event)
 
     def paintGL(self):
-        if widgetutils.katanaMainWindow()._node_iron_active:
+        if self.isActive():
             # create point on cursor
             mouse_pos = self.layerStack().getMousePos()
             # align nodes
             if mouse_pos:
                 # set initial trajectory
-                if len(self.getAlignedNodes()) == 0:
+                if len(self.getHits()) == 0:
                     if 1 < len(self.getCursorPoints()):
                         self._cursor_trajectory = nodegraphutils.getCursorTrajectory(self.getCursorPoints()[0], self.getCursorPoints()[-1])
 
                 # draw crosshair
                 self.drawCrosshair()
-
-                # draw trajectory
                 self.drawTrajectory()
 
                 # iron nodes
@@ -91,18 +107,18 @@ class NodeIronLayer(AbstractGestureLayer):
 
                     for node in node_hits:
                         # first node
-                        if node not in self.getAlignedNodes():
-                            if len(self.getAlignedNodes()) == 0:
+                        if node not in self.getHits():
+                            if len(self.getHits()) == 0:
                                 if KatanaPrefs[PrefNames.NODEGRAPH_GRIDSNAP]:
                                     from Utils2.nodealignutils import AlignUtils
                                     AlignUtils().snapNodeToGrid(node)
 
                             # set direction
-                            if len(self.getAlignedNodes()) == 1:
+                            if len(self.getHits()) == 1:
                                 self._cursor_trajectory = nodegraphutils.getCursorTrajectory(self.getCursorPoints()[0], self.getCursorPoints()[-1])
 
                             # iron node
-                            if 0 < len(self.getAlignedNodes()):
+                            if 0 < len(self.getHits()):
                                 from .gridLayer import (
                                     GRID_SIZE_X_PREF_NAME, GRID_SIZE_Y_PREF_NAME, ALIGN_X_OFFSET_PREF_NAME, ALIGN_Y_OFFSET_PREF_NAME)
 
@@ -128,106 +144,12 @@ class NodeIronLayer(AbstractGestureLayer):
                                     # node marked for deletion
                                     pass
 
-                            self.getAlignedNodes().append(node)
+                            self.getHits().append(node)
 
                 self.addCursorPoint(mouse_pos)
 
+
 """ EVENTS"""
-def nodeInteractionEvent(func):
-    """ Each event type requires calling its own private methods
-    Doing this will probably just obfuscate the shit out of the code...
-    """
-    def __nodeInteractionEvent(self, event):
-        if event.type() == QEvent.MouseButtonPress:
-            if nodeInteractionMousePressEvent(self, event): return True
-        if event.type() == QEvent.MouseButtonRelease:
-            if nodeInteractionMouseReleaseEvent(self, event): return True
-        if event.type() == QEvent.MouseMove:
-            if nodeInteractionMouseMoveEvent(self, event): return True
-
-        return func(self, event)
-
-    return __nodeInteractionEvent
-
-
-def nodeInteractionMouseMoveEvent(self, event):
-    # update node iron
-    if widgetutils.katanaMainWindow()._node_iron_active:
-        self.layerStack().idleUpdate()
-
-    return False
-
-
-def nodeInteractionMousePressEvent(self, event):
-    # start iron
-    if (
-        event.modifiers() == Qt.NoModifier
-        and event.button() == Qt.LeftButton
-        and nodegraphutils.getCurrentKeyPressed() == Qt.Key_A
-    ):
-        Utils.UndoStack.OpenGroup("Align Nodes")
-        # ensure that iron was deactivated (because I code bad)
-        widgetutils.katanaMainWindow()._node_iron_finishing = False
-        self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
-        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
-
-        # activate iron
-        widgetutils.katanaMainWindow()._node_iron_active = True
-        QApplication.setOverrideCursor(Qt.BlankCursor)
-        nodeutils.removeNodePreviewColors()
-
-        return True
-
-    return False
-
-
-def nodeInteractionMouseReleaseEvent(self, event):
-    # reset node iron attrs
-    if widgetutils.katanaMainWindow()._node_iron_active:
-        def deactiveNodeIron():
-            """ Need to run a delayed timer here, to ensure that when
-            the user lifts up the A+LMB, that it doesn't accidently
-            register a AlignMenu on release because they have slow fingers"""
-            widgetutils.katanaMainWindow()._node_iron_finishing = False
-            delattr(self, "_timer")
-
-        widgetutils.katanaMainWindow()._node_iron_finishing = True
-        # if only one node is ironed, then automatically do an align upstream/downstream depending
-        # on the direction of the swipe
-        ironed_nodes = widgetutils.katanaMainWindow()._node_iron_aligned_nodes
-        if len(ironed_nodes) == 1:
-            nodegraphutils.selectNodes(ironed_nodes, True)
-            iron_layer = self.layerStack().getLayerByName("Node Iron Layer")
-            trajectory = iron_layer.getCursorTrajectory()
-            if trajectory in [nodegraphutils.UP, nodegraphutils.RIGHT]:
-                AlignUtils().alignUpstreamNodes()
-            elif trajectory in [nodegraphutils.DOWN, nodegraphutils.LEFT]:
-                AlignUtils().alignDownstreamNodes()
-
-        # iron nodes
-        if 1 < len(ironed_nodes):
-            nodegraphutils.floatNodes(widgetutils.katanaMainWindow()._node_iron_aligned_nodes)
-
-        self._timer = QTimer()
-        self._timer.start(500)
-        self._timer.timeout.connect(deactiveNodeIron)
-
-        # deactive iron
-        self.layerStack().getLayerByName("Node Iron Layer").resetCursorPoints()
-        widgetutils.katanaMainWindow()._node_iron_active = False
-        widgetutils.katanaMainWindow()._node_iron_aligned_nodes = []
-        QApplication.restoreOverrideCursor()
-
-        self.layerStack().idleUpdate()
-
-        # QApplication.processEvents()
-        Utils.UndoStack.CloseGroup()
-
-    # update view
-    self.layerStack().idleUpdate()
-    return False
-
-
 def nodeInteractionKeyPressEvent(func):
     def __nodeInteractionKeyPressEvent(self, event):
         if event.key() == Qt.Key_A and event.modifiers() == Qt.NoModifier:
@@ -241,12 +163,4 @@ def nodeInteractionKeyPressEvent(func):
 
 
 def installNodeIronLayer(**kwargs):
-    nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
-    nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
-    insertLayerIntoNodegraph(NodeIronLayer, LAYER_NAME, ATTR_NAME)
-
-    # install events
-    node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")
-    node_interaction_layer.__class__.processEvent = nodeInteractionEvent(node_interaction_layer.__class__.processEvent)
-    node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(
-        node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress)
+    insertLayerIntoNodegraph(NodeIronLayer, LAYER_NAME, ATTR_NAME, Qt.Key_A)

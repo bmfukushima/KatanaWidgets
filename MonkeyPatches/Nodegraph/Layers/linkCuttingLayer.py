@@ -32,7 +32,7 @@ from .AbstractGestureLayer import AbstractGestureLayer, insertLayerIntoNodegraph
 
 
 LAYER_NAME = "Link Cutting Layer"
-ATTR_NAME = "_link_cutting_layer"
+ATTR_NAME = "_link_cutting"
 
 
 class LinkCuttingLayer(AbstractGestureLayer):
@@ -48,15 +48,26 @@ class LinkCuttingLayer(AbstractGestureLayer):
     """
 
     def __init__(self, *args, **kwargs):
-        super(LinkCuttingLayer, self).__init__(*args, **kwargs)
-        if not hasattr(widgetutils.katanaMainWindow(), "_link_cutting_finishing"):
-            widgetutils.katanaMainWindow()._link_cutting_finishing = False
+        super(LinkCuttingLayer, self).__init__(
+            *args,
+            attr_name=ATTR_NAME,
+            actuation_key=Qt.Key_X,
+            undo_name="Slice Links",
+            **kwargs)
 
-        if not hasattr(widgetutils.katanaMainWindow(), "_link_cutting_active"):
-            widgetutils.katanaMainWindow()._link_cutting_active = False
+    def keyReleaseEvent(self, event):
+        if event.isAutoRepeat(): return True
+        if event.key() == Qt.Key_X and event.modifiers() == Qt.NoModifier:
+            if not widgetutils.katanaMainWindow()._link_cutting_finishing:
+                self.layerStack().extractNodes(NodegraphAPI.GetAllSelectedNodes())
+                nodegraphutils.floatNodes(NodegraphAPI.GetAllSelectedNodes())
+            nodegraphutils.setCurrentKeyPressed(None)
+            return True
+
+        return False
 
     def paintGL(self):
-        if widgetutils.katanaMainWindow()._link_cutting_active:
+        if self.isActive():
             # create point on cursor
             mouse_pos = self.layerStack().getMousePos()
             # align nodes
@@ -75,118 +86,5 @@ class LinkCuttingLayer(AbstractGestureLayer):
                 self.addCursorPoint(mouse_pos)
 
 
-""" EVENTS"""
-def nodeInteractionEvent(func):
-    """ Each event type requires calling its own private methods
-    Doing this will probably just obfuscate the shit out of the code...
-    """
-    def __nodeInteractionEvent(self, event):
-        if event.type() == QEvent.MouseButtonPress:
-            if nodeInteractionMousePressEvent(self, event): return True
-        if event.type() == QEvent.MouseButtonRelease:
-            if nodeInteractionMouseReleaseEvent(self, event): return True
-        if event.type() == QEvent.MouseMove:
-            if nodeInteractionMouseMoveEvent(self, event): return True
-        if event.type() == QEvent.KeyRelease:
-            if nodeInteractionKeyReleaseEvent(self, event): return True
-        return func(self, event)
-
-    return __nodeInteractionEvent
-
-
-def nodeInteractionMouseReleaseEvent(self, event):
-    # reset node iron attrs
-    if widgetutils.katanaMainWindow()._link_cutting_active:
-        def deactivateLinkCutter():
-            """ Need to run a delayed timer here, to ensure that when
-            the user lifts up the A+LMB, that it doesn't accidently
-            register a AlignMenu on release because they have slow fingers"""
-            widgetutils.katanaMainWindow()._link_cutting_finishing = False
-            delattr(self, "_timer")
-
-        widgetutils.katanaMainWindow()._link_cutting_finishing = True
-
-        # start deactivation timer
-        self._timer = QTimer()
-        self._timer.start(500)
-        self._timer.timeout.connect(deactivateLinkCutter)
-
-        # deactive link cutting
-        self.layerStack().getLayerByName("Link Cutting Layer").resetCursorPoints()
-        widgetutils.katanaMainWindow()._link_cutting_active = False
-        QApplication.restoreOverrideCursor()
-
-        self.layerStack().idleUpdate()
-
-        # QApplication.processEvents()
-        Utils.UndoStack.CloseGroup()
-
-    # update view
-    self.layerStack().idleUpdate()
-    return False
-
-
-def nodeInteractionMouseMoveEvent(self, event):
-    # update node iron
-    if widgetutils.katanaMainWindow()._link_cutting_active:
-        self.layerStack().idleUpdate()
-
-    return False
-
-
-def nodeInteractionMousePressEvent(self, event):
-    # start link cutting
-    if (
-        event.modifiers() == Qt.NoModifier
-        and event.button() == Qt.LeftButton
-        and nodegraphutils.getCurrentKeyPressed() == Qt.Key_X
-    ):
-        Utils.UndoStack.OpenGroup("Cut Links")
-        # ensure that iron was deactivated (because I code bad)
-        widgetutils.katanaMainWindow()._link_cutting_finishing = False
-        self.layerStack().getLayerByName("Link Cutting Layer").resetCursorPoints()
-
-        # activate iron
-        widgetutils.katanaMainWindow()._link_cutting_active = True
-        QApplication.setOverrideCursor(Qt.BlankCursor)
-        nodeutils.removeNodePreviewColors()
-
-        return True
-
-    return False
-
-
-def nodeInteractionKeyReleaseEvent(self, event):
-    if event.key() == Qt.Key_X and event.modifiers() == Qt.NoModifier:
-        if event.isAutoRepeat(): return True
-        if not widgetutils.katanaMainWindow()._link_cutting_finishing:
-            self.layerStack().extractNodes(NodegraphAPI.GetAllSelectedNodes())
-            nodegraphutils.floatNodes(NodegraphAPI.GetAllSelectedNodes())
-        nodegraphutils.setCurrentKeyPressed(None)
-        return True
-
-    return False
-
-
-def nodeInteractionKeyPressEvent(func):
-    def __nodeInteractionKeyPressEvent(self, event):
-        if event.key() == Qt.Key_X and event.modifiers() == Qt.NoModifier:
-            if event.isAutoRepeat(): return True
-            nodegraphutils.setCurrentKeyPressed(event.key())
-            return True
-
-        return func(self, event)
-
-    return __nodeInteractionKeyPressEvent
-
-
 def installLinkCuttingLayer(**kwargs):
-    nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
-    nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
-    insertLayerIntoNodegraph(LinkCuttingLayer, LAYER_NAME, ATTR_NAME)
-
-    # install events
-    node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")
-    node_interaction_layer.__class__.processEvent = nodeInteractionEvent(node_interaction_layer.__class__.processEvent)
-    node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(
-        node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress)
+    insertLayerIntoNodegraph(LinkCuttingLayer, LAYER_NAME, ATTR_NAME, Qt.Key_X)
