@@ -193,7 +193,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
 
     def mousePressEvent(self, event):
         """ Activates the gestural event"""
-        if event.button() != Qt.LeftButton: return True
+        if self.isActive(): return True
         if not self.actuationKey(): return False
 
         if (

@@ -1,26 +1,3 @@
-""" When dealing with the nodegraph...
-
-Node Graph is return as
-    top left = 0, 0
-    bottom right = 1, 1
-
-View is returned as
-    bottom left = 0,0
-    top right = 1,1
-
-world = nodegraph coordinates
-    bottom left = 0,0
-    top right = 1,1
-local = Qt Local coordinates
-    top left = 0, 0
-    bottom right = 1, 1
-window = view coordinates
-    bottom left = 0,0
-    top right = 1,1
-"""
-
-
-
 import math
 
 from qtpy.QtCore import QPoint
