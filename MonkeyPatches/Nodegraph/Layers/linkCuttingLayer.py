@@ -28,9 +28,14 @@ import QT4GLLayerStack
 from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs, UI4
 from UI4.App import Tabs
 from Utils2 import nodegraphutils, widgetutils, nodeutils
+from .AbstractGestureLayer import AbstractGestureLayer, insertLayerIntoNodegraph
 
 
-class LinkCuttingLayer(QT4GLLayerStack.Layer):
+LAYER_NAME = "Link Cutting Layer"
+ATTR_NAME = "_link_cutting_layer"
+
+
+class LinkCuttingLayer(AbstractGestureLayer):
     """
 
     Attributes:
@@ -43,33 +48,12 @@ class LinkCuttingLayer(QT4GLLayerStack.Layer):
     """
 
     def __init__(self, *args, **kwargs):
-        (QT4GLLayerStack.Layer.__init__)(self, *args, **kwargs)
-        self._cursor_trajectory = nodegraphutils.RIGHT
-        self._last_cursor_points = []
+        super(LinkCuttingLayer, self).__init__(*args, **kwargs)
         if not hasattr(widgetutils.katanaMainWindow(), "_link_cutting_finishing"):
             widgetutils.katanaMainWindow()._link_cutting_finishing = False
 
         if not hasattr(widgetutils.katanaMainWindow(), "_link_cutting_active"):
             widgetutils.katanaMainWindow()._link_cutting_active = False
-
-    def addCursorPoint(self, point):
-        self._last_cursor_points.append(point)
-
-        if 5 < len(self._last_cursor_points):
-            self._last_cursor_points = self._last_cursor_points[-5:]
-
-    def getCursorPoints(self):
-        return self._last_cursor_points
-
-    def resetCursorPoints(self):
-        self._last_cursor_points = []
-
-    def getCursorTrajectory(self):
-        """ Returns the direction that the cursor is currently travelling
-
-        Returns (LinkCuttingLayer.DIRECTION)"""
-
-        return self._cursor_trajectory
 
     def paintGL(self):
         if widgetutils.katanaMainWindow()._link_cutting_active:
@@ -77,32 +61,13 @@ class LinkCuttingLayer(QT4GLLayerStack.Layer):
             mouse_pos = self.layerStack().getMousePos()
             # align nodes
             if mouse_pos:
-                # get attrs
-                window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1] - mouse_pos.y())
-                radius = 10
-                glColor4f(0.75, 0.75, 1, 1)
-                # glColor4f(1, 1, 0, 1)
-                glPointSize(1)
-                glLineWidth(2)
-
                 # draw crosshair
-                glBegin(GL_LINE_LOOP)
-                glVertex2f(window_pos.x() - radius, window_pos.y())
-                glVertex2f(window_pos.x(), window_pos.y() + radius)
-                glVertex2f(window_pos.x() + radius, window_pos.y())
-                glVertex2f(window_pos.x(), window_pos.y() - radius)
-                glEnd()
-
-                # get trajectory
-                if 0 < len(self.getCursorPoints()):
-                    glBegin(GL_LINE_STRIP)
-                    for point in self.getCursorPoints():
-                        glVertex2f(point.x(), self.layerStack().getWindowSize()[1] - point.y())
-                    glEnd()
+                self.drawCrosshair()
+                self.drawTrajectory()
 
                 # cut links
                 if 0 < len(self.getCursorPoints()):
-                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=radius, step_size=5)
+                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=self.crosshairRadius(), step_size=5)
                     link_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.LINK)
                     for link in link_hits:
                         link[0].disconnect(link[1])
@@ -215,25 +180,10 @@ def nodeInteractionKeyPressEvent(func):
     return __nodeInteractionKeyPressEvent
 
 
-def showEvent(func):
-    def __showEvent(self, event):
-        # disable floating layer, as it for some reason inits as True...
-        self.getLayerByName("Floating Nodes").setEnabled(False)
-
-        # setup grid layer
-        node_iron_layer = self.getLayerByName("Link Cutting Layer")
-        if not node_iron_layer:
-            self._link_cutting_layer = LinkCuttingLayer("Link Cutting Layer", enabled=True)
-            self.appendLayer(self._link_cutting_layer)
-        return func(self, event)
-
-    return __showEvent
-
-
 def installLinkCuttingLayer(**kwargs):
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
-    nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
+    insertLayerIntoNodegraph(LinkCuttingLayer, LAYER_NAME, ATTR_NAME)
 
     # install events
     node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")

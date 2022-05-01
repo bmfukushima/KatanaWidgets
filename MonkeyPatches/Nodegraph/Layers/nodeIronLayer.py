@@ -25,9 +25,16 @@ from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs, UI4
 from UI4.App import Tabs
 from Utils2 import nodegraphutils, widgetutils, nodeutils
 from Utils2.nodealignutils import AlignUtils
+from .AbstractGestureLayer import (
+    AbstractGestureLayer,
+    insertLayerIntoNodegraph
+)
+
+LAYER_NAME = "Node Iron Layer"
+ATTR_NAME = "_node_iron_layer"
 
 
-class NodeIronLayer(QT4GLLayerStack.Layer):
+class NodeIronLayer(AbstractGestureLayer):
     """
 
     Attributes:
@@ -41,9 +48,7 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
     """
 
     def __init__(self, *args, **kwargs):
-        (QT4GLLayerStack.Layer.__init__)(self, *args, **kwargs)
-        self._cursor_trajectory = nodegraphutils.RIGHT
-        self._last_cursor_points = []
+        super(NodeIronLayer, self).__init__(*args, **kwargs)
         if not hasattr(widgetutils.katanaMainWindow(), "_node_iron_finishing"):
             widgetutils.katanaMainWindow()._node_iron_finishing = False
 
@@ -62,25 +67,6 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
     def getAlignYPos(self):
         return NodegraphAPI.GetNodePosition(self.getAlignedNodes()[-1])[1]
 
-    def addCursorPoint(self, point):
-        self._last_cursor_points.append(point)
-
-        if 5 < len(self._last_cursor_points):
-            self._last_cursor_points = self._last_cursor_points[-5:]
-
-    def getCursorPoints(self):
-        return self._last_cursor_points
-
-    def resetCursorPoints(self):
-        self._last_cursor_points = []
-
-    def getCursorTrajectory(self):
-        """ Returns the direction that the cursor is currently travelling
-
-        Returns (NodeIronLayer.DIRECTION)"""
-
-        return self._cursor_trajectory
-
     def paintGL(self):
         if widgetutils.katanaMainWindow()._node_iron_active:
             # create point on cursor
@@ -92,32 +78,16 @@ class NodeIronLayer(QT4GLLayerStack.Layer):
                     if 1 < len(self.getCursorPoints()):
                         self._cursor_trajectory = nodegraphutils.getCursorTrajectory(self.getCursorPoints()[0], self.getCursorPoints()[-1])
 
-                # get attrs
-                window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1] - mouse_pos.y())
-                radius = 10
-                glColor4f(0.75, 0.75, 1, 1)
-                glPointSize(radius * 2)
-                glLineWidth(2)
-
                 # draw crosshair
-                glBegin(GL_LINE_LOOP)
-                glVertex2f(window_pos.x() - radius, window_pos.y())
-                glVertex2f(window_pos.x(), window_pos.y() + radius)
-                glVertex2f(window_pos.x() + radius, window_pos.y())
-                glVertex2f(window_pos.x(), window_pos.y() - radius)
-                glEnd()
+                self.drawCrosshair()
 
                 # draw trajectory
-                if 0 < len(self.getCursorPoints()):
-                    glBegin(GL_LINE_STRIP)
-                    for point in self.getCursorPoints():
-                        glVertex2f(point.x(), self.layerStack().getWindowSize()[1] - point.y())
-                    glEnd()
+                self.drawTrajectory()
 
                 # iron nodes
                 if 0 < len(self.getCursorPoints()):
-                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=radius, step_size=5)
-                    node_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.LINK)
+                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=self.crosshairRadius(), step_size=5)
+                    node_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.NODE)
 
                     for node in node_hits:
                         # first node
@@ -270,25 +240,10 @@ def nodeInteractionKeyPressEvent(func):
     return __nodeInteractionKeyPressEvent
 
 
-def showEvent(func):
-    def __showEvent(self, event):
-        # disable floating layer, as it for some reason inits as True...
-        self.getLayerByName("Floating Nodes").setEnabled(False)
-
-        # setup grid layer
-        node_iron_layer = self.getLayerByName("Node Iron Layer")
-        if not node_iron_layer:
-            self._node_iron_layer = NodeIronLayer("Node Iron Layer", enabled=True)
-            self.appendLayer(self._node_iron_layer)
-        return func(self, event)
-
-    return __showEvent
-
-
 def installNodeIronLayer(**kwargs):
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
-    nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
+    insertLayerIntoNodegraph(NodeIronLayer, LAYER_NAME, ATTR_NAME)
 
     # install events
     node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")

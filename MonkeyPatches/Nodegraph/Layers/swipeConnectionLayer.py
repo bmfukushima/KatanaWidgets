@@ -28,9 +28,15 @@ import QT4GLLayerStack
 from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs, UI4
 from UI4.App import Tabs
 from Utils2 import nodegraphutils, widgetutils, nodeutils
+from .AbstractGestureLayer import (
+    AbstractGestureLayer,
+    insertLayerIntoNodegraph)
 
 
-class SwipeConnectionLayer(QT4GLLayerStack.Layer):
+LAYER_NAME = "Swipe Connection Layer"
+ATTR_NAME = "_swipe_connection_layer"
+
+class SwipeConnectionLayer(AbstractGestureLayer):
     """
 
     Attributes:
@@ -43,9 +49,7 @@ class SwipeConnectionLayer(QT4GLLayerStack.Layer):
     """
 
     def __init__(self, *args, **kwargs):
-        (QT4GLLayerStack.Layer.__init__)(self, *args, **kwargs)
-        self._cursor_trajectory = nodegraphutils.RIGHT
-        self._last_cursor_points = []
+        super(SwipeConnectionLayer, self).__init__(*args, **kwargs)
         if not hasattr(widgetutils.katanaMainWindow(), "_swipe_connection_finishing"):
             widgetutils.katanaMainWindow()._swipe_connection_finishing = False
         if not hasattr(widgetutils.katanaMainWindow(), "_swipe_connection_active"):
@@ -62,57 +66,18 @@ class SwipeConnectionLayer(QT4GLLayerStack.Layer):
     def resetConnectedNodes(self):
         widgetutils.katanaMainWindow()._swipe_connection_nodes = []
 
-    def addCursorPoint(self, point):
-        self._last_cursor_points.append(point)
-
-        if 5 < len(self._last_cursor_points):
-            self._last_cursor_points = self._last_cursor_points[-5:]
-
-    def getCursorPoints(self):
-        return self._last_cursor_points
-
-    def resetCursorPoints(self):
-        self._last_cursor_points = []
-
-    def getCursorTrajectory(self):
-        """ Returns the direction that the cursor is currently travelling
-
-        Returns (SwipeConnectionLayer.DIRECTION)"""
-
-        return self._cursor_trajectory
-
     def paintGL(self):
         if widgetutils.katanaMainWindow()._swipe_connection_active:
             # create point on cursor
             mouse_pos = self.layerStack().getMousePos()
             # align nodes
             if mouse_pos:
-                # get attrs
-                window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1] - mouse_pos.y())
-                radius = 10
-                glColor4f(0.75, 0.75, 1, 1)
-                # glColor4f(1, 1, 0, 1)
-                glPointSize(1)
-                glLineWidth(2)
-
-                # draw crosshair
-                glBegin(GL_LINE_LOOP)
-                glVertex2f(window_pos.x() - radius, window_pos.y())
-                glVertex2f(window_pos.x(), window_pos.y() + radius)
-                glVertex2f(window_pos.x() + radius, window_pos.y())
-                glVertex2f(window_pos.x(), window_pos.y() - radius)
-                glEnd()
-
-                # get trajectory
-                if 0 < len(self.getCursorPoints()):
-                    glBegin(GL_LINE_STRIP)
-                    for point in self.getCursorPoints():
-                        glVertex2f(point.x(), self.layerStack().getWindowSize()[1] - point.y())
-                    glEnd()
+                self.drawCrosshair()
+                self.drawTrajectory()
 
                 # connect nodes
                 if 0 < len(self.getCursorPoints()):
-                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=radius, step_size=5)
+                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=self.crosshairRadius(), step_size=5)
                     node_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.NODE)
                     for node in node_hits:
                         if len(self.getConnectedNodes()) == 0:
@@ -194,7 +159,7 @@ def nodeInteractionMousePressEvent(self, event):
         and event.button() == Qt.LeftButton
         and nodegraphutils.getCurrentKeyPressed() == Qt.Key_C
     ):
-        Utils.UndoStack.OpenGroup("Cut Links")
+        Utils.UndoStack.OpenGroup("Connect Nodes")
         # ensure that iron was deactivated (because I code bad)
         widgetutils.katanaMainWindow()._swipe_connection_finishing = False
         self.layerStack().getLayerByName("Swipe Connection Layer").resetCursorPoints()
@@ -221,26 +186,10 @@ def nodeInteractionKeyPressEvent(func):
     return __nodeInteractionKeyPressEvent
 
 
-def showEvent(func):
-    def __showEvent(self, event):
-        # disable floating layer, as it for some reason inits as True...
-        self.getLayerByName("Floating Nodes").setEnabled(False)
-
-        # setup grid layer
-        node_iron_layer = self.getLayerByName("Swipe Connection Layer")
-        if not node_iron_layer:
-            self._swipe_connection_layer = SwipeConnectionLayer("Swipe Connection Layer", enabled=True)
-            self.appendLayer(self._swipe_connection_layer)
-        return func(self, event)
-
-    return __showEvent
-
-
 def installSwipeConnectionLayer(**kwargs):
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
-    nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
-
+    insertLayerIntoNodegraph(SwipeConnectionLayer, LAYER_NAME, ATTR_NAME)
     # install events
     node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")
     node_interaction_layer.__class__.processEvent = nodeInteractionEvent(node_interaction_layer.__class__.processEvent)

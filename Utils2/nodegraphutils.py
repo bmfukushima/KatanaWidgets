@@ -464,7 +464,7 @@ def getNearestGridPoint(x, y):
     use self.mapToNodegraph() to convert to this sytem
     """
     # pos = NodegraphAPI.GetNodePosition(node)
-    from MonkeyPatches.Nodegraph.gridLayer import GRID_SIZE_X_PREF_NAME, GRID_SIZE_Y_PREF_NAME
+    from MonkeyPatches.Nodegraph.Layers.gridLayer import GRID_SIZE_X_PREF_NAME, GRID_SIZE_Y_PREF_NAME
     grid_x_size = KatanaPrefs[GRID_SIZE_X_PREF_NAME]
     grid_y_size = KatanaPrefs[GRID_SIZE_Y_PREF_NAME]
     x = int(x)
