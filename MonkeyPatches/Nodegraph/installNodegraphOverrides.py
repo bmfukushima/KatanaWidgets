@@ -50,14 +50,14 @@ Ctrl + LMB
   - `Alt + RMB` Resize backdrop
 """
 
-from .backdropLayer import installBackdropLayer
+from .Layers.backdropLayer import installBackdropLayer
 from .nodeInteractionLayerOverrides import installNodeInteractionLayerOverrides
 from .linkConnectionLayerOverrides import installLinkConnectionLayerOverrides
 from .menuLayerOverride import installMenuLayerOverrides
 from .zoomInteractionLayerOverrides import installZoomLayerOverrides
-from .gridLayer import installGridLayer
-from .nodeIronLayer import installNodeIronLayer
-from .linkCuttingLayer import installLinkCuttingLayer
+from .Layers.gridLayer import installGridLayer
+from .Layers.nodeIronLayer import installNodeIronLayer
+from .Layers.linkCuttingLayer import installLinkCuttingLayer
 from Utils2.nodeutils import removeNodePreviewColors
 
 # link connection mouse move

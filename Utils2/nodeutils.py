@@ -118,7 +118,7 @@ def setNodePreviewColor(highlighted_nodes=None, exclude_nodes=[], has_input_port
         katanaMainWindow()._highlighted_nodes = highlighted_nodes
 
 
-def removeNodePreviewColors():
+def removeNodePreviewColors(*args, **kwargs):
     from .widgetutils import katanaMainWindow
 
     # remove old color

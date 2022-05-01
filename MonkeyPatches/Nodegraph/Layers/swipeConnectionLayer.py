@@ -30,15 +30,15 @@ from UI4.App import Tabs
 from Utils2 import nodegraphutils, widgetutils, nodeutils
 
 
-class LinkCuttingLayer(QT4GLLayerStack.Layer):
+class SwipeConnectionLayer(QT4GLLayerStack.Layer):
     """
 
     Attributes:
-        cursor_trajectory (LinkCuttingLayer.DIRECTION): direction to position the nodes
+        cursor_trajectory (SwipeConnectionLayer.DIRECTION): direction to position the nodes
         last_cursor_points (list): of QPoints that hold the last 5 cursor positions
             This is used for calculating the cursors trajectory
-        _link_cutting_active (bool): determines if this event is active or not
-        _link_cutting_finishing (bool): determines if the link cutting event is finishing
+        _swipe_connection_active (bool): determines if this event is active or not
+        _swipe_connection_finishing (bool): determines if the link cutting event is finishing
             This is useful to differentiate between a C+LMB and a C-Release event
     """
 
@@ -46,11 +46,11 @@ class LinkCuttingLayer(QT4GLLayerStack.Layer):
         (QT4GLLayerStack.Layer.__init__)(self, *args, **kwargs)
         self._cursor_trajectory = nodegraphutils.RIGHT
         self._last_cursor_points = []
-        if not hasattr(widgetutils.katanaMainWindow(), "_link_cutting_finishing"):
-            widgetutils.katanaMainWindow()._link_cutting_finishing = False
+        if not hasattr(widgetutils.katanaMainWindow(), "_swipe_connection_finishing"):
+            widgetutils.katanaMainWindow()._swipe_connection_finishing = False
 
-        if not hasattr(widgetutils.katanaMainWindow(), "_link_cutting_active"):
-            widgetutils.katanaMainWindow()._link_cutting_active = False
+        if not hasattr(widgetutils.katanaMainWindow(), "_swipe_connection_active"):
+            widgetutils.katanaMainWindow()._swipe_connection_active = False
 
     def addCursorPoint(self, point):
         self._last_cursor_points.append(point)
@@ -67,12 +67,12 @@ class LinkCuttingLayer(QT4GLLayerStack.Layer):
     def getCursorTrajectory(self):
         """ Returns the direction that the cursor is currently travelling
 
-        Returns (LinkCuttingLayer.DIRECTION)"""
+        Returns (SwipeConnectionLayer.DIRECTION)"""
 
         return self._cursor_trajectory
 
     def paintGL(self):
-        if widgetutils.katanaMainWindow()._link_cutting_active:
+        if widgetutils.katanaMainWindow()._swipe_connection_active:
             # create point on cursor
             mouse_pos = self.layerStack().getMousePos()
             # align nodes
@@ -130,24 +130,24 @@ def nodeInteractionEvent(func):
 
 def nodeInteractionMouseReleaseEvent(self, event):
     # reset node iron attrs
-    if widgetutils.katanaMainWindow()._link_cutting_active:
-        def deactivateLinkCutter():
+    if widgetutils.katanaMainWindow()._swipe_connection_active:
+        def deactivateSwipeConnector():
             """ Need to run a delayed timer here, to ensure that when
             the user lifts up the A+LMB, that it doesn't accidently
             register a AlignMenu on release because they have slow fingers"""
-            widgetutils.katanaMainWindow()._link_cutting_finishing = False
+            widgetutils.katanaMainWindow()._swipe_connection_finishing = False
             delattr(self, "_timer")
 
-        widgetutils.katanaMainWindow()._link_cutting_finishing = True
+        widgetutils.katanaMainWindow()._swipe_connection_finishing = True
 
         # start deactivation timer
         self._timer = QTimer()
         self._timer.start(500)
-        self._timer.timeout.connect(deactivateLinkCutter)
+        self._timer.timeout.connect(deactivateSwipeConnector)
 
         # deactive link cutting
-        self.layerStack().getLayerByName("Link Cutting Layer").resetCursorPoints()
-        widgetutils.katanaMainWindow()._link_cutting_active = False
+        self.layerStack().getLayerByName("Swipe Connection Layer").resetCursorPoints()
+        widgetutils.katanaMainWindow()._swipe_connection_active = False
         QApplication.restoreOverrideCursor()
 
         self.layerStack().idleUpdate()
@@ -162,7 +162,7 @@ def nodeInteractionMouseReleaseEvent(self, event):
 
 def nodeInteractionMouseMoveEvent(self, event):
     # update node iron
-    if widgetutils.katanaMainWindow()._link_cutting_active:
+    if widgetutils.katanaMainWindow()._swipe_connection_active:
         self.layerStack().idleUpdate()
 
     return False
@@ -177,11 +177,11 @@ def nodeInteractionMousePressEvent(self, event):
     ):
         Utils.UndoStack.OpenGroup("Cut Links")
         # ensure that iron was deactivated (because I code bad)
-        widgetutils.katanaMainWindow()._link_cutting_finishing = False
-        self.layerStack().getLayerByName("Link Cutting Layer").resetCursorPoints()
+        widgetutils.katanaMainWindow()._swipe_connection_finishing = False
+        self.layerStack().getLayerByName("Swipe Connection Layer").resetCursorPoints()
 
         # activate iron
-        widgetutils.katanaMainWindow()._link_cutting_active = True
+        widgetutils.katanaMainWindow()._swipe_connection_active = True
         QApplication.setOverrideCursor(Qt.BlankCursor)
         nodeutils.removeNodePreviewColors()
 
@@ -208,16 +208,16 @@ def showEvent(func):
         self.getLayerByName("Floating Nodes").setEnabled(False)
 
         # setup grid layer
-        node_iron_layer = self.getLayerByName("Link Cutting Layer")
+        node_iron_layer = self.getLayerByName("Swipe Connection Layer")
         if not node_iron_layer:
-            self._link_cutting_layer = LinkCuttingLayer("Link Cutting Layer", enabled=True)
-            self.appendLayer(self._link_cutting_layer)
+            self._swipe_connection_layer = SwipeConnectionLayer("Swipe Connection Layer", enabled=True)
+            self.appendLayer(self._swipe_connection_layer)
         return func(self, event)
 
     return __showEvent
 
 
-def installLinkCuttingLayer(**kwargs):
+def installSwipeConnectionLayer(**kwargs):
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
     nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
