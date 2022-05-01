@@ -48,9 +48,19 @@ class SwipeConnectionLayer(QT4GLLayerStack.Layer):
         self._last_cursor_points = []
         if not hasattr(widgetutils.katanaMainWindow(), "_swipe_connection_finishing"):
             widgetutils.katanaMainWindow()._swipe_connection_finishing = False
-
         if not hasattr(widgetutils.katanaMainWindow(), "_swipe_connection_active"):
             widgetutils.katanaMainWindow()._swipe_connection_active = False
+        if not hasattr(widgetutils.katanaMainWindow(), "_swipe_connection_nodes"):
+            widgetutils.katanaMainWindow()._swipe_connection_nodes = []
+
+    def getConnectedNodes(self):
+        return widgetutils.katanaMainWindow()._swipe_connection_nodes
+
+    def addConnectedNode(self, node):
+        self.getConnectedNodes().append(node)
+
+    def resetConnectedNodes(self):
+        widgetutils.katanaMainWindow()._swipe_connection_nodes = []
 
     def addCursorPoint(self, point):
         self._last_cursor_points.append(point)
@@ -100,12 +110,20 @@ class SwipeConnectionLayer(QT4GLLayerStack.Layer):
                         glVertex2f(point.x(), self.layerStack().getWindowSize()[1] - point.y())
                     glEnd()
 
-                # iron nodes
+                # connect nodes
                 if 0 < len(self.getCursorPoints()):
                     hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=radius, step_size=5)
-                    link_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.LINK)
-                    for link in link_hits:
-                        link[0].disconnect(link[1])
+                    node_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.NODE)
+                    for node in node_hits:
+                        if len(self.getConnectedNodes()) == 0:
+                            self.addConnectedNode(node)
+                        elif node not in self.getConnectedNodes():
+                            input_port = nodeutils.getFirstEmptyPort(node, force_create=True)
+                            if input_port:
+                                input_port.connect(self.getConnectedNodes()[-1].getOutputPortByIndex(0))
+                            else:
+                                self.getConnectedNodes()[-1].getOutputPortByIndex(0).connect(node.getInputPortByIndex(0))
+                            self.addConnectedNode(node)
 
                 self.addCursorPoint(mouse_pos)
 
@@ -148,6 +166,7 @@ def nodeInteractionMouseReleaseEvent(self, event):
         # deactive link cutting
         self.layerStack().getLayerByName("Swipe Connection Layer").resetCursorPoints()
         widgetutils.katanaMainWindow()._swipe_connection_active = False
+        widgetutils.katanaMainWindow()._swipe_connection_nodes = []
         QApplication.restoreOverrideCursor()
 
         self.layerStack().idleUpdate()

@@ -199,6 +199,35 @@ def getConnectedNodeChildren(parent_node, port=0):
     return node_list
 
 
+def getFirstEmptyPort(node, force_create=False):
+    """ Gets the first available input port
+
+    Args:
+        node (Node): to get empty input port of
+        force_create (bool): if the node has no ports, this will force create a port
+    """
+    from .nodegraphutils import dynamicInputPortNodes
+    port = None
+    input_ports = node.getInputPorts()
+    # find native first empty port
+    for port in input_ports:
+        connections = port.getConnectedPorts()
+        if len(connections) == 0:
+            return port
+
+    # check dynamic input port nodes
+    if node.getType() in dynamicInputPortNodes():
+        port_num = len(input_ports)
+        return node.addInputPort(f"i{port_num}")
+
+    # force create a port
+    if len(input_ports) == 0:
+        if force_create:
+            return node.addInputPort("in")
+
+    return port
+
+
 def getNodeAndAllDescendants(node, node_list=None):
     """ Gets the node and all of the descendants inside of it
 

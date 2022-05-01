@@ -58,6 +58,8 @@ from .zoomInteractionLayerOverrides import installZoomLayerOverrides
 from .Layers.gridLayer import installGridLayer
 from .Layers.nodeIronLayer import installNodeIronLayer
 from .Layers.linkCuttingLayer import installLinkCuttingLayer
+from .Layers.swipeConnectionLayer import installSwipeConnectionLayer
+
 from Utils2.nodeutils import removeNodePreviewColors
 
 # link connection mouse move
@@ -71,4 +73,5 @@ def installNodegraphOverrides(**kwargs):
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installBackdropLayer)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installNodeIronLayer)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installLinkCuttingLayer)
+    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installSwipeConnectionLayer)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, removeNodePreviewColors)

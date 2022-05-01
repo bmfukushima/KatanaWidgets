@@ -65,6 +65,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
     def paintGL(self):
         if widgetutils.katanaMainWindow()._node_iron_active: return
         if widgetutils.katanaMainWindow()._link_cutting_active: return
+        if widgetutils.katanaMainWindow()._swipe_connection_active: return
 
         # get attrs
         cam_x_pos = self.layerStack().getEyePoint()[0]
