@@ -37,6 +37,8 @@ import QT4GLLayerStack
 from UI4.Tabs.NodeGraphTab.Layers.StickyNoteInteractionLayer import EditBackdropNodeDialog
 from UI4.Tabs.NodeGraphTab.Layers.BandSelectionLayer import BandSelectionLayer
 
+from .AbstractGestureLayer import AbstractGestureLayer
+
 from Utils2 import nodegraphutils, widgetutils, nodeutils
 
 
@@ -63,9 +65,10 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
             glColor4f(*default_color)
 
     def paintGL(self):
-        if widgetutils.katanaMainWindow()._node_iron_active: return
-        if widgetutils.katanaMainWindow()._link_cutting_active: return
-        if widgetutils.katanaMainWindow()._swipe_connection_active: return
+        if AbstractGestureLayer.isGestureLayerActive(): return
+        # if widgetutils.katanaMainWindow()._node_iron_active: return
+        # if widgetutils.katanaMainWindow()._link_cutting_active: return
+        # if widgetutils.katanaMainWindow()._swipe_connection_active: return
 
         # get attrs
         cam_x_pos = self.layerStack().getEyePoint()[0]

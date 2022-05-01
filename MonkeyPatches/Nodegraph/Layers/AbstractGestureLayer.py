@@ -1,3 +1,7 @@
+""" Todo:
+        - Extract paintGL layer into API
+            Provide a list of hits for gesture connection layers to use"""
+
 from OpenGL.GL import (
     glBegin,
     glLineWidth,
@@ -37,19 +41,21 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
             This is useful to differentiate between a C+LMB and a C-Release event
         <attr_name>_hits (list): of objects that are hit.  This list is usually populate
             during the paintGL event, when a cursor comes into contact with an object
+        _nodegraph_gesture_layers (set): of strings of gesture <attr_name>
         undo_name (str): Name to be put into the undo stack
     """
 
     def __init__(self, *args, attr_name="_abstract_gesture", actuation_key=None, undo_name="Nodegraph Swipe Gesture", **kwargs):
         (QT4GLLayerStack.Layer.__init__)(self, *args, **kwargs)
 
+        # setup default attrs
         self._actuation_key = actuation_key
         self._color = (0.75, 0.75, 1, 1)
         self._crosshair_radius = 10
         self._cursor_trajectory = nodegraphutils.RIGHT
         self._last_cursor_points = []
         self._undo_name = undo_name
-        # setup default attrs
+
         katana_main_widget = widgetutils.katanaMainWindow()
         self._attr_name = attr_name
         if not hasattr(katana_main_widget, f"{attr_name}_finishing"):
@@ -58,6 +64,10 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
             setattr(katana_main_widget, f"{attr_name}_active", False)
         if not hasattr(katana_main_widget, f"{attr_name}_hits"):
             setattr(katana_main_widget, f"{attr_name}_hits", [])
+        if not hasattr(katana_main_widget, "_nodegraph_gesture_layers"):
+            setattr(katana_main_widget, "_nodegraph_gesture_layers", set())
+
+        AbstractGestureLayer.addGestureLayer(attr_name)
 
     """ PROPERTIES """
     def actuationKey(self):
@@ -115,6 +125,24 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         return self._undo_name
 
     """ UTILS"""
+    @staticmethod
+    def addGestureLayer(attr_name):
+        """ Adds a gesture layer to the registry.
+
+        These are stored as strings of the attr_name"""
+        gesture_layers = getattr(widgetutils.katanaMainWindow(), "_nodegraph_gesture_layers")
+        gesture_layers.add(attr_name)
+
+    @staticmethod
+    def isGestureLayerActive():
+        """ Determines if a gesture layer is currently active
+
+        Returns (bool)"""
+        gesture_layers = getattr(widgetutils.katanaMainWindow(), "_nodegraph_gesture_layers")
+        for layer_name in gesture_layers:
+            if getattr(widgetutils.katanaMainWindow(), f"{layer_name}_active"): return True
+        return False
+
     def drawCrosshair(self):
         """ Draws the crosshair at the current position on the screen"""
         glColor4f(*self.color())
@@ -153,7 +181,6 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
             if self.keyReleaseEvent(event): return True
         return QT4GLLayerStack.Layer.processEvent(self, event)
 
-
     def keyReleaseEvent(self, event):
         return False
 
@@ -166,7 +193,9 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
 
     def mousePressEvent(self, event):
         """ Activates the gestural event"""
+        if event.button() != Qt.LeftButton: return True
         if not self.actuationKey(): return False
+
         if (
                 event.modifiers() == Qt.NoModifier
                 and event.button() == Qt.LeftButton
@@ -219,13 +248,13 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         return False
 
 
-def insertLayerIntoNodegraph(layer, layer_name, attr_name, actuation_key):
+def insertLayerIntoNodegraph(layer_type, layer_name, attr_name, actuation_key):
     """ Returns a function that can be used to override the NodegraphWidgets show function
     automatically insert the layer provided into the NodegraphTab
 
     Args:
         actuation_key (Qt.KEY): key pressed to start the event
-        layer (AbstractGestureLayer): class of laye to be inserted
+        layer_type (AbstractGestureLayer): class of layer to be inserted
         layer_name (str): name of layer
         attr_name (str): name of attr to store the layer as on the NodegraphWidget
         """
@@ -235,9 +264,9 @@ def insertLayerIntoNodegraph(layer, layer_name, attr_name, actuation_key):
             self.getLayerByName("Floating Nodes").setEnabled(False)
 
             # setup grid layer
-            node_iron_layer = self.getLayerByName(layer_name)
-            if not node_iron_layer:
-                setattr(self, attr_name + "_layer", layer(layer_name, enabled=True))
+            gesture_layer = self.getLayerByName(layer_name)
+            if not gesture_layer:
+                setattr(self, attr_name + "_layer", layer_type(layer_name, enabled=True))
                 self.appendLayer(getattr(self, attr_name + "_layer"))
 
             return func(self, event)

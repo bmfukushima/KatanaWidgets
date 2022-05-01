@@ -144,7 +144,7 @@ class NodeIronLayer(AbstractGestureLayer):
                                     # node marked for deletion
                                     pass
 
-                            self.getHits().append(node)
+                            self.addHit(node)
 
                 self.addCursorPoint(mouse_pos)
 
