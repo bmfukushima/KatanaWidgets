@@ -385,10 +385,12 @@ class GSVEditWidget(QWidget):
 
         # setup default sizes
         font_size = getFontSize()
-        self._create_new_gsv_option_widget.setFixedHeight(font_size*7)
-        self._gsv_selector_widget.setFixedHeight(font_size * 7)
-        self._create_new_gsv_option_widget.resize(self._create_new_gsv_option_widget.width(), font_size*7)
-        self._gsv_selector_widget.resize(self._gsv_selector_widget.width(), font_size*7)
+        #self._create_new_gsv_option_widget.setFixedHeight(font_size * 7)
+        #self._gsv_selector_widget.setFixedHeight(font_size * 7)
+        self._create_new_gsv_option_widget.resize(self._create_new_gsv_option_widget.width(), getFontSize() * 7)
+        self._gsv_selector_widget.resize(self._gsv_selector_widget.width(), getFontSize() * 7)
+        self._create_new_gsv_option_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self._gsv_selector_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         # Setup Top Row
         self._user_settings_layout = QHBoxLayout()

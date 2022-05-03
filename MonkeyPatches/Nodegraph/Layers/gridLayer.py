@@ -379,7 +379,6 @@ class GridUtils(object):
         KatanaPrefs[ALIGN_X_OFFSET_PREF_NAME] = align_offset
         KatanaPrefs.commit()
 
-
     @staticmethod
     def alignOffsetY():
         return KatanaPrefs[ALIGN_Y_OFFSET_PREF_NAME]
