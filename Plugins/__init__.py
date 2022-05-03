@@ -19,6 +19,7 @@ CURRENT_DIR = (
     os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 )
 katana_bebop_dir = "/".join(CURRENT_DIR.split("/")[:-1])
+katana_bebop_dir = os.path.dirname(CURRENT_DIR).replace("\\", "/")
 sys.path.append(katana_bebop_dir)
 
 
