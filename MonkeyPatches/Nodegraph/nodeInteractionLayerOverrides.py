@@ -41,7 +41,7 @@ from cgwidgets.settings import iColor
 from cgwidgets.widgets import PopupHotkeyMenu
 
 from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
-from Utils2 import nodeutils, widgetutils, nodegraphutils
+from Utils2 import nodeutils, widgetutils, nodegraphutils, getFontSize
 
 from .Layers.gridLayer import GridGUIWidget
 from .portConnector import PortConnector
@@ -88,7 +88,9 @@ def displayPopupParameters(hide_on_leave=False):
     if not PopupWidget.doesPopupWidgetExist("popupParameters"):
         # create popup widget
         widget = AbstractParametersDisplayWidget()
-        size = scaleResolution(QSize(800, 1060))
+        width = getFontSize() * 53
+        height = getFontSize() * 70.5
+        size = scaleResolution(QSize(width, height))
         popup_widget = PopupWidget.constructPopupWidget(
             "popupParameters", widget, size=size, hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
         # setup style
@@ -102,11 +104,11 @@ def displayPopupParameters(hide_on_leave=False):
 
         # set popup widget style
         popup_widget.setIsMaskEnabled(True)
-        popup_widget.setMaskSize(scaleResolution(QSize(800, 2000)))
+        popup_widget.setMaskSize(scaleResolution(QSize(width, height*2)))
         popup_widget.setContentsMargins(0, 0, 0, 0)
         popup_widget.layout().setContentsMargins(0, 0, 0, 0)
-        offset_x = scaleResolution(70)
-        offset_y = scaleResolution(15)
+        offset_x = scaleResolution(getFontSize() * 4.5)
+        offset_y = scaleResolution(getFontSize() * 2)
         popup_widget.centralWidget().setContentsMargins(offset_x, offset_y, offset_x, offset_y)
 
     # hide/show popup parameters
@@ -131,7 +133,9 @@ def displayGridSettings(hide_on_leave=True):
     if not PopupWidget.doesPopupWidgetExist("gridSettings"):
         # create popup widget
         widget = GridGUIWidget()
-        size = scaleResolution(QSize(600, 425))
+        width = getFontSize() * 40
+        height = getFontSize() * 30
+        size = scaleResolution(QSize(width, height))
         popup_widget = PopupWidget.constructPopupWidget(
             "gridSettings", widget, size=size, hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
         # setup style
@@ -145,11 +149,11 @@ def displayGridSettings(hide_on_leave=True):
 
         # set popup widget style
         popup_widget.setIsMaskEnabled(True)
-        popup_widget.setMaskSize(scaleResolution(QSize(600, 850)))
+        popup_widget.setMaskSize(scaleResolution(QSize(width, height*2)))
         popup_widget.setContentsMargins(0, 0, 0, 0)
         popup_widget.layout().setContentsMargins(0, 0, 0, 0)
-        offset_x = scaleResolution(70)
-        offset_y = scaleResolution(30)
+        offset_x = scaleResolution(getFontSize() * 4.5)
+        offset_y = scaleResolution(getFontSize() * 2)
         popup_widget.centralWidget().setContentsMargins(offset_x, offset_y, offset_x, offset_y)
 
     # hide/show popup parameters
