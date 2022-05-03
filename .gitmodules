@@ -7,3 +7,6 @@
 [submodule "libs/cgwidgets"]
 	path = libs/cgwidgets
 	url = https://github.com/bmfukushima/cgwidgets.git
+[submodule "libs/pillow"]
+	path = libs/pillow
+	url = https://github.com/python-pillow/Pillow.git
