@@ -2,6 +2,8 @@ import os
 
 from cgwidgets.utils import getJSONData
 
+from Katana import KatanaResources
+
 def getAllTabTypes():
     """
     Gets a list of all of the different possible tab types.
@@ -111,7 +113,7 @@ def getSaveData(*args):
     built_ins_file_path = os.path.dirname(__file__) + '/KatanaBebopPopupBarTabs.json'
 
     # user
-    user_save_path = os.environ["HOME"] + '/.katana/.PopupBarTabs.json'
+    user_save_path = KatanaResources.GetUserKatanaPath() + ".PopupBarTabs.json"
 
     # default save data
     save_data = {

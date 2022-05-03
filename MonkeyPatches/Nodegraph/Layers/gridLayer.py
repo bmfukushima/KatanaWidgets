@@ -534,11 +534,12 @@ def installGridLayer(**kwargs):
 
     KatanaPrefs.declareColorPref(GRID_COLOR_PREF_NAME, color, 'Color of grid')
     KatanaPrefs.declareBoolPref(GRID_ENABLED_PREF_NAME, enabled, helpText="Determines if the nodegraph grid is enabled")
-    options = []
-    for i, draw_mode in enumerate(GridUtils.DRAW_MODES):
-        options.append(f"{draw_mode}:{i}")
-    options = "|".join(options)
-
+    # options = []
+    # for i, draw_mode in enumerate(GridUtils.DRAW_MODES):
+    #     options.append(f"{draw_mode}:{i}")
+    # options = "|".join(options)
+    # print(options)
+    options = ["POINT:0|CROSSHAIR:1|LINE:2|DIAMOND:3|SQUARE:4"]
     KatanaPrefs.declareIntPref(
         (GRID_DRAW_MODE_PREF_NAME),
         draw_mode,

@@ -25,7 +25,7 @@ sys.path.append(katana_bebop_dir)
 # register cgwidgets
 try:
     import PIL
-    pil_logger = ""
+    pillow_logger = ""
 except ModuleNotFoundError:
     pillow_dir = katana_bebop_dir + "/libs/pillow"
     sys.path.append(pillow_dir)
