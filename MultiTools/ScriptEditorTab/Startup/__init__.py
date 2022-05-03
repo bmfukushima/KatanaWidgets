@@ -22,13 +22,13 @@ def installPopupHotkeysEventFilter(**kwargs):
     ScriptEditorWidget.createScriptDirectories(sandbox_directory, display_name="Sandbox")
 
     try:
-        script_directories = os.environ[SCRIPTS_VARIABLE].split(":") + [katana_bebop_scripts_dir, sandbox_directory]
+        script_directories = os.environ[SCRIPTS_VARIABLE].split(";") + [katana_bebop_scripts_dir, sandbox_directory]
     except KeyError:
         script_directories = [katana_bebop_scripts_dir, sandbox_directory]
 
     # script_directories.append("/home/brian/.cgwidgets/testscripts")
 
-    os.environ[SCRIPTS_VARIABLE] = ":".join(script_directories)
+    os.environ[SCRIPTS_VARIABLE] = ";".join(script_directories)
 
 
     katana_main = UI4.App.MainWindow.GetMainWindow()
