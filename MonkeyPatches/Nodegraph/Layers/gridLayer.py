@@ -187,13 +187,13 @@ class GridGUIWidget(FrameInputWidgetContainer):
         #self._radius_widget.setUseLadder(True, value_list=[1, 1])
         self._radius_widget.setText(str(radius))
         self._radius_widget_labelled_widget = LabelledInputWidget(name="Radius", delegate_widget=self._radius_widget)
-        self._radius_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
+        self._radius_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 8)
 
         # LINE WIDTH WIDGET
         self._line_width_widget = IntInputWidget()
         self._line_width_widget.setText(str(line_width))
         self._line_width_widget_labelled_widget = LabelledInputWidget(name="Width", delegate_widget=self._line_width_widget)
-        self._line_width_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
+        self._line_width_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 8)
 
         # SIZE WIDGET
         self._grid_widget = QWidget()
@@ -204,7 +204,7 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._grid_layout.addWidget(self._grid_size_y_widget)
         self._grid_size_widget_labelled_widget = LabelledInputWidget(name="Size", delegate_widget=self._grid_widget)
 
-        self._grid_size_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
+        self._grid_size_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 8)
         self._grid_size_x_widget.setUserFinishedEditingEvent(self.setGridSizeX)
         self._grid_size_y_widget.setUserFinishedEditingEvent(self.setGridSizeY)
         self._grid_size_x_widget.setText(str(grid_x_size))
@@ -223,7 +223,7 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._color_layout.addWidget(self._colora_widget)
         self._color_labelled_widget = LabelledInputWidget(name="Color", delegate_widget=self._color_widget)
 
-        self._color_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
+        self._color_labelled_widget.setDefaultLabelLength(getFontSize() * 8)
         self._colorr_widget.setUserFinishedEditingEvent(self.setGridColorR)
         self._colorg_widget.setUserFinishedEditingEvent(self.setGridColorG)
         self._colorb_widget.setUserFinishedEditingEvent(self.setGridColorB)
@@ -239,7 +239,7 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._draw_mode_widget.filter_results = False
         self._draw_mode_widget.setText(GridUtils.DRAW_MODES[draw_mode])
         self._draw_mode_widget_labelled_widget = LabelledInputWidget(name="Mode", delegate_widget=self._draw_mode_widget)
-        self._draw_mode_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
+        self._draw_mode_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 8)
 
         # ALIGN WIDGET
         self._align_widget = QWidget()
@@ -250,7 +250,7 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._align_layout.addWidget(self._align_offset_y_widget)
         self._align_offset_widget_labelled_widget = LabelledInputWidget(name="Align Offset", delegate_widget=self._align_widget, note="How many grid units to offset the nodes during alignment")
 
-        self._align_offset_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 5)
+        self._align_offset_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 8)
         self._align_offset_x_widget.setUserFinishedEditingEvent(self.setAlignOffsetX)
         self._align_offset_y_widget.setUserFinishedEditingEvent(self.setAlignOffsetY)
         self._align_offset_x_widget.setText(str(align_x_offset))

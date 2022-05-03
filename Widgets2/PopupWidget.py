@@ -10,10 +10,10 @@ PopupWidget --> (QFrame)
                 |- main_widget (PopupWidget)
 """
 from qtpy.QtWidgets import QWidget, QVBoxLayout
-from qtpy.QtCore import Qt, QEvent, QPoint, QSize
-from qtpy.QtGui import QPainter, QColor, QPen, QRegion
+from qtpy.QtCore import Qt, QEvent, QPoint, QSize, QTimer
+from qtpy.QtGui import QPainter, QColor, QPen, QRegion, QCursor
 from Katana import UI4
-from cgwidgets.utils import setAsAlwaysOnTop, setAsTool, isCursorOverWidget, scaleResolution
+from cgwidgets.utils import setAsAlwaysOnTop, setAsTool, isCursorOverWidget, scaleResolution, setAsBorderless
 from cgwidgets.settings import iColor
 
 
@@ -38,13 +38,16 @@ class PopupWidget(QWidget):
         self._hide_hotkey = hide_hotkey
         self._hide_modifiers = hide_modifiers
         self._hide_on_leave = hide_on_leave
+        self._move_event_active = True
         self.setFixedSize(scaleResolution(size))
         self._mask_size = QSize(
             scaleResolution(self.width()),
             scaleResolution(self.height())
         )
+
         self._is_mask_enabled = False
         setAsAlwaysOnTop(self)
+        setAsBorderless(self, enabled=True)
 
         # setup layout
         QVBoxLayout(self)
@@ -133,6 +136,28 @@ class PopupWidget(QWidget):
         return self._main_widget
 
     """ EVENTS """
+    def mousePressEvent(self, event):
+        self._move_event_active = True
+        self._move_event_cursor_pos = QCursor().pos()
+        self._move_event_widget_pos = self.pos()
+        return QWidget.mousePressEvent(self, event)
+
+    def mouseMoveEvent(self, event):
+        if self._move_event_active:
+            x_offset = self._move_event_cursor_pos.x() - QCursor.pos().x()
+            y_offset = self._move_event_cursor_pos.y() - QCursor.pos().y()
+            self.move(self._move_event_widget_pos.x() - x_offset, self._move_event_widget_pos.y() - y_offset)
+        return QWidget.mouseMoveEvent(self, event)
+
+    def mouseReleaseEvent(self, event):
+        def disableMoveEvent():
+            self._move_event_active = False
+            delattr(self, "_timer")
+        self._timer = QTimer()
+        self._timer.start(100)
+        self._timer.timeout.connect(disableMoveEvent)
+        return QWidget.mouseReleaseEvent(self, event)
+
     def __hideOnKeyPress(self, event):
         if event.key() == Qt.Key_Escape:
             self.hide()
@@ -163,7 +188,8 @@ class PopupWidget(QWidget):
         return QWidget.dragLeaveEvent(self, event)
 
     def leaveEvent(self, event):
-        self.__leaveEvent()
+        if not self._move_event_active:
+            self.__leaveEvent()
         return QWidget.leaveEvent(self, event)
 
     def enterEvent(self, event):
