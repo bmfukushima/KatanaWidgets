@@ -1,11 +1,7 @@
 import os
 
 """ GIFS """
-__base_dir = '/'.join(os.path.dirname(__file__).split('/')[:-1])
-__icons_dir = '{directory}/Icons'.format(
-    directory=__base_dir
-)
-
+__icons_dir = os.environ["KATANABEBOP"] + "/Icons"
 BEBOP_JPG = __icons_dir + '/bebop.jpg'
 BEBOP_ON_JPG = __icons_dir + '/bebop_on.jpg'
 BEBOP_OFF_JPG = __icons_dir + '/bebop_off.jpg'
