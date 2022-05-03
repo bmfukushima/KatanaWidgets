@@ -379,8 +379,10 @@ class GSVEditWidget(QWidget):
         self._display_mode = gsvutils.VARIABLES
 
         # Create Widgets
-        self._gsv_selector_widget = GSVSelectorWidget(parent=self)
-        self._create_new_gsv_option_widget = CreateNewGSVOptionWidget(parent=self)
+        self._gsv_selector_widget = GSVSelectorWidget(
+            parent=self, default_label_length=getFontSize()*3)
+        self._create_new_gsv_option_widget = CreateNewGSVOptionWidget(
+            parent=self, default_label_length=getFontSize()*3)
         self._display_editable_options_widget = DisplayEditableOptionsWidget(parent=self)
 
         # setup default sizes
@@ -454,8 +456,8 @@ class GSVSelectorWidget(LabelledInputWidget):
     the GSV's instead of their individual options.
     """
 
-    def __init__(self, parent=None):
-        super(GSVSelectorWidget, self).__init__(parent)
+    def __init__(self, parent=None, default_label_length=30):
+        super(GSVSelectorWidget, self).__init__(parent, default_label_length=default_label_length, direction=Qt.Vertical)
 
         # setup attrs
         self.setName("GSV")
@@ -543,8 +545,8 @@ class GSVSelectorWidget(LabelledInputWidget):
 
 class CreateNewGSVOptionWidget(LabelledInputWidget):
     """Line Edit widget that creates new GSV options when enter is pressed"""
-    def __init__(self, parent=None):
-        super(CreateNewGSVOptionWidget, self).__init__(parent)
+    def __init__(self, parent=None, default_label_length=30):
+        super(CreateNewGSVOptionWidget, self).__init__(parent, default_label_length=default_label_length, direction=Qt.Vertical)
         # setup attrs
         self.setName("Create Option")
         self.setToolTip(""" Type value in and press ENTER to create a new Option/GSV""")
