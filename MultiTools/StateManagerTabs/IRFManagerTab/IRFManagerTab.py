@@ -255,6 +255,8 @@ class IRFCreateWidget(ShojiLayout):
         self.setIsSoloViewEnabled(False)
         self.setIsSoloViewEnabled(True, override_children=False)
 
+        self.setSizes([100, 300])
+
     """ WIDGETS """
     def irfNodeWidget(self):
         return self._irf_node_widget
