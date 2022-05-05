@@ -9,7 +9,8 @@ from .utils import getConstructors, getSaveData
 from Utils2 import getFontSize
 
 class PopupBarOrganizerTab(UI4.Tabs.BaseTab):
-    NAME = "Popup Bar Organizer"
+    NAME = "Popup Bar Designer"
+
     def __init__(self, parent=None):
         super(PopupBarOrganizerTab, self).__init__(parent)
         # EXAMPLE: Add additional constructors/save locations
@@ -34,7 +35,7 @@ class PopupBarOrganizerTab(UI4.Tabs.BaseTab):
 
         # create popup_bar widget
         self.main_widget = PopupBarOrganizerWidget(self, save_data=sava_data, widget_types=widget_constructors)
-        self.main_widget.setHeaderDefaultLength(getFontSize() * 6)
+
         # add PiPWidget to Katana tab
         QVBoxLayout(self)
         self.layout().addWidget(self.main_widget)

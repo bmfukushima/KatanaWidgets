@@ -32,7 +32,7 @@ if isLicenseValid():
     from .PopupBar.PopupBarTabInitializer import popup_bar_tabs
 
     for popup_bar_tab in popup_bar_tabs:
-        tab_name = "/". join(["Popup Bar Displays", popup_bar_tab["filename"], popup_bar_tab["popup_bar_widget_name"]])
+        tab_name = "/". join(["Popup Bar Views", popup_bar_tab["filename"], popup_bar_tab["popup_bar_widget_name"]])
         PluginRegistry.append(("KatanaPanel", 2, tab_name, popup_bar_tab["constructor"]))
 
 
