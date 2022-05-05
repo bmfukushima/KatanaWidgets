@@ -27,7 +27,7 @@ try:
     import PIL
     pillow_logger = ""
 except ModuleNotFoundError:
-    pillow_dir = katana_bebop_dir + "/libs/pillow/src"
+    pillow_dir = katana_bebop_dir + "/libs/pillow"
     sys.path.append(pillow_dir)
     pillow_logger = f"\n\t|\t|__  Appending...  {pillow_dir} to PYTHONPATH"
 
