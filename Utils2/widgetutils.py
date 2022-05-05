@@ -1,4 +1,6 @@
 from Katana import UI4
+from UI4.App import Tabs
+
 from cgwidgets.utils import getWidgetUnderCursor
 
 def katanaMainWindow():
@@ -6,9 +8,21 @@ def katanaMainWindow():
 
 
 def getActiveNodegraphWidget():
+    # get nodegraph under cursor
     nodegraph_widget = isCursorOverNodeGraphWidget()
+
+    # find nodegraph top tab
     if not nodegraph_widget:
-        nodegraph_widget = UI4.App.Tabs.FindTopTab('Node Graph').getNodeGraphWidget()
+        nodegraph_tab = UI4.App.Tabs.FindTopTab('Node Graph')
+        if nodegraph_tab:
+            nodegraph_widget = nodegraph_tab.getNodeGraphWidget()
+
+    # find any nodegraph widget
+
+    # no node graph widgets found
+    if not nodegraph_widget:
+        nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
+        nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
 
     return nodegraph_widget
 

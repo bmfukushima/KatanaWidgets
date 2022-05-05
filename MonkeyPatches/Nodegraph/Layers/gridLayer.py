@@ -143,6 +143,8 @@ class GridLayer(QT4GLLayerStack.Layer):
         glDisable(GL_BLEND)
 
     def paintGL(self):
+        if not self.layerStack().isVisible(): return
+
         def unfreeze():
             self._is_frozen = False
 
@@ -154,9 +156,9 @@ class GridLayer(QT4GLLayerStack.Layer):
         # run events on timer
         if not self._is_frozen:
             # setup timer
-            timer = QTimer()
-            timer.start(delay_amount)
-            timer.timeout.connect(unfreeze)
+            self._timer = QTimer()
+            self._timer.start(delay_amount)
+            self._timer.timeout.connect(unfreeze)
             self.drawGrid()
 
 
@@ -509,13 +511,7 @@ def showEvent(func):
 
     return __showEvent
 
-
-def installGridLayer(**kwargs):
-    # insert nodegraph grid layer
-    nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
-    nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
-    nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
-
+def __installGridPrefs():
     # default values
     enabled = True
     grid_size_x = 200
@@ -526,7 +522,6 @@ def installGridLayer(**kwargs):
     radius = 5
     line_width = 1
     draw_mode = 1
-
 
     # setup preferences
     KatanaPrefs.declareGroupPref(GRID_GROUP_PREF_NAME)
@@ -551,11 +546,11 @@ def installGridLayer(**kwargs):
     GridUtils.setGridSizeX(grid_size_x)
     KatanaPrefs.declareIntPref(GRID_SIZE_Y_PREF_NAME, grid_size_y, helpText="Determines the grid y spacing")
     GridUtils.setGridSizeY(grid_size_y)
-    KatanaPrefs.declareIntPref(ALIGN_X_OFFSET_PREF_NAME, align_offset_x, helpText="Determines how many grid units to space the nodes during alignment")
-    KatanaPrefs.declareIntPref(ALIGN_Y_OFFSET_PREF_NAME, align_offset_y, helpText="Determines how many grid units to space the nodes during alignment")
+    KatanaPrefs.declareIntPref(ALIGN_X_OFFSET_PREF_NAME, align_offset_x,
+                               helpText="Determines how many grid units to space the nodes during alignment")
+    KatanaPrefs.declareIntPref(ALIGN_Y_OFFSET_PREF_NAME, align_offset_y,
+                               helpText="Determines how many grid units to space the nodes during alignment")
 
-    #
-    #
     def gridPrefChangedEvent(*args, **kwargs):
         if kwargs["prefKey"] in [
             "nodegraph/grid/color",
@@ -575,6 +570,14 @@ def installGridLayer(**kwargs):
     # if pref_name not in KatanaPrefs.keys():
     # KatanaPrefs.declareBoolPref(pref_name, False, helpText="Determines if the nodegraph grid is enabled")
     KatanaPrefs.commit()
+
+def installGridLayer(**kwargs):
+    __installGridPrefs()
+
+    # insert nodegraph grid layer
+    nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
+    nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
+    nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
 
 # TESTING
 # def toggleGrid():

@@ -491,6 +491,7 @@ def getNodegraphCursorPos():
     from .widgetutils import getActiveNodegraphWidget
     nodegraph_widget = getActiveNodegraphWidget()
     # get cursor position
+    if not nodegraph_widget: return None, None
     if not hasattr(nodegraph_widget, "getMousePos"): return None, None
     cursor_pos = nodegraph_widget.getMousePos()
     group_node = nodegraph_widget.getGroupNodeUnderMouse()

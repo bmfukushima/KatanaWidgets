@@ -66,6 +66,7 @@ class BackdropPreviewLayer(QT4GLLayerStack.Layer):
 
     def paintGL(self):
         if AbstractGestureLayer.isGestureLayerActive(): return
+        if not self.layerStack().isVisible(): return
         # if widgetutils.katanaMainWindow()._node_iron_active: return
         # if widgetutils.katanaMainWindow()._link_cutting_active: return
         # if widgetutils.katanaMainWindow()._swipe_connection_active: return
