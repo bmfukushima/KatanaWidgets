@@ -7,20 +7,16 @@ Register a new sooperdooper tool...
 from Utils2 import isLicenseValid
 
 if isLicenseValid():
-
     # import super tools
     from . import (
         Constraint,
         IsolateCEL,
         NodeTree
     )
-    # from . import IsolateCEL
-    # from . import NodeTree
     from . import SuperToolTemplate
     from . import SuperToolBasicTemplate
 
-
-    from MultiTools import VariableManager, SimpleTool
+    from MultiTools import SimpleTool
 
     # compile list of super tools
     superdooper_tools_list = [
@@ -28,7 +24,6 @@ if isLicenseValid():
         IsolateCEL,
         NodeTree,
         SimpleTool.SuperTool,
-        VariableManager.SuperTool,
         # SuperToolBasicTemplate
         # SuperToolTemplate
     ]
