@@ -63,8 +63,6 @@ def createConstructor(filepath, popup_bar_widget_name):
         def closeEnlargedView(self):
             self.popupBarWidget().closeEnlargedView()
 
-
-
     return PopupBarDisplayTab
 
 

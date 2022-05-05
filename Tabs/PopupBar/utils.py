@@ -113,7 +113,7 @@ def getSaveData(*args):
     built_ins_file_path = os.path.dirname(__file__) + '/KatanaBebopPopupBarTabs.json'
 
     # user
-    user_save_path = KatanaResources.GetUserKatanaPath() + ".PopupBarTabs.json"
+    user_save_path = KatanaResources.GetUserKatanaPath() + "/.PopupBarTabs.json"
 
     # default save data
     save_data = {
