@@ -22,14 +22,14 @@ katana_bebop_dir = "/".join(CURRENT_DIR.split("/")[:-1])
 katana_bebop_dir = os.path.dirname(CURRENT_DIR).replace("\\", "/")
 sys.path.append(katana_bebop_dir)
 
-# register cgwidgets
-try:
-    import PIL
-    pillow_logger = ""
-except ModuleNotFoundError:
-    pillow_dir = katana_bebop_dir + "/libs/pillow"
-    sys.path.append(pillow_dir)
-    pillow_logger = f"\n\t|\t|__  Appending...  {pillow_dir} to PYTHONPATH"
+# # register cgwidgets
+# try:
+#     import PIL
+#     pillow_logger = ""
+# except ModuleNotFoundError:
+#     pillow_dir = katana_bebop_dir + "/libs/pillow"
+#     sys.path.append(pillow_dir)
+#     pillow_logger = f"\n\t|\t|__  Appending...  {pillow_dir} to PYTHONPATH"
 
 # register cgwidgets
 try:
@@ -80,7 +80,7 @@ if isLicenseValid():
     ................................      THE GOOD STUFF      .................................
     ...........................................................................................
     \t|____  ENVIRONMENT
-    \t|\t|__  Appending...  {katana_bebop_dir} to PYTHONPATH {cgwidgets_logger} {packaging_logger} {qtpy_logger} {pillow_logger}
+    \t|\t|__  Appending...  {katana_bebop_dir} to PYTHONPATH {cgwidgets_logger} {packaging_logger} {qtpy_logger}
     \t|
     \t|____  MACROS
     \t|\t|__ CalculateNearFarObjects

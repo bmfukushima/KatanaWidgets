@@ -3,7 +3,7 @@ Module that defines an L{ImportRig()} function for importing a GafferThree rig
 file into a target GafferThree node.
 """
 
-import imp
+# import imp
 import os.path
 import sys
 
