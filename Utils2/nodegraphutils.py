@@ -1,6 +1,6 @@
 import math
 
-from qtpy.QtCore import QPoint
+from qtpy.QtCore import QPoint, QSize
 
 from Katana import NodegraphAPI, DrawingModule, Utils, KatanaPrefs
 
@@ -548,7 +548,7 @@ def floatNodes(node_list):
     nodegraph_widget.parent().floatNodes(list(node_list))
 
 
-def interpolatePoints(p0, p1, radius=1, step_size=1):
+def interpolatePoints(p0, p1, radius=QSize(10, 10), step_size=1):
     """ creates a list of points between the two points provided
 
     This works by
@@ -571,17 +571,24 @@ def interpolatePoints(p0, p1, radius=1, step_size=1):
     if p0.x() == p1.x(): return [p0, p1]
     if p0.y() == p1.y(): return [p0, p1]
     # compute offset of extension of end to compensate for radius
+
     width = p0.x() - p1.x()
     height = p0.y() - p1.y()
     mag = math.sqrt(math.pow(width, 2) + math.pow(height, 2))
-    uX = (width/mag) * radius       # end offset x
-    uY = (height/mag) * radius      # end offset y
-    p1 = QPoint(p1.x() - uX, p1.y() - uY)
+    uX = (width/mag) * radius.width()       # end offset x
+    uY = (height/mag) * radius.height()      # end offset y
+    p1 = QPoint(p1.x() - (uX * 0.5), p1.y() - (uY * 0.5))
+
+    # recalculate width/height for new offset end point
+    width = p0.x() - p1.x()
+    height = p0.y() - p1.y()
 
     # offset points to create two parrallel lines
+    if width == 0:
+        width = 1
     theta = math.atan(height / width)
-    x_radius_offset = math.sin(theta) * radius
-    y_radius_offset = math.cos(theta) * radius
+    x_radius_offset = math.sin(theta) * radius.width()
+    y_radius_offset = math.cos(theta) * radius.height()
 
     p0A = QPoint(int(p0.x() - x_radius_offset), int(p0.y() + y_radius_offset))
     p0B = QPoint(int(p1.x() - x_radius_offset), int(p1.y() + y_radius_offset))
@@ -618,6 +625,7 @@ def interpolatePoints(p0, p1, radius=1, step_size=1):
 
     # points.insert(0, p0)
     # points.insert(1, p1)
+    points.append(p1)
 
     return points
 

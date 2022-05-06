@@ -16,7 +16,7 @@ from OpenGL.GL import (
     glPointSize,
 )
 from qtpy.QtWidgets import QApplication
-from qtpy.QtCore import Qt, QPoint, QEvent, QTimer
+from qtpy.QtCore import Qt, QPoint, QEvent, QTimer, QSize
 
 from Katana import Utils
 import QT4GLLayerStack
@@ -33,7 +33,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         attr_name (str): name of attribute stored on katana main window
             All additional attrs will be stored under <attr_name>_<someattr>
         color (RGBA0-1) Tuple of rgba 0-1 values
-        crosshair_radius (int): radius of crosshair
+        crosshair_radius (QSize): X/Y radius of crosshair
         cursor_trajectory (LinkCuttingLayer.DIRECTION): direction to position the nodes
         last_cursor_points (list): of QPoints that hold the last 5 cursor positions
             This is used for calculating the cursors trajectory
@@ -52,7 +52,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         # setup default attrs
         self._actuation_key = actuation_key
         self._color = (0.75, 0.75, 1, 1)
-        self._crosshair_radius = 10
+        self._crosshair_radius = QSize(10, 10)
         self._cursor_trajectory = nodegraphutils.RIGHT
         self._last_cursor_points = []
         self._undo_name = undo_name
@@ -152,10 +152,10 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         mouse_pos = self.layerStack().getMousePos()
         window_pos = QPoint(mouse_pos.x(), self.layerStack().getWindowSize()[1] - mouse_pos.y())
         glBegin(GL_LINE_LOOP)
-        glVertex2f(window_pos.x() - self.crosshairRadius(), window_pos.y())
-        glVertex2f(window_pos.x(), window_pos.y() + self.crosshairRadius())
-        glVertex2f(window_pos.x() + self.crosshairRadius(), window_pos.y())
-        glVertex2f(window_pos.x(), window_pos.y() - self.crosshairRadius())
+        glVertex2f(window_pos.x() - self.crosshairRadius().width(), window_pos.y())
+        glVertex2f(window_pos.x(), window_pos.y() + self.crosshairRadius().height())
+        glVertex2f(window_pos.x() + self.crosshairRadius().width(), window_pos.y())
+        glVertex2f(window_pos.x(), window_pos.y() - self.crosshairRadius().height())
         glEnd()
 
     def drawTrajectory(self):

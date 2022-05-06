@@ -17,7 +17,7 @@ from OpenGL.GL import (
     glPointSize,
 )
 from qtpy.QtWidgets import QApplication
-from qtpy.QtCore import Qt, QPoint, QEvent, QTimer
+from qtpy.QtCore import Qt, QPoint, QEvent, QTimer, QSize
 
 # setup prefs
 import QT4GLLayerStack
@@ -49,6 +49,7 @@ class SelectionLayer(AbstractGestureLayer):
 
     def __init__(self, *args, **kwargs):
         super(SelectionLayer, self).__init__(*args, **kwargs)
+        self.setCrosshairRadius(QSize(10, 20))
 
     def keyReleaseEvent(self, event):
         if self.shouldProcessKeyReleaseEvent(event):
@@ -95,6 +96,10 @@ class SelectionLayer(AbstractGestureLayer):
                     for node in node_hits:
                         # first node
                         if node not in self.getHits():
+                            NodegraphAPI.SetNodeShapeAttr(node, "glowColorR", 0.5)
+                            NodegraphAPI.SetNodeShapeAttr(node, "glowColorG", 0.5)
+                            NodegraphAPI.SetNodeShapeAttr(node, "glowColorB", 1)
+                            Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
                             self.addHit(node)
 
                 self.addCursorPoint(mouse_pos)

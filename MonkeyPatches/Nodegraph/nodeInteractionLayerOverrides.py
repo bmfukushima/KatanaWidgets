@@ -46,6 +46,7 @@ from Utils2 import nodeutils, widgetutils, nodegraphutils, getFontSize
 from .Layers.gridLayer import GridGUIWidget
 from .portConnector import PortConnector
 from .Layers.backdropLayer import createBackdropNode
+from .Layers.AbstractGestureLayer import AbstractGestureLayer
 
 
 """ UTILS """
@@ -177,8 +178,7 @@ def glowNodes(event):
     """
 
     """ Need to by pass for special functionality for backdrops"""
-    if widgetutils.katanaMainWindow()._node_iron_active: return
-    if widgetutils.katanaMainWindow()._link_cutting_active: return
+    if AbstractGestureLayer.isGestureLayerActive(): return
     if widgetutils.katanaMainWindow()._backdrop_resize_active: return
 
     if event.modifiers() == Qt.NoModifier:

@@ -5,8 +5,8 @@ world = nodegraph coordinates
     top right = 1,1
 
 window = OpenGL Coordinates
-    bottom left = 0,0
     top right = 1,1
+    bottom left = 0,0
 
 local = Qt Event Local coordinates
 Returned when using nodegraphWidget.getMousePos()
