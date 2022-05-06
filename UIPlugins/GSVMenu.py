@@ -97,14 +97,14 @@ def setGSV(gsv):
     katana_main._layered_menu_gsv = gsv
 
 
-if isLicenseValid():
-    GSVMenu = LayeredMenuAPI.LayeredMenu(
-        GSVMenuPopulateCallback,
-        GSVMenuActionCallback,
-        'S',
-        alwaysPopulate=True,
-        onlyMatchWordStart=False
-    )
-
-    LayeredMenuAPI.RegisterLayeredMenu(GSVMenu, 'GSV')
+#if isLicenseValid():
+    # GSVMenu = LayeredMenuAPI.LayeredMenu(
+    #     GSVMenuPopulateCallback,
+    #     GSVMenuActionCallback,
+    #     'S',
+    #     alwaysPopulate=True,
+    #     onlyMatchWordStart=False
+    # )
+    #
+    # LayeredMenuAPI.RegisterLayeredMenu(GSVMenu, 'GSV')
 

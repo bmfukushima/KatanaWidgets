@@ -48,12 +48,7 @@ class NodeIronLayer(AbstractGestureLayer):
     """
 
     def __init__(self, *args, **kwargs):
-        super(NodeIronLayer, self).__init__(
-            *args,
-            attr_name=ATTR_NAME,
-            actuation_key=Qt.Key_A,
-            undo_name="Align Nodes",
-            **kwargs)
+        super(NodeIronLayer, self).__init__(*args, **kwargs)
 
     def getAlignXPos(self):
         return NodegraphAPI.GetNodePosition(self.getHits()[-1])[0]
@@ -163,4 +158,4 @@ def nodeInteractionKeyPressEvent(func):
 
 
 def installNodeIronLayer(**kwargs):
-    insertLayerIntoNodegraph(NodeIronLayer, LAYER_NAME, ATTR_NAME, Qt.Key_A)
+    insertLayerIntoNodegraph(NodeIronLayer, LAYER_NAME, ATTR_NAME, Qt.Key_A, "Align Nodes")

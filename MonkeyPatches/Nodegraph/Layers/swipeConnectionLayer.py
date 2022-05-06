@@ -48,12 +48,7 @@ class SwipeConnectionLayer(AbstractGestureLayer):
     """
 
     def __init__(self, *args, **kwargs):
-        super(SwipeConnectionLayer, self).__init__(
-            *args,
-            attr_name=ATTR_NAME,
-            actuation_key=Qt.Key_C,
-            undo_name="Connect Nodes",
-            **kwargs)
+        super(SwipeConnectionLayer, self).__init__(*args, **kwargs)
 
     def paintGL(self):
         if self.isActive():
@@ -83,4 +78,4 @@ class SwipeConnectionLayer(AbstractGestureLayer):
 
 
 def installSwipeConnectionLayer(**kwargs):
-    insertLayerIntoNodegraph(SwipeConnectionLayer, LAYER_NAME, ATTR_NAME, Qt.Key_C)
+    insertLayerIntoNodegraph(SwipeConnectionLayer, LAYER_NAME, ATTR_NAME, Qt.Key_C, "Connect Nodes")

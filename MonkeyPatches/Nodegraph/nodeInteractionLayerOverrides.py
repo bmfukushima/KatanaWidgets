@@ -448,7 +448,6 @@ def showEvent(func):
     return __showEvent
 
 
-
 def installNodeInteractionLayerOverrides(**kwargs):
     """ Installs the hotkey overrides """
     # Node interaction key press

@@ -59,6 +59,7 @@ from .Layers.gridLayer import installGridLayer
 from .Layers.nodeIronLayer import installNodeIronLayer
 from .Layers.linkCuttingLayer import installLinkCuttingLayer
 from .Layers.swipeConnectionLayer import installSwipeConnectionLayer
+from .Layers.selectionLayer import installSelectionLayer
 
 from Utils2.nodeutils import removeNodePreviewColors
 
@@ -74,4 +75,5 @@ def installNodegraphOverrides(**kwargs):
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installNodeIronLayer)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installLinkCuttingLayer)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installSwipeConnectionLayer)
+    Callbacks.addCallback(Callbacks.Type.onStartupComplete, installSelectionLayer)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, removeNodePreviewColors)

@@ -37,7 +37,6 @@ ATTR_NAME = "_link_cutting"
 
 class LinkCuttingLayer(AbstractGestureLayer):
     """
-
     Attributes:
         cursor_trajectory (LinkCuttingLayer.DIRECTION): direction to position the nodes
         last_cursor_points (list): of QPoints that hold the last 5 cursor positions
@@ -48,19 +47,12 @@ class LinkCuttingLayer(AbstractGestureLayer):
     """
 
     def __init__(self, *args, **kwargs):
-        super(LinkCuttingLayer, self).__init__(
-            *args,
-            attr_name=ATTR_NAME,
-            actuation_key=Qt.Key_X,
-            undo_name="Slice Links",
-            **kwargs)
+        super(LinkCuttingLayer, self).__init__(*args, **kwargs)
 
     def keyReleaseEvent(self, event):
-        if event.isAutoRepeat(): return True
-        if event.key() == Qt.Key_X and event.modifiers() == Qt.NoModifier:
-            if not widgetutils.katanaMainWindow()._link_cutting_finishing:
-                self.layerStack().extractNodes(NodegraphAPI.GetAllSelectedNodes())
-                nodegraphutils.floatNodes(NodegraphAPI.GetAllSelectedNodes())
+        if self.shouldProcessKeyReleaseEvent(event):
+            self.layerStack().extractNodes(NodegraphAPI.GetAllSelectedNodes())
+            nodegraphutils.floatNodes(NodegraphAPI.GetAllSelectedNodes())
             nodegraphutils.setCurrentKeyPressed(None)
             return True
 
@@ -87,4 +79,4 @@ class LinkCuttingLayer(AbstractGestureLayer):
 
 
 def installLinkCuttingLayer(**kwargs):
-    insertLayerIntoNodegraph(LinkCuttingLayer, LAYER_NAME, ATTR_NAME, Qt.Key_X)
+    insertLayerIntoNodegraph(LinkCuttingLayer, LAYER_NAME, ATTR_NAME, Qt.Key_X, "Slice Links")

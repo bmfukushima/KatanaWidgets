@@ -24,6 +24,7 @@ from UI4.App import Tabs
 
 from Utils2 import nodegraphutils, widgetutils, nodeutils
 
+
 class AbstractGestureLayer(QT4GLLayerStack.Layer):
     """
 
@@ -184,6 +185,13 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
     def keyReleaseEvent(self, event):
         return False
 
+    def shouldProcessKeyReleaseEvent(self, event):
+        if event.isAutoRepeat(): return False
+        if event.key() == self.actuationKey() and event.modifiers() == Qt.NoModifier:
+            if not getattr(widgetutils.katanaMainWindow(), self.attrName() + "_finishing"):
+                return True
+        return False
+
     def mouseMoveEvent(self, event):
         # update node iron
         if self.isActive():
@@ -248,7 +256,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         return False
 
 
-def insertLayerIntoNodegraph(layer_type, layer_name, attr_name, actuation_key):
+def insertLayerIntoNodegraph(layer_type, layer_name, attr_name, actuation_key, undo_name):
     """ Returns a function that can be used to override the NodegraphWidgets show function
     automatically insert the layer provided into the NodegraphTab
 
@@ -262,11 +270,15 @@ def insertLayerIntoNodegraph(layer_type, layer_name, attr_name, actuation_key):
         def __showEvent(self, event):
             # disable floating layer, as it for some reason inits as True...
             self.getLayerByName("Floating Nodes").setEnabled(False)
-
+            # attr_name = "_abstract_gesture_layer",
+            # actuation_key = None,
+            # undo_name = "Abstract Gesture Event",
             # setup grid layer
             gesture_layer = self.getLayerByName(layer_name)
             if not gesture_layer:
-                setattr(self, attr_name + "_layer", layer_type(layer_name, enabled=True))
+                setattr(self, attr_name + "_layer", layer_type(
+                    layer_name, actuation_key=actuation_key, attr_name=attr_name, enabled=True, undo_name=undo_name
+                ))
                 self.appendLayer(getattr(self, attr_name + "_layer"))
 
             return func(self, event)
