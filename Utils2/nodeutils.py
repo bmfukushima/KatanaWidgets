@@ -78,7 +78,36 @@ def createIOPorts(node, in_port=True, out_port=True, connect=True, force_create=
             node.getSendPort(send_port_name).connect(node.getReturnPort(return_port_name))
 
 
-def setNodePreviewColor(highlighted_nodes=None, exclude_nodes=[], has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False):
+def addNodePreviewColor(nodes):
+    """ Adds the node preview glow to the nodes provided
+
+    Args:
+        nodes (list): of nodes to add the preview color to
+    """
+    from .widgetutils import katanaMainWindow
+    # set new color
+    for node in nodes:
+        NodegraphAPI.SetNodeShapeAttr(node, "glowColorR", 0.5)
+        NodegraphAPI.SetNodeShapeAttr(node, "glowColorG", 0.5)
+        NodegraphAPI.SetNodeShapeAttr(node, "glowColorB", 1)
+        Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
+
+        # update closest node
+        katanaMainWindow()._highlighted_nodes.append(node)
+
+
+def removeNodePreviewColor(nodes):
+    """ Removes the node glow from the list of nodes provided
+
+    Args:
+        nodes (list): of nodes to remove the preview color from
+    """
+    from .widgetutils import katanaMainWindow
+    for node in nodes:
+        if node in katanaMainWindow()._highlighted_nodes:
+            removeGlowColor(node)
+
+def updateNodePreviewColors(highlighted_nodes=None, exclude_nodes=[], has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False):
     """ Sets the node color of the nodes provided to Normals Blue.
 
     Args:
@@ -118,7 +147,7 @@ def setNodePreviewColor(highlighted_nodes=None, exclude_nodes=[], has_input_port
         katanaMainWindow()._highlighted_nodes = highlighted_nodes
 
 
-def removeNodePreviewColors(*args, **kwargs):
+def clearNodePreviewColors(*args, **kwargs):
     from .widgetutils import katanaMainWindow
 
     # remove old color

@@ -96,11 +96,8 @@ class SelectionLayer(AbstractGestureLayer):
                     for node in node_hits:
                         # first node
                         if node not in self.getHits():
-                            NodegraphAPI.SetNodeShapeAttr(node, "glowColorR", 0.5)
-                            NodegraphAPI.SetNodeShapeAttr(node, "glowColorG", 0.5)
-                            NodegraphAPI.SetNodeShapeAttr(node, "glowColorB", 1)
-                            Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
                             self.addHit(node)
+                            nodeutils.addNodePreviewColor([node])
 
                 self.addCursorPoint(mouse_pos)
 

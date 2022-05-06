@@ -17,7 +17,7 @@ from OpenGL.GL import (
     glPointSize,
 )
 from qtpy.QtWidgets import QApplication
-from qtpy.QtCore import Qt, QPoint, QEvent, QTimer
+from qtpy.QtCore import Qt, QSize
 
 # setup prefs
 import QT4GLLayerStack
@@ -49,6 +49,7 @@ class NodeIronLayer(AbstractGestureLayer):
 
     def __init__(self, *args, **kwargs):
         super(NodeIronLayer, self).__init__(*args, **kwargs)
+        self.setCrosshairRadius(QSize(10, 20))
 
     def getAlignXPos(self):
         return NodegraphAPI.GetNodePosition(self.getHits()[-1])[0]
@@ -140,6 +141,7 @@ class NodeIronLayer(AbstractGestureLayer):
                                     pass
 
                             self.addHit(node)
+                            nodeutils.addNodePreviewColor([node])
 
                 self.addCursorPoint(mouse_pos)
 

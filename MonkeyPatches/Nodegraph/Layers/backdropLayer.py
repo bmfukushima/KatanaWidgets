@@ -624,7 +624,7 @@ def nodeInteractionMousePressEvent(self, event):
             attrs["orig_cursor_pos"] = nodegraphutils.getNodegraphCursorPos()[0]
             widgetutils.katanaMainWindow()._backdrop_orig_attrs = attrs
             widgetutils.katanaMainWindow()._backdrop_resize_active = True
-            nodeutils.removeNodePreviewColors()
+            nodeutils.clearNodePreviewColors()
             return True
 
     return False

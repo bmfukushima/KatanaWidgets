@@ -209,6 +209,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
                 and event.button() == Qt.LeftButton
                 and nodegraphutils.getCurrentKeyPressed() == self.actuationKey()
         ):
+            # todo setup activation handler
             Utils.UndoStack.OpenGroup(self.undoName())
             # ensure that everything was turned off... because sometimes I do stuff bad
             self.setIsFinishing(False)
@@ -218,7 +219,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
             # activate swipe gesture
             self.setIsActive(True)
             QApplication.setOverrideCursor(Qt.BlankCursor)
-            nodeutils.removeNodePreviewColors()
+            nodeutils.clearNodePreviewColors()
 
             return True
 
@@ -248,6 +249,10 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
             QApplication.restoreOverrideCursor()
 
             self.layerStack().idleUpdate()
+
+            nodeutils.clearNodePreviewColors()
+            # todo setup deactivation handler
+
             Utils.UndoStack.CloseGroup()
 
         # update view

@@ -61,7 +61,7 @@ from .Layers.linkCuttingLayer import installLinkCuttingLayer
 from .Layers.swipeConnectionLayer import installSwipeConnectionLayer
 from .Layers.selectionLayer import installSelectionLayer
 
-from Utils2.nodeutils import removeNodePreviewColors
+from Utils2.nodeutils import clearNodePreviewColors
 
 # link connection mouse move
 def installNodegraphOverrides(**kwargs):
@@ -76,4 +76,4 @@ def installNodegraphOverrides(**kwargs):
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installLinkCuttingLayer)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installSwipeConnectionLayer)
     Callbacks.addCallback(Callbacks.Type.onStartupComplete, installSelectionLayer)
-    Callbacks.addCallback(Callbacks.Type.onStartupComplete, removeNodePreviewColors)
+    Callbacks.addCallback(Callbacks.Type.onStartupComplete, clearNodePreviewColors)
