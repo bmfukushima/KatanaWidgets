@@ -90,24 +90,30 @@ def nodeEntryChosen(func):
         node = func(self, value)
         #### START INJECTION ####
         """ Inject code to connect nodes when creating nodes via the Tab menu on the LinkConnectionLayer """
-        if hasattr(widgetutils.katanaMainWindow(), "_is_link_creation_active"):
-            if widgetutils.katanaMainWindow()._is_link_creation_active:
-                # connect node
-                last_active_node = widgetutils.katanaMainWindow()._link_connection_active_node
+        # preflight
+        from linkConnectionLayerOverrides import removeLastActiveNode, lastActiveNode
+        if not hasattr(widgetutils.katanaMainWindow(), "_is_link_creation_active"): return node
+        if not widgetutils.katanaMainWindow()._is_link_creation_active: return node
+        if not hasattr(widgetutils.katanaMainWindow(), "_link_connection_active_node"): return node
 
-                # connect nodes
-                if len(node.getInputPorts()) == 0:
-                    if node.getType() in nodegraphutils.dynamicInputPortNodes():
-                        input_port = node.addInputPort("i0")
-                else:
-                    input_port = node.getInputPortByIndex(0)
-                last_active_node.getOutputPortByIndex(0).connect(input_port)
+        # connect node
+        last_active_node = lastActiveNode()
 
-                # disable attrs
-                delattr(widgetutils.katanaMainWindow(), "_link_connection_active_node")
-                widgetutils.katanaMainWindow()._is_link_creation_active = False
+        # connect nodes
+        input_port = None
+        if len(node.getInputPorts()) == 0:
+            if node.getType() in nodegraphutils.dynamicInputPortNodes():
+                input_port = node.addInputPort("i0")
+        else:
+            input_port = node.getInputPortByIndex(0)
+        if input_port:
+            last_active_node.getOutputPortByIndex(0).connect(input_port)
 
-                """ Connect here... """
+        # disable attrs
+
+        removeLastActiveNode()
+        widgetutils.katanaMainWindow()._is_link_creation_active = False
+
         #### END INJECTION ####
         return node
 

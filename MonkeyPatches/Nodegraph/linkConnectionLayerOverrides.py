@@ -1,9 +1,13 @@
+""" Todo:
+        Cleanup link connection attributes"""
+
 from qtpy.QtCore import QTimer, Qt, QPoint
 
 from Utils2 import nodeutils
 
 from Katana import NodegraphAPI, Utils, DrawingModule, KatanaPrefs, PrefNames
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
+from UI4.App import Tabs
 
 from .portConnector import PortConnector
 from Utils2 import widgetutils, nodegraphutils
@@ -33,6 +37,11 @@ def createDotNode(port):
     PortConnector.showNoodle(dot_node.getOutputPortByIndex(0))
 
     return dot_node
+
+
+def removeLastActiveNode():
+    if hasattr(widgetutils.katanaMainWindow(), "_link_connection_active_node"):
+        delattr(widgetutils.katanaMainWindow(), "_link_connection_active_node")
 
 
 def lastActiveNode():
@@ -130,15 +139,25 @@ def exitLink(func):
 
         # toggle last active node flags
         widgetutils.katanaMainWindow()._is_link_creation_active = False
-        if hasattr(LinkConnectionLayer, "_link_connection_active_node"):
-            delattr(LinkConnectionLayer, "_link_connection_active_node")
+        removeLastActiveNode()
 
         func(self, *args)
     return __exitLink
 
 
+def placeNodeOverride(func):
+    def __placeNodeOverride(node, shouldFloat=True, maskInputPreferred=False, autoPlaceAllowed=True):
+        setLastActiveNode(None)
+        return func(node, shouldFloat=shouldFloat, maskInputPreferred=maskInputPreferred, autoPlaceAllowed=autoPlaceAllowed)
+
+    return __placeNodeOverride
+
+
 def installLinkConnectionLayerOverrides(**kwargs):
     """ Installs the overrides for the link connection layer"""
+    nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
+    nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
+    nodegraph_widget.placeNode = placeNodeOverride(nodegraph_widget.placeNode)
 
     # link interaction monkey patch
     LinkConnectionLayer._LinkConnectionLayer__processMouseMove = linkConnectionLayerMouseMove(LinkConnectionLayer._LinkConnectionLayer__processMouseMove)
@@ -148,4 +167,3 @@ def installLinkConnectionLayerOverrides(**kwargs):
     LinkConnectionLayer._LinkConnectionLayer__dropLinks = exitLink(LinkConnectionLayer._LinkConnectionLayer__dropLinks)
     LinkConnectionLayer._LinkConnectionLayer__exitNoChange = exitLink(LinkConnectionLayer._LinkConnectionLayer__exitNoChange)
 
-    # LinkConnectionLayer._LinkConnectionLayer__create_dot_node = createDotNode

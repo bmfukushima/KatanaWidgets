@@ -465,6 +465,10 @@ class PortConnector():
             # if closest_node == getattr(LinkConnectionLayer, "_highlighted_nodes"): return
             nodeutils.removeGlowColor(LinkConnectionLayer._highlighted_nodes)
             delattr(LinkConnectionLayer, "_highlighted_nodes")
+
+        # remove last active node
+        from .linkConnectionLayerOverrides import removeLastActiveNode
+        removeLastActiveNode()
         # delattr(katanaMainWindow(), "_active_nodegraph_widget")
 
     @staticmethod
