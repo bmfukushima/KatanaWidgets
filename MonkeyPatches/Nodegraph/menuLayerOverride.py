@@ -1,5 +1,5 @@
 import collections
-
+from qtpy.QtCore import QEvent
 from Katana import LayeredMenuAPI, Utils, NodegraphAPI
 from UI4.Tabs.NodeGraphTab.Layers.CustomMenuLayer import CustomMenuLayer
 from UI4.Tabs.NodeGraphTab.Layers.NodeCreationMenuLayer import NodeCreationMenuLayer
@@ -72,6 +72,19 @@ def menuLayerCloseOverride(func):
     return __menuLayerCloseOverride
 
 
+def menuLayerProcessEventOverride(func):
+    def __menuLayerProcessEventOverride(self, event):
+        """ Blocking key release events, to stop release events from triggering different
+        parts of the UX.  Specifically on the Node Interaction Layer, for the
+        Swipe Gestures vs Key Release Events
+        """
+        if event.type() == QEvent.KeyRelease:
+            return True
+        return func(self, event)
+
+    return __menuLayerProcessEventOverride
+
+
 def nodeEntryChosen(func):
     def __nodeEntryChosen(self, value):
         node = func(self, value)
@@ -133,7 +146,8 @@ def installMenuLayerOverrides(**kwargs):
 
     # custom_menu_layer.__class__._MenuLayer__close = menuLayerCloseOverride(CustomMenuLayer._MenuLayer__close)
 
-    node_creation_menu_layer.__class__._MenuLayer__action = menuLayerActionOverride(custom_menu_layer.__class__._MenuLayer__action)
+    node_creation_menu_layer.__class__._MenuLayer__action = menuLayerActionOverride(node_creation_menu_layer.__class__._MenuLayer__action)
+    node_creation_menu_layer.__class__.processEvent = menuLayerProcessEventOverride(node_creation_menu_layer.__class__.processEvent)
     node_creation_menu_layer.__class__.onEntryChosen = nodeEntryChosen(NodeCreationMenuLayer.onEntryChosen)
     # cleanup
     nodegraph_widget.cleanup()
