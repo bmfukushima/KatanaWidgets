@@ -91,7 +91,7 @@ def nodeEntryChosen(func):
         #### START INJECTION ####
         """ Inject code to connect nodes when creating nodes via the Tab menu on the LinkConnectionLayer """
         # preflight
-        from linkConnectionLayerOverrides import removeLastActiveNode, lastActiveNode
+        from .linkConnectionLayerOverrides import removeLastActiveNode, lastActiveNode
         if not hasattr(widgetutils.katanaMainWindow(), "_is_link_creation_active"): return node
         if not widgetutils.katanaMainWindow()._is_link_creation_active: return node
         if not hasattr(widgetutils.katanaMainWindow(), "_link_connection_active_node"): return node
@@ -112,6 +112,7 @@ def nodeEntryChosen(func):
         # disable attrs
 
         removeLastActiveNode()
+
         widgetutils.katanaMainWindow()._is_link_creation_active = False
 
         #### END INJECTION ####
