@@ -31,7 +31,6 @@ from Utils2 import nodegraphutils, widgetutils, nodeutils
 from .AbstractGestureLayer import AbstractGestureLayer, insertLayerIntoNodegraph
 
 
-LAYER_NAME = "Link Cutting Layer"
 ATTR_NAME = "_link_cutting"
 
 
@@ -79,4 +78,4 @@ class LinkCuttingLayer(AbstractGestureLayer):
 
 
 def installLinkCuttingLayer(**kwargs):
-    insertLayerIntoNodegraph(LinkCuttingLayer, LAYER_NAME, ATTR_NAME, Qt.Key_X, "Slice Links")
+    insertLayerIntoNodegraph(LinkCuttingLayer, ATTR_NAME, Qt.Key_X, "Slice Links")

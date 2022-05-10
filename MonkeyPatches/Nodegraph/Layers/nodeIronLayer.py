@@ -30,7 +30,6 @@ from .AbstractGestureLayer import (
     insertLayerIntoNodegraph
 )
 
-LAYER_NAME = "Node Iron Layer"
 ATTR_NAME = "_node_iron"
 
 
@@ -147,17 +146,5 @@ class NodeIronLayer(AbstractGestureLayer):
 
 
 """ EVENTS"""
-def nodeInteractionKeyPressEvent(func):
-    def __nodeInteractionKeyPressEvent(self, event):
-        if event.key() == Qt.Key_A and event.modifiers() == Qt.NoModifier:
-            if event.isAutoRepeat(): return True
-            nodegraphutils.setCurrentKeyPressed(event.key())
-            return True
-
-        return func(self, event)
-
-    return __nodeInteractionKeyPressEvent
-
-
 def installNodeIronLayer(**kwargs):
-    insertLayerIntoNodegraph(NodeIronLayer, LAYER_NAME, ATTR_NAME, Qt.Key_A, "Align Nodes")
+    insertLayerIntoNodegraph(NodeIronLayer, ATTR_NAME, Qt.Key_A, "Align Nodes")

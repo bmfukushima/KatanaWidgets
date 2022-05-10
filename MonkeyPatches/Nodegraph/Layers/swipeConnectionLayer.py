@@ -33,7 +33,6 @@ from .AbstractGestureLayer import (
     insertLayerIntoNodegraph)
 
 
-LAYER_NAME = "Swipe Connection Layer"
 ATTR_NAME = "_swipe_connection"
 
 class SwipeConnectionLayer(AbstractGestureLayer):
@@ -78,4 +77,4 @@ class SwipeConnectionLayer(AbstractGestureLayer):
 
 
 def installSwipeConnectionLayer(**kwargs):
-    insertLayerIntoNodegraph(SwipeConnectionLayer, LAYER_NAME, ATTR_NAME, Qt.Key_C, "Connect Nodes")
+    insertLayerIntoNodegraph(SwipeConnectionLayer, ATTR_NAME, Qt.Key_C, "Connect Nodes")

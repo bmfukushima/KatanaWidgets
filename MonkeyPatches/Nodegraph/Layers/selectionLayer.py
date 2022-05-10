@@ -30,7 +30,6 @@ from .AbstractGestureLayer import (
     insertLayerIntoNodegraph
 )
 
-LAYER_NAME = "Selection Layer"
 ATTR_NAME = "_selection"
 
 
@@ -116,4 +115,4 @@ def nodeInteractionKeyPressEvent(func):
 
 
 def installSelectionLayer(**kwargs):
-    insertLayerIntoNodegraph(SelectionLayer, LAYER_NAME, ATTR_NAME, Qt.Key_S, "Select Nodes")
+    insertLayerIntoNodegraph(SelectionLayer, ATTR_NAME, Qt.Key_S, "Select Nodes")

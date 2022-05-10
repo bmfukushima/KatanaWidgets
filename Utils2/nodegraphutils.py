@@ -369,7 +369,9 @@ def setCurrentKeyPressed(key):
 
 def getCurrentKeyPressed():
     from .widgetutils import katanaMainWindow
-    return katanaMainWindow()._nodegraph_key_press
+    if hasattr(katanaMainWindow(), "_nodegraph_key_press"):
+        return katanaMainWindow()._nodegraph_key_press
+    return None
 
 
 def getFocusedGroupNode(nodegraph_widget=None):
