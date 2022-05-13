@@ -193,9 +193,9 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         if event.type() == QEvent.MouseButtonRelease:
             if self.mouseReleaseEvent(event): return True
         if event.type() == QEvent.KeyRelease:
+            print('release')
             if self.shouldProcessKeyReleaseEvent(event):
                 if self.keyReleaseEvent(event): return True
-            return False
         return QT4GLLayerStack.Layer.processEvent(self, event)
 
     def keyReleaseEvent(self, event):
@@ -308,7 +308,8 @@ def insertLayerIntoNodegraph(layer_type, name, actuation_key, undo_name):
                         if event.type() == QEvent.MouseButtonRelease:
                             if gesture_layer.mouseReleaseEvent(event): return True
                         if event.type() == QEvent.KeyRelease:
-                            if gesture_layer.keyReleaseEvent(event): return True
+                            if gesture_layer.shouldProcessKeyReleaseEvent(event):
+                                if gesture_layer.keyReleaseEvent(event): return True
                         return func(self, event)
 
                     return __processEvent
@@ -334,7 +335,6 @@ def insertLayerIntoNodegraph(layer_type, name, actuation_key, undo_name):
     nodegraph_panel = Tabs._LoadedTabPluginsByTabTypeName["Node Graph"].data(None)
     nodegraph_widget = nodegraph_panel.getNodeGraphWidget()
     nodegraph_widget.__class__.showEvent = showEvent(nodegraph_widget.__class__.showEvent)
-
 
     node_interaction_layer = nodegraph_widget.getLayerByName("NodeInteractions")
     node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(

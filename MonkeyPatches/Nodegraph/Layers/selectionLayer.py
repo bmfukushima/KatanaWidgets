@@ -51,7 +51,6 @@ class SelectionLayer(AbstractGestureLayer):
         self.setCrosshairRadius(QSize(10, 20))
 
     def keyReleaseEvent(self, event):
-        #if self.shouldProcessKeyReleaseEvent(event):
         nodegraph_widget = widgetutils.getActiveNodegraphWidget()
         from UIPlugins.GSVMenu import GSVMenuPopulateCallback, GSVMenuActionCallback
         GSVMenu = LayeredMenuAPI.LayeredMenu(
@@ -62,8 +61,7 @@ class SelectionLayer(AbstractGestureLayer):
             onlyMatchWordStart=False
         )
         nodegraph_widget.showLayeredMenu(GSVMenu)
-        #return True
-        return False
+        return True
 
     def mouseReleaseEvent(self, event):
         if self.isActive():

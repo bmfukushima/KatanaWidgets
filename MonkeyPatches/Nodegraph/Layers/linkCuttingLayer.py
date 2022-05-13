@@ -49,13 +49,11 @@ class LinkCuttingLayer(AbstractGestureLayer):
         super(LinkCuttingLayer, self).__init__(*args, **kwargs)
 
     def keyReleaseEvent(self, event):
-        #if self.shouldProcessKeyReleaseEvent(event):
         self.layerStack().extractNodes(NodegraphAPI.GetAllSelectedNodes())
         nodegraphutils.floatNodes(NodegraphAPI.GetAllSelectedNodes())
         nodegraphutils.setCurrentKeyPressed(None)
-            #return True
 
-        return False
+        return True
 
     def paintGL(self):
         if self.isActive():
