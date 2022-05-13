@@ -11,9 +11,8 @@ TODO: BUGS
             If no nodegraphs found, will fail on init
     *   Gesture Layers
             - NMC
-                Rubber banding
-                    glowEvent hit detection?
                 Hit box detection
+                Not sure if this is worth supporting.  The API is very closed off.
             - Extract API
                     1 Layer
                     Do x on hit
