@@ -168,55 +168,54 @@ def displayGridSettings(hide_on_leave=True):
     PopupWidget.togglePopupWidgetVisibility("gridSettings", pos=pos)
 
 
-def glowNodes(event):
+def glowNodes(modifiers):
     """ Glows the nodes of the next selection possible selection
 
     If a combination of Alt | Alt+Shift is used, then it will
     color the upstream/downstream nodes for selection aswell
 
     note that this also happens in the "nodeInteractionKeyPressEvent"
+
+    Args:
+        modifiers (Qt.KeyboardModifiers)
     """
 
     """ Need to by pass for special functionality for backdrops"""
-
     if AbstractGestureLayer.isGestureLayerActive(): return
     if widgetutils.katanaMainWindow()._backdrop_resize_active: return
 
-    # todo causing stuttering/rubber banding
-    # might be on release? Setting something that doesn't like this
-    if event.modifiers() == Qt.NoModifier:
+    if modifiers == Qt.NoModifier:
         nodeutils.updateNodePreviewColors(has_output_ports=True)
     backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
     if backdrop_node:
         # move backdrop
-        # if event.modifiers() == (Qt.ControlModifier):
+        # if modifiers == (Qt.ControlModifier):
         #     nodeutils.updateNodePreviewColors([backdrop_node])
 
         # duplicate backdrop and children
-        if event.modifiers() == (Qt.ControlModifier | Qt.ShiftModifier):
+        if modifiers == (Qt.ControlModifier | Qt.ShiftModifier):
             backdrop_node_children = nodegraphutils.getBackdropChildren(backdrop_node)
             nodeutils.updateNodePreviewColors(backdrop_node_children)
 
         # move backdrop and children
-        if event.modifiers() == (Qt.AltModifier):
+        if modifiers == (Qt.AltModifier):
             backdrop_node_children = nodegraphutils.getBackdropChildren(backdrop_node)
             nodeutils.updateNodePreviewColors(backdrop_node_children)
 
     else:
         # move upstream nodes
-        if event.modifiers() == Qt.AltModifier:
+        if modifiers == Qt.AltModifier:
             closest_node = nodegraphutils.getClosestNode(has_input_ports=True)
             if closest_node:
                 upstream_nodes = nodegraphutils.getAllUpstreamNodes(closest_node)
                 nodeutils.updateNodePreviewColors(upstream_nodes)
 
         # move downstream nodes
-        if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
+        if modifiers == (Qt.AltModifier | Qt.ShiftModifier):
             closest_node = nodegraphutils.getClosestNode(has_output_ports=True)
             if closest_node:
                 downstream_nodes = nodegraphutils.getAllDownstreamNodes(closest_node)
                 nodeutils.updateNodePreviewColors(downstream_nodes)
-
 
 def moveNodes(direction=nodegraphutils.UP):
     """ Selects and moves the nodes upstream or downstream of the selected node """
@@ -276,7 +275,21 @@ def nodeInteractionEvent(func):
 
 
 def nodeInteractionMouseMoveEvent(self, event):
-    glowNodes(event)
+    # todo fix glow for NMX context
+    if self.layerStack().getCurrentNodeView().getType() in ["NetworkMaterialCreate", "NetworkMaterialEdit"]: return False
+
+    """ Setting a timer here so that this does not update all the time, but rather 10 times per second"""
+    def __glowNodes(modifiers):
+        glowNodes(modifiers)
+        delattr(self, "_timer")
+
+    if not hasattr(self, "_timer"):
+        self._timer = QTimer()
+        self._timer.start(100)
+        # need to store as variable so it doesn't get garbage collected? Or something...
+        _modifiers = event.modifiers()
+        self._timer.timeout.connect(lambda : __glowNodes(_modifiers))
+
     return False
 
 
@@ -328,7 +341,7 @@ def nodeInteractionKeyPressEvent(func):
         is_floating = nodegraph_widget.getLayerByName("Floating Nodes").enabled()
 
         if not is_floating:
-            glowNodes(event)
+            glowNodes(event.modifiers())
 
         # Todo: alt/shift ~ modifiers are suppressed somehow this is
         # being handle in the script manager

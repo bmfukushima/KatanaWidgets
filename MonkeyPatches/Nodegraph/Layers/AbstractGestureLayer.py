@@ -96,7 +96,8 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
             self._timer.start(500)
             self._timer.timeout.connect(self.deactivateGestureEvent)
         else:
-            delattr(self, "_timer")
+            if hasattr(self, "_timer"):
+                delattr(self, "_timer")
 
     def addCursorPoint(self, point):
         self._last_cursor_points.append(point)
@@ -291,18 +292,17 @@ def insertLayerIntoNodegraph(layer_type, name, actuation_key, undo_name):
                 gesture_layer = layer_type(
                     name, actuation_key=actuation_key, name=name, enabled=True, undo_name=undo_name)
                 setattr(self, name + "_layer", gesture_layer)
-                #self.appendLayer(getattr(self, name + "_layer"))
                 self.appendLayer(gesture_layer)
 
-                # todo NMC layers update (events)
+                # todo NMC gesture layer (events)
                 def processEvent(func):
                     def __processEvent(self, event):
-                        if event.type() == QEvent.MouseMove:
-                            gesture_layer.mouseMoveEvent(event)
-                        if event.type() == QEvent.MouseButtonPress:
-                            if gesture_layer.mousePressEvent(event): return True
-                        if event.type() == QEvent.MouseButtonRelease:
-                            if gesture_layer.mouseReleaseEvent(event): return True
+                        # if event.type() == QEvent.MouseMove:
+                        #     gesture_layer.mouseMoveEvent(event)
+                        # if event.type() == QEvent.MouseButtonPress:
+                        #     if gesture_layer.mousePressEvent(event): return True
+                        # if event.type() == QEvent.MouseButtonRelease:
+                        #     if gesture_layer.mouseReleaseEvent(event): return True
                         if event.type() == QEvent.KeyRelease:
                             if gesture_layer.shouldProcessKeyReleaseEvent(event):
                                 if gesture_layer.keyReleaseEvent(event): return True

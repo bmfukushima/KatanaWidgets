@@ -107,6 +107,7 @@ def removeNodePreviewColor(nodes):
         if node in katanaMainWindow()._highlighted_nodes:
             removeGlowColor(node)
 
+
 def updateNodePreviewColors(highlighted_nodes=None, exclude_nodes=[], has_input_ports=False, has_output_ports=False, include_dynamic_port_nodes=False):
     """ Sets the node color of the nodes provided to Normals Blue.
 
@@ -119,6 +120,7 @@ def updateNodePreviewColors(highlighted_nodes=None, exclude_nodes=[], has_input_
         """
     from .widgetutils import katanaMainWindow
     from .nodegraphutils import getClosestNode
+
     # get the closest node
     if not highlighted_nodes:
         highlighted_nodes = getClosestNode(
@@ -134,7 +136,7 @@ def updateNodePreviewColors(highlighted_nodes=None, exclude_nodes=[], has_input_
     if hasattr(katanaMainWindow(), "_highlighted_nodes"):
         for node in katanaMainWindow()._highlighted_nodes:
             removeGlowColor(node)
-
+    #
     # set new color
     if highlighted_nodes:
         for node in highlighted_nodes:
@@ -142,9 +144,10 @@ def updateNodePreviewColors(highlighted_nodes=None, exclude_nodes=[], has_input_
             NodegraphAPI.SetNodeShapeAttr(node, "glowColorG", 0.5)
             NodegraphAPI.SetNodeShapeAttr(node, "glowColorB", 1)
             Utils.EventModule.QueueEvent('node_setShapeAttributes', hash(node), node=node)
-
         # update closest node
         katanaMainWindow()._highlighted_nodes = highlighted_nodes
+
+    # Utils.EventModule.ProcessAllEvents()
 
 
 def clearNodePreviewColors(*args, **kwargs):

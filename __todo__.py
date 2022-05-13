@@ -1,6 +1,9 @@
 """
 TODO: Enhancement
     *   PopupBar Widget fix image overlays on show
+    *   PopupBar Widget slow
+            Test with a StackedWidget that shows/hides on hover.
+            Rather than moving the widgets
     *   VariableManager | Can load multiple patterns
             Remake this?
 TODO: BUGS
