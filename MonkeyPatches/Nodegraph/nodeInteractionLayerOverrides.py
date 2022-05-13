@@ -444,14 +444,17 @@ def nodegraphViewNodeChangedEvent(func):
     def __nodegraphViewNodeChangedEvent(self, node):
         # todo NMC layers update (context changed)
         """ This should be enabling the visibility of the layers"""
-        gesture_layers = getattr(widgetutils.katanaMainWindow(), "_nodegraph_gesture_layers")
-        Utils.EventModule.ProcessAllEvents()
-        for layer_name in gesture_layers:
-            self.getLayerByName(layer_name).setVisible(True)
+        return_val = func(self, node)
 
-        self.getLayerByName("Backdrop Preview Layer").setVisible(True)
+        if node.getType() in ["NetworkMaterialCreate", "NetworkMaterialEdit"]:
+            gesture_layers = getattr(widgetutils.katanaMainWindow(), "_nodegraph_gesture_layers")
+            for layer_name in gesture_layers:
+                self.getLayerByName(layer_name).setVisible(True)
 
-        return func(self, node)
+            self.getLayerByName("Backdrop Preview Layer").setVisible(True)
+            self.getLayerByName("Grid Layer").setVisible(True)
+
+        return return_val
 
     return __nodegraphViewNodeChangedEvent
 
@@ -479,11 +482,12 @@ def installNodeInteractionLayerOverrides(**kwargs):
     node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(node_interaction_layer.__class__._NodeInteractionLayer__processKeyPress)
 
     # NETWORK MATERIAL
+    # todo rubber banding of NMC nodes?
     nodegraph_view_interaction_layer = nodegraph_widget.getLayerByName("NodeGraphViewInteraction")
     nodegraph_view_interaction_layer.__class__.processEvent = nodeInteractionEvent(nodegraph_view_interaction_layer.__class__.processEvent)
     nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processKeyPress = nodeInteractionKeyPressEvent(nodegraph_view_interaction_layer.__class__._NodeGraphViewInteractionLayer__processKeyPress)
 
-    # nodegraph_widget.__class__.setCurrentNodeView = nodegraphViewNodeChangedEvent(nodegraph_widget.__class__.setCurrentNodeView)
+    nodegraph_widget.__class__.setCurrentNodeView = nodegraphViewNodeChangedEvent(nodegraph_widget.__class__.setCurrentNodeView)
 
     # cleanup
     nodegraph_widget.cleanup()

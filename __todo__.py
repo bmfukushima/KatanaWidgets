@@ -6,5 +6,18 @@ TODO: Enhancement
 TODO: BUGS
     *   Node Graph
             If no nodegraphs found, will fail on init
+    *   Gesture Layers
+            - NMC
+                Rubber banding
+                Hit box detection
+                Stuttering?
+            - Extract API
+                    1 Layer
+                    Do x on hit
+                    Do x on release
+    *   Popup Tabs
+            - Pin widget for some reason doesn't disappear all the time
+                    Can't replicate...
+
 
 """

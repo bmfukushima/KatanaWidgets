@@ -51,18 +51,18 @@ class SelectionLayer(AbstractGestureLayer):
         self.setCrosshairRadius(QSize(10, 20))
 
     def keyReleaseEvent(self, event):
-        if self.shouldProcessKeyReleaseEvent(event):
-            nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-            from UIPlugins.GSVMenu import GSVMenuPopulateCallback, GSVMenuActionCallback
-            GSVMenu = LayeredMenuAPI.LayeredMenu(
-                GSVMenuPopulateCallback,
-                GSVMenuActionCallback,
-                'S',
-                alwaysPopulate=True,
-                onlyMatchWordStart=False
-            )
-            nodegraph_widget.showLayeredMenu(GSVMenu)
-            return True
+        #if self.shouldProcessKeyReleaseEvent(event):
+        nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+        from UIPlugins.GSVMenu import GSVMenuPopulateCallback, GSVMenuActionCallback
+        GSVMenu = LayeredMenuAPI.LayeredMenu(
+            GSVMenuPopulateCallback,
+            GSVMenuActionCallback,
+            'S',
+            alwaysPopulate=True,
+            onlyMatchWordStart=False
+        )
+        nodegraph_widget.showLayeredMenu(GSVMenu)
+        #return True
         return False
 
     def mouseReleaseEvent(self, event):
@@ -102,17 +102,5 @@ class SelectionLayer(AbstractGestureLayer):
 
 
 """ EVENTS"""
-def nodeInteractionKeyPressEvent(func):
-    def __nodeInteractionKeyPressEvent(self, event):
-        if event.key() == Qt.Key_S and event.modifiers() == Qt.NoModifier:
-            if event.isAutoRepeat(): return True
-            nodegraphutils.setCurrentKeyPressed(event.key())
-            return True
-
-        return func(self, event)
-
-    return __nodeInteractionKeyPressEvent
-
-
 def installSelectionLayer(**kwargs):
     insertLayerIntoNodegraph(SelectionLayer, ATTR_NAME, Qt.Key_S, "Select Nodes")

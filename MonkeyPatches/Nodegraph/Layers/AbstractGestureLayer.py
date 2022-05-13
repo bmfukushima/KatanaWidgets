@@ -90,7 +90,11 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         return getattr(widgetutils.katanaMainWindow(), self.name() + "_finishing")
 
     def setIsFinishing(self, is_finishing):
-        return setattr(widgetutils.katanaMainWindow(), self.name() + "_finishing", is_finishing)
+        setattr(widgetutils.katanaMainWindow(), self.name() + "_finishing", is_finishing)
+        if is_finishing:
+            self._timer = QTimer()
+            self._timer.start(500)
+            self._timer.timeout.connect(self.deactivateGestureEvent)
 
     def addCursorPoint(self, point):
         self._last_cursor_points.append(point)
@@ -174,6 +178,13 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
             glEnd()
 
     """ EVENTS """
+    def deactivateGestureEvent(self):
+        """ Need to run a delayed timer here, to ensure that when
+        the user lifts up the A+LMB, that it doesn't accidently
+        register a AlignMenu on release because they have slow fingers"""
+        self.setIsFinishing(False)
+        delattr(self, "_timer")
+
     def processEvent(self, event):
         if event.type() == QEvent.MouseMove:
             self.mouseMoveEvent(event)
@@ -182,17 +193,25 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         if event.type() == QEvent.MouseButtonRelease:
             if self.mouseReleaseEvent(event): return True
         if event.type() == QEvent.KeyRelease:
-            if self.keyReleaseEvent(event): return True
+            if self.shouldProcessKeyReleaseEvent(event):
+                if self.keyReleaseEvent(event): return True
+            return False
         return QT4GLLayerStack.Layer.processEvent(self, event)
 
     def keyReleaseEvent(self, event):
         return False
 
     def shouldProcessKeyReleaseEvent(self, event):
+        """ Determines if a key release event should be processed or not.
+
+        This is necessary as events are triggered on release, as press may behave
+        differently"""
         if event.isAutoRepeat(): return False
         if event.key() == self.actuationKey() and event.modifiers() == Qt.NoModifier:
             if not getattr(widgetutils.katanaMainWindow(), self.name() + "_finishing"):
                 return True
+        if event.key() in [Qt.Key_Alt, Qt.Key_Shift, Qt.Key_Control]:
+            self.setIsFinishing(True)
         return False
 
     def mouseMoveEvent(self, event):
@@ -229,19 +248,12 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
     def mouseReleaseEvent(self, event):
         # reset layer attrs
         if self.isActive():
-            def deactivateGestureEvent():
-                """ Need to run a delayed timer here, to ensure that when
-                the user lifts up the A+LMB, that it doesn't accidently
-                register a AlignMenu on release because they have slow fingers"""
-                self.setIsFinishing(False)
-                delattr(self, "_timer")
-
             self.setIsFinishing(True)
 
             # start deactivation timer
             self._timer = QTimer()
             self._timer.start(500)
-            self._timer.timeout.connect(deactivateGestureEvent)
+            self._timer.timeout.connect(self.deactivateGestureEvent)
 
             # deactivate gesture
             self.resetCursorPoints()
@@ -258,7 +270,6 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
 
         # update view
         self.layerStack().idleUpdate()
-
         return False
 
 
@@ -288,22 +299,22 @@ def insertLayerIntoNodegraph(layer_type, name, actuation_key, undo_name):
                 self.appendLayer(gesture_layer)
 
                 # todo NMC layers update (events)
-                # def processEvent(func):
-                #     def __processEvent(self, event):
-                #         if event.type() == QEvent.MouseMove:
-                #             gesture_layer.mouseMoveEvent(event)
-                #         if event.type() == QEvent.MouseButtonPress:
-                #             if gesture_layer.mousePressEvent(event): return True
-                #         if event.type() == QEvent.MouseButtonRelease:
-                #             if gesture_layer.mouseReleaseEvent(event): return True
-                #         if event.type() == QEvent.KeyRelease:
-                #             if gesture_layer.keyReleaseEvent(event): return True
-                #         return func(self, event)
-                #
-                #     return __processEvent
-                #
-                # nodegraph_view_interaction_layer = nodegraph_widget.getLayerByName("NodeGraphViewInteraction")
-                # nodegraph_view_interaction_layer.__class__.processEvent = processEvent(nodegraph_view_interaction_layer.__class__.processEvent)
+                def processEvent(func):
+                    def __processEvent(self, event):
+                        if event.type() == QEvent.MouseMove:
+                            gesture_layer.mouseMoveEvent(event)
+                        if event.type() == QEvent.MouseButtonPress:
+                            if gesture_layer.mousePressEvent(event): return True
+                        if event.type() == QEvent.MouseButtonRelease:
+                            if gesture_layer.mouseReleaseEvent(event): return True
+                        if event.type() == QEvent.KeyRelease:
+                            if gesture_layer.keyReleaseEvent(event): return True
+                        return func(self, event)
+
+                    return __processEvent
+
+                nodegraph_view_interaction_layer = nodegraph_widget.getLayerByName("NodeGraphViewInteraction")
+                nodegraph_view_interaction_layer.__class__.processEvent = processEvent(nodegraph_view_interaction_layer.__class__.processEvent)
 
             return func(self, event)
 
