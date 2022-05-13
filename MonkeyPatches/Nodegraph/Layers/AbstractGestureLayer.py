@@ -95,6 +95,8 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
             self._timer = QTimer()
             self._timer.start(500)
             self._timer.timeout.connect(self.deactivateGestureEvent)
+        else:
+            delattr(self, "_timer")
 
     def addCursorPoint(self, point):
         self._last_cursor_points.append(point)
@@ -183,7 +185,6 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         the user lifts up the A+LMB, that it doesn't accidently
         register a AlignMenu on release because they have slow fingers"""
         self.setIsFinishing(False)
-        delattr(self, "_timer")
 
     def processEvent(self, event):
         if event.type() == QEvent.MouseMove:
@@ -193,7 +194,6 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         if event.type() == QEvent.MouseButtonRelease:
             if self.mouseReleaseEvent(event): return True
         if event.type() == QEvent.KeyRelease:
-            print('release')
             if self.shouldProcessKeyReleaseEvent(event):
                 if self.keyReleaseEvent(event): return True
         return QT4GLLayerStack.Layer.processEvent(self, event)
@@ -215,7 +215,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         return False
 
     def mouseMoveEvent(self, event):
-        # update node iron
+        # update cursor display
         if self.isActive():
             self.layerStack().idleUpdate()
 
@@ -250,11 +250,6 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         if self.isActive():
             self.setIsFinishing(True)
 
-            # start deactivation timer
-            self._timer = QTimer()
-            self._timer.start(500)
-            self._timer.timeout.connect(self.deactivateGestureEvent)
-
             # deactivate gesture
             self.resetCursorPoints()
             self.setIsActive(False)
@@ -270,6 +265,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
 
         # update view
         self.layerStack().idleUpdate()
+
         return False
 
 
@@ -313,7 +309,7 @@ def insertLayerIntoNodegraph(layer_type, name, actuation_key, undo_name):
                         return func(self, event)
 
                     return __processEvent
-
+                #
                 nodegraph_view_interaction_layer = nodegraph_widget.getLayerByName("NodeGraphViewInteraction")
                 nodegraph_view_interaction_layer.__class__.processEvent = processEvent(nodegraph_view_interaction_layer.__class__.processEvent)
 

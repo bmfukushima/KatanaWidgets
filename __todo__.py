@@ -9,8 +9,8 @@ TODO: BUGS
     *   Gesture Layers
             - NMC
                 Rubber banding
+                    glowEvent hit detection?
                 Hit box detection
-                Stuttering?
             - Extract API
                     1 Layer
                     Do x on hit

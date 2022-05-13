@@ -178,9 +178,12 @@ def glowNodes(event):
     """
 
     """ Need to by pass for special functionality for backdrops"""
+
     if AbstractGestureLayer.isGestureLayerActive(): return
     if widgetutils.katanaMainWindow()._backdrop_resize_active: return
 
+    # todo causing stuttering/rubber banding
+    # might be on release? Setting something that doesn't like this
     if event.modifiers() == Qt.NoModifier:
         nodeutils.updateNodePreviewColors(has_output_ports=True)
     backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
@@ -273,9 +276,7 @@ def nodeInteractionEvent(func):
 
 
 def nodeInteractionMouseMoveEvent(self, event):
-    # run functions
     glowNodes(event)
-
     return False
 
 

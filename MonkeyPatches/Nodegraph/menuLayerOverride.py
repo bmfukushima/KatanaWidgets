@@ -150,11 +150,11 @@ def installMenuLayerOverrides(**kwargs):
 
     # install overrides
     custom_menu_layer.__class__._MenuLayer__action = menuLayerActionOverride(custom_menu_layer.__class__._MenuLayer__action)
-
-    # custom_menu_layer.__class__._MenuLayer__close = menuLayerCloseOverride(CustomMenuLayer._MenuLayer__close)
+    custom_menu_layer.__class__.processEvent = menuLayerProcessEventOverride(custom_menu_layer.__class__.processEvent)
 
     node_creation_menu_layer.__class__._MenuLayer__action = menuLayerActionOverride(node_creation_menu_layer.__class__._MenuLayer__action)
     node_creation_menu_layer.__class__.processEvent = menuLayerProcessEventOverride(node_creation_menu_layer.__class__.processEvent)
+
     node_creation_menu_layer.__class__.onEntryChosen = nodeEntryChosen(NodeCreationMenuLayer.onEntryChosen)
     # cleanup
     nodegraph_widget.cleanup()
