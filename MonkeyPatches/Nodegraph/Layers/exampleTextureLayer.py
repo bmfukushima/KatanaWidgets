@@ -12,6 +12,7 @@ local = Qt Event Local coordinates
 Returned when using nodegraphWidget.getMousePos()
     top left = 0, 0
     bottom right = 1, 1
+
 """
 from OpenGL.GL import (
     GL_BLEND,
@@ -40,6 +41,7 @@ from OpenGL.GL import (
     glTexImage2D,
     glActiveTexture,
     GL_RGBA,
+    GL_RGB,
     GL_UNSIGNED_BYTE,
     glTexParameterf,
     GL_TEXTURE_MAG_FILTER,
@@ -73,14 +75,14 @@ class TestLayer(QT4GLLayerStack.Layer):
         glActiveTexture(GL_TEXTURE0)
         self.text_obj = glGenTextures(1)
         glBindTexture(GL_TEXTURE_2D, self.text_obj)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, self.mapWidth, self.mapHeight, 0, GL_RGBA,
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, self.mapWidth, self.mapHeight, 0, GL_RGBA,
                              GL_UNSIGNED_BYTE, self.inputMapFile.tobytes())
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
         glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
 
     def paintGL(self):
-        # glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         glEnable(GL_TEXTURE_2D)
+        glColor4f(1, 1, 1, 1)
         glBindTexture(GL_TEXTURE_2D, self.text_obj)
         glCallList(self.object)
         glDisable(GL_TEXTURE_2D)

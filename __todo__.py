@@ -2,8 +2,12 @@
 TODO: Enhancement
     *   PopupBar Widget fix image overlays on show
     *   PopupBar Widget slow
-            Test with a StackedWidget that shows/hides on hover.
-            Rather than moving the widgets
+            1. ) Test with a StackedWidget that shows/hides on hover.
+                Rather than moving the widgets
+            2.) Freeze handler on event filter
+                    So that all events are bypassed before close, and until after open
+    *   PopupBar Widget closing nodegraphs
+            Closing tabs in general needs to run some sort of cleanup handler
     *   VariableManager | Can load multiple patterns
             Remake this?
 TODO: BUGS
