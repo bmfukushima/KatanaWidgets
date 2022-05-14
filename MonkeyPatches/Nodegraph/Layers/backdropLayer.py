@@ -569,6 +569,7 @@ def nodeInteractionMouseMoveEvent(self, event):
 
 def nodeInteractionMousePressEvent(self, event):
     """ Need to by pass for special functionality for backdrops"""
+    if AbstractGestureLayer.isGestureLayerActive(): return False
     backdrop_node = nodegraphutils.getBackdropNodeUnderCursor()
     if backdrop_node:
         # move backdrop

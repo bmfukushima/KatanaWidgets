@@ -8,15 +8,11 @@
 from OpenGL.GL import (
     glBegin,
     glLineWidth,
-    GL_POINTS,
-    GL_LINES,
-    glRotatef,
     GL_LINE_LOOP,
     GL_LINE_STRIP,
     glColor4f,
     glEnd,
     glVertex2f,
-    glPointSize,
 )
 from qtpy.QtWidgets import QApplication
 from qtpy.QtCore import Qt, QPoint, QEvent, QTimer, QSize
@@ -180,6 +176,15 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
                 glVertex2f(point.x(), self.layerStack().getWindowSize()[1] - point.y())
             glEnd()
 
+    def resetAttrs(self):
+        self.setIsFinishing(True)
+
+        # deactivate gesture
+        self.resetCursorPoints()
+        self.setIsActive(False)
+        self.resetHits()
+        nodegraphutils.setCurrentKeyPressed(None)
+
     """ EVENTS """
     def deactivateGestureEvent(self):
         """ Need to run a delayed timer here, to ensure that when
@@ -249,12 +254,8 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
     def mouseReleaseEvent(self, event):
         # reset layer attrs
         if self.isActive():
-            self.setIsFinishing(True)
+            self.resetAttrs()
 
-            # deactivate gesture
-            self.resetCursorPoints()
-            self.setIsActive(False)
-            self.resetHits()
             QApplication.restoreOverrideCursor()
 
             self.layerStack().idleUpdate()

@@ -1,13 +1,8 @@
-""" The iron node layer allows users to "iron" their nodes
-
-As the user swipes through nodes using CTRL+ALT+SHIFT+LMB, all
-of the nodes hit will be aligned to the first node, based off
-of the direction of the cursor as it passed through the second node.
-
-"""
+""" The link selection layer allows the user to swipe through links to select them."""
 
 from qtpy.QtCore import Qt
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
+from UI4.App import Tabs
 
 from Utils2 import nodegraphutils, widgetutils
 from .AbstractGestureLayer import AbstractGestureLayer, insertLayerIntoNodegraph
@@ -46,14 +41,14 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
                 self.drawCrosshair()
                 self.drawTrajectory()
 
-                # cut links
+                # get link hits
+                # todo update port hits
                 if 0 < len(self.getCursorPoints()):
                     hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=self.crosshairRadius(), step_size=2)
                     link_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.LINK)
 
                     for link in link_hits:
-                        if link not in self.getHits():
-                            self.addHit(link)
+                        self.addHit(link)
 
                 self.addCursorPoint(mouse_pos)
 
@@ -64,12 +59,15 @@ class InputLinkSelectionLayer(AbstractLinkSelectionLayer):
 
     def mouseReleaseEvent(self, event):
         if self.isActive():
+            # todo update port hits
             ports = []
             for link in self.getHits():
                 for port in link:
-                    if port.getType() == OUTPUT_PORT:
-                        ports.append(port)
+                    if port.getType() == INPUT_PORT:
+                        if port not in ports:
+                            ports.append(port)
 
+            # sort ports
             self.showNoodles(ports)
             widgetutils.katanaMainWindow()._active_nodegraph_widget = widgetutils.getActiveNodegraphWidget()
         return AbstractGestureLayer.mouseReleaseEvent(self, event)
@@ -80,14 +78,15 @@ class OutputLinkSelectionLayer(AbstractLinkSelectionLayer):
         super(OutputLinkSelectionLayer, self).__init__(*args, **kwargs)
 
     def mouseReleaseEvent(self, event):
-        from MonkeyPatches.Nodegraph.portConnector import PortConnector
         if self.isActive():
             ports = []
             for link in self.getHits():
                 for port in link:
-                    if port.getType() == INPUT_PORT:
-                        ports.append(port)
+                    if port.getType() == OUTPUT_PORT:
+                        if port not in ports:
+                            ports.append(port)
 
+            # todo sort ports?
             self.showNoodles(ports)
             widgetutils.katanaMainWindow()._active_nodegraph_widget = widgetutils.getActiveNodegraphWidget()
 

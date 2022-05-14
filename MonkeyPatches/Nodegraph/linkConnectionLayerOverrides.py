@@ -87,8 +87,10 @@ def linkConnectionLayerKeyPress(func):
     def __linkConnectionLayerKeyPress(self, event):
         widgetutils.katanaMainWindow()._is_link_creation_active = True
         if not hasattr(widgetutils.katanaMainWindow(), "_link_connection_active_node"):
-            last_active_node = self.getBasePorts()[0].getNode()
-            setLastActiveNode(last_active_node)
+            if 0 < len(self.getBasePorts()):
+                last_active_node = self.getBasePorts()[0].getNode()
+                setLastActiveNode(last_active_node)
+
         if event.key() == Qt.Key_D:
             if not event.isAutoRepeat():
                 dot_node = createDotNode(self.getBasePorts()[0])
