@@ -266,7 +266,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
                 is_connected = portutils.isPortConnected(port)
 
                 # port selected is connected, display display_warning
-                if is_connected and self._display_warning:
+                if is_connected and self._display_warning and len(self._selected_ports) == 1:
                     katanaMainWindow()._display_warning_widget = OverridePortWarningButtonPopupWidget(self._node, port, self._selected_ports, is_recursive_selection=self._is_recursive_selection)
                     katanaMainWindow()._display_warning_widget.show()
                     centerWidgetOnCursor(katanaMainWindow()._display_warning_widget, raise_=True)
