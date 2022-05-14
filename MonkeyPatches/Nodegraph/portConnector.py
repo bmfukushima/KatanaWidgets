@@ -17,11 +17,6 @@ TODO
     *   Override for port types
     *   Network Material Create / Shading Nodes
     *   Multi port connection
-            - Connecting multiple output ports to a single input port
-                Select which port to connect
-                1.) Detect on actuation event
-                2.) Select port
-                3.) Override
             - Warning for multiple?
 """
 from qtpy.QtWidgets import QFrame, QVBoxLayout, QLabel, QApplication
@@ -128,11 +123,10 @@ class OverridePortWarningButtonWidget(ButtonInputWidget):
 
 
 class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
-    def __init__(self, node, port_type=OUTPUT_PORT, selected_ports=None, display_warning=True, is_selection_active=None, is_recursive_selection=False, parent=None):
+    def __init__(self, node, port_list=None, port_type=OUTPUT_PORT, selected_ports=None, display_warning=True, is_selection_active=None, is_recursive_selection=False, parent=None):
         super(MultiPortPopupMenuWidget, self).__init__(parent)
         # setup attrs
         self._node = node
-        #self._show_noodle = False
         self._is_selection_active = is_selection_active
         self._selected_ports = selected_ports
         self.setTitle(node.getName())
@@ -149,6 +143,7 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
             display_warning=display_warning,
             is_selection_active=is_selection_active,
             is_recursive_selection=is_recursive_selection,
+            port_list=port_list,
             parent=self
         )
         self.addInputWidget(self._ports_widget)
@@ -205,12 +200,15 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
     Args:
         node (node): closest node of selection.  This is the node containing the connected ports.
         selected_ports (list): of ports that are currently selected
+        port_list (list): of ports
+            This is only used when connecting multiple output ports to a single input port.  This list of
+            ports will popup and be shown to the user for connection.
         port_type (PORT_TYPE): the type of ports that will be displayed to the user
         is_selection_active (bool): Determines if there are links currently selected
         selected_ports (port): port currently selected
 
     """
-    def __init__(self, node, port_type=OUTPUT_PORT, is_selection_active=None, selected_ports=None, display_warning=True, is_recursive_selection=False, parent=None):
+    def __init__(self, node, port_list=None, port_type=OUTPUT_PORT, is_selection_active=None, selected_ports=None, display_warning=True, is_recursive_selection=False, parent=None):
         super(MultiPortPopupMenu, self).__init__(parent, Qt.Vertical)
 
         # setup attrs
@@ -222,14 +220,19 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         self._display_warning = display_warning
         self.setIsToggleable(False)
 
-        for port in self.getDisplayPorts():
-            self.addButton(port.getName(), port.getName(), self.portSelectedEvent)
-
-        if is_selection_active:
-            if node.getType() in nodegraphutils.dynamicInputPortNodes():
-                self.addButton("< New >", "< New >", self.createNewPortEvent)
+        # populate ports
+        if port_list:
+            for port in port_list:
+                self.addButton(port.getName(), port.getName(), self.connectMultipleOutputsToSingleInput)
         else:
-            self.addButton("< All >", "< All >", self.selectAllNoodlesEvent)
+            for port in self.getDisplayPorts():
+                self.addButton(port.getName(), port.getName(), self.portSelectedEvent)
+
+            if is_selection_active:
+                if node.getType() in nodegraphutils.dynamicInputPortNodes():
+                    self.addButton("< New >", "< New >", self.createNewPortEvent)
+            else:
+                self.addButton("< All >", "< All >", self.selectAllNoodlesEvent)
 
     """ PROPERTIES """
     def node(self):
@@ -237,6 +240,13 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
 
     """ EVENTS """
     def selectAllNoodlesEvent(self, widget):
+        self.parent().close()
+
+    def connectMultipleOutputsToSingleInput(self, widget):
+        """ Special handler for connecting multiple output ports to a single input port """
+        port = self.getSelectedPort(widget.flag())
+        self._selected_ports[0].connect(port)
+        PortConnector.hideNoodle()
         self.parent().close()
 
     def portSelectedEvent(self, widget):
@@ -457,15 +467,20 @@ class PortConnector():
         elif len(node.getInputPorts()) == 1:
             # MULTIPLE INPUT PORTS
             if node.getType() in nodegraphutils.dynamicInputPortNodes():
-                if len(base_ports) == 1:
-                    katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
-                        node, port_type=INPUT_PORT, is_selection_active=True, selected_ports=base_ports, display_warning=display_warning,
-                        is_recursive_selection=is_recursive_selection)
-                    katanaMainWindow()._port_popup_menu.show()
-                    centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
-                if 1 < len(base_ports):
-                    # todo smart connection
-                    pass
+                katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
+                    node, port_type=INPUT_PORT, is_selection_active=True, selected_ports=base_ports, display_warning=display_warning,
+                    is_recursive_selection=is_recursive_selection)
+                katanaMainWindow()._port_popup_menu.show()
+                centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
+            elif 1 < len(base_ports):
+                # This is a special case for the MultiPortPopupMenuWidget
+                """ This essentially hacks together the popup to show the user the port to connect from their 
+                currently active selection """
+                katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
+                    base_ports[0].getNode(), port_list=base_ports, port_type=OUTPUT_PORT, is_selection_active=True, selected_ports=[node.getInputPortByIndex(0)], display_warning=display_warning,
+                    is_recursive_selection=is_recursive_selection)
+                katanaMainWindow()._port_popup_menu.show()
+                centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
 
             # NORMAL NODE
             else:
