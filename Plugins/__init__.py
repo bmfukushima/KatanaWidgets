@@ -60,7 +60,14 @@ except ModuleNotFoundError:
     sys.path.append(qtpy_dir)
     qtpy_logger = f"\n\t|\t|__  Appending...  {qtpy_dir} to PYTHONPATH"
 
-
+# numpy
+try:
+    import numpy
+    numpy_logger = ""
+except ModuleNotFoundError:
+    numpy_dir = katana_bebop_dir + "/libs/numpy"
+    sys.path.append(numpy_dir)
+    numpy_logger = f"\n\t|\t|__  Appending...  {numpy_dir} to PYTHONPATH"
 # update envars
 os.environ["KATANABEBOP"] = katana_bebop_dir
 
@@ -80,7 +87,7 @@ if isLicenseValid():
     ................................      THE GOOD STUFF      .................................
     ...........................................................................................
     \t|____  ENVIRONMENT
-    \t|\t|__  Appending...  {katana_bebop_dir} to PYTHONPATH {cgwidgets_logger} {packaging_logger} {qtpy_logger}
+    \t|\t|__  Appending...  {katana_bebop_dir} to PYTHONPATH {cgwidgets_logger} {packaging_logger} {qtpy_logger} {numpy_dir}
     \t|
     \t|____  MACROS
     \t|\t|__ CalculateNearFarObjects
