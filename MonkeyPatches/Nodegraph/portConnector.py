@@ -19,12 +19,10 @@ TODO
     *   Multi port connection
             - Connecting multiple output ports to a single input port
                 Select which port to connect
+                1.) Detect on actuation event
+                2.) Select port
+                3.) Override
             - Warning for multiple?
-            - Connect multiple input ports to node with multiple output ports
-                    - if single selected, connect all, if multiple selected, do smart selection
-
-Add select all option
-
 """
 from qtpy.QtWidgets import QFrame, QVBoxLayout, QLabel, QApplication
 from qtpy.QtCore import Qt
@@ -184,7 +182,7 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
         flags = self._ports_widget.flags()
         if 0 < len(flags):
             if self._is_selection_active:
-                self._ports_widget.connectNoodleForMultiplePorts()
+                self._ports_widget.connectPorts()
             else:
                 self._ports_widget.showNoodleForMultiplePorts()
         self.close()
@@ -265,9 +263,9 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
 
                 # port selected has no connections, connect port
                 else:
-                    for selected_port in self._selected_ports:
-                        selected_port.connect(port)
-                    PortConnector.hideNoodle()
+                    # for selected_port in self._selected_ports:
+                    #     selected_port.connect(port)
+                    # PortConnector.hideNoodle()
 
                     # recursive multi port selection
                     if self._is_recursive_selection:
@@ -298,7 +296,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
     def keyPressEvent(self, event):
         if event.key() in [96, Qt.Key_Return, Qt.Key_Enter]:
             if self._is_selection_active:
-                self.connectNoodleForMultiplePorts()
+                self.connectPorts()
             else:
                 self.showNoodleForMultiplePorts()
             self.parent().close()
@@ -307,6 +305,18 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         return ButtonInputWidgetContainer.keyPressEvent(self, event)
 
     """ UTILS """
+    def connectPorts(self):
+        # special condition to connect all ports to a single source
+        if len(self.flags()) == 1 and self._port_type == OUTPUT_PORT:
+            connection_port = self.getSelectedPort(self.flags()[0])
+            for port in self._selected_ports:
+                port.connect(connection_port)
+            PortConnector.hideNoodle()
+
+        # connect ports
+        else:
+            self.connectNoodleForMultiplePorts()
+
     def connectNoodleForMultiplePorts(self):
         """ When multiple noodles are selected, this will connect them to a node"""
         selected_ports = self._selected_ports
@@ -318,17 +328,15 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
             connected_ports.append(self.getSelectedPort(port_name))
 
         # find all empty ports
-        empty_ports = []
         # last_port_index = connected_ports[-1].getIndex()
         if self._port_type == OUTPUT_PORT:
-            _end_ports = self.node().getOutputPorts()#[last_port_index+1:]
+            _end_ports = self.node().getOutputPorts()
         if self._port_type == INPUT_PORT:
-            _end_ports = self.node().getInputPorts()#[last_port_index+1:]
+            _end_ports = self.node().getInputPorts()
         for port in _end_ports:
             if len(port.getConnectedPorts()) == 0:
-                empty_ports.append(port)
-
-        connected_ports += empty_ports
+                if port not in connected_ports:
+                    connected_ports.append(port)
 
         # add additional ports
         if len(connected_ports) < len(selected_ports):
@@ -344,6 +352,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         for i, port in enumerate(selected_ports):
             port.connect(connected_ports[i])
 
+        PortConnector.hideNoodle()
         pass
 
     def showNoodleForMultiplePorts(self):
