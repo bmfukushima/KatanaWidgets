@@ -39,6 +39,7 @@ class PopupWidget(QWidget):
         self._hide_modifiers = hide_modifiers
         self._hide_on_leave = hide_on_leave
         self._move_event_active = True
+        self._move_event_cursor_pos = QPoint()
         self.setFixedSize(scaleResolution(size))
         self._mask_size = QSize(
             scaleResolution(self.width()),

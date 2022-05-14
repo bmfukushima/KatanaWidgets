@@ -15,17 +15,16 @@ Alt: Recursive selection
 Ctrl: Hide warning
 TODO
     *   Override for port types
-    *   Network Material Create
+    *   Network Material Create / Shading Nodes
     *   Multi port connection
-            Output Port
-                Select all Connections
-                Reconnect to another output port
-            Input Port
-                Select all connections
-                Reconnect to another node
-            Shift
-                Add to link selection
-            Smarter detection when links are selected
+            - Select All Ports
+            - Connecting multiple output ports to a single input port
+                Select which port to connect
+            - Warning for multiple?
+            - Connect multiple input ports to node with multiple output ports
+                    - if single selected, connect all, if multiple selected, do smart selection
+
+Add select all option
 
 """
 from qtpy.QtWidgets import QFrame, QVBoxLayout, QLabel, QApplication
@@ -65,7 +64,6 @@ class OverridePortWarningButtonPopupWidget(QFrame):
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
-            # PortConnector.showNoodle(self._selected_ports)
             self.close()
         if event.key() == 96:
             self._button_widget.connectPortsEvent()
@@ -138,6 +136,7 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
         # setup attrs
         self._node = node
         #self._show_noodle = False
+        self._is_selection_active = is_selection_active
         self._selected_ports = selected_ports
         self.setTitle(node.getName())
         self.setIsHeaderEditable(False)
@@ -167,8 +166,7 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
         # show noodle
         if is_selection_active:
             if not PortConnector.isSelectionActive():
-                for port in selected_ports:
-                    PortConnector.showNoodle(port)
+                PortConnector.showNoodle(selected_ports)
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
@@ -184,6 +182,12 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
 
     def leaveEvent(self, event):
         QFrame.leaveEvent(self, event)
+        flags = self._ports_widget.flags()
+        if 0 < len(flags):
+            if self._is_selection_active:
+                self._ports_widget.connectNoodleForMultiplePorts()
+            else:
+                self._ports_widget.showNoodleForMultiplePorts()
         self.close()
 
     def showEvent(self, event):
@@ -202,8 +206,8 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
     currently selected, then this will connect the ports.
 
     Args:
-        node (node): node
-        ports (list): of ports
+        node (node): closest node of selection.  This is the node containing the connected ports.
+        selected_ports (list): of ports that are currently selected
         port_type (PORT_TYPE): the type of ports that will be displayed to the user
         is_selection_active (bool): Determines if there are links currently selected
         selected_ports (port): port currently selected
@@ -273,7 +277,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
 
             # show noodle
             else:
-                PortConnector.showNoodle(port)
+                PortConnector.showNoodle([port])
 
             # self.parent()._show_noodle = False
             self.parent().close()
@@ -287,18 +291,65 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         self.parent().close()
 
     def keyPressEvent(self, event):
-        if event.key() == 96:
-            for port_name in self.flags():
-                port = self.getSelectedPort(port_name)
-                PortConnector.showNoodle(port)
-
+        if event.key() in [96, Qt.Key_Return, Qt.Key_Enter]:
+            if self._is_selection_active:
+                self.connectNoodleForMultiplePorts()
+            else:
+                self.showNoodleForMultiplePorts()
             self.parent().close()
             return
 
         return ButtonInputWidgetContainer.keyPressEvent(self, event)
 
     """ UTILS """
+    def connectNoodleForMultiplePorts(self):
+        """ When multiple noodles are selected, this will connect them to a node"""
+        selected_ports = self._selected_ports
+
+        # build ports to connect to
+        connection_port_names = self.flags()
+        connected_ports = []
+        for port_name in connection_port_names:
+            connected_ports.append(self.getSelectedPort(port_name))
+
+        # find all empty ports
+        empty_ports = []
+        # last_port_index = connected_ports[-1].getIndex()
+        if self._port_type == OUTPUT_PORT:
+            _end_ports = self.node().getOutputPorts()#[last_port_index+1:]
+        if self._port_type == INPUT_PORT:
+            _end_ports = self.node().getInputPorts()#[last_port_index+1:]
+        for port in _end_ports:
+            if len(port.getConnectedPorts()) == 0:
+                empty_ports.append(port)
+
+        connected_ports += empty_ports
+
+        # add additional ports
+        if len(connected_ports) < len(selected_ports):
+            num_ports_to_add = len(selected_ports) - len(connected_ports)
+            for x in range(num_ports_to_add):
+                port_num = len(connected_ports)
+                if self._port_type == OUTPUT_PORT:
+                    connected_ports.append(self.node().addOutputPort(f"i{port_num}"))
+                if self._port_type == INPUT_PORT:
+                    connected_ports.append(self.node().addInputPort(f"o{port_num}"))
+
+        # connect ports
+        for i, port in enumerate(selected_ports):
+            port.connect(connected_ports[i])
+
+        pass
+
+    def showNoodleForMultiplePorts(self):
+        """ Shows the noodle for all of the currently selected ports"""
+        ports = []
+        for port_name in self.flags():
+            ports.append(self.getSelectedPort(port_name))
+        PortConnector.showNoodle(ports)
+
     def getDisplayPorts(self):
+        """ Return a list of ports to be displayed to the user """
         if self._port_type == INPUT_PORT:
             ports = self._node.getInputPorts()
         elif self._port_type == OUTPUT_PORT:
@@ -319,9 +370,9 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         return port
 
 
-
 class PortConnector():
     """ Main function for the port connector display """
+
     def __init__(self):
         PortConnector.active_port = None
 
@@ -372,20 +423,28 @@ class PortConnector():
         if not node: return
 
         if len(node.getInputPorts()) == 0:
-            connection_port = node.addInputPort("i0")
-            for base_port in base_ports:
-                connection_port.connect(base_port)
+            if node.getType() in nodegraphutils.dynamicInputPortNodes():
+                for i, base_port in enumerate(base_ports):
+                    connection_port = node.addInputPort(f"i{i}")
+                    connection_port.connect(base_port)
+            else:
+                connection_port = node.addInputPort("i0")
+                connection_port.connect(base_ports[0])
             PortConnector.hideNoodle()
 
         # SINGULAR INPUT PORT
         elif len(node.getInputPorts()) == 1:
             # MULTIPLE INPUT PORTS
             if node.getType() in nodegraphutils.dynamicInputPortNodes():
-                katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
-                    node, port_type=INPUT_PORT, is_selection_active=True, selected_ports=base_ports, display_warning=display_warning,
-                    is_recursive_selection=is_recursive_selection)
-                katanaMainWindow()._port_popup_menu.show()
-                centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
+                if len(base_ports) == 1:
+                    katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
+                        node, port_type=INPUT_PORT, is_selection_active=True, selected_ports=base_ports, display_warning=display_warning,
+                        is_recursive_selection=is_recursive_selection)
+                    katanaMainWindow()._port_popup_menu.show()
+                    centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
+                if 1 < len(base_ports):
+                    # todo smart connection
+                    pass
 
             # NORMAL NODE
             else:
@@ -415,6 +474,7 @@ class PortConnector():
                 is_recursive_selection=is_recursive_selection)
             katanaMainWindow()._port_popup_menu.show()
             centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
+            # todo smart connection
 
     @staticmethod
     def __connectInputPorts(base_ports, display_warning, is_recursive_selection):
@@ -428,7 +488,7 @@ class PortConnector():
                 connection_port.connect(base_port)
             PortConnector.hideNoodle()
 
-        # SINGULAR INPUT PORT
+        # SINGULAR OUTPUT PORT
         elif len(node.getOutputPorts()) == 1:
             connection_port = node.getOutputPortByIndex(0)
             is_connected = portutils.isPortConnected(connection_port)
@@ -449,7 +509,7 @@ class PortConnector():
                 if is_recursive_selection:
                     PortConnector.actuateSelection(node=node, port_type=INPUT_PORT)
 
-        # MULTIPLE INPUT PORTS
+        # MULTIPLE OUTPUT PORTS
         elif 1 < len(node.getOutputPorts()):
             katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
                 node, port_type=OUTPUT_PORT, is_selection_active=True, selected_ports=base_ports, display_warning=display_warning,
@@ -502,7 +562,7 @@ class PortConnector():
             # SINGULAR OUTPUT PORT
             if 1 == len(node.getOutputPorts()):
                 PortConnector.active_port = node.getOutputPorts()[0]
-                PortConnector.showNoodle(PortConnector.active_port)
+                PortConnector.showNoodle([PortConnector.active_port])
 
             # MULTIPLE OUTPUT PORTS
             elif 1 < len(node.getOutputPorts()):
@@ -518,12 +578,12 @@ class PortConnector():
             if 0 == len(node.getInputPorts()):
                 return
             # SINGULAR OUTPUT PORT
-            if 1 == len(node.getOutputPorts()):
+            if 1 == len(node.getInputPorts()):
                 PortConnector.active_port = node.getInputPorts()[0]
-                PortConnector.showNoodle(PortConnector.active_port)
+                PortConnector.showNoodle([PortConnector.active_port])
 
             # MULTIPLE OUTPUT PORTS
-            elif 1 < len(node.getOutputPorts()):
+            elif 1 < len(node.getInputPorts()):
                 katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
                     node, is_selection_active=False, port_type=INPUT_PORT)
                 katanaMainWindow()._port_popup_menu.show()
@@ -607,17 +667,18 @@ class PortConnector():
         # delattr(katanaMainWindow(), "_active_nodegraph_widget")
 
     @staticmethod
-    def showNoodle(port):
+    def showNoodle(ports):
         """ Shows the noodle from the port provided
 
         Args:
-            port (Port): """
+            ports (list): of ports to show"""
 
         nodegraph_widget = PortConnector.activeNodegraphWidget()
         port_layer = nodegraph_widget.getLayerByName("PortInteractions")
 
         ls = port_layer.layerStack()
-        layer = LinkConnectionLayer([port], None, enabled=True)
+        layer = LinkConnectionLayer(ports, None, enabled=True)
         ls.appendLayer(layer, stealFocus=True)
+
 
 # PortConnector()
