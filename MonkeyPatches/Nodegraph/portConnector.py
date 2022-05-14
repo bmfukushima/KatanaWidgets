@@ -16,8 +16,6 @@ Ctrl: Hide warning
 TODO
     *   Override for port types
     *   Network Material Create / Shading Nodes
-    *   Multi port connection
-            - Warning for multiple?
 """
 from qtpy.QtWidgets import QFrame, QVBoxLayout, QLabel, QApplication
 from qtpy.QtCore import Qt
@@ -205,7 +203,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
             ports will popup and be shown to the user for connection.
         port_type (PORT_TYPE): the type of ports that will be displayed to the user
         is_selection_active (bool): Determines if there are links currently selected
-        selected_ports (port): port currently selected
+        selected_ports (list): of ports currently selected
 
     """
     def __init__(self, node, port_list=None, port_type=OUTPUT_PORT, is_selection_active=None, selected_ports=None, display_warning=True, is_recursive_selection=False, parent=None):
@@ -273,10 +271,6 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
 
                 # port selected has no connections, connect port
                 else:
-                    # for selected_port in self._selected_ports:
-                    #     selected_port.connect(port)
-                    # PortConnector.hideNoodle()
-
                     # recursive multi port selection
                     if self._is_recursive_selection:
                         self.parent().hide()
@@ -291,7 +285,6 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
             else:
                 PortConnector.showNoodle([port])
 
-            # self.parent()._show_noodle = False
             self.parent().close()
 
     def createNewPortEvent(self, widget):
@@ -710,11 +703,10 @@ class PortConnector():
             ports (list): of ports to show"""
 
         nodegraph_widget = PortConnector.activeNodegraphWidget()
-        port_layer = nodegraph_widget.getLayerByName("PortInteractions")
+        #port_layer = nodegraph_widget.getLayerByName("PortInteractions")
 
-        ls = port_layer.layerStack()
         layer = LinkConnectionLayer(ports, None, enabled=True)
-        ls.appendLayer(layer, stealFocus=True)
+        nodegraph_widget.appendLayer(layer, stealFocus=True)
 
 
 # PortConnector()

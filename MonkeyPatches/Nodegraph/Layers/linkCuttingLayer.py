@@ -49,6 +49,7 @@ class LinkCuttingLayer(AbstractGestureLayer):
         super(LinkCuttingLayer, self).__init__(*args, **kwargs)
 
     def keyReleaseEvent(self, event):
+        # this is needed to extract nodes with the "x" key
         self.layerStack().extractNodes(NodegraphAPI.GetAllSelectedNodes())
         nodegraphutils.floatNodes(NodegraphAPI.GetAllSelectedNodes())
         nodegraphutils.setCurrentKeyPressed(None)

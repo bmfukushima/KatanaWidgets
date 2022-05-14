@@ -58,8 +58,9 @@ def linkConnectionLayerMouseMove(func):
     def __linkConnectionLayerMouseMove(self, event):
         def colorNearestNode():
             base_ports = self.getBasePorts()
-            exclude_nodes = [base_ports[0].getNode()]
-            nodeutils.updateNodePreviewColors(exclude_nodes=exclude_nodes, has_input_ports=True)
+            if 0 < len(base_ports):
+                exclude_nodes = [base_ports[0].getNode()]
+                nodeutils.updateNodePreviewColors(exclude_nodes=exclude_nodes, has_input_ports=True)
 
         def unfreeze():
             self._is_frozen = False
