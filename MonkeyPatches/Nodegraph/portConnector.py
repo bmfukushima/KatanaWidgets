@@ -309,6 +309,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
 
     """ UTILS """
     def connectPorts(self):
+        Utils.UndoStack.OpenGroup("Connect Ports")
         # special condition to connect all ports to a single source
         if len(self.flags()) == 1 and self._port_type == OUTPUT_PORT:
             connection_port = self.getSelectedPort(self.flags()[0])
@@ -319,6 +320,8 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         # connect ports
         else:
             self.connectNoodleForMultiplePorts()
+
+        Utils.UndoStack.CloseGroup()
 
     def connectNoodleForMultiplePorts(self):
         """ When multiple noodles are selected, this will connect them to a node"""
@@ -331,11 +334,11 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
             connected_ports.append(self.getSelectedPort(port_name))
 
         # find all empty ports
-        # last_port_index = connected_ports[-1].getIndex()
+        last_port_index = connected_ports[-1].getIndex()
         if self._port_type == OUTPUT_PORT:
-            _end_ports = self.node().getOutputPorts()
+            _end_ports = self.node().getOutputPorts()[last_port_index:]
         if self._port_type == INPUT_PORT:
-            _end_ports = self.node().getInputPorts()
+            _end_ports = self.node().getInputPorts()[last_port_index:]
         for port in _end_ports:
             if len(port.getConnectedPorts()) == 0:
                 if port not in connected_ports:
@@ -553,11 +556,12 @@ class PortConnector():
         if link_connection_layer:
             base_ports = link_connection_layer.getBasePorts()
             selection_type = PortConnector.selectionType()
+            Utils.UndoStack.OpenGroup("Connect Ports")
             if selection_type == OUTPUT_PORT:
                 PortConnector.__connectOutputPorts(base_ports, display_warning, is_recursive_selection)
             elif selection_type == INPUT_PORT:
                 PortConnector.__connectInputPorts(base_ports, display_warning, is_recursive_selection)
-                pass
+            Utils.UndoStack.CloseGroup()
 
     @staticmethod
     def selectPortEvent(node=None, port_type=None):

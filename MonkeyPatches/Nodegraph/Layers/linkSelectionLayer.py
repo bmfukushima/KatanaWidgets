@@ -79,6 +79,7 @@ class OutputLinkSelectionLayer(AbstractLinkSelectionLayer):
 
     def mouseReleaseEvent(self, event):
         if self.isActive():
+            # get ports list
             ports = []
             for link in self.getHits():
                 for port in link:
@@ -86,8 +87,16 @@ class OutputLinkSelectionLayer(AbstractLinkSelectionLayer):
                         if port not in ports:
                             ports.append(port)
 
-            # todo sort ports?
-            self.showNoodles(ports)
+            # sort ports
+            sorted_ports = []
+            for port in ports:
+                node = port.getNode()
+                for output_port in node.getOutputPorts():
+                    if output_port in ports:
+                        sorted_ports.append(output_port)
+                        ports.remove(output_port)
+
+            self.showNoodles(sorted_ports)
             widgetutils.katanaMainWindow()._active_nodegraph_widget = widgetutils.getActiveNodegraphWidget()
 
         return AbstractGestureLayer.mouseReleaseEvent(self, event)
