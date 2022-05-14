@@ -17,7 +17,6 @@ TODO
     *   Override for port types
     *   Network Material Create / Shading Nodes
     *   Multi port connection
-            - Select All Ports
             - Connecting multiple output ports to a single input port
                 Select which port to connect
             - Warning for multiple?
@@ -228,15 +227,20 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         for port in self.getDisplayPorts():
             self.addButton(port.getName(), port.getName(), self.portSelectedEvent)
 
-        if port_type == INPUT_PORT:
+        if is_selection_active:
             if node.getType() in nodegraphutils.dynamicInputPortNodes():
                 self.addButton("< New >", "< New >", self.createNewPortEvent)
+        else:
+            self.addButton("< All >", "< All >", self.selectAllNoodlesEvent)
 
     """ PROPERTIES """
     def node(self):
         return self._node
 
     """ EVENTS """
+    def selectAllNoodlesEvent(self, widget):
+        self.parent().close()
+
     def portSelectedEvent(self, widget):
         """ Event run when the user selects a port"""
         port = self.getSelectedPort(widget.flag())
@@ -283,6 +287,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
             self.parent().close()
 
     def createNewPortEvent(self, widget):
+        # todo update... create new ports
         num_ports = len(self.node().getInputPorts())
         port = self.node().addInputPort(f"i{num_ports}")
         for selected_port in self._selected_ports:
@@ -343,17 +348,24 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
 
     def showNoodleForMultiplePorts(self):
         """ Shows the noodle for all of the currently selected ports"""
-        ports = []
-        for port_name in self.flags():
-            ports.append(self.getSelectedPort(port_name))
-        PortConnector.showNoodle(ports)
+        # show all noodles
+        if "< All >" in self.flags():
+            PortConnector.showNoodle(self.getDisplayPorts())
+            self.parent().close()
+
+        # show selected noodles
+        else:
+            ports = []
+            for port_name in self.flags():
+                ports.append(self.getSelectedPort(port_name))
+            PortConnector.showNoodle(ports)
 
     def getDisplayPorts(self):
         """ Return a list of ports to be displayed to the user """
         if self._port_type == INPUT_PORT:
-            ports = self._node.getInputPorts()
+            ports = self.node().getInputPorts()
         elif self._port_type == OUTPUT_PORT:
-            ports = self._node.getOutputPorts()
+            ports = self.node().getOutputPorts()
 
         return ports
 
