@@ -295,7 +295,7 @@ class DesirableStuffFrame(ShojiModelViewWidget):
             direction=Qt.Horizontal,
             name="Create New Group",
             )
-        self.addHeaderDelegateWidget([], self._create_desirable_group_widget, modifier=Qt.NoModifier, focus=True)
+        self.addHeaderDelegateWidget([], self._create_desirable_group_widget, modifier=Qt.NoModifier, focus=True, always_on=True)
         self._create_desirable_group_widget.setUserFinishedEditingEvent(self.createNewDesirableGroup)
         self._create_desirable_group_widget.viewWidget().setDisplayMode(OverlayInputWidget.DISABLED)
         self._create_desirable_group_widget.setFixedHeight(getFontSize() * 3)
