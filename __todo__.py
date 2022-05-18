@@ -24,6 +24,8 @@ TODO: BUGS
     *   Popup Tabs
             - Pin widget for some reason doesn't disappear all the time
                     Can't replicate...
-
+    *   Node Graph Pins
+            - Can hit escape over creation, need to disable hiding of menu
+            - Deleting a reference and readding does not work
 
 """
