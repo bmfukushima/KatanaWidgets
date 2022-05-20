@@ -328,7 +328,6 @@ def insertLayerIntoNodegraph(layer_type, name, actuation_key, undo_name):
                 if event.isAutoRepeat(): return True
                 nodegraphutils.setCurrentKeyPressed(event.key())
                 return True
-
             return func(self, event)
 
         return __nodeInteractionKeyPressEvent

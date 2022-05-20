@@ -1,30 +1,27 @@
-""" The iron node layer allows users to "iron" their nodes
+""" The selection node layer handles all events that happen involving the S key
 
-As the user swipes through nodes using CTRL+ALT+SHIFT+LMB, all
-of the nodes hit will be aligned to the first node, based off
-of the direction of the cursor as it passed through the second node.
+These events are:
+    S+LMB:
+        Select nodes
+    Shift+S:
+        Show popup GSV widget
+    S:
+        Show GSV layered menu
+
+There are two other handlers on this layer for the
 """
-import math
 
-from OpenGL.GL import (
-    glBegin,
-    glLineWidth,
-    GL_LINE_STRIP,
-    GL_LINE_LOOP,
-    glColor4f,
-    glEnd,
-    glVertex2f,
-    glPointSize,
-)
-from qtpy.QtWidgets import QApplication
-from qtpy.QtCore import Qt, QPoint, QEvent, QTimer, QSize
+from qtpy.QtCore import Qt, QPoint, QSize
+from qtpy.QtGui import QCursor
 
 # setup prefs
-import QT4GLLayerStack
 from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs, UI4, LayeredMenuAPI
-from UI4.App import Tabs
-from Utils2 import nodegraphutils, widgetutils, nodeutils
-from Utils2.nodealignutils import AlignUtils
+
+from cgwidgets.utils import scaleResolution
+from cgwidgets.settings import iColor
+
+from Utils2 import nodegraphutils, widgetutils, nodeutils, getFontSize
+
 from .AbstractGestureLayer import (
     AbstractGestureLayer,
     insertLayerIntoNodegraph

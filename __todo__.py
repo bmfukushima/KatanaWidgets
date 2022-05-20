@@ -7,8 +7,22 @@ TODO: Enhancement
             Closing tabs in general needs to run some sort of cleanup handler
     *   VariableManager | Can load multiple patterns
             Remake this?
+    *   PopupWidgets
+            * Add Pinning
+            * Add dynamic handlers
+    *   GSVPopupWidget
+            * Add GSV Creation
+                - Press header to create new, then rename
+                    or
+                - Press header, edit texts to create new
+                    then
+                - dynamically update the size...
+                    probably can just hide and show? or trigger the toggle event
+            * Add GSV Name change
 TODO: cgwidgets
     *   List handler is driving me up the walls
+            When typing from empty, after it shows the first time, after the first key, if there are no
+            valid options, it will close.
 TODO: BUGS
     *   Node Graph
             If no nodegraphs found, will fail on init

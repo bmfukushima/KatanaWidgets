@@ -40,6 +40,20 @@ def isGSVCreateDestroyEvent(arg):
     return True
 
 
+def isGSVOptionValid(gsv, option):
+    """ Determines if the specified option exists in the gsv
+
+    Args:
+        gsv (str)
+        option (str)
+    """
+    options = getGSVOptions(gsv)
+    if option in options:
+        return True
+    else:
+        return False
+
+
 def createNewGSV(gsv):
     """
     Creates a new GSV

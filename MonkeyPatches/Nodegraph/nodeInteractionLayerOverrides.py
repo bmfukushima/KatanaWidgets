@@ -39,8 +39,7 @@ from UI4.App import Tabs
 from cgwidgets.utils import scaleResolution
 from cgwidgets.settings import iColor
 from cgwidgets.widgets import PopupHotkeyMenu
-
-from Widgets2 import PopupWidget, AbstractParametersDisplayWidget
+from Widgets2 import PopupWidget, AbstractParametersDisplayWidget, GSVPopupWidget
 from Utils2 import nodeutils, widgetutils, nodegraphutils, getFontSize
 
 from .Layers.gridLayer import GridGUIWidget
@@ -216,6 +215,7 @@ def glowNodes(modifiers):
             if closest_node:
                 downstream_nodes = nodegraphutils.getAllDownstreamNodes(closest_node)
                 nodeutils.updateNodePreviewColors(downstream_nodes)
+
 
 def moveNodes(direction=nodegraphutils.UP):
     """ Selects and moves the nodes upstream or downstream of the selected node """
@@ -429,6 +429,10 @@ def nodeInteractionKeyPressEvent(func):
                 NodegraphAPI.SetNodeViewed(view_node, True, exclusive=True)
 
             return True
+
+        if event.key() == Qt.Key_S and event.modifiers() == Qt.ShiftModifier:
+            # disable active hotkey
+            nodegraphutils.setCurrentKeyPressed(None)
 
         return func(self, event)
 

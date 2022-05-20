@@ -19,3 +19,4 @@ from .EventsWidget import *
 from .GroupNodeEditorWidget import GroupNodeEditorWidget
 from .AbstractStateManagerTab import AbstractStateManagerTab, AbstractStateManagerOrganizerWidget
 from .PopupWidget import PopupWidget
+from .GSVPopupWidget import GSVPopupWidget
