@@ -190,6 +190,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         """ Need to run a delayed timer here, to ensure that when
         the user lifts up the A+LMB, that it doesn't accidently
         register a AlignMenu on release because they have slow fingers"""
+        self.setIsActive(False)
         self.setIsFinishing(False)
 
     def processEvent(self, event):
@@ -205,6 +206,9 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         return QT4GLLayerStack.Layer.processEvent(self, event)
 
     def keyReleaseEvent(self, event):
+        buttons = QApplication.mouseButtons()
+        if buttons != Qt.LeftButton:
+            self.resetAttrs()
         return False
 
     def shouldProcessKeyReleaseEvent(self, event):

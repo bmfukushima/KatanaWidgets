@@ -32,7 +32,7 @@ def GSVMenuActionCallback(value):
     """
     # flip display flag
     display_flag = getGSVDisplayFlag()
-
+    nodegraph_widget = widgetutils.isCursorOverNodeGraphWidget()
     # frist menu | display options menu
     if display_flag:
         # set flags to allow recursion through menus
@@ -44,7 +44,7 @@ def GSVMenuActionCallback(value):
         A custom attr is added to the main window which is called in a monkey patch
         to block an error that occurs using this technique (MonkeyPatches.nodegraph.menuLayerOverride)
         """
-        nodegraph_widget = widgetutils.isCursorOverNodeGraphWidget()
+
         if nodegraph_widget:
             widgetutils.katanaMainWindow()._is_recursive_layered_menu_event = True
             # nodegraph_widget = nodeutils.isCursorOverNodeGraphWidget()
@@ -67,6 +67,11 @@ def GSVMenuActionCallback(value):
         gsv_name = getGSV()
         gsv_parm = gsv_parm.getChild(f'{gsv_name}.value')
         gsv_parm.setValue(value, 0)
+
+        # disable cursor selection cursor display
+        if nodegraph_widget:
+            nodegraph_widget.getLayerByName("_selection").resetAttrs()
+
     return ""
 
 

@@ -51,17 +51,19 @@ class SelectionLayer(AbstractGestureLayer):
         self.setCrosshairRadius(QSize(10, 20))
 
     def keyReleaseEvent(self, event):
-        nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-        from UIPlugins.GSVMenu import GSVMenuPopulateCallback, GSVMenuActionCallback
-        GSVMenu = LayeredMenuAPI.LayeredMenu(
-            GSVMenuPopulateCallback,
-            GSVMenuActionCallback,
-            'S',
-            alwaysPopulate=True,
-            onlyMatchWordStart=False
-        )
-        nodegraph_widget.showLayeredMenu(GSVMenu)
-        return True
+        if event.modifiers() == Qt.NoModifier:
+            # launch layered menu
+            nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+            from UIPlugins.GSVMenu import GSVMenuPopulateCallback, GSVMenuActionCallback
+            GSVMenu = LayeredMenuAPI.LayeredMenu(
+                GSVMenuPopulateCallback,
+                GSVMenuActionCallback,
+                'S',
+                alwaysPopulate=True,
+                onlyMatchWordStart=False
+            )
+            nodegraph_widget.showLayeredMenu(GSVMenu)
+        return AbstractGestureLayer.keyReleaseEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         if self.isActive():
