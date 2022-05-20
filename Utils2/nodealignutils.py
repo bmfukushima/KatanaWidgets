@@ -28,51 +28,56 @@ class AlignUtils(object):
         """
         from .nodegraphutils import floatNodes
         Utils.UndoStack.OpenGroup("Align Nodes")
-        self._aligned_nodes = []
-        if len(NodegraphAPI.GetAllSelectedNodes()) == 0: return
-        node = NodegraphAPI.GetAllSelectedNodes()[0]
-        root_node = nodegraphutils.getTreeRootNode(node)
+        try:
+            self._aligned_nodes = []
+            if len(NodegraphAPI.GetAllSelectedNodes()) == 0: return
+            node = NodegraphAPI.GetAllSelectedNodes()[0]
+            root_node = nodegraphutils.getTreeRootNode(node)
 
-        # if x and y:
-        NodegraphAPI.SetNodePosition(root_node, (x * self._grid_offset_x, y * self._grid_offset_y))
-        self._aligned_nodes.append(root_node)
-        # for terminal_node in terminal_nodes:
-        self.__alignDownstreamNodes(root_node, x, y, recursive=True)
-        Utils.UndoStack.CloseGroup()
+            # if x and y:
+            NodegraphAPI.SetNodePosition(root_node, (x * self._grid_offset_x, y * self._grid_offset_y))
+            self._aligned_nodes.append(root_node)
 
-        floatNodes(self._aligned_nodes)
+            # for terminal_node in terminal_nodes:
+            self.__alignDownstreamNodes(root_node, x, y, recursive=True)
+
+            floatNodes(self._aligned_nodes)
+
+        finally:
+            Utils.UndoStack.CloseGroup()
 
     def alignDownstreamNodes(self):
         from .nodegraphutils import getNearestGridPoint, floatNodes
 
         Utils.UndoStack.OpenGroup("Align Nodes")
-        self._aligned_nodes = []
-        selected_nodes = NodegraphAPI.GetAllSelectedNodes()
-        for selected_node in selected_nodes:
-            pos = NodegraphAPI.GetNodePosition(selected_node)
-            offset = getNearestGridPoint(pos[0], pos[1])
-            xpos = (offset.x()) + self._grid_size_x
-            ypos = (offset.y()) + self._grid_size_y
+        try:
+            self._aligned_nodes = []
+            selected_nodes = NodegraphAPI.GetAllSelectedNodes()
+            for selected_node in selected_nodes:
+                pos = NodegraphAPI.GetNodePosition(selected_node)
+                offset = getNearestGridPoint(pos[0], pos[1])
+                xpos = (offset.x()) + self._grid_size_x
+                ypos = (offset.y()) + self._grid_size_y
 
-            NodegraphAPI.SetNodePosition(selected_node, (xpos, ypos))
-            self._aligned_nodes.append(selected_node)
-            self.__alignDownstreamNodes(selected_node, x=0, y=0)
+                NodegraphAPI.SetNodePosition(selected_node, (xpos, ypos))
+                self._aligned_nodes.append(selected_node)
+                self.__alignDownstreamNodes(selected_node, x=0, y=0)
 
-            # offset all nodes back to a relative position of the original node...
-            """ Would be smarter to just move the original node to the right position"""
-            for node in list(set(self._aligned_nodes)):
-                if node != selected_node:
-                    orig_pos = NodegraphAPI.GetNodePosition(node)
+                # offset all nodes back to a relative position of the original node...
+                """ Would be smarter to just move the original node to the right position"""
+                for node in list(set(self._aligned_nodes)):
+                    if node != selected_node:
+                        orig_pos = NodegraphAPI.GetNodePosition(node)
 
-                    offset_xpos = orig_pos[0] + xpos
-                    offset_ypos = orig_pos[1] + ypos
+                        offset_xpos = orig_pos[0] + xpos
+                        offset_ypos = orig_pos[1] + ypos
 
-                    NodegraphAPI.SetNodePosition(node, (offset_xpos, offset_ypos))
+                        NodegraphAPI.SetNodePosition(node, (offset_xpos, offset_ypos))
 
-        Utils.UndoStack.CloseGroup()
+            floatNodes(self._aligned_nodes)
 
-        nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-        floatNodes(self._aligned_nodes)
+        finally:
+            Utils.UndoStack.CloseGroup()
 
     def __alignDownstreamNodes(self, node, x=0, y=0, recursive=False):
         """ Algorithm to align all of the nodes in the tree selected
@@ -122,29 +127,32 @@ class AlignUtils(object):
     def alignUpstreamNodes(self):
         from .nodegraphutils import getNearestGridPoint, floatNodes
 
-        Utils.UndoStack.OpenGroup("Align Nodes")
-        self._aligned_nodes = []
-        selected_nodes = NodegraphAPI.GetAllSelectedNodes()
-        for selected_node in selected_nodes:
-            pos = NodegraphAPI.GetNodePosition(selected_node)
-            offset = getNearestGridPoint(pos[0], pos[1])
-            xpos = (offset.x()) + self._grid_size_x
-            ypos = (offset.y()) + self._grid_size_y
+        try:
+            Utils.UndoStack.OpenGroup("Align Nodes")
+            self._aligned_nodes = []
+            selected_nodes = NodegraphAPI.GetAllSelectedNodes()
+            for selected_node in selected_nodes:
+                pos = NodegraphAPI.GetNodePosition(selected_node)
+                offset = getNearestGridPoint(pos[0], pos[1])
+                xpos = (offset.x()) + self._grid_size_x
+                ypos = (offset.y()) + self._grid_size_y
 
-            NodegraphAPI.SetNodePosition(selected_node, (xpos, ypos))
-            self._aligned_nodes.append(selected_node)
-            self.__alignUpstreamNodes(selected_node)
-            for node in list(set(self._aligned_nodes)):
-                if node != selected_node:
-                    orig_pos = NodegraphAPI.GetNodePosition(node)
+                NodegraphAPI.SetNodePosition(selected_node, (xpos, ypos))
+                self._aligned_nodes.append(selected_node)
+                self.__alignUpstreamNodes(selected_node)
+                for node in list(set(self._aligned_nodes)):
+                    if node != selected_node:
+                        orig_pos = NodegraphAPI.GetNodePosition(node)
 
-                    offset_xpos = orig_pos[0] + xpos
-                    offset_ypos = orig_pos[1] + ypos
+                        offset_xpos = orig_pos[0] + xpos
+                        offset_ypos = orig_pos[1] + ypos
 
-                    NodegraphAPI.SetNodePosition(node, (offset_xpos, offset_ypos))
-        Utils.UndoStack.CloseGroup()
+                        NodegraphAPI.SetNodePosition(node, (offset_xpos, offset_ypos))
 
-        floatNodes(self._aligned_nodes)
+            floatNodes(self._aligned_nodes)
+
+        finally:
+            Utils.UndoStack.CloseGroup()
 
     def __alignUpstreamNodes(self, node, x=0, y=0, recursive=False):
         """ Algorithm to align all of the nodes in the tree selected
@@ -215,11 +223,13 @@ class AlignUtils(object):
         from .nodegraphutils import getNearestGridPoint
 
         Utils.UndoStack.OpenGroup("Snap Nodes to Grid")
-        if not node_list:
-            node_list = NodegraphAPI.GetAllSelectedNodes()
-        for node in node_list:
-            pos = NodegraphAPI.GetNodePosition(node)
-            offset = getNearestGridPoint(pos[0], pos[1])
-            NodegraphAPI.SetNodePosition(node, ((offset.x()) + self._grid_size_x, (offset.y()) + self._grid_size_y))
-        Utils.UndoStack.CloseGroup()
+        try:
+            if not node_list:
+                node_list = NodegraphAPI.GetAllSelectedNodes()
+            for node in node_list:
+                pos = NodegraphAPI.GetNodePosition(node)
+                offset = getNearestGridPoint(pos[0], pos[1])
+                NodegraphAPI.SetNodePosition(node, ((offset.x()) + self._grid_size_x, (offset.y()) + self._grid_size_y))
+        finally:
+            Utils.UndoStack.CloseGroup()
 

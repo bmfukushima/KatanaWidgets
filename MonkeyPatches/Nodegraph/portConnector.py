@@ -333,33 +333,35 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         for port_name in connection_port_names:
             connected_ports.append(self.getSelectedPort(port_name))
 
-        # find all empty ports
-        last_port_index = connected_ports[-1].getIndex()
-        if self._port_type == OUTPUT_PORT:
-            _end_ports = self.node().getOutputPorts()[last_port_index:]
-        if self._port_type == INPUT_PORT:
-            _end_ports = self.node().getInputPorts()[last_port_index:]
-        for port in _end_ports:
-            if len(port.getConnectedPorts()) == 0:
-                if port not in connected_ports:
-                    connected_ports.append(port)
+        if self.flags()[0] == "< New >":
+            pass
+        else:
+            # find all empty ports
+            last_port_index = connected_ports[-1].getIndex()
+            if self._port_type == OUTPUT_PORT:
+                _end_ports = self.node().getOutputPorts()[last_port_index:]
+            if self._port_type == INPUT_PORT:
+                _end_ports = self.node().getInputPorts()[last_port_index:]
+            for port in _end_ports:
+                if len(port.getConnectedPorts()) == 0:
+                    if port not in connected_ports:
+                        connected_ports.append(port)
 
-        # add additional ports
-        if len(connected_ports) < len(selected_ports):
-            num_ports_to_add = len(selected_ports) - len(connected_ports)
-            for x in range(num_ports_to_add):
-                port_num = len(connected_ports)
-                if self._port_type == OUTPUT_PORT:
-                    connected_ports.append(self.node().addOutputPort(f"i{port_num}"))
-                if self._port_type == INPUT_PORT:
-                    connected_ports.append(self.node().addInputPort(f"o{port_num}"))
+            # add additional ports
+            if len(connected_ports) < len(selected_ports):
+                num_ports_to_add = len(selected_ports) - len(connected_ports)
+                for x in range(num_ports_to_add):
+                    port_num = len(connected_ports)
+                    if self._port_type == OUTPUT_PORT:
+                        connected_ports.append(self.node().addOutputPort(f"i{port_num}"))
+                    if self._port_type == INPUT_PORT:
+                        connected_ports.append(self.node().addInputPort(f"o{port_num}"))
 
-        # connect ports
-        for i, port in enumerate(selected_ports):
-            port.connect(connected_ports[i])
+            # connect ports
+            for i, port in enumerate(selected_ports):
+                port.connect(connected_ports[i])
 
         PortConnector.hideNoodle()
-        pass
 
     def showNoodleForMultiplePorts(self):
         """ Shows the noodle for all of the currently selected ports"""
@@ -511,7 +513,7 @@ class PortConnector():
     @staticmethod
     def __connectInputPorts(base_ports, display_warning, is_recursive_selection):
         exclude_nodes = [port.getNode() for port in base_ports]
-        node = nodegraphutils.getClosestNode(has_input_ports=True, include_dynamic_port_nodes=True, exclude_nodes=exclude_nodes)
+        node = nodegraphutils.getClosestNode(has_output_ports=True, include_dynamic_port_nodes=True, exclude_nodes=exclude_nodes)
         if not node: return
 
         if len(node.getOutputPorts()) == 0:
