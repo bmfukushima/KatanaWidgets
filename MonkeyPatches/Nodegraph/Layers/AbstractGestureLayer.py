@@ -186,6 +186,17 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
         nodegraphutils.setCurrentKeyPressed(None)
 
     """ EVENTS """
+    def activateGestureEvent(self, clear_data=True):
+        if clear_data:
+            self.resetCursorPoints()
+            self.resetHits()
+
+        self.setIsFinishing(False)
+        # activate swipe gesture
+        self.setIsActive(True)
+        QApplication.setOverrideCursor(Qt.BlankCursor)
+        nodeutils.clearNodePreviewColors()
+
     def deactivateGestureEvent(self):
         """ Need to run a delayed timer here, to ensure that when
         the user lifts up the A+LMB, that it doesn't accidently
@@ -243,14 +254,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
             # todo setup activation handler
             Utils.UndoStack.OpenGroup(self.undoName())
             # ensure that everything was turned off... because sometimes I do stuff bad
-            self.setIsFinishing(False)
-            self.resetCursorPoints()
-            self.resetHits()
-
-            # activate swipe gesture
-            self.setIsActive(True)
-            QApplication.setOverrideCursor(Qt.BlankCursor)
-            nodeutils.clearNodePreviewColors()
+            self.activateGestureEvent()
             return True
 
         return False
@@ -265,6 +269,7 @@ class AbstractGestureLayer(QT4GLLayerStack.Layer):
             self.layerStack().idleUpdate()
 
             nodeutils.clearNodePreviewColors()
+
             # todo setup deactivation handler
 
             Utils.UndoStack.CloseGroup()

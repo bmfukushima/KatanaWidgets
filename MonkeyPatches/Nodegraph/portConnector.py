@@ -24,7 +24,7 @@ from Katana import Utils, QT4Widgets, QT4GLLayerStack, NodegraphAPI, DrawingModu
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 from cgwidgets.widgets import ButtonInputWidgetContainer, ButtonInputWidget, FrameInputWidgetContainer
-from cgwidgets.utils import centerWidgetOnCursor, setAsBorderless, setAsTransparent, getWidgetUnderCursor, isCursorOverWidget
+from cgwidgets.utils import centerWidgetOnCursor, setAsBorderless, setAsTransparent, getWidgetUnderCursor, isCursorOverWidget, getWidgetAncestor
 from Utils2 import nodeutils, portutils, getFontSize, nodegraphutils
 from Utils2.widgetutils import katanaMainWindow
 
@@ -116,8 +116,9 @@ class OverridePortWarningButtonWidget(ButtonInputWidget):
             katanaMainWindow().setFocus()
             PortConnector.actuateSelection(
                 PortConnector.activeNodegraphWidget(), node=self.node(), port_type=self._selected_ports[0].getType())
-
-        self.parent().close()
+        parent = getWidgetAncestor(self, OverridePortWarningButtonPopupWidget)
+        parent.close()
+        # self.parent().close()
 
 
 class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
@@ -238,14 +239,15 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
 
     """ EVENTS """
     def selectAllNoodlesEvent(self, widget):
-        self.parent().close()
+        """ When the user selects the "Select All Noodles" options. This runs and closes the parent."""
+        self.closeParent()
 
     def connectMultipleOutputsToSingleInput(self, widget):
         """ Special handler for connecting multiple output ports to a single input port """
         port = self.getSelectedPort(widget.flag())
         self._selected_ports[0].connect(port)
         PortConnector.hideNoodle()
-        self.parent().close()
+        self.closeParent()
 
     def portSelectedEvent(self, widget):
         """ Event run when the user selects a port"""
@@ -285,7 +287,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
             else:
                 PortConnector.showNoodle([port])
 
-            self.parent().close()
+            self.closeParent()
 
     def createNewPortEvent(self, widget):
         # todo update... create new ports
@@ -308,6 +310,10 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         return ButtonInputWidgetContainer.keyPressEvent(self, event)
 
     """ UTILS """
+    def closeParent(self):
+        parent = getWidgetAncestor(self, MultiPortPopupMenuWidget)
+        parent.close()
+
     def connectPorts(self):
         Utils.UndoStack.OpenGroup("Connect Ports")
         # special condition to connect all ports to a single source

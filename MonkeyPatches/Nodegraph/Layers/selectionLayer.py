@@ -11,16 +11,15 @@ These events are:
 There are two other handlers on this layer for the
 """
 
-from qtpy.QtCore import Qt, QPoint, QSize
+from qtpy.QtCore import Qt, QPoint, QSize, QEvent
 from qtpy.QtGui import QCursor
 
 # setup prefs
 from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs, UI4, LayeredMenuAPI
+from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
-from cgwidgets.utils import scaleResolution
-from cgwidgets.settings import iColor
 
-from Utils2 import nodegraphutils, widgetutils, nodeutils, getFontSize
+from Utils2 import nodegraphutils, widgetutils, nodeutils
 
 from .AbstractGestureLayer import (
     AbstractGestureLayer,

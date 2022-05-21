@@ -1,8 +1,9 @@
 """ The link selection layer allows the user to swipe through links to select them."""
 
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt, QEvent
+
+from Katana import Utils
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
-from UI4.App import Tabs
 
 from Utils2 import nodegraphutils, widgetutils
 from .AbstractGestureLayer import AbstractGestureLayer, insertLayerIntoNodegraph
@@ -10,7 +11,7 @@ from .AbstractGestureLayer import AbstractGestureLayer, insertLayerIntoNodegraph
 
 OUTPUT_PORT = 0
 INPUT_PORT = 1
-
+ATTR_NAME = "_link_selection"
 
 class AbstractLinkSelectionLayer(AbstractGestureLayer):
     """
@@ -25,6 +26,31 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
 
     def __init__(self, *args, **kwargs):
         super(AbstractLinkSelectionLayer, self).__init__(*args, **kwargs)
+
+        if not hasattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME)):
+            setattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME), list())
+
+    @staticmethod
+    def clearSelection():
+        setattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME), list())
+
+    @staticmethod
+    def currentSelection():
+        return getattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME))
+
+    @staticmethod
+    def setCurrentSelection(selection):
+        setattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME), selection)
+
+    @staticmethod
+    def appendSelection(selection):
+        current_selection = AbstractLinkSelectionLayer.currentSelection()
+        selection += current_selection
+        AbstractLinkSelectionLayer.setCurrentSelection(selection)
+
+    def deactivateGestureEvent(self):
+        AbstractLinkSelectionLayer.clearSelection()
+        AbstractGestureLayer.deactivateGestureEvent(self)
 
     def showNoodles(self, ports):
         nodegraph_widget = widgetutils.getActiveNodegraphWidget()
@@ -59,7 +85,6 @@ class InputLinkSelectionLayer(AbstractLinkSelectionLayer):
 
     def mouseReleaseEvent(self, event):
         if self.isActive():
-            # todo update port hits
             ports = []
             for link in self.getHits():
                 for port in link:
@@ -68,7 +93,8 @@ class InputLinkSelectionLayer(AbstractLinkSelectionLayer):
                             ports.append(port)
 
             # sort ports
-            self.showNoodles(ports)
+            AbstractLinkSelectionLayer.appendSelection(ports)
+            self.showNoodles(AbstractLinkSelectionLayer.currentSelection())
             widgetutils.katanaMainWindow()._active_nodegraph_widget = widgetutils.getActiveNodegraphWidget()
         return AbstractGestureLayer.mouseReleaseEvent(self, event)
 
@@ -87,21 +113,69 @@ class OutputLinkSelectionLayer(AbstractLinkSelectionLayer):
                         if port not in ports:
                             ports.append(port)
 
-            # sort ports
-            sorted_ports = []
-            for port in ports:
-                node = port.getNode()
-                for output_port in node.getOutputPorts():
-                    if output_port in ports:
-                        sorted_ports.append(output_port)
-                        ports.remove(output_port)
+            # append selection and sort
+            AbstractLinkSelectionLayer.appendSelection(ports)
 
-            self.showNoodles(sorted_ports)
+            # todo fix sort algo
+            # sort ports
+            # sorted_ports = []
+            # ports = AbstractLinkSelectionLayer.currentSelection()
+            # for port in ports:
+            #     node = port.getNode()
+            #     for output_port in node.getOutputPorts():
+            #         if output_port in ports:
+            #             sorted_ports.append(output_port)
+            #             ports.remove(output_port)
+
+            # show noodles
+            #AbstractLinkSelectionLayer.setCurrentSelection(sorted_ports)
+            self.showNoodles(AbstractLinkSelectionLayer.currentSelection())
             widgetutils.katanaMainWindow()._active_nodegraph_widget = widgetutils.getActiveNodegraphWidget()
 
         return AbstractGestureLayer.mouseReleaseEvent(self, event)
 
 
+def linkConnectionEvent(func):
+    def __linkConnectionEvent(self, event):
+        if event.type() == QEvent.MouseButtonPress:
+            if linkConnectionMousePressEvent(self, event): return True
+
+        return func(self, event)
+
+    return __linkConnectionEvent
+
+
+def linkConnectionMousePressEvent(self, event):
+    if event.modifiers() == Qt.ShiftModifier:
+        from MonkeyPatches.Nodegraph.portConnector import PortConnector
+        link_connection_layer = PortConnector.getLinkConnectionLayer()
+
+        if link_connection_layer:
+            base_ports = link_connection_layer.getBasePorts()
+            AbstractLinkSelectionLayer.setCurrentSelection(base_ports)
+
+            selection_type = PortConnector.selectionType()
+            if selection_type == INPUT_PORT:
+                layer = self.layerStack().getLayerByName("_input_link_selection")
+            elif selection_type == OUTPUT_PORT:
+                layer = self.layerStack().getLayerByName("_output_link_selection")
+
+            # hide noodle and activate gesture
+            PortConnector.hideNoodle()
+            layer.activateGestureEvent()
+
+            #Utils.UndoStack.CloseGroup()
+            Utils.UndoStack.OpenGroup("Link Selection")
+            return True
+    return False
+
+
+def linkConnectionMouseMove(self, event):
+
+    return False
+
+
 def installLinkSelectionLayer(**kwargs):
     insertLayerIntoNodegraph(InputLinkSelectionLayer, "_input_link_selection", Qt.Key_Q, "Select Links")
     insertLayerIntoNodegraph(OutputLinkSelectionLayer, "_output_link_selection", Qt.Key_W, "Select Links")
+    LinkConnectionLayer.processEvent = linkConnectionEvent(LinkConnectionLayer.processEvent)
