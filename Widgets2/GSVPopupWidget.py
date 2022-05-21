@@ -138,7 +138,7 @@ def toggleGSVPopup():
     if not PopupWidget.doesPopupWidgetExist("popupGSV"):
         # create popup widget
         widget = GSVPopupWidget()
-        size = scaleResolution(WIDTH, 200)
+        size = scaleResolution(QSize(WIDTH, 200))
         popup_widget = PopupWidget.constructPopupWidget(
             "popupGSV", widget, size=size, hide_hotkey=Qt.Key_S, hide_modifiers=Qt.ShiftModifier)
 

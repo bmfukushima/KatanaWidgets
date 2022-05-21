@@ -97,6 +97,7 @@ def displayPopupParameters(is_pinned=False):
     # hide/show popup parameters
     widget = PopupWidget.getPopupWidget("popupParameters")
     widget.setIsPinned(is_pinned)
+    widget.mainWidget().populateParameters(selected_nodes, hide_title=False)
     PopupWidget.togglePopupWidgetVisibility("popupParameters")
 
 
