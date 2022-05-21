@@ -70,11 +70,11 @@ def displayParameters():
         Utils.UndoStack.CloseGroup()
 
 
-def displayPopupParameters(hide_on_leave=False):
+def displayPopupParameters(is_pinned=False):
     """ Popups up a parameters view of all of the currently selected nodes
 
     Args:
-        hide_on_leave (bool): determines if this should should be hidden on leave
+        is_pinned (bool): determines if this popup is pinned
     """
 
     # preflight
@@ -93,37 +93,14 @@ def displayPopupParameters(hide_on_leave=False):
         size = scaleResolution(QSize(width, height))
         popup_widget = PopupWidget.constructPopupWidget(
             "popupParameters", widget, size=size, hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
-        # setup style
-        rgba_border = iColor["rgba_selected"]
-        popup_widget.setStyleSheet(f"""
-            QWidget#PopupWidget{{
-                border-top: 1px solid rgba{rgba_border};
-                border-bottom: 1px solid rgba{rgba_border};
-            }}
-        """)
-
-        # set popup widget style
-        popup_widget.setIsMaskEnabled(True)
-        popup_widget.setMaskSize(scaleResolution(QSize(width, height*2)))
-        popup_widget.setContentsMargins(0, 0, 0, 0)
-        popup_widget.layout().setContentsMargins(0, 0, 0, 0)
-        offset_x = scaleResolution(getFontSize() * 4.5)
-        offset_y = scaleResolution(getFontSize() * 2)
-        popup_widget.centralWidget().setContentsMargins(offset_x, offset_y, offset_x, offset_y)
 
     # hide/show popup parameters
     widget = PopupWidget.getPopupWidget("popupParameters")
-    widget.setHideOnLeave(hide_on_leave)
-    widget.mainWidget().populateParameters(selected_nodes, hide_title=False)
-    pos = QPoint(
-        QCursor.pos().x(),
-        QCursor.pos().y() + widget.height() * 0.25
-
-    )
-    PopupWidget.togglePopupWidgetVisibility("popupParameters", pos=pos)
+    widget.setIsPinned(is_pinned)
+    PopupWidget.togglePopupWidgetVisibility("popupParameters")
 
 
-def displayGridSettings(hide_on_leave=True):
+def displayGridSettings():
     """ Popups up a parameters view of all of the currently selected nodes
 
     Args:
@@ -137,34 +114,9 @@ def displayGridSettings(hide_on_leave=True):
         height = getFontSize() * 30
         size = scaleResolution(QSize(width, height))
         popup_widget = PopupWidget.constructPopupWidget(
-            "gridSettings", widget, size=size, hide_hotkey=Qt.Key_E, hide_modifiers=Qt.AltModifier)
-        # setup style
-        rgba_border = iColor["rgba_selected"]
-        popup_widget.setStyleSheet(f"""
-            QWidget#PopupWidget{{
-                border-top: 1px solid rgba{rgba_border};
-                border-bottom: 1px solid rgba{rgba_border};
-            }}
-        """)
+            "gridSettings", widget, size=size, hide_hotkey=Qt.Key_G, hide_modifiers=Qt.ControlModifier)
 
-        # set popup widget style
-        popup_widget.setIsMaskEnabled(True)
-        popup_widget.setMaskSize(scaleResolution(QSize(width, height*2)))
-        popup_widget.setContentsMargins(0, 0, 0, 0)
-        popup_widget.layout().setContentsMargins(0, 0, 0, 0)
-        offset_x = scaleResolution(getFontSize() * 4.5)
-        offset_y = scaleResolution(getFontSize() * 2)
-        popup_widget.centralWidget().setContentsMargins(offset_x, offset_y, offset_x, offset_y)
-
-    # hide/show popup parameters
-    widget = PopupWidget.getPopupWidget("gridSettings")
-    widget.setHideOnLeave(hide_on_leave)
-    pos = QPoint(
-        QCursor.pos().x(),
-        QCursor.pos().y() + widget.height() * 0.25
-
-    )
-    PopupWidget.togglePopupWidgetVisibility("gridSettings", pos=pos)
+    PopupWidget.togglePopupWidgetVisibility("gridSettings")
 
 
 def glowNodes(modifiers):
@@ -375,10 +327,10 @@ def nodeInteractionKeyPressEvent(func):
         # updating parameter view handler
         if event.key() == Qt.Key_E:
             if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
-                displayPopupParameters(hide_on_leave=False)
+                displayPopupParameters(is_pinned=True)
                 return True
             elif event.modifiers() == Qt.AltModifier:
-                displayPopupParameters(hide_on_leave=True)
+                displayPopupParameters(is_pinned=False)
                 return True
             elif event.modifiers() == Qt.NoModifier:
                 displayParameters()

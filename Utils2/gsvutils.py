@@ -40,6 +40,18 @@ def isGSVCreateDestroyEvent(arg):
     return True
 
 
+def isGSVValid(gsv):
+    """ Determines if a GSV exists
+
+    Args:
+        gsv (str)
+
+    Returns (bool)
+    """
+    if gsv in getAllGSV(): return True
+    return False
+
+
 def isGSVOptionValid(gsv, option):
     """ Determines if the specified option exists in the gsv
 
@@ -54,25 +66,28 @@ def isGSVOptionValid(gsv, option):
         return False
 
 
-def createNewGSV(gsv):
+def createNewGSV(gsv, force_create=False):
     """
     Creates a new GSV
 
     Args:
         gsv (str): name of GSV to create
 
-    Returns (str): name of gsv
+    Returns (param): of gsv
     """
-    # all_variables = getAllGSV()
-    # if gsv not in all_variables:
+    # return if it exists
+    if isGSVValid(gsv) and not force_create: return getGSVParameter(gsv)
+
+    from .Utils2 import getValidName
+
+    # create new gsv
+    gsv = getValidName(gsv)
     variables_param = getVariablesParameter()
     gsv_param = variables_param.createChildGroup(gsv)
     gsv_param.createChildNumber('enable', 1)
     gsv_param.createChildString('value', '')
     gsv_param.createChildStringArray('options', 0)
 
-    # update all tabs
-    # addGSVToAllViewTabs(gsv)
     return gsv_param
 
 
@@ -317,6 +332,8 @@ def renameGSV(gsv_name, new_name):
     """
     gsv_param = getGSVParameter(gsv_name)
     gsv_param.setName(new_name)
+
+    return gsv_param.getName()
 
 
 def renameGSVOption(gsv, old_name, new_name):

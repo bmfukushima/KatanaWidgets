@@ -13,9 +13,14 @@ from qtpy.QtWidgets import QWidget, QVBoxLayout
 from qtpy.QtCore import Qt, QEvent, QPoint, QSize, QTimer
 from qtpy.QtGui import QPainter, QColor, QPen, QRegion, QCursor
 from Katana import UI4
-from cgwidgets.utils import setAsAlwaysOnTop, setAsTool, isCursorOverWidget, scaleResolution, setAsBorderless
-from cgwidgets.settings import iColor
 
+from cgwidgets.widgets import BooleanInputWidget
+from cgwidgets.utils import setAsAlwaysOnTop, setAsTool, isCursorOverWidget, scaleResolution, setAsBorderless
+from cgwidgets.settings import iColor, icons
+
+from Utils2 import getFontSize
+
+PIN_SIZE = scaleResolution(25)
 
 class PopupWidget(QWidget):
     """ Creates a popup tab widget that will be displayed over the UI
@@ -31,13 +36,13 @@ class PopupWidget(QWidget):
         mask_size (QSize): Size of the mask
         is_mask_enabled (bool): determines if this should have the mask applied
     """
-    def __init__(self, widget, size=QSize(480, 960), hide_on_leave=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier, parent=None):
+    def __init__(self, widget, size=QSize(480, 960), is_pinned=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier, parent=None):
         super(PopupWidget, self).__init__(parent)
         self.setObjectName("PopupWidget")
+        self._is_pinned = is_pinned
         self._main_widget = widget
         self._hide_hotkey = hide_hotkey
         self._hide_modifiers = hide_modifiers
-        self._hide_on_leave = hide_on_leave
         self._move_event_active = True
         self._move_event_cursor_pos = QPoint()
         self._move_event_widget_pos = QPoint()
@@ -60,12 +65,75 @@ class PopupWidget(QWidget):
         self.layout().addWidget(self._central_widget)
         self._central_widget.layout().addWidget(self._main_widget)
 
+        self.createPinWidget()
         # install events
         self._main_widget.installEventFilter(self)
 
+        # stylesheet
+        rgba_border = iColor["rgba_selected"]
+        self.setStyleSheet(f"""
+            QWidget#PopupWidget{{
+                border-top: 1px solid rgba{rgba_border};
+                border-bottom: 1px solid rgba{rgba_border};
+            }}
+        """)
+
+        # setup mask
+        self.setIsMaskEnabled(True)
+        self.setMaskSize(scaleResolution(QSize(self.width(), self.height()*2)))
+        self.setContentsMargins(0, 0, 0, 0)
+        self.layout().setContentsMargins(0, 0, 0, 0)
+        offset_x = scaleResolution(getFontSize() * 4.5)
+        offset_y = scaleResolution(getFontSize() * 2)
+        self.centralWidget().setContentsMargins(offset_x, offset_y, offset_x, offset_y)
+
+    def createPinWidget(self):
+        def pinPopupWidget(widget, enabled):
+            self.setIsPinned(enabled)
+            if enabled:
+                widget.setImage(icons["pin_enabled"])
+            else:
+                widget.setImage(icons["pin_disabled"])
+
+        self._pin_button_widget = BooleanInputWidget(
+            self, text="", is_selected=False, image=icons["pin_disabled"])
+        self._pin_button_widget.setUserFinishedEditingEvent(pinPopupWidget)
+        self._pin_button_widget.setFixedSize(PIN_SIZE, PIN_SIZE)
+
+        self._pin_button_widget.show()
+
+        # move button, and create margins
+        # int left, int top, int right, int bottom
+        # # todo update ellipse popup
+        # if self.direction() == attrs.NORTH:
+        #     self._pin_button_widget.move(
+        #         0.5 * (width - self._pin_button_widget.width()),
+        #         0.5 * (PIN_OFFSET - self._pin_button_widget.height())
+        #     )
+        #     popup_widget.delegateWidget().layout().setContentsMargins(PIN_OFFSET * 0.25, PIN_OFFSET, PIN_OFFSET * 0.25, 0)
+        # if self.direction() == attrs.SOUTH:
+        #     self._pin_button_widget.move(
+        #         0.5 * (width - self._pin_button_widget.width()),
+        #         height - (0.5 * (PIN_OFFSET + self._pin_button_widget.height()))
+        #     )
+        #     popup_widget.delegateWidget().layout().setContentsMargins(PIN_OFFSET * 0.25, 0, PIN_OFFSET * 0.25, PIN_OFFSET)
+        # if self.direction() == attrs.EAST:
+        #     self._pin_button_widget.move(
+        #         width - (0.5 * (PIN_OFFSET + self._pin_button_widget.width())),
+        #         0.5 * (height - self._pin_button_widget.height()),
+        #     )
+        #     popup_widget.delegateWidget().layout().setContentsMargins(0, PIN_OFFSET * 0.25, PIN_OFFSET, PIN_OFFSET * 0.25)
+        # if self.direction() == attrs.WEST:
+        #     self._pin_button_widget.move(
+        #         0.5 * (PIN_OFFSET - self._pin_button_widget.width()),
+        #         0.5 * (height - self._pin_button_widget.height()),
+        #     )
+        #     popup_widget.delegateWidget().layout().setContentsMargins(PIN_OFFSET, PIN_OFFSET * 0.25, 0, PIN_OFFSET * 0.25)
+
     """ MASKING """
     def maskSize(self):
-        return self._mask_size
+        return QSize(self.width(), self.height()*2)
+        #return self._mask_size
 
     def setMaskSize(self, size):
         self._mask_size = QSize(
@@ -93,11 +161,11 @@ class PopupWidget(QWidget):
         This is offsetting the radius of the ellipse so that it wills up the entire window"""
         painter.drawEllipse(
             QPoint(
-                int(self.width()-(self.width()*0.5)),
-                int(self.height()-(self.height()*0.5))
+                int(self.width()-(self.width()*0.5)) + 1,
+                int(self.height()-(self.height()*0.5)) + 1
             ),
-            self.maskSize().width() * 0.5 - 1,
-            self.maskSize().height() * 0.5 - 1
+            self.maskSize().width() * 0.5 - 2,
+            self.maskSize().height() * 0.5 - 2
         )
 
     def resizeEvent(self, event):
@@ -112,6 +180,17 @@ class PopupWidget(QWidget):
         self.setMask(region)
 
     """ PROPERTIES """
+    def isPinned(self):
+        return self._is_pinned
+
+    def setIsPinned(self, enabled):
+        self._is_pinned = enabled
+        self._pin_button_widget.setIsSelected(enabled)
+        if enabled:
+            self._pin_button_widget.setImage(icons["pin_enabled"])
+        else:
+            self._pin_button_widget.setImage(icons["pin_disabled"])
+
     def hideModifiers(self):
         return self._hide_modifiers
 
@@ -123,12 +202,6 @@ class PopupWidget(QWidget):
 
     def setHideHotkey(self, hide_hotkey):
         self._hide_hotkey = hide_hotkey
-
-    def hideOnLeave(self):
-        return self._hide_on_leave
-
-    def setHideOnLeave(self, hide_on_leave):
-        self._hide_on_leave = hide_on_leave
 
     """ WIDGETS """
     def centralWidget(self):
@@ -161,10 +234,10 @@ class PopupWidget(QWidget):
         return QWidget.mouseReleaseEvent(self, event)
 
     def __hideOnKeyPress(self, event):
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key_Escape and not self.isPinned():
             self.hide()
 
-        if event.key() == self.hideHotkey() and event.modifiers() == self.hideModifiers():
+        if event.key() == self.hideHotkey() and event.modifiers() == self.hideModifiers() and not self.isPinned():
             self.hide()
 
     def keyPressEvent(self, event):
@@ -181,9 +254,16 @@ class PopupWidget(QWidget):
         return False
 
     def __leaveEvent(self):
-        if self.hideOnLeave():
+        # todo fix for non ellipse/masked widgets
+        if self.isMaskEnabled():
             if not isCursorOverWidget(self, is_ellipse=True, mask=True):
-                self.hide()
+                if not self.isPinned():
+                    self.hide()
+        # non masked/ellipse
+        else:
+            if not isCursorOverWidget(self):
+                if not self.isPinned():
+                    self.hide()
 
     def dragLeaveEvent(self, event):
         self.__leaveEvent()
@@ -205,6 +285,17 @@ class PopupWidget(QWidget):
         main_window.activateWindow()
 
         return QWidget.hideEvent(self, event)
+
+    def showEvent(self, event):
+        # todo figure out contents margins
+        return_val = super(PopupWidget, self).showEvent(event)
+        self._pin_button_widget.move(
+            0.5 * (self.width() - self._pin_button_widget.width()),
+            0.5 * (self.centralWidget().getContentsMargins()[1] - self._pin_button_widget.height())
+        )
+        self.activateWindow()
+        self.setFocus()
+        return return_val
 
     """ UTILS """
     @staticmethod
@@ -253,7 +344,7 @@ class PopupWidget(QWidget):
         widget.show()
 
     @staticmethod
-    def constructPopupWidget(name, widget, hide_on_leave=False, size=QSize(480, 960), pos=None, show_on_init=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
+    def constructPopupWidget(name, widget, size=QSize(480, 960), pos=None, show_on_init=False, hide_hotkey=Qt.Key_Escape, hide_modifiers=Qt.NoModifier):
         """ Constructs a new popup widget
 
         Args:
@@ -272,7 +363,7 @@ class PopupWidget(QWidget):
         # create widget if it doesn't exist
         if not hasattr(main_window, popup_widget_attr):
             popup_widget = PopupWidget(
-                widget, hide_on_leave=hide_on_leave, hide_hotkey=hide_hotkey, hide_modifiers=hide_modifiers, size=size)
+                widget, hide_hotkey=hide_hotkey, hide_modifiers=hide_modifiers, size=size)
             setAsTool(popup_widget)
             setattr(main_window, popup_widget_attr, popup_widget)
             popup_widget.hide()
@@ -327,6 +418,7 @@ class PopupWidget(QWidget):
         # get attrs
         main_window = UI4.App.MainWindow.CurrentMainWindow()
         popup_name = f"_popup_{name}"
+
         # create widget if it doesn't exist
         if hasattr(main_window, popup_name):
             widget = getattr(main_window, f"_popup_{name}")
@@ -334,4 +426,12 @@ class PopupWidget(QWidget):
             if widget.isVisible():
                 widget.hide()
             else:
+                if not pos:
+                    pos = QPoint(
+                        QCursor.pos().x(),
+                        QCursor.pos().y() + widget.height() * 0.25
+
+                    )
+
                 PopupWidget.showWidget(widget, size=size, pos=pos)
+                # widget.update()
