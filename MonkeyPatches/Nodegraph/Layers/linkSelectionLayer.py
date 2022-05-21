@@ -23,6 +23,8 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
         _link_cutting_finishing (bool): determines if the link cutting event is finishing
             This is useful to differentiate between a C+LMB and a C-Release event
     """
+    REMOVE = 0
+    APPEND = 1
 
     def __init__(self, *args, **kwargs):
         super(AbstractLinkSelectionLayer, self).__init__(*args, **kwargs)
@@ -30,6 +32,7 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
         if not hasattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME)):
             setattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME), list())
 
+    """ SELECTION ATTR"""
     @staticmethod
     def clearSelection():
         setattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME), list())
@@ -47,6 +50,32 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
         current_selection = AbstractLinkSelectionLayer.currentSelection()
         selection += current_selection
         AbstractLinkSelectionLayer.setCurrentSelection(selection)
+
+    @staticmethod
+    def removeSelection(selection):
+        current_selection = AbstractLinkSelectionLayer.currentSelection()
+        for item in selection:
+            if item in current_selection:
+                current_selection.remove(item)
+        AbstractLinkSelectionLayer.setCurrentSelection(current_selection)
+
+    def updateSelection(self, ports):
+        if self.selectionEventType() == AbstractLinkSelectionLayer.APPEND:
+            AbstractLinkSelectionLayer.appendSelection(ports)
+        elif self.selectionEventType() == AbstractLinkSelectionLayer.REMOVE:
+            AbstractLinkSelectionLayer.removeSelection(ports)
+
+    """ UTILS """
+    def selectionEventType(self):
+        return self._selection_event_type
+
+    def setSelectionEventType(self, event_type):
+        self._selection_event_type = event_type
+
+    """ VIRTUAL FUNCTIONS"""
+    def activateGestureEvent(self, selection_event_type=APPEND, clear_data=True):
+        self.setSelectionEventType(selection_event_type)
+        AbstractGestureLayer.activateGestureEvent(self, clear_data=clear_data)
 
     def deactivateGestureEvent(self):
         AbstractLinkSelectionLayer.clearSelection()
@@ -92,8 +121,10 @@ class InputLinkSelectionLayer(AbstractLinkSelectionLayer):
                         if port not in ports:
                             ports.append(port)
 
-            # sort ports
-            AbstractLinkSelectionLayer.appendSelection(ports)
+            # update port list
+            self.updateSelection(ports)
+
+            # show selection
             self.showNoodles(AbstractLinkSelectionLayer.currentSelection())
             widgetutils.katanaMainWindow()._active_nodegraph_widget = widgetutils.getActiveNodegraphWidget()
         return AbstractGestureLayer.mouseReleaseEvent(self, event)
@@ -114,7 +145,7 @@ class OutputLinkSelectionLayer(AbstractLinkSelectionLayer):
                             ports.append(port)
 
             # append selection and sort
-            AbstractLinkSelectionLayer.appendSelection(ports)
+            self.updateSelection(ports)
 
             # todo fix sort algo
             # sort ports
@@ -146,7 +177,9 @@ def linkConnectionEvent(func):
 
 
 def linkConnectionMousePressEvent(self, event):
-    if event.modifiers() == Qt.ShiftModifier:
+    """ Mouse press event that is activate when the user clicks while having a selection active """
+    # append to link selection
+    if event.modifiers() in [Qt.ShiftModifier, Qt.ControlModifier]:
         from MonkeyPatches.Nodegraph.portConnector import PortConnector
         link_connection_layer = PortConnector.getLinkConnectionLayer()
 
@@ -162,11 +195,15 @@ def linkConnectionMousePressEvent(self, event):
 
             # hide noodle and activate gesture
             PortConnector.hideNoodle()
-            layer.activateGestureEvent()
+            if event.modifiers() == Qt.ShiftModifier:
+                layer.activateGestureEvent(selection_event_type=AbstractLinkSelectionLayer.APPEND)
+            if event.modifiers() == Qt.ControlModifier:
+                layer.activateGestureEvent(selection_event_type=AbstractLinkSelectionLayer.REMOVE)
 
-            #Utils.UndoStack.CloseGroup()
+            """ Need to open a group here, as the AbstractGestureLayer closes on mouse release"""
             Utils.UndoStack.OpenGroup("Link Selection")
             return True
+
     return False
 
 

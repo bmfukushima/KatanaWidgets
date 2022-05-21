@@ -6,11 +6,14 @@ TODO: Enhancement
             Remake this?
     *   Swipe Interaction
             * Add/Remove selection
-                - Hotkey Press... Ctrl/Shift+LMB, Q/W is inferred
-                - Store reference
-                - Hide layer
-                - Do swipe selection
-                - Show new layer
+                - Fix output sorting algorithm
+                - Tab node creation auto connection
+            * Add colors to links that have been hit
+                - need to write something custom in the paint handler
+                    1.) Get i/o ports, store as attr
+                    2.) Draw line between ports
+                    3.) Reset i/o ports attr
+                    4.) Clear color
     *   Backdrop lock
             * Lock all items in a backdrop
                 - Lock toggle button
