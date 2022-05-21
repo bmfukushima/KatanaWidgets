@@ -63,6 +63,7 @@ class GSVPopupWidget(FrameInputWidgetContainer):
                 gsvutils.createNewGSVOption(gsv, option)
 
         gsv_param_widget = ListInputWidget(self)
+        gsv_param_widget.setText(gsvutils.getGSVValue(param.getName()))
         gsv_param_widget.filter_results = False
         gsv_param_widget.dynamic_update = True
         gsv_param_widget.param = param
@@ -77,9 +78,18 @@ class GSVPopupWidget(FrameInputWidgetContainer):
         Args:
             gsv_param (param):
         """
+        def showGSVNameChangeBox(overlay_widget, delegate_widget):
+            """Run when the user enters the delegate widget to set the name of a GSV.
+
+            This simply sets the delegates widget text to the current text so that it does
+            not automatically update and rename the GSV with no name
+            """
+            delegate_widget.setText(overlay_widget.viewWidget().text())
+
         gsv_param_widget = self.createGSVParamListWidget(gsv_param)
 
         input_widget = LabelledInputWidget(name=gsv_param.getName(), delegate_widget=gsv_param_widget)
+        input_widget.viewWidget().setShowDelegateEvent(showGSVNameChangeBox)
         input_widget.setViewAsReadOnly(False)
         input_widget.setViewWidgetUserFinishedEditingEvent(self.userChangedGSVNameEvent)
         input_widget.setDefaultLabelLength(100)
