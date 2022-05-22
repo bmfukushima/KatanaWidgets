@@ -68,7 +68,7 @@ class LinkCuttingLayer(AbstractGestureLayer):
 
                 # cut links
                 if 0 < len(self.getCursorPoints()):
-                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=self.crosshairRadius(), step_size=5)
+                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=self.crosshairRadius(), step_size=2)
                     link_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.LINK)
                     for link in link_hits:
                         link[0].disconnect(link[1])

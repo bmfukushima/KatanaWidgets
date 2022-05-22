@@ -23,11 +23,6 @@ TODO: Enhancement
                     Do x on release
     *   Popup Widgets
             Tidy this API up
-    *   Port Connection
-            - Port Order
-            - Potentially need to run the interpolator backwards?
-            - Connect by port proximity to node?
-            - Connect by port position? Promixty to node? World location?
 TODO: cgwidgets
     *   List handler is driving me up the walls
             When typing from empty, after it shows the first time, after the first key, if there are no

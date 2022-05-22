@@ -91,11 +91,6 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
         AbstractLinkSelectionLayer.clearSelection()
         return AbstractGestureLayer.mousePressEvent(self, event)
 
-    def showNoodles(self, ports):
-        nodegraph_widget = widgetutils.getActiveNodegraphWidget()
-        layer = LinkConnectionLayer(ports, None, enabled=True)
-        nodegraph_widget.appendLayer(layer, stealFocus=True)
-
     def paintGL(self):
         if self.isActive():
             # create point on cursor
@@ -151,8 +146,9 @@ class InputLinkSelectionLayer(AbstractLinkSelectionLayer):
     def mouseReleaseEvent(self, event):
         if self.isActive():
             # show selection
-            self.showNoodles(list(AbstractLinkSelectionLayer.currentSelection().keys()))
+            from MonkeyPatches.Nodegraph import PortConnector
             widgetutils.katanaMainWindow()._active_nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+            PortConnector.showNoodle(list(AbstractLinkSelectionLayer.currentSelection().keys()))
         return AbstractGestureLayer.mouseReleaseEvent(self, event)
 
 
@@ -163,20 +159,14 @@ class OutputLinkSelectionLayer(AbstractLinkSelectionLayer):
 
     def mouseReleaseEvent(self, event):
         if self.isActive():
-            # todo fix sort algo
-            # sort ports
-            # sorted_ports = []
-            # ports = AbstractLinkSelectionLayer.currentSelection()
-            # for port in ports:
-            #     node = port.getNode()
-            #     for output_port in node.getOutputPorts():
-            #         if output_port in ports:
-            #             sorted_ports.append(output_port)
-            #             ports.remove(output_port)
-
             # show noodles
-            self.showNoodles(list(AbstractLinkSelectionLayer.currentSelection().keys()))
+            from MonkeyPatches.Nodegraph import PortConnector
             widgetutils.katanaMainWindow()._active_nodegraph_widget = widgetutils.getActiveNodegraphWidget()
+            PortConnector.showNoodle(list(AbstractLinkSelectionLayer.currentSelection().keys()))
+
+            # organize ports
+            PortConnector.setLastActiveLinkSelectionPorts(
+                PortConnector.organizePortsByPosition(PortConnector.getLastActiveLinkSelectionPorts()))
 
         return AbstractGestureLayer.mouseReleaseEvent(self, event)
 

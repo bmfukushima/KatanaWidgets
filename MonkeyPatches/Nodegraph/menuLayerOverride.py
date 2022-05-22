@@ -94,9 +94,8 @@ def nodeEntryChosen(func):
         # preflight
         if not hasattr(widgetutils.katanaMainWindow(), "_is_link_creation_active"): return node
         if not widgetutils.katanaMainWindow()._is_link_creation_active: return node
-
         # connect node to last active selection if a link is active
-        last_active_ports = PortConnector.getLastActiveLinkSelectionPorts()
+        last_active_ports = PortConnector.getLastActiveLinkSelectionPorts(organize_ports=True)
         if last_active_ports:
             if last_active_ports[0].getType() == OUTPUT_PORT:
                 if node.getType() in nodegraphutils.dynamicInputPortNodes() or node.getType() == "Group":

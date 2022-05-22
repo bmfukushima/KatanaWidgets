@@ -26,7 +26,7 @@ from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 from cgwidgets.widgets import ButtonInputWidgetContainer, ButtonInputWidget, FrameInputWidgetContainer
 from cgwidgets.utils import centerWidgetOnCursor, setAsBorderless, setAsTransparent, getWidgetUnderCursor, isCursorOverWidget, getWidgetAncestor
 from Utils2 import nodeutils, portutils, getFontSize, nodegraphutils
-from Utils2.widgetutils import katanaMainWindow
+from Utils2.widgetutils import katanaMainWindow, getActiveNodegraphWidget
 
 
 OUTPUT_PORT = 0
@@ -247,13 +247,6 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
         """ When the user selects the "Select All Noodles" options. This runs and closes the parent."""
         self.closeParent()
 
-    def connectMultipleOutputsToSingleInput(self, widget):
-        """ Special handler for connecting multiple output ports to a single input port """
-        port = self.getPortFromName(widget.flag())
-        self._active_ports[0].connect(port)
-        PortConnector.hideNoodle()
-        self.closeParent()
-
     def portSelectedEvent(self, widget):
         """ Event run when the user selects a port"""
         port = self.getPortFromName(widget.flag())
@@ -297,7 +290,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
     def createNewPortEvent(self, widget):
         """ During port connection, when the user presses "< New >" this will be run"""
         Utils.UndoStack.OpenGroup("Connect Ports")
-        # todo update... create new ports
+
         selected_ports = self.getAllSelectedPorts()
         # connect all user defined ports first
         for x in range(len(selected_ports)):
@@ -320,10 +313,10 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
     def keyPressEvent(self, event):
         if event.key() in [96, Qt.Key_Return, Qt.Key_Enter]:
             if self._is_selection_active:
-                self.connectPorts()
+                pass
             else:
                 self.showNoodleForMultiplePorts()
-            self.parent().close()
+            self.closeParent()
             return
 
         return ButtonInputWidgetContainer.keyPressEvent(self, event)
@@ -348,10 +341,24 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
 
         Utils.UndoStack.CloseGroup()
 
-    def connectNoodleForMultiplePorts(self):
-        """ When multiple noodles are selected, this will connect them to a node"""
-        active_ports = self._active_ports
+    def connectMultipleOutputsToSingleInput(self, widget):
+        """ Special handler for connecting multiple output ports to a single input port """
+        port = self.getPortFromName(widget.flag())
+        self._active_ports[0].connect(port)
+        PortConnector.hideNoodle()
+        self.closeParent()
 
+    def connectNoodleForMultiplePorts(self, auto_organize=False):
+        """ When multiple noodles are selected, this will connect them to a node"""
+        # todo how to handle auto organize here, and still allow user selection to parse through?
+        # probably just say screw it and not allow user selection, because whose actually going to select
+        # ports in reverse order and then hope it wires in... hopefully...
+        # if auto_organize:
+        #     active_ports = PortConnector.organizePortsByPosition(self._active_ports)
+        # else:
+        #     active_ports = self._active_ports
+
+        active_ports = PortConnector.organizePortsByPosition(self._active_ports)
         # build ports to connect to
         connected_ports = self.getAllSelectedPorts()
 
@@ -376,9 +383,9 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
                 for x in range(num_ports_to_add):
                     port_num = len(connected_ports)
                     if self._port_type == OUTPUT_PORT:
-                        connected_ports.append(self.node().addOutputPort(f"i{port_num}"))
+                        connected_ports.append(self.node().addOutputPort(f"o{port_num}"))
                     if self._port_type == INPUT_PORT:
-                        connected_ports.append(self.node().addInputPort(f"o{port_num}"))
+                        connected_ports.append(self.node().addInputPort(f"i{port_num}"))
 
             # connect ports
             for i, port in enumerate(active_ports):
@@ -467,19 +474,147 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
 
 
 class PortConnector():
-    """ Main function for the port connector display """
+    """ Main function for the port connector display
+
+    Attributes:
+        _link_selection_last_active_ports (list): of ports that were last active during link selection
+            This is used when the user creates a node during link connection
+        _active_nodegraph_widget (NodeGraphWidget): Node Graph widget the user is currently using
+            This is required as getting the node graph requires a node graph to be directly under the cursor,
+            so the popup widgets will fail.
+
+        """
 
     def __init__(self):
         PortConnector.active_port = None
 
+    """ UTILS """
     @staticmethod
-    def getLastActiveLinkSelectionPorts():
-        return getattr(katanaMainWindow(), "_link_selection_last_active_ports")
+    def getPortPosition(port):
+        view_scale = PortConnector.activeNodegraphWidget().getViewScale()[0]
+        pos = DrawingModule.nodeWorld_getPortPosition(port, view_scale)
+        return pos
+
+    @staticmethod
+    def organizePortsByPosition(ports):
+        """ Organizes the ports in a list based off of their world coordinates from upper left
+        to bottom right.
+
+        This is done by calculating the ports YPos first, and seeing if it fits into a chunk
+        specific chunk size.  After all ports in that ypos chunksize are arranged, they are
+        then arranged by their xpos.  So this in theory should read top left, to bottom right.
+
+        Args:
+            ports (dict): of ports to be organized
+                {y_block: list(ports)}
+                Note: This list will need to be sorted in reverse order in order to retrieve it
+                    as a top to bottom list.
+        """
+        chunk_size = 100
+
+        # sort ports
+        # {y_block: list(ports)}
+        """ This sorting algo works by
+        1.) Checking to see if there are ports, if there are not ports, then initialize and add the first port
+        2.) Checking to see if this port should be the last port
+        3.) Checking to see if this port sits somewhere in the middle """
+        port_map = {}
+
+        for active_port in ports:
+            active_pos = PortConnector.getPortPosition(active_port)
+            # Initalize list of ports
+            y_block = int(active_pos[1] // chunk_size)
+            if y_block not in port_map:
+                # is not yet initialize
+                port_map[y_block] = [active_port]
+
+            # Port should be last entry in the list
+            elif PortConnector.getPortPosition(port_map[y_block][-1])[0] < active_pos[0]:
+                port_map[y_block].append(active_port)
+                pass
+
+            # Port sits somewhere in the middle
+            else:
+                for i, _port in enumerate(port_map[y_block]):
+                    _port_pos = PortConnector.getPortPosition(_port)
+                    if active_pos[0] < _port_pos[0]:
+                        port_map[y_block].insert(i, active_port)
+                        break
+
+        # compile list
+        port_list = []
+        for y_block in reversed(sorted(port_map)):
+            port_chunk = port_map[y_block]
+            for port in port_chunk:
+                port_list.append(port)
+
+        return port_list
+        # sort by xpos
+
+    """ PROPERTIES """
+    @staticmethod
+    def activeNodegraphWidget():
+        """ Returns the currently active nodegraph widget"""
+        return katanaMainWindow()._active_nodegraph_widget
+
+    @staticmethod
+    def setActiveNodegraphWidget(nodegraph_widget=None):
+        """ Sets the currently active nodegraph widget"""
+        if not nodegraph_widget:
+            nodegraph_widget = getActiveNodegraphWidget()
+        katanaMainWindow()._active_nodegraph_widget = nodegraph_widget
+
+    @staticmethod
+    def getLastActiveLinkSelectionPorts(organize_ports=False):
+        """ Returns the last actively selected ports.
+
+        This is attribute is set when the user selects ports and is only used when the user
+        is attempting to create a node with an active link selection """
+        if hasattr(katanaMainWindow(), "_link_selection_last_active_ports"):
+            ports = getattr(katanaMainWindow(), "_link_selection_last_active_ports")
+            if organize_ports:
+                ports = PortConnector.organizePortsByPosition(ports)
+            return ports
+        else:
+            return list()
 
     @staticmethod
     def setLastActiveLinkSelectionPorts(ports):
         setattr(katanaMainWindow(), "_link_selection_last_active_ports", ports)
 
+    @staticmethod
+    def getLinkConnectionLayer():
+        """ Returns the link interaction layer.
+
+        If it is not the last in the stack, this will return None"""
+        nodegraph_widget = getActiveNodegraphWidget()
+        for layer in reversed(nodegraph_widget.getLayers()):
+            if isinstance(layer, LinkConnectionLayer):
+                return layer
+
+        return None
+
+    @staticmethod
+    def isSelectionActive():
+        """ Determines if a port selection is active"""
+        nodegraph_widget = getActiveNodegraphWidget()
+        if not nodegraph_widget:
+            nodegraph_widget = PortConnector.activeNodegraphWidget()
+        graph_interaction = nodegraph_widget.getGraphInteraction()
+        return not graph_interaction
+
+    @staticmethod
+    def selectionType():
+        """ Returns the current selection type"""
+        if not PortConnector.isSelectionActive(): return None
+        link_connection_layer = PortConnector.getLinkConnectionLayer()
+        base_ports = link_connection_layer.getBasePorts()
+        if base_ports[0].getType() == OUTPUT_PORT:
+            return OUTPUT_PORT
+        if base_ports[0].getType() == INPUT_PORT:
+            return INPUT_PORT
+
+    """ EVENTS """
     @staticmethod
     def actuateSelection(display_warning=True, is_recursive_selection=False, nodegraph_widget=None, node=None, port_type=None):
         """ Run when the user presses "~"
@@ -583,8 +718,8 @@ class PortConnector():
                 is_recursive_selection=is_recursive_selection)
             katanaMainWindow()._port_popup_menu.show()
             centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
-            # todo smart connection
 
+    # todo abstract this to function
     @staticmethod
     def __connectInputPorts(base_ports, display_warning, is_recursive_selection):
         exclude_nodes = [port.getNode() for port in base_ports]
@@ -711,63 +846,6 @@ class PortConnector():
                 katanaMainWindow()._port_popup_menu.setFocus()
 
     @staticmethod
-    def setActiveNodegraphWidget(nodegraph_widget=None):
-        """ Sets the currently active nodegraph widget"""
-        if not nodegraph_widget:
-            nodegraph_widget = PortConnector.nodegraphWidget()
-        katanaMainWindow()._active_nodegraph_widget = nodegraph_widget
-
-    @staticmethod
-    def activeNodegraphWidget():
-        """ Returns the currently active nodegraph widget"""
-        return katanaMainWindow()._active_nodegraph_widget
-
-    @staticmethod
-    def nodegraphWidget():
-        """ Gets the nodegraph under the cursor"""
-        # Todo update, as it hits the menu, instead of the nodegraph on release
-        widget_under_cursor = getWidgetUnderCursor().__module__.split(".")[-1]
-        if widget_under_cursor != "NodegraphWidget": return None
-
-        return getWidgetUnderCursor()
-
-    @staticmethod
-    def getLinkConnectionLayer():
-        """ Returns the link interaction layer.
-
-        If it is not the last in the stack, this will return None"""
-        nodegraph_widget = PortConnector.nodegraphWidget()
-        for layer in reversed(nodegraph_widget.getLayers()):
-            if isinstance(layer, LinkConnectionLayer):
-                return layer
-
-        # last_layer = nodegraph_widget.getLayers()[-1]
-        # if isinstance(last_layer, LinkConnectionLayer):
-        #     return last_layer
-
-        return None
-
-    @staticmethod
-    def isSelectionActive():
-        """ Determines if a port selection is active"""
-        nodegraph_widget = PortConnector.nodegraphWidget()
-        if not nodegraph_widget:
-            nodegraph_widget = PortConnector.activeNodegraphWidget()
-        graph_interaction = nodegraph_widget.getGraphInteraction()
-        return not graph_interaction
-
-    @staticmethod
-    def selectionType():
-        """ Returns the current selection type"""
-        if not PortConnector.isSelectionActive(): return None
-        link_connection_layer = PortConnector.getLinkConnectionLayer()
-        base_ports = link_connection_layer.getBasePorts()
-        if base_ports[0].getType() == OUTPUT_PORT:
-            return OUTPUT_PORT
-        if base_ports[0].getType() == INPUT_PORT:
-            return INPUT_PORT
-
-    @staticmethod
     def hideNoodle():
         """ Hides the noodle, or multiple noodles..."""
         # hide noodle
@@ -783,13 +861,15 @@ class PortConnector():
             delattr(LinkConnectionLayer, "_highlighted_nodes")
 
     @staticmethod
-    def showNoodle(ports):
+    def showNoodle(ports, nodegraph=None):
         """ Shows the noodle from the port provided
 
         Args:
-            ports (list): of ports to show"""
+            ports (list): of ports to show
+            nodegraph (NodeGraph): Instance of nodegraph to work on"""
 
-        nodegraph_widget = PortConnector.activeNodegraphWidget()
+        if not nodegraph:
+            nodegraph_widget = PortConnector.activeNodegraphWidget()
 
         layer = LinkConnectionLayer(ports, None, enabled=True)
         nodegraph_widget.appendLayer(layer, stealFocus=True)
