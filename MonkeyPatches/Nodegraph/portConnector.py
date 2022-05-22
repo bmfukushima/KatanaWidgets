@@ -105,19 +105,23 @@ class OverridePortWarningButtonWidget(ButtonInputWidget):
         return self._node
 
     def connectPortsEvent(self, *args):
-        for selected_port in self._selected_ports:
-            self._connection_port.connect(selected_port)
-        PortConnector.hideNoodle()
+        Utils.UndoStack.OpenGroup("Connect Nodes")
+        try:
+            for selected_port in self._selected_ports:
+                self._connection_port.connect(selected_port)
+            PortConnector.hideNoodle()
 
-        if self._is_recursive_selection:
-            self.parent().hide()
-            QApplication.processEvents()
-            katanaMainWindow().activateWindow()
-            katanaMainWindow().setFocus()
-            PortConnector.actuateSelection(
-                PortConnector.activeNodegraphWidget(), node=self.node(), port_type=self._selected_ports[0].getType())
-        parent = getWidgetAncestor(self, OverridePortWarningButtonPopupWidget)
-        parent.close()
+            if self._is_recursive_selection:
+                self.parent().hide()
+                QApplication.processEvents()
+                katanaMainWindow().activateWindow()
+                katanaMainWindow().setFocus()
+                PortConnector.actuateSelection(
+                    PortConnector.activeNodegraphWidget(), node=self.node(), port_type=self._selected_ports[0].getType())
+            parent = getWidgetAncestor(self, OverridePortWarningButtonPopupWidget)
+            parent.close()
+        finally:
+            Utils.UndoStack.CloseGroup()
         # self.parent().close()
 
 

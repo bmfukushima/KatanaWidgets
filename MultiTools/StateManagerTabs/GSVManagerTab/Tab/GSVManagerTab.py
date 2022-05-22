@@ -1129,7 +1129,7 @@ class DisplayGSVEventWidget(FrameInputWidgetContainer):
         display_widget.setGSV(gsv)
 
         # remove old display
-        clearLayout(display_widget.layout(), start=2)
+        display_widget.clearInputWidgets()
 
         # update display
         events_dict = json.loads(param_data)[gsv]["data"]
@@ -1370,7 +1370,8 @@ class GSVEvent(AbstractScriptInputWidget):
     def updateScriptDisplayFlag(self):
         """ Updates the color of all of the show script display buttons"""
         #disable all other scripts displays
-        for child in self.parent().widgets().values():
+        display_gsv_events_widget = getWidgetAncestor(self, DisplayGSVEventWidget)
+        for child in display_gsv_events_widget.widgets().values():
             child.setIsEditingActive(False)
             child.showScriptWidget().setTextColor(iColor["rgba_text"])
             child.showScriptWidget().setIsSelected(False)

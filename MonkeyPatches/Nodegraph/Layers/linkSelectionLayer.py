@@ -18,12 +18,10 @@ ATTR_NAME = "_link_selection"
 class AbstractLinkSelectionLayer(AbstractGestureLayer):
     """
     Attributes:
-        cursor_trajectory (LinkCuttingLayer.DIRECTION): direction to position the nodes
-        last_cursor_points (list): of QPoints that hold the last 5 cursor positions
-            This is used for calculating the cursors trajectory
-        _link_cutting_active (bool): determines if this event is active or not
-        _link_cutting_finishing (bool): determines if the link cutting event is finishing
-            This is useful to differentiate between a C+LMB and a C-Release event
+        current_selection (dict): of the currently selected links in a map of
+            {PORT: (PORT_A, PORT_B)}
+            This is cleared on activation, as if the user wants to append to their selection,
+            this can't be cleared on release.
         selection_type (PORT_TYPE): the type of port that is currently being selected
             OUTPUT_PORT | INPUT_PORT
         selection_event_type (AbstractLinkSelectionLayer.TYPE): the type of event selected,
@@ -63,7 +61,6 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
         for item in selection:
             if item in current_selection:
                 del current_selection[item]
-                # current_selection.remove(item)
         AbstractLinkSelectionLayer.setCurrentSelection(current_selection)
 
     def updateSelection(self, ports):
@@ -89,10 +86,6 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
     def activateGestureEvent(self, selection_event_type=APPEND, clear_data=True):
         self.setSelectionEventType(selection_event_type)
         AbstractGestureLayer.activateGestureEvent(self, clear_data=clear_data)
-
-    def deactivateGestureEvent(self):
-        # AbstractLinkSelectionLayer.clearSelection()
-        AbstractGestureLayer.deactivateGestureEvent(self)
 
     def mousePressEvent(self, event):
         AbstractLinkSelectionLayer.clearSelection()
@@ -133,27 +126,19 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
                 self.drawCrosshair()
                 self.drawTrajectory()
 
-                # get link hits
-                # todo update port hits
                 # todo no idea why, but something in here is moving the coordinate system... all drawing must be done before this
-                # having issue selecting... I think this is something to do with appending ports
                 if 0 < len(self.getCursorPoints()):
+                    # get hits
                     hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=self.crosshairRadius(), step_size=5)
                     link_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.LINK)
+
+                    # update port selection
                     ports = {}
                     for link in link_hits:
                         for port in link:
                             if port.getType() == self.selectionType():
                                 if port not in ports:
                                     ports[port] = link
-                    # for link in link_hits:
-                    #     print(link)
-                    #     # for port in link:
-                    #     #     if port.getType() == self.selectionType():
-                    #     #         self.updateSelection({port:link})
-                    #             # if port not in ports:
-                    #             #     ports[port] = link
-                    # update port list
                     self.updateSelection(ports)
 
                 self.addCursorPoint(mouse_pos)
@@ -214,9 +199,7 @@ def linkConnectionMousePressEvent(self, event):
         link_connection_layer = PortConnector.getLinkConnectionLayer()
 
         if link_connection_layer:
-            # base_ports = link_connection_layer.getBasePorts()
-            # AbstractLinkSelectionLayer.setCurrentSelection(base_ports)
-
+            # get the selection type (input/output)
             selection_type = PortConnector.selectionType()
             if selection_type == INPUT_PORT:
                 layer = self.layerStack().getLayerByName("_input_link_selection")

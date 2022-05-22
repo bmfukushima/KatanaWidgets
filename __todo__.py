@@ -4,16 +4,6 @@ TODO: Enhancement
             Closing tabs in general needs to run some sort of cleanup handler
     *   VariableManager | Can load multiple patterns
             Remake this?
-    *   Swipe Interaction
-            * Add/Remove selection
-                - Fix output sorting algorithm
-                - Tab node creation auto connection
-            * Add colors to links that have been hit
-                - need to write something custom in the paint handler
-                    1.) Get i/o ports, store as attr
-                    2.) Draw line between ports
-                    3.) Reset i/o ports attr
-                    4.) Clear color
     *   Backdrop lock
             * Lock all items in a backdrop
                 - Lock toggle button
@@ -29,6 +19,9 @@ TODO: Enhancement
                     Do x on release
     *   Popup Widgets
             Move tidy this up
+    *   LinkConnectionLayer
+            Multi connection to new nodes (merge, switch, etc)
+    *   Port order popup widget
 TODO: cgwidgets
     *   List handler is driving me up the walls
             When typing from empty, after it shows the first time, after the first key, if there are no
@@ -49,4 +42,6 @@ TODO: BUGS
     *   GSV Manager
             - Events doesn't properly show new scripts
             - View breaks after reordering variables
+            - Can't create new events
+                broken from scroll area updates
 """
