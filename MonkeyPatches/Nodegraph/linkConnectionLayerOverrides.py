@@ -34,22 +34,9 @@ def createDotNode(port):
 
     # update display
     PortConnector.hideNoodle()
-    PortConnector.showNoodle(dot_node.getOutputPortByIndex(0))
+    PortConnector.showNoodle([dot_node.getOutputPortByIndex(0)])
 
     return dot_node
-
-
-def removeLastActiveNode():
-    if hasattr(widgetutils.katanaMainWindow(), "_link_connection_active_node"):
-        delattr(widgetutils.katanaMainWindow(), "_link_connection_active_node")
-
-
-def lastActiveNode():
-    return widgetutils.katanaMainWindow()._link_connection_active_node
-
-
-def setLastActiveNode(node):
-    widgetutils.katanaMainWindow()._link_connection_active_node = node
 
 
 # link connection mouse move
@@ -86,15 +73,10 @@ def linkConnectionLayerMouseMove(func):
 def linkConnectionLayerKeyPress(func):
     def __linkConnectionLayerKeyPress(self, event):
         widgetutils.katanaMainWindow()._is_link_creation_active = True
-        if not hasattr(widgetutils.katanaMainWindow(), "_link_connection_active_node"):
-            if 0 < len(self.getBasePorts()):
-                last_active_node = self.getBasePorts()[0].getNode()
-                setLastActiveNode(last_active_node)
 
         if event.key() == Qt.Key_D:
             if not event.isAutoRepeat():
                 dot_node = createDotNode(self.getBasePorts()[0])
-                setLastActiveNode(dot_node)
                 return True
 
         if event.key() == 96:
@@ -140,9 +122,11 @@ def exitLink(func):
             nodeutils.removeGlowColor(LinkConnectionLayer._highlighted_nodes)
             delattr(LinkConnectionLayer, "_highlighted_nodes")
 
+        # update selection
+        PortConnector.setLastActiveLinkSelectionPorts(self.getBasePorts())
+
         # toggle last active node flags
         widgetutils.katanaMainWindow()._is_link_creation_active = False
-        removeLastActiveNode()
 
         func(self, *args)
     return __exitLink
@@ -150,7 +134,6 @@ def exitLink(func):
 
 def placeNodeOverride(func):
     def __placeNodeOverride(node, shouldFloat=True, maskInputPreferred=False, autoPlaceAllowed=True):
-        setLastActiveNode(None)
         return func(node, shouldFloat=shouldFloat, maskInputPreferred=maskInputPreferred, autoPlaceAllowed=autoPlaceAllowed)
 
     return __placeNodeOverride

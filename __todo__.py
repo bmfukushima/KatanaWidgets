@@ -11,6 +11,9 @@ TODO: Enhancement
                     popup password, store in cypher
                 - Lock all nodes in backdrop
     *   Gesture Layers
+            Shading Nodes
+                - Slice Layer
+                - Link Selection Layer
             - NMC
                 Hit box detection
                 Not sure if this is worth supporting.  The API is very closed off.
@@ -19,10 +22,12 @@ TODO: Enhancement
                     Do x on hit
                     Do x on release
     *   Popup Widgets
-            Move tidy this up
-    *   LinkConnectionLayer
-            Multi connection to new nodes (merge, switch, etc)
-    *   Port order popup widget
+            Tidy this API up
+    *   Port Connection
+            - Port Order
+            - Potentially need to run the interpolator backwards?
+            - Connect by port proximity to node?
+            - Connect by port position? Promixty to node? World location?
 TODO: cgwidgets
     *   List handler is driving me up the walls
             When typing from empty, after it shows the first time, after the first key, if there are no

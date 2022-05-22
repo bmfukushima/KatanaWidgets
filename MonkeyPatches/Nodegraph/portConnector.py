@@ -473,6 +473,14 @@ class PortConnector():
         PortConnector.active_port = None
 
     @staticmethod
+    def getLastActiveLinkSelectionPorts():
+        return getattr(katanaMainWindow(), "_link_selection_last_active_ports")
+
+    @staticmethod
+    def setLastActiveLinkSelectionPorts(ports):
+        setattr(katanaMainWindow(), "_link_selection_last_active_ports", ports)
+
+    @staticmethod
     def actuateSelection(display_warning=True, is_recursive_selection=False, nodegraph_widget=None, node=None, port_type=None):
         """ Run when the user presses "~"
 
@@ -729,9 +737,13 @@ class PortConnector():
 
         If it is not the last in the stack, this will return None"""
         nodegraph_widget = PortConnector.nodegraphWidget()
-        last_layer = nodegraph_widget.getLayers()[-1]
-        if isinstance(last_layer, LinkConnectionLayer):
-            return last_layer
+        for layer in reversed(nodegraph_widget.getLayers()):
+            if isinstance(layer, LinkConnectionLayer):
+                return layer
+
+        # last_layer = nodegraph_widget.getLayers()[-1]
+        # if isinstance(last_layer, LinkConnectionLayer):
+        #     return last_layer
 
         return None
 
@@ -758,24 +770,17 @@ class PortConnector():
     @staticmethod
     def hideNoodle():
         """ Hides the noodle, or multiple noodles..."""
+        # hide noodle
         nodegraph_widget = PortConnector.activeNodegraphWidget()
-        last_layer = nodegraph_widget.getLayers()[-1]
-        while isinstance(last_layer, LinkConnectionLayer):
-            nodegraph_widget.idleUpdate()
-            nodegraph_widget.removeLayer(last_layer)
-            # nodegraph_widget = PortConnector.nodegraphWidget()
-            last_layer = nodegraph_widget.getLayers()[-1]
+        for layer in reversed(nodegraph_widget.getLayers()):
+            if isinstance(layer, LinkConnectionLayer):
+                nodegraph_widget.idleUpdate()
+                nodegraph_widget.removeLayer(layer)
 
         # remove glow color
         if hasattr(LinkConnectionLayer, "_highlighted_nodes"):
-            # if closest_node == getattr(LinkConnectionLayer, "_highlighted_nodes"): return
             nodeutils.removeGlowColor(LinkConnectionLayer._highlighted_nodes)
             delattr(LinkConnectionLayer, "_highlighted_nodes")
-
-        # remove last active node
-        from .linkConnectionLayerOverrides import removeLastActiveNode
-        removeLastActiveNode()
-        # delattr(katanaMainWindow(), "_active_nodegraph_widget")
 
     @staticmethod
     def showNoodle(ports):
@@ -785,7 +790,13 @@ class PortConnector():
             ports (list): of ports to show"""
 
         nodegraph_widget = PortConnector.activeNodegraphWidget()
-        #port_layer = nodegraph_widget.getLayerByName("PortInteractions")
 
         layer = LinkConnectionLayer(ports, None, enabled=True)
         nodegraph_widget.appendLayer(layer, stealFocus=True)
+
+        # update port last active port selection
+        base_ports = []
+        for layer in reversed(nodegraph_widget.getLayers()):
+            if isinstance(layer, LinkConnectionLayer):
+                base_ports += layer.getBasePorts()
+        PortConnector.setLastActiveLinkSelectionPorts(base_ports)

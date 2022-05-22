@@ -1,12 +1,13 @@
 import collections
 from qtpy.QtCore import QEvent
 from Katana import LayeredMenuAPI, Utils, NodegraphAPI
-from UI4.Tabs.NodeGraphTab.Layers.CustomMenuLayer import CustomMenuLayer
 from UI4.Tabs.NodeGraphTab.Layers.NodeCreationMenuLayer import NodeCreationMenuLayer
-from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 from UI4.App import Tabs
 
 from Utils2 import widgetutils, nodegraphutils
+
+from .portConnector import PortConnector, INPUT_PORT, OUTPUT_PORT
+
 
 def menuLayerActionOverride(func):
     def __menuLayerActionOverride(self):
@@ -91,30 +92,31 @@ def nodeEntryChosen(func):
         #### START INJECTION ####
         """ Inject code to connect nodes when creating nodes via the Tab menu on the LinkConnectionLayer """
         # preflight
-        from .linkConnectionLayerOverrides import removeLastActiveNode, lastActiveNode
         if not hasattr(widgetutils.katanaMainWindow(), "_is_link_creation_active"): return node
         if not widgetutils.katanaMainWindow()._is_link_creation_active: return node
-        if not hasattr(widgetutils.katanaMainWindow(), "_link_connection_active_node"): return node
 
-        # connect node
-        last_active_node = lastActiveNode()
-
-        # connect nodes
-        input_port = None
-        if len(node.getInputPorts()) == 0:
-            if node.getType() in nodegraphutils.dynamicInputPortNodes():
-                input_port = node.addInputPort("i0")
-        else:
-            input_port = node.getInputPortByIndex(0)
-        if input_port:
-            last_active_node.getOutputPortByIndex(0).connect(input_port)
-
-        # disable attrs
-
-        removeLastActiveNode()
-
-        widgetutils.katanaMainWindow()._is_link_creation_active = False
-
+        # connect node to last active selection if a link is active
+        last_active_ports = PortConnector.getLastActiveLinkSelectionPorts()
+        if last_active_ports:
+            if last_active_ports[0].getType() == OUTPUT_PORT:
+                if node.getType() in nodegraphutils.dynamicInputPortNodes() or node.getType() == "Group":
+                    for i, port in enumerate(last_active_ports):
+                        input_port = node.addInputPort("i{i}".format(i=i))
+                        input_port.connect(last_active_ports[i])
+                else:
+                    input_port = node.getInputPortByIndex(0)
+                    if input_port:
+                        input_port.connect(last_active_ports[0])
+            elif last_active_ports[0].getType() == INPUT_PORT:
+                if node.getType() == "Group":
+                    for i, port in enumerate(last_active_ports):
+                        output_port = node.addOutputPort("o{i}".format(i=i))
+                        output_port.connect(last_active_ports[i])
+                else:
+                    output_port = node.getOutputPortByIndex(0)
+                    if output_port:
+                        output_port.connect(last_active_ports[0])
+            widgetutils.katanaMainWindow()._is_link_creation_active = False
         #### END INJECTION ####
         return node
 
@@ -156,5 +158,6 @@ def installMenuLayerOverrides(**kwargs):
     node_creation_menu_layer.__class__.processEvent = menuLayerProcessEventOverride(node_creation_menu_layer.__class__.processEvent)
 
     node_creation_menu_layer.__class__.onEntryChosen = nodeEntryChosen(NodeCreationMenuLayer.onEntryChosen)
+
     # cleanup
     nodegraph_widget.cleanup()
