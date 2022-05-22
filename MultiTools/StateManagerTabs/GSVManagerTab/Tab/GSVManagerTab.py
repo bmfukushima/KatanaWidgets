@@ -212,11 +212,7 @@ class GSVViewWidget(FrameInputWidgetContainer):
         """
         Removes all of the GSVViewWidgets from the display
         """
-        # clear layout (if it exists)
-        if self.layout().count() > 0:
-            for index in reversed(range(self.layout().count())):
-                self.layout().itemAt(index).widget().setParent(None)
-
+        self.clearInputWidgets()
         self._widget_list = {}
 
     def populate(self):

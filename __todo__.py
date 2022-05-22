@@ -42,9 +42,6 @@ TODO: BUGS
             - Move to  popup widget API?  Users could potentially popup their favorite nodes?
     *   GSV Manager
             - Events doesn't properly show after changing event type
-            - View breaks after reordering variables
-    *   Popup GSV Manager
-            - Not properly resizing?
     *   Gesture Layer
             - Check hit handler, this might need to be moved into world space to ensure hits are correct?
 """
