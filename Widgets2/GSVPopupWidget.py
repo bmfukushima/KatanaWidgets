@@ -100,9 +100,23 @@ class GSVPopupWidget(FrameInputWidgetContainer):
 
         return input_widget
 
+    def updateSize(self):
+        # update display
+        num_gsvs = len(NodegraphAPI.GetNode('rootNode').getParameter('variables').getChildren())
+
+        spacer_offset = self.layout().spacing() * 2 + self._separator_width
+        height = getFontSize() * 3 * (num_gsvs + 1) + (getFontSize() * 4) + spacer_offset + (num_gsvs + 1) * 3
+        if 512 < height:
+            height = 512
+        size = scaleResolution(QSize(WIDTH, height))
+        from .PopupWidget import PopupWidget
+        popup_widget = getWidgetAncestor(self, PopupWidget)
+        popup_widget.setFixedSize(size)
+
     """ EVENTS"""
     def showEvent(self, event):
         self.update()
+        self.updateSize()
         return FrameInputWidgetContainer.showEvent(self, event)
 
     def update(self):
@@ -117,17 +131,7 @@ class GSVPopupWidget(FrameInputWidgetContainer):
         # add entry
         self.createGSVParamWidget(gsvutils.getGSVParameter(gsv_name))
 
-        # update display
-        num_gsvs = len(NodegraphAPI.GetNode('rootNode').getParameter('variables').getChildren())
-
-        spacer_offset = self.layout().spacing() * 2 + self._separator_width
-        height = getFontSize() * 3 * (num_gsvs + 1) + (getFontSize() * 4) + spacer_offset + (num_gsvs + 1) * 3
-        if 512 < height:
-            height = 512
-        size = scaleResolution(QSize(WIDTH, height))
-        from .PopupWidget import PopupWidget
-        popup_widget = getWidgetAncestor(self, PopupWidget)
-        popup_widget.setFixedSize(size)
+        self.updateSize()
 
     def userChangedGSVNameEvent(self, widget, new_gsv_name):
         """ Updates the name of a GSV on user event"""
