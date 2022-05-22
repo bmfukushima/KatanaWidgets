@@ -348,6 +348,19 @@ def isContainerNode(node):
     return False
 
 
+def isShadingNode(node):
+    """ Determines if the node provided is a shading node
+
+    Args:
+        node (Node)
+        """
+    if not hasattr(node, "checkDynamicParameters"): return False
+    if not hasattr(node, "getRendererName"): return False
+    if "ShadingNode" not in node.getType(): return False
+
+    return True
+
+
 def insertNode(node, parent_node):
     """
     Inserts the node in the correct position in the Nodegraph, and then
