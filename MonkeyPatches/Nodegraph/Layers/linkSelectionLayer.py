@@ -128,7 +128,6 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
                 for end_point in link_points:
                     glVertex2f(end_point[0], end_point[1])
                 glEnd()
-                self.addCursorPoint(mouse_pos)
 
                 # draw crosshair
                 self.drawCrosshair()
@@ -137,8 +136,9 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
                 # get link hits
                 # todo update port hits
                 # todo no idea why, but something in here is moving the coordinate system... all drawing must be done before this
+                # having issue selecting... I think this is something to do with appending ports
                 if 0 < len(self.getCursorPoints()):
-                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=self.crosshairRadius(), step_size=2)
+                    hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=self.crosshairRadius(), step_size=5)
                     link_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.LINK)
                     ports = {}
                     for link in link_hits:
@@ -146,10 +146,17 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
                             if port.getType() == self.selectionType():
                                 if port not in ports:
                                     ports[port] = link
-
+                    # for link in link_hits:
+                    #     print(link)
+                    #     # for port in link:
+                    #     #     if port.getType() == self.selectionType():
+                    #     #         self.updateSelection({port:link})
+                    #             # if port not in ports:
+                    #             #     ports[port] = link
                     # update port list
                     self.updateSelection(ports)
 
+                self.addCursorPoint(mouse_pos)
 
 class InputLinkSelectionLayer(AbstractLinkSelectionLayer):
     def __init__(self, *args, **kwargs):
