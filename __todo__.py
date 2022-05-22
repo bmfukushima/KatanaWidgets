@@ -39,7 +39,7 @@ TODO: BUGS
     *   Node Graph Pins
             - Deleting a reference and re adding the same reference does not work
                 probably needs to update internal meta data
-            - Move to stand alone popup widget API
+            - Move to  popup widget API?  Users could potentially popup their favorite nodes?
     *   GSV Manager
             - Events doesn't properly show after changing event type
             - View breaks after reordering variables
