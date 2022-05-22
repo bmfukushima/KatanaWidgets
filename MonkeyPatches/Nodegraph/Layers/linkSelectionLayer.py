@@ -2,7 +2,9 @@
 
 from qtpy.QtCore import Qt, QEvent
 
-from Katana import Utils
+from OpenGL.GL import glBegin, glEnd, GL_LINES, glVertex2f, glLineWidth, glColor4f
+
+from Katana import Utils, DrawingModule
 from UI4.Tabs.NodeGraphTab.Layers.LinkConnectionLayer import LinkConnectionLayer
 
 from Utils2 import nodegraphutils, widgetutils
@@ -22,6 +24,10 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
         _link_cutting_active (bool): determines if this event is active or not
         _link_cutting_finishing (bool): determines if the link cutting event is finishing
             This is useful to differentiate between a C+LMB and a C-Release event
+        selection_type (PORT_TYPE): the type of port that is currently being selected
+            OUTPUT_PORT | INPUT_PORT
+        selection_event_type (AbstractLinkSelectionLayer.TYPE): the type of event selected,
+            if its a remove, or append event
     """
     REMOVE = 0
     APPEND = 1
@@ -30,12 +36,14 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
         super(AbstractLinkSelectionLayer, self).__init__(*args, **kwargs)
 
         if not hasattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME)):
-            setattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME), list())
+            setattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME), dict())
+
+        self._selection_type = INPUT_PORT
 
     """ SELECTION ATTR"""
     @staticmethod
     def clearSelection():
-        setattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME), list())
+        setattr(widgetutils.katanaMainWindow(), "{ATTR_NAME}_current_selection".format(ATTR_NAME=ATTR_NAME), dict())
 
     @staticmethod
     def currentSelection():
@@ -47,16 +55,15 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
 
     @staticmethod
     def appendSelection(selection):
-        current_selection = AbstractLinkSelectionLayer.currentSelection()
-        selection += current_selection
-        AbstractLinkSelectionLayer.setCurrentSelection(selection)
+        AbstractLinkSelectionLayer.currentSelection().update(selection)
 
     @staticmethod
     def removeSelection(selection):
         current_selection = AbstractLinkSelectionLayer.currentSelection()
         for item in selection:
             if item in current_selection:
-                current_selection.remove(item)
+                del current_selection[item]
+                # current_selection.remove(item)
         AbstractLinkSelectionLayer.setCurrentSelection(current_selection)
 
     def updateSelection(self, ports):
@@ -72,14 +79,24 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
     def setSelectionEventType(self, event_type):
         self._selection_event_type = event_type
 
+    def selectionType(self):
+        return self._selection_type
+
+    def setSelectionType(self, selection_type):
+        self._selection_type = selection_type
+
     """ VIRTUAL FUNCTIONS"""
     def activateGestureEvent(self, selection_event_type=APPEND, clear_data=True):
         self.setSelectionEventType(selection_event_type)
         AbstractGestureLayer.activateGestureEvent(self, clear_data=clear_data)
 
     def deactivateGestureEvent(self):
-        AbstractLinkSelectionLayer.clearSelection()
+        # AbstractLinkSelectionLayer.clearSelection()
         AbstractGestureLayer.deactivateGestureEvent(self)
+
+    def mousePressEvent(self, event):
+        AbstractLinkSelectionLayer.clearSelection()
+        return AbstractGestureLayer.mousePressEvent(self, event)
 
     def showNoodles(self, ports):
         nodegraph_widget = widgetutils.getActiveNodegraphWidget()
@@ -92,40 +109,57 @@ class AbstractLinkSelectionLayer(AbstractGestureLayer):
             mouse_pos = self.layerStack().getMousePos()
             # align nodes
             if mouse_pos:
+                # draw selected links
+                glLineWidth(2)
+                glColor4f(0.5, 0.5, 1, 1)
+                link_points = []
+                for port, link in AbstractLinkSelectionLayer.currentSelection().items():
+                    end_points = DrawingModule.nodeWorld_getLinkEndPoints(
+                        self.layerStack().getCurrentNodeView(),
+                        link[0],
+                        link[1],
+                        self.layerStack().getViewScale()[0]
+                    )
+
+                    link_points.append(self.layerStack().mapFromWorldToWindow(end_points[0][0], end_points[0][1]))
+                    link_points.append(self.layerStack().mapFromWorldToWindow(end_points[1][0], end_points[1][1]))
+
+                glBegin(GL_LINES)
+                for end_point in link_points:
+                    glVertex2f(end_point[0], end_point[1])
+                glEnd()
+                self.addCursorPoint(mouse_pos)
+
                 # draw crosshair
                 self.drawCrosshair()
                 self.drawTrajectory()
 
                 # get link hits
                 # todo update port hits
+                # todo no idea why, but something in here is moving the coordinate system... all drawing must be done before this
                 if 0 < len(self.getCursorPoints()):
                     hit_points = nodegraphutils.interpolatePoints(self.getCursorPoints()[-1], mouse_pos, radius=self.crosshairRadius(), step_size=2)
                     link_hits = nodegraphutils.pointsHitTestNode(hit_points, self.layerStack(), hit_type=nodegraphutils.LINK)
-
+                    ports = {}
                     for link in link_hits:
-                        self.addHit(link)
+                        for port in link:
+                            if port.getType() == self.selectionType():
+                                if port not in ports:
+                                    ports[port] = link
 
-                self.addCursorPoint(mouse_pos)
+                    # update port list
+                    self.updateSelection(ports)
 
 
 class InputLinkSelectionLayer(AbstractLinkSelectionLayer):
     def __init__(self, *args, **kwargs):
         super(InputLinkSelectionLayer, self).__init__(*args, **kwargs)
+        self.setSelectionType(INPUT_PORT)
 
     def mouseReleaseEvent(self, event):
         if self.isActive():
-            ports = []
-            for link in self.getHits():
-                for port in link:
-                    if port.getType() == INPUT_PORT:
-                        if port not in ports:
-                            ports.append(port)
-
-            # update port list
-            self.updateSelection(ports)
-
             # show selection
-            self.showNoodles(AbstractLinkSelectionLayer.currentSelection())
+            self.showNoodles(list(AbstractLinkSelectionLayer.currentSelection().keys()))
             widgetutils.katanaMainWindow()._active_nodegraph_widget = widgetutils.getActiveNodegraphWidget()
         return AbstractGestureLayer.mouseReleaseEvent(self, event)
 
@@ -133,20 +167,10 @@ class InputLinkSelectionLayer(AbstractLinkSelectionLayer):
 class OutputLinkSelectionLayer(AbstractLinkSelectionLayer):
     def __init__(self, *args, **kwargs):
         super(OutputLinkSelectionLayer, self).__init__(*args, **kwargs)
+        self.setSelectionType(OUTPUT_PORT)
 
     def mouseReleaseEvent(self, event):
         if self.isActive():
-            # get ports list
-            ports = []
-            for link in self.getHits():
-                for port in link:
-                    if port.getType() == OUTPUT_PORT:
-                        if port not in ports:
-                            ports.append(port)
-
-            # append selection and sort
-            self.updateSelection(ports)
-
             # todo fix sort algo
             # sort ports
             # sorted_ports = []
@@ -159,8 +183,7 @@ class OutputLinkSelectionLayer(AbstractLinkSelectionLayer):
             #             ports.remove(output_port)
 
             # show noodles
-            #AbstractLinkSelectionLayer.setCurrentSelection(sorted_ports)
-            self.showNoodles(AbstractLinkSelectionLayer.currentSelection())
+            self.showNoodles(list(AbstractLinkSelectionLayer.currentSelection().keys()))
             widgetutils.katanaMainWindow()._active_nodegraph_widget = widgetutils.getActiveNodegraphWidget()
 
         return AbstractGestureLayer.mouseReleaseEvent(self, event)
@@ -184,8 +207,8 @@ def linkConnectionMousePressEvent(self, event):
         link_connection_layer = PortConnector.getLinkConnectionLayer()
 
         if link_connection_layer:
-            base_ports = link_connection_layer.getBasePorts()
-            AbstractLinkSelectionLayer.setCurrentSelection(base_ports)
+            # base_ports = link_connection_layer.getBasePorts()
+            # AbstractLinkSelectionLayer.setCurrentSelection(base_ports)
 
             selection_type = PortConnector.selectionType()
             if selection_type == INPUT_PORT:
