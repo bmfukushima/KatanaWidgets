@@ -583,6 +583,15 @@ class PortConnector():
             node (Node): to display ports of
             port_type (PORTTYPE): The type of port to select
         """
+        # special condition to select all output ports if multiple nodes are selected
+        """ This condition is only triggered if there are multiple nodes selected with 1 or more output ports """
+        selected_nodes = [node for node in NodegraphAPI.GetAllSelectedNodes() if 0 < len(node.getOutputPorts())]
+        if 1 < len(selected_nodes):
+            ports = [port.getOutputPortByIndex(0) for port in selected_nodes]
+            PortConnector.showNoodle(ports)
+            return
+
+        # normal connection
         if not node:
             node = nodegraphutils.getClosestNode(has_output_ports=True)
             if not node: return
@@ -597,40 +606,30 @@ class PortConnector():
             if node_pos[1] < world_pos[1]:
                 port_type = INPUT_PORT
 
-        # todo abstract this to function
-        # GET OUTPUT PORTS
+        # GET PORTS
+        ports = None
         if port_type == OUTPUT_PORT:
-            # NO OUTPUT PORTS
-            if 0 == len(node.getOutputPorts()):
-                return
-
-            # SINGULAR OUTPUT PORT
-            if 1 == len(node.getOutputPorts()):
-                PortConnector.active_port = node.getOutputPorts()[0]
-                PortConnector.showNoodle([PortConnector.active_port])
-
-            # MULTIPLE OUTPUT PORTS
-            elif 1 < len(node.getOutputPorts()):
-                katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
-                    node, is_selection_active=False, port_type=OUTPUT_PORT)
-                katanaMainWindow()._port_popup_menu.show()
-                centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
-                katanaMainWindow()._port_popup_menu.activateWindow()
-                katanaMainWindow()._port_popup_menu.setFocus()
-
-        # GET INPUT PORTS
+            ports = node.getOutputPorts()
+            port_type = OUTPUT_PORT
         if port_type == INPUT_PORT:
-            if 0 == len(node.getInputPorts()):
+            ports = node.getInputPorts()
+            port_type = INPUT_PORT
+
+        # Show noodle
+        if ports:
+            # NO OUTPUT PORTS
+            if 0 == len(ports):
                 return
+
             # SINGULAR OUTPUT PORT
-            if 1 == len(node.getInputPorts()):
-                PortConnector.active_port = node.getInputPorts()[0]
+            if 1 == len(ports):
+                PortConnector.active_port = ports[0]
                 PortConnector.showNoodle([PortConnector.active_port])
 
             # MULTIPLE OUTPUT PORTS
-            elif 1 < len(node.getInputPorts()):
+            elif 1 < len(ports):
                 katanaMainWindow()._port_popup_menu = MultiPortPopupMenuWidget(
-                    node, is_selection_active=False, port_type=INPUT_PORT)
+                    node, is_selection_active=False, port_type=port_type)
                 katanaMainWindow()._port_popup_menu.show()
                 centerWidgetOnCursor(katanaMainWindow()._port_popup_menu)
                 katanaMainWindow()._port_popup_menu.activateWindow()
@@ -723,6 +722,3 @@ class PortConnector():
 
         layer = LinkConnectionLayer(ports, None, enabled=True)
         nodegraph_widget.appendLayer(layer, stealFocus=True)
-
-
-# PortConnector()

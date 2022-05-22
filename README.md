@@ -10,6 +10,8 @@ This repo contains a small collection of my personal tools which have been creat
 
 
 ### Installation
+Install [PIL](https://pypi.org/project/Pillow/)
+
 Append this directory to your `$KATANA_RESOURCES` environment variable.
 
 Install your license file under `$KATANABEBOP/license.txt` or place it in the environment variable `$KATANABEBOPLICENSE`
@@ -30,26 +32,43 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 - [State Manager Tab](MultiTools/StateManagerTabs/README.md) +
 - [Bookmark Manager Tab](MultiTools/StateManagerTabs/BookmarkManagerTab/README.md) +
 - [Node Color Registry Tab](MultiTools/NodeColorRegistryTab/README.md)
-- [Popup Bar Tabs](Tabs/PopupBar/README.md) -
-- [Script Editor Tab](MultiTools/ScriptEditorTab/README.md)
+- [Popup Bar Tabs](Tabs/PopupBar/README.md)
+- [Script Manager Tab](MultiTools/ScriptEditorTab/README.md)
 
 ### SuperTools
 - [Constraint](SuperTools/Constraint/README.md)
 - [Isolate CEL](SuperTools/IsolateCEL/README.md)
 - [Node Tree](SuperTools/NodeTree/README.md) +
 - [Simple Tool](MultiTools/SimpleTool/README.md)
-- [Variable Manager](MultiTools/VariableManager/README.md) -
 
 ### Layered Menus
 - `N` to access NetworkMaterialCreate/Edits
 - `S` to access GSVs
 
+### Swipe Gestures
+Are a new way of manipulating nodes/links inside of the legacy node graph. 
+In order to use a `Swipe Gesture` you will simple need to press the modifier 
+(such as `Q/W/A/etc`) and then press and hold `LMB` as you move the cursor around.
+The cursor should then change colors to signify that you're doing a gesture event.
+
+- `Q + LMB` Select links (input)
+  - Can continue selection by pressing `Shift + LMB` or `Control + LMB` to add or remove links to the current selection.
+- `W + LMB` Select links (output)
+- `A + LMB` Align nodes
+  - Will align nodes swiped through depending on the direction of the cursor when it passes through the second node.  Each node after will be aligned to that direction
+  - If only one node is it, this will perform an auto align up or down depending on the direction of the cursor as it passes through that node.
+- `S + LMB` Select nodes
+- `X + LMB` Cut links
+- `C + LMB` Connect nodes
+
 ### UX Enhancements
 - Port connector `~` 
   - Detects closest node to cursor
-  - If multiple ports are detected a popup will display the ports
-  - `Shift + ~` Will enable continuously port connection selection <br>
+  - `Shift + ~` Will enable continuously port connection selection
   - `Alt + ~` Will disable the warning if a connection already exists
+  - If multiple ports are detected a popup will display the ports
+    - Can select multiple ports by pressing `Shift` during selection
+    - Can press `Shift` to choose multiple ports to connect to.
   - Link Connection
     - Can now drop dots with `D`
     - Can create nodes with `Tab`
@@ -66,8 +85,6 @@ This library is written for [VFX Reference Platform 2021](https://vfxplatform.co
 - `Alt + LMB` Move all nodes above closest node
 - `Alt + Shift + LMB` Move all nodes below closest node
 - `A` Alignment Menu
-- `A + LMB` Press and hold `A` and LMB to swipe to align nodes to the first one
-- `S` GSV Popup Menu
 - Back/Forward buttons
   - `Back Button` show previous node as view node
   - `Forward Button` show next node view node

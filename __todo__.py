@@ -1,5 +1,6 @@
 """
 TODO: Enhancement
+    *   Update README
     *   PopupBar Widget closing nodegraphs
             Closing tabs in general needs to run some sort of cleanup handler
     *   VariableManager | Can load multiple patterns
@@ -40,8 +41,6 @@ TODO: BUGS
                 probably needs to update internal meta data
             - Move to stand alone popup widget API
     *   GSV Manager
-            - Events doesn't properly show new scripts
+            - Events doesn't properly show after changing event type
             - View breaks after reordering variables
-            - Can't create new events
-                broken from scroll area updates
 """
