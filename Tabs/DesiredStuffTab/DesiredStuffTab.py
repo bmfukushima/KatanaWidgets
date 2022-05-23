@@ -88,6 +88,9 @@ class DesiredStuffTab(UI4.Tabs.BaseTab):
         #
         self.desiredStuffFrame().populate()
 
+    def update(self):
+        self.desiredStuffFrame().populate()
+
     def freeze(self, *args, **kwargs):
         self._is_frozen = True
 
@@ -683,6 +686,7 @@ class DesirableStuffShojiPanel(NodeViewWidget):
         # force repopulate
         this._desired_data = []
         desired_data = reversed(json.loads(this.param().getValue(0))["data"])
+
         for obj_data in desired_data:
             exists = this.doesItemExist(obj_data)
 
@@ -695,6 +699,9 @@ class DesirableStuffShojiPanel(NodeViewWidget):
                 if obj_data["object_type"] == PARAM:
                     node = NodegraphAPI.GetNode(obj_data["node"])
                     if node:
+                        if hasattr(node, "checkDynamicParameters"):
+                            node.checkDynamicParameters()
+                            Utils.EventModule.ProcessAllEvents()
                         obj = node.getParameter(obj_data["param"])
                         if obj:
                             this.createNewIndexFromParam(obj, name=obj_data["name"])

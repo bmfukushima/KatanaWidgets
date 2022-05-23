@@ -70,6 +70,24 @@ def displayParameters():
         Utils.UndoStack.CloseGroup()
 
 
+def displayNodeGraphPins():
+    # construct popup parameters window if it doesn't exist
+    if not PopupWidget.doesPopupWidgetExist("popupParameters"):
+        # create popup widget
+        from Tabs.DesiredStuffTab.DesiredStuffTab import DesiredStuffTab
+        widget = DesiredStuffTab()
+        width = getFontSize() * 53
+        height = getFontSize() * 70.5
+        size = scaleResolution(QSize(width, height))
+        popup_widget = PopupWidget.constructPopupWidget(
+            "nodegraphPins", widget, size=size, hide_hotkey=Qt.Key_E, hide_modifiers=(Qt.ShiftModifier | Qt.AltModifier))
+
+    # hide/show popup parameters
+    widget = PopupWidget.getPopupWidget("nodegraphPins")
+    #widget.populate()
+    PopupWidget.togglePopupWidgetVisibility("nodegraphPins")
+
+
 def displayPopupParameters(is_pinned=False):
     """ Popups up a parameters view of all of the currently selected nodes
 
@@ -328,7 +346,8 @@ def nodeInteractionKeyPressEvent(func):
         # updating parameter view handler
         if event.key() == Qt.Key_E:
             if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
-                displayPopupParameters(is_pinned=True)
+                # displayPopupParameters(is_pinned=True)
+                # displayNodeGraphPins()
                 return True
             elif event.modifiers() == Qt.AltModifier:
                 displayPopupParameters(is_pinned=False)
