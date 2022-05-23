@@ -178,6 +178,7 @@ class GSVManagerTab(UI4.Tabs.BaseTab):
         # reload events data
         events_data = json.loads(self.eventsWidget().paramData().getValue(0))
         self.eventsWidget().setEventsData(events_data)
+        self.eventsWidget().setNode(NodegraphAPI.GetRootNode())
         # update variable text
         self.editWidget().setText("<variables>")
         # update all widgets
@@ -1026,15 +1027,17 @@ class GSVEventWidget(AbstractEventWidget):
         self.eventsData()[gsv]["enabled"] = True
         if old_value in self.eventsData().keys():
             del self.eventsData()[old_value]
+
         # update data
         self.saveEventsData()
         self.setCurrentGSV(gsv)
         self.eventsWidget().updateDelegateDisplay()
-
-        gsvutils.updateAllGSVEventsTabs()
+        gsvutils.updateAllGSVEventsTabs(ignore_widgets=[self])
 
     def update(self):
         """ Clears the model and repopulates it """
+        self.setNode(NodegraphAPI.GetRootNode())
+
         # clear model
         self.eventsWidget().clearModel()
 
@@ -1409,7 +1412,6 @@ class GSVEvent(AbstractScriptInputWidget):
 
         https://stackoverflow.com/questions/16475384/rename-a-dictionary-key
         """
-
         events_widget = getWidgetAncestor(self, GSVEventWidget)
         display_widget = events_widget.eventsWidget().delegateWidget().widget(1).getMainWidget()
 
@@ -1437,8 +1439,8 @@ class GSVEvent(AbstractScriptInputWidget):
             events_widget.eventsData()[events_widget.currentGSV()]["data"][option] = {
                 "filepath": self.filepath(),
                 "script": self.script(),
-                "is_script":is_script,
-                "enabled":self.isEnabled()
+                "is_script": is_script,
+                "enabled": self.isEnabled()
             }
 
             # add widget entry into DisplayGSVEventWidget
@@ -1449,7 +1451,7 @@ class GSVEvent(AbstractScriptInputWidget):
         self.setOrigValue(option)
 
         # save
-        events_widget = getWidgetAncestor(self, GSVEventWidget)
+        # events_widget = getWidgetAncestor(self, GSVEventWidget)
         events_widget.setIsFrozen(True)
 
         events_widget.saveEventsData()

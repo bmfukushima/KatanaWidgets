@@ -40,8 +40,6 @@ TODO: BUGS
             - Deleting a reference and re adding the same reference does not work
                 probably needs to update internal meta data
             - Move to  popup widget API?  Users could potentially popup their favorite nodes?
-    *   GSV Manager
-            - Events doesn't properly show after changing event type
     *   Gesture Layer
             - Check hit handler, this might need to be moved into world space to ensure hits are correct?
 """

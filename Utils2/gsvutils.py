@@ -498,12 +498,18 @@ def updateGSVNameForAllViewTabs(old_name, new_name):
             events_widget.update()
 
 
-def updateAllGSVEventsTabs():
-    """ Updates all of the Events Tab Displays."""
+def updateAllGSVEventsTabs(ignore_widgets=[]):
+    """ Updates all of the Events Tab Displays.
+
+    Args:
+        ignore_widgets (list): of GSVEventWidget to ignore
+
+    """
     events_widgets = getAllGSVEventsWidgets()
     for events_widget in events_widgets:
-        if not events_widget.isFrozen():
-            events_widget.update()
+        if events_widget not in ignore_widgets:
+            if not events_widget.isFrozen():
+                events_widget.update()
 
 
 def updateAllGSVViewTabs():
