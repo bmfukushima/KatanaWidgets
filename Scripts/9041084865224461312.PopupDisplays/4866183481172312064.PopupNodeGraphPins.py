@@ -1,0 +1,3 @@
+from Tabs.DesiredStuffTab.DesiredStuffTab import popupNodeGraphPinsWidget
+
+popupNodeGraphPinsWidget()

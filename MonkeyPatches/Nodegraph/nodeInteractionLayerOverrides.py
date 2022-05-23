@@ -84,7 +84,7 @@ def displayNodeGraphPins():
 
     # hide/show popup parameters
     widget = PopupWidget.getPopupWidget("nodegraphPins")
-    #widget.populate()
+    widget.mainWidget().update()
     PopupWidget.togglePopupWidgetVisibility("nodegraphPins")
 
 
@@ -346,9 +346,8 @@ def nodeInteractionKeyPressEvent(func):
         # updating parameter view handler
         if event.key() == Qt.Key_E:
             if event.modifiers() == (Qt.AltModifier | Qt.ShiftModifier):
-                # displayPopupParameters(is_pinned=True)
                 # displayNodeGraphPins()
-                return True
+                return False
             elif event.modifiers() == Qt.AltModifier:
                 displayPopupParameters(is_pinned=False)
                 return True

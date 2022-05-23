@@ -50,15 +50,15 @@ TODO:
 import json
 
 from qtpy.QtWidgets import QVBoxLayout, QSizePolicy
-from qtpy.QtCore import Qt
+from qtpy.QtCore import Qt, QSize
 
 from cgwidgets.widgets import ShojiModelViewWidget, StringInputWidget, LabelledInputWidget, OverlayInputWidget
 from cgwidgets.views import AbstractDragDropListView
-from cgwidgets.utils import getWidgetAncestor
+from cgwidgets.utils import getWidgetAncestor, scaleResolution
 from cgwidgets.settings import attrs
 
 from Katana import UI4 , NodegraphAPI, Utils, Callbacks
-from Widgets2 import NodeViewWidget
+from Widgets2 import NodeViewWidget, PopupWidget
 from Utils2 import nodeutils, getFontSize, paramutils, NODE, PARAM, getValidName
 
 
@@ -753,6 +753,24 @@ class DesirableStuffView(AbstractDragDropListView):
 
         return AbstractDragDropListView.dropEvent(self, event)
 
+
+def popupNodeGraphPinsWidget():
+    # construct popup parameters window if it doesn't exist
+    if not PopupWidget.doesPopupWidgetExist("popupParameters"):
+        # create popup widget
+        from Tabs.DesiredStuffTab.DesiredStuffTab import DesiredStuffTab
+        widget = DesiredStuffTab()
+        width = getFontSize() * 53
+        height = getFontSize() * 70.5
+        size = scaleResolution(QSize(width, height))
+        popup_widget = PopupWidget.constructPopupWidget(
+            "nodegraphPins", widget, size=size, hide_hotkey=Qt.Key_E,
+            hide_modifiers=(Qt.ShiftModifier | Qt.AltModifier))
+
+    # hide/show popup parameters
+    widget = PopupWidget.getPopupWidget("nodegraphPins")
+    widget.mainWidget().update()
+    PopupWidget.togglePopupWidgetVisibility("nodegraphPins")
 
 # from cgwidgets.utils import centerWidgetOnCursor, setAsAlwaysOnTop
 # w = DesiredStuffTab()
