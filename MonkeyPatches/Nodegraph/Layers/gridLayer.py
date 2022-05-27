@@ -185,14 +185,21 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._grid_button = BooleanInputWidget(text="Toggle Grid", is_selected=enabled)
 
         # RADIUS WIDGET
-        self._radius_widget = IntInputWidget()
-        #self._radius_widget.setUseLadder(True, value_list=[1, 1])
+        self._radius_widget = IntInputWidget(allow_negative=False)
+        self._radius_widget.setUseLadder(True, value_list=[1,  2, 5])
         self._radius_widget.setText(str(radius))
+        self._radius_widget.setUserFinishedEditingEvent(self.setGridRadius)
+        self._radius_widget.setLiveInputEvent(self.setGridRadius)
+
         self._radius_widget_labelled_widget = LabelledInputWidget(name="Radius", delegate_widget=self._radius_widget)
         self._radius_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 8)
 
         # LINE WIDTH WIDGET
-        self._line_width_widget = IntInputWidget()
+        self._line_width_widget = IntInputWidget(allow_negative=False)
+        self._line_width_widget.setUseLadder(True, value_list=[1,  2, 5])
+        self._line_width_widget.setUserFinishedEditingEvent(self.setGridLineWidth)
+        self._line_width_widget.setLiveInputEvent(self.setGridLineWidth)
+
         self._line_width_widget.setText(str(line_width))
         self._line_width_widget_labelled_widget = LabelledInputWidget(name="Width", delegate_widget=self._line_width_widget)
         self._line_width_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 8)
@@ -200,25 +207,33 @@ class GridGUIWidget(FrameInputWidgetContainer):
         # SIZE WIDGET
         self._grid_widget = QWidget()
         self._grid_layout = QHBoxLayout(self._grid_widget)
-        self._grid_size_x_widget = IntInputWidget()
-        self._grid_size_y_widget = IntInputWidget()
+        self._grid_size_x_widget = IntInputWidget(allow_negative=False)
+        self._grid_size_x_widget.setUseLadder(True, value_list=[1, 5, 10, 25])
+        self._grid_size_y_widget = IntInputWidget(allow_negative=False)
+        self._grid_size_y_widget.setUseLadder(True, value_list=[1, 5, 10, 25])
         self._grid_layout.addWidget(self._grid_size_x_widget)
         self._grid_layout.addWidget(self._grid_size_y_widget)
         self._grid_size_widget_labelled_widget = LabelledInputWidget(name="Size", delegate_widget=self._grid_widget)
 
         self._grid_size_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 8)
         self._grid_size_x_widget.setUserFinishedEditingEvent(self.setGridSizeX)
+        self._grid_size_x_widget.setLiveInputEvent(self.setGridSizeX)
         self._grid_size_y_widget.setUserFinishedEditingEvent(self.setGridSizeY)
+        self._grid_size_y_widget.setLiveInputEvent(self.setGridSizeY)
         self._grid_size_x_widget.setText(str(grid_x_size))
         self._grid_size_y_widget.setText(str(grid_y_size))
 
         # COLOR WIDGET
         self._color_widget = QWidget()
         self._color_layout = QHBoxLayout(self._color_widget)
-        self._colorr_widget = FloatInputWidget()
-        self._colorg_widget = FloatInputWidget()
-        self._colorb_widget = FloatInputWidget()
-        self._colora_widget = FloatInputWidget()
+        self._colorr_widget = FloatInputWidget(allow_negative=False)
+        self._colorr_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1])
+        self._colorg_widget = FloatInputWidget(allow_negative=False)
+        self._colorg_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1])
+        self._colorb_widget = FloatInputWidget(allow_negative=False)
+        self._colorb_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1])
+        self._colora_widget = FloatInputWidget(allow_negative=False)
+        self._colora_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1])
         self._color_layout.addWidget(self._colorr_widget)
         self._color_layout.addWidget(self._colorg_widget)
         self._color_layout.addWidget(self._colorb_widget)
@@ -230,6 +245,10 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._colorg_widget.setUserFinishedEditingEvent(self.setGridColorG)
         self._colorb_widget.setUserFinishedEditingEvent(self.setGridColorB)
         self._colora_widget.setUserFinishedEditingEvent(self.setGridColorA)
+        self._colorr_widget.setLiveInputEvent(self.setGridColorR)
+        self._colorg_widget.setLiveInputEvent(self.setGridColorG)
+        self._colorb_widget.setLiveInputEvent(self.setGridColorB)
+        self._colora_widget.setLiveInputEvent(self.setGridColorA)
         self._colorr_widget.setText(str(colorr))
         self._colorg_widget.setText(str(colorg))
         self._colorb_widget.setText(str(colorb))
@@ -246,8 +265,10 @@ class GridGUIWidget(FrameInputWidgetContainer):
         # ALIGN WIDGET
         self._align_widget = QWidget()
         self._align_layout = QHBoxLayout(self._align_widget)
-        self._align_offset_x_widget = IntInputWidget()
-        self._align_offset_y_widget = IntInputWidget()
+        self._align_offset_x_widget = IntInputWidget(allow_negative=False)
+        self._align_offset_x_widget.setUseLadder(True, value_list=[1])
+        self._align_offset_y_widget = IntInputWidget(allow_negative=False)
+        self._align_offset_y_widget.setUseLadder(True, value_list=[1])
         self._align_layout.addWidget(self._align_offset_x_widget)
         self._align_layout.addWidget(self._align_offset_y_widget)
         self._align_offset_widget_labelled_widget = LabelledInputWidget(name="Align Offset", delegate_widget=self._align_widget, note="How many grid units to offset the nodes during alignment")
@@ -261,8 +282,8 @@ class GridGUIWidget(FrameInputWidgetContainer):
         # SETUP LAYOUT
         self.addInputWidget(self._grid_button, self.setIsGridEnabled)
         self.addInputWidget(self._grid_size_widget_labelled_widget)
-        self.addInputWidget(self._radius_widget_labelled_widget, self.setGridRadius)
-        self.addInputWidget(self._line_width_widget_labelled_widget, self.setGridLineWidth)
+        self.addInputWidget(self._radius_widget_labelled_widget)
+        self.addInputWidget(self._line_width_widget_labelled_widget)
         self.addInputWidget(self._draw_mode_widget_labelled_widget, self.setGridDrawMode)
         self.addInputWidget(self._color_labelled_widget)
         self.addInputWidget(self._align_offset_widget_labelled_widget)
@@ -288,7 +309,8 @@ class GridGUIWidget(FrameInputWidgetContainer):
         GridUtils.setColor(color)
 
     def setGridDrawMode(self, widget, value):
-        GridUtils.setDrawMode(GridUtils.DRAW_MODES.index(value))
+        if value in list(GridUtils.DRAW_MODES):
+            GridUtils.setDrawMode(GridUtils.DRAW_MODES.index(value))
 
     def setIsGridEnabled(self, widget, enabled):
         GridUtils.setIsGridEnabled(enabled)
@@ -412,9 +434,10 @@ class GridUtils(object):
             draw_mode (GridLayer.DISPLAYMODE):
                 POINT | CROSSHAIR | LINES
         """
-        KatanaPrefs[GRID_DRAW_MODE_PREF_NAME] = draw_mode
-        KatanaPrefs.commit()
-        GridUtils.updateNodegraph()
+        if draw_mode in list(GridUtils.DRAW_MODES):
+            KatanaPrefs[GRID_DRAW_MODE_PREF_NAME] = draw_mode
+            KatanaPrefs.commit()
+            GridUtils.updateNodegraph()
 
     @staticmethod
     def isGridEnabled():
