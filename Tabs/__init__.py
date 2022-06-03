@@ -6,6 +6,7 @@ if isLicenseValid():
     from MultiTools import GlobalEventsTab, ScriptEditorTab, NodeColorRegistryTab
     from MultiTools.StateManagerTabs import StateManagerTab, GSVManagerTab, IRFManagerTab, BookmarkManagerTab
     from .TXMake import TXConverterTab
+    from .NodeTree import NodeTreeTab
 
     # compile list of tabs
     tabs_list = [
@@ -18,15 +19,14 @@ if isLicenseValid():
         GSVManagerTab.Tab,
         StateManagerTab,
         ScriptEditorTab.Tab,
-        TXConverterTab
+        TXConverterTab,
+        NodeTreeTab
     ]
-
 
     # register all tabs
     PluginRegistry = []
     for tab in tabs_list:
         PluginRegistry.append(("KatanaPanel", 2, tab.NAME, tab))
-
 
     # register PiP Tabs
     from .PopupBar.PopupBarTabInitializer import popup_bar_tabs
@@ -34,7 +34,6 @@ if isLicenseValid():
     for popup_bar_tab in popup_bar_tabs:
         tab_name = "/". join(["Popup Bar Views", popup_bar_tab["filename"], popup_bar_tab["popup_bar_widget_name"]])
         PluginRegistry.append(("KatanaPanel", 2, tab_name, popup_bar_tab["constructor"]))
-
 
     # LOG
     print("""\t|____  TABS""")

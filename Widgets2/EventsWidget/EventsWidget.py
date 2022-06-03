@@ -355,38 +355,38 @@ class AbstractEventListView(AbstractDragDropListView):
         else:
             self.setIsEditable(False)
 
-    def contextMenuEvent(self, event):
-        index = self.getIndexUnderCursor()
-        item = index.internalPointer()
-
-        for arg in item.getArgsList():
-            print("{arg} == ".format(arg=arg), item.getArg(arg))
-        # create menu
-        menu = QMenu(self)
-        menu.addAction('test"')
-        action = menu.exec_(self.mapToGlobal(event.pos()))
-        # item = self.model().item
-        # if self.item().getEnable() is True:
-        #     set_disabled = menu.addAction("Disable")
-        # else:
-        #     set_enabled = menu.addAction("Enable")
-        # menu.addSeparator()
-        # delete = menu.addAction("Delete")
-        #
-        # # do menu actions
-        # action = menu.exec_(self.mapToGlobal(event.pos()))
-        #
-        # try:
-        #     if action == set_disabled:
-        #         self.setItemEnable(False)
-        #
-        #     if action == set_enabled:
-        #         self.setItemEnable(True)
-        # except UnboundLocalError:
-        #     pass
-        #
-        # if action == delete:
-        #     self.deleteItem()
+    # def contextMenuEvent(self, event):
+    #     index = self.getIndexUnderCursor()
+    #     item = index.internalPointer()
+    #
+    #     for arg in item.getArgsList():
+    #         print("{arg} == ".format(arg=arg), item.getArg(arg))
+    #     # create menu
+    #     menu = QMenu(self)
+    #     menu.addAction('test"')
+    #     action = menu.exec_(self.mapToGlobal(event.pos()))
+    #     # item = self.model().item
+    #     # if self.item().getEnable() is True:
+    #     #     set_disabled = menu.addAction("Disable")
+    #     # else:
+    #     #     set_enabled = menu.addAction("Enable")
+    #     # menu.addSeparator()
+    #     # delete = menu.addAction("Delete")
+    #     #
+    #     # # do menu actions
+    #     # action = menu.exec_(self.mapToGlobal(event.pos()))
+    #     #
+    #     # try:
+    #     #     if action == set_disabled:
+    #     #         self.setItemEnable(False)
+    #     #
+    #     #     if action == set_enabled:
+    #     #         self.setItemEnable(True)
+    #     # except UnboundLocalError:
+    #     #     pass
+    #     #
+    #     # if action == delete:
+    #     #     self.deleteItem()
 
 
 class AbstractEventListViewItemDelegateWidget(ListInputWidget):
