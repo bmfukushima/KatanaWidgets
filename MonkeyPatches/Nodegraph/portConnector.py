@@ -708,6 +708,8 @@ class PortConnector():
                         connection_port.connect(base_port)
                     PortConnector.hideNoodle()
 
+                    PortConnector.setLastActiveLinkSelectionPorts([])
+
                     if is_recursive_selection:
                         PortConnector.actuateSelection(node=node, port_type=OUTPUT_PORT)
 
@@ -749,6 +751,8 @@ class PortConnector():
                 for base_port in base_ports:
                     connection_port.connect(base_port)
                 PortConnector.hideNoodle()
+
+                PortConnector.setLastActiveLinkSelectionPorts([])
 
                 if is_recursive_selection:
                     PortConnector.actuateSelection(node=node, port_type=INPUT_PORT)
