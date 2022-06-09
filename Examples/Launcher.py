@@ -18,8 +18,12 @@ from qtpy.QtWidgets import QWidget, QApplication, QVBoxLayout, QHBoxLayout
 from qtpy.QtCore import Qt
 
 from cgwidgets.widgets import (
-    ButtonInputWidgetContainer, ListInputWidget, LabelledInputWidget, ButtonInputWidget,
-    ShojiLayout
+    ButtonInputWidgetContainer,
+    ListInputWidget,
+    LabelledInputWidget,
+    ButtonInputWidget,
+    ShojiLayout,
+    StringInputWidget
 )
 from cgwidgets.settings.colors import iColor
 from cgwidgets.utils import centerWidgetOnCursor
@@ -85,6 +89,14 @@ class KatanaLauncherWidget(QWidget):
         main_layout.addWidget(self._launcher_args_main_widget)
         main_layout.addWidget(self.pluginsWidget())
 
+        # create batch launcher
+        self.launch_katana_batch_layout = QHBoxLayout()
+        self.launch_katana_batch_input_string = StringInputWidget()
+        self.launch_katana_batch_input_button = ButtonInputWidget(
+            user_clicked_event=self.batchLaunchKatana, title="BATCH RENDER", is_toggleable=False, flag=False)
+        self.launch_katana_batch_layout.addWidget(self.launch_katana_batch_input_string)
+        self.launch_katana_batch_layout.addWidget(self.launch_katana_batch_input_button)
+        main_layout.addLayout(self.launch_katana_batch_layout)
         # setup main layout
         QHBoxLayout(self)
         self.layout().addLayout(main_layout)
@@ -305,6 +317,44 @@ class KatanaLauncherWidget(QWidget):
         return self.launcher_args_widgets['Render Version'].text()
 
     """ LAUNCH """
+    def setupEnvironment(self):
+        # path to render engine
+        self.katana_bin = self.katanaRoot() + '/katana'
+        katana_resources, envars = self.compileRenderEngine()
+
+        # set env variables
+        self.installPlugins(katana_resources, envars)
+
+        # image library directory
+        # os.environ['LIBRARY_DIR'] = '/media/ssd01/library/library'
+
+        # display launcher text
+        self.launcherText()
+
+        # TODO Move this to a dynamic module
+        # image library directory
+        # os.environ['LIBRARY_DIR'] = '/media/ssd01/library/library'
+
+        # additional 2.7 libs
+        # os.environ["PYTHONPATH"] += ":/usr/local/lib/python2.7/dist-packages"
+        """
+        The NUKE_PATH environment variable appends the plugins/Resources/Nuke subdirectory of the Katana root.
+        The PATH environment variable appends the plugins/Resources/Nuke/bin subdirectory of the Katana root.
+        """
+        # nuke executable
+        os.environ["PATH"] += "{KATANA_ROOT}/plugins/Resources/Nuke/bin".format(KATANA_ROOT=self.katanaRoot())
+        os.environ["NUKE_PATH"] = "{KATANA_ROOT}/plugins/Resources/Nuke/13.1".format(KATANA_ROOT=self.katanaRoot())
+        #os.environ["KATANA_NUKE_EXECUTABLE"] = "/opt/nuke/13.0v6/Nuke13.0"
+        os.environ["KATANA_NUKE_EXECUTABLE"] = "/opt/nuke/13.1v1/Nuke13.1"
+
+    def batchLaunchKatana(self, widget):
+        self.setupEnvironment()
+        os.system("{KATANA_BIN} --batch {ARGS}".format(
+            KATANA_BIN=self.katana_bin,
+            ARGS=self.launch_katana_batch_input_string.text()
+        ))
+        print()
+
     def compileRenderEngine(self):
         resources = (self.render_engine_dir + '/' + self.renderEngine() + '/' + self.renderVersion())
 
@@ -399,35 +449,8 @@ class KatanaLauncherWidget(QWidget):
         Instantiate Katana, this will read all of the inputs that the user has selected
         and launch Katana with the correct environment
         '''
-        # path to render engine
+        self.setupEnvironment()
 
-        self.katana_bin = self.katanaRoot() + '/katana'
-        katana_resources, envars = self.compileRenderEngine()
-
-        # set env variables
-        self.installPlugins(katana_resources, envars)
-
-        # image library directory
-        # os.environ['LIBRARY_DIR'] = '/media/ssd01/library/library'
-
-        # display launcher text
-        self.launcherText()
-
-        # TODO Move this to a dynamic module
-        # image library directory
-        # os.environ['LIBRARY_DIR'] = '/media/ssd01/library/library'
-
-        # additional 2.7 libs
-        # os.environ["PYTHONPATH"] += ":/usr/local/lib/python2.7/dist-packages"
-        """
-        The NUKE_PATH environment variable appends the plugins/Resources/Nuke subdirectory of the Katana root.
-        The PATH environment variable appends the plugins/Resources/Nuke/bin subdirectory of the Katana root.
-        """
-        # nuke executable
-        os.environ["PATH"] += "{KATANA_ROOT}/plugins/Resources/Nuke/bin".format(KATANA_ROOT=self.katanaRoot())
-        os.environ["NUKE_PATH"] = "{KATANA_ROOT}/plugins/Resources/Nuke/13.1".format(KATANA_ROOT=self.katanaRoot())
-        #os.environ["KATANA_NUKE_EXECUTABLE"] = "/opt/nuke/13.0v6/Nuke13.0"
-        os.environ["KATANA_NUKE_EXECUTABLE"] = "/opt/nuke/13.1v1/Nuke13.1"
         # # launch katana instance
         subprocess.Popen([self.katana_bin])
         self.close()

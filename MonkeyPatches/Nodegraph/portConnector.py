@@ -708,8 +708,6 @@ class PortConnector():
                         connection_port.connect(base_port)
                     PortConnector.hideNoodle()
 
-                    PortConnector.setLastActiveLinkSelectionPorts([])
-
                     if is_recursive_selection:
                         PortConnector.actuateSelection(node=node, port_type=OUTPUT_PORT)
 
@@ -859,8 +857,12 @@ class PortConnector():
                 nodegraph_widget.idleUpdate()
                 nodegraph_widget.removeLayer(layer)
 
+        # remove last active ports
+        PortConnector.setLastActiveLinkSelectionPorts([])
+
         # remove glow color
         if hasattr(LinkConnectionLayer, "_highlighted_nodes"):
+
             nodeutils.removeGlowColor(LinkConnectionLayer._highlighted_nodes)
             delattr(LinkConnectionLayer, "_highlighted_nodes")
 
