@@ -135,6 +135,7 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
         self.setTitle(node.getName())
         self.setIsHeaderEditable(False)
         self.setDirection(Qt.Vertical)
+        self._bypass_leave_connection = False
 
         # create widgets
         self._title_widget = QLabel(node.getName())
@@ -177,12 +178,14 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
 
     def leaveEvent(self, event):
         QFrame.leaveEvent(self, event)
-        flags = self._ports_widget.flags()
-        if 0 < len(flags):
-            if self._is_selection_active:
-                self._ports_widget.connectPorts()
-            else:
-                self._ports_widget.showNoodleForMultiplePorts()
+        if not self._bypass_leave_connection:
+            print("connecting?")
+            flags = self._ports_widget.flags()
+            if 0 < len(flags):
+                if self._is_selection_active:
+                    self._ports_widget.connectPorts()
+                else:
+                    self._ports_widget.showNoodleForMultiplePorts()
         self.close()
 
     def showEvent(self, event):
@@ -265,6 +268,7 @@ class MultiPortPopupMenu(ButtonInputWidgetContainer):
 
                 # port selected is connected, display display_warning
                 if is_connected and self._display_warning and len(self._active_ports) == 1:
+                    getWidgetAncestor(self, MultiPortPopupMenuWidget)._bypass_leave_connection = True
                     katanaMainWindow()._display_warning_widget = OverridePortWarningButtonPopupWidget(self._node, port, self._active_ports, is_recursive_selection=self._is_recursive_selection)
                     katanaMainWindow()._display_warning_widget.show()
                     centerWidgetOnCursor(katanaMainWindow()._display_warning_widget, raise_=True)
