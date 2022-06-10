@@ -179,7 +179,6 @@ class MultiPortPopupMenuWidget(FrameInputWidgetContainer):
     def leaveEvent(self, event):
         QFrame.leaveEvent(self, event)
         if not self._bypass_leave_connection:
-            print("connecting?")
             flags = self._ports_widget.flags()
             if 0 < len(flags):
                 if self._is_selection_active:
