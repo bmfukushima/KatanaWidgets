@@ -412,17 +412,17 @@ def nodeInteractionKeyPressEvent(func):
 
 def nodeInteractionKeyReleaseEvent(self, event):
     if event.isAutoRepeat(): return True
-    if event.key() == Qt.Key_A:
-        # display align menu
-        if not widgetutils.katanaMainWindow()._node_iron_finishing and not widgetutils.katanaMainWindow()._node_iron_active:
-            current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-            file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
-            popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
-            popup_widget.show()
-
-            # need to make sure this releases
-            nodegraphutils.setCurrentKeyPressed(None)
-            return True
+    # if event.key() == Qt.Key_A:
+    #     # display align menu
+    #     if not widgetutils.katanaMainWindow()._node_iron_finishing and not widgetutils.katanaMainWindow()._node_iron_active:
+    #         current_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+    #         file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
+    #         popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
+    #         popup_widget.show()
+    #
+    #         # need to make sure this releases
+    #         nodegraphutils.setCurrentKeyPressed(None)
+    #         return True
 
     nodegraphutils.setCurrentKeyPressed(None)
 

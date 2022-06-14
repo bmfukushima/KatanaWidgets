@@ -4,25 +4,15 @@ As the user swipes through nodes using CTRL+ALT+SHIFT+LMB, all
 of the nodes hit will be aligned to the first node, based off
 of the direction of the cursor as it passed through the second node.
 """
-import math
+import os
+import inspect
 
-from OpenGL.GL import (
-    glBegin,
-    glLineWidth,
-    GL_LINE_STRIP,
-    GL_LINE_LOOP,
-    glColor4f,
-    glEnd,
-    glVertex2f,
-    glPointSize,
-)
-from qtpy.QtWidgets import QApplication
 from qtpy.QtCore import Qt, QSize
 
+from cgwidgets.widgets import PopupHotkeyMenu
+
 # setup prefs
-import QT4GLLayerStack
 from Katana import NodegraphAPI, Utils, PrefNames, KatanaPrefs, UI4
-from UI4.App import Tabs
 from Utils2 import nodegraphutils, widgetutils, nodeutils
 from Utils2.nodealignutils import AlignUtils
 from .AbstractGestureLayer import (
@@ -62,6 +52,17 @@ class NodeIronLayer(AbstractGestureLayer):
         Returns (LinkCuttingLayer.DIRECTION)"""
 
         return self._cursor_trajectory
+
+    def keyReleaseEvent(self, event):
+        if event.modifiers() == Qt.NoModifier:
+            current_dir = os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))))
+            file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
+            popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
+            popup_widget.show()
+            "/media/ssd01/dev/katana/KatanaWidgets/MonkeyPatches/Nodegraph/Layers/NodeAlignment/AlignNodes.json"
+            # need to make sure this releases
+            nodegraphutils.setCurrentKeyPressed(None)
+        return AbstractGestureLayer.keyReleaseEvent(self, event)
 
     def mouseReleaseEvent(self, event):
         if self.isActive():
