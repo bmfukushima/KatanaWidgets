@@ -73,11 +73,27 @@ def getActiveBackdropNodes():
     return list(set(active_backdrop_nodes))
 
 
-def getAllUpstreamNodes(node):
-    nodes = NodegraphAPI.Util.GetAllConnectedInputs([node])
-    nodes = __checkBackdropNodes(nodes)
-    nodes.insert(0, node)
-    return nodes
+def getAllUpstreamNodes(node, node_list=None):
+    if not node_list:
+        node_list = set()
+    node_list.add(node)
+    for input_port in node.getInputPorts():
+        connected_ports = input_port.getConnectedPorts()
+        if connected_ports:
+            next_node = connected_ports[0].getNode()
+
+            for _node in getAllUpstreamNodes(next_node, node_list):
+                node_list.add(_node)
+
+    node_list = __checkBackdropNodes(node_list)
+    return node_list
+
+
+# def getAllUpstreamNodes(node):
+#     nodes = NodegraphAPI.Util.GetAllConnectedInputs([node])
+#     nodes = __checkBackdropNodes(nodes)
+#     nodes.insert(0, node)
+#     return nodes
 
 
 def getAllUpstreamTerminalNodes(node, node_list=[]):
@@ -547,7 +563,7 @@ def floatNodes(node_list):
     """
     from .widgetutils import getActiveNodegraphWidget
     nodegraph_widget = getActiveNodegraphWidget()
-    nodegraph_widget.parent().floatNodes(list(node_list))
+    nodegraph_widget.floatNodes(list(node_list))
 
 
 def interpolatePoints(p0, p1, radius=QSize(10, 10), step_size=1):
