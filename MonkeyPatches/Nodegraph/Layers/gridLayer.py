@@ -261,6 +261,7 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._draw_mode_widget.setText(GridUtils.DRAW_MODES[draw_mode])
         self._draw_mode_widget_labelled_widget = LabelledInputWidget(name="Mode", delegate_widget=self._draw_mode_widget)
         self._draw_mode_widget_labelled_widget.setDefaultLabelLength(getFontSize() * 8)
+        self._draw_mode_widget.setUserFinishedEditingEvent(self.setGridDrawMode)
 
         # ALIGN WIDGET
         self._align_widget = QWidget()
@@ -309,8 +310,8 @@ class GridGUIWidget(FrameInputWidgetContainer):
         GridUtils.setColor(color)
 
     def setGridDrawMode(self, widget, value):
-        if value in list(GridUtils.DRAW_MODES):
-            GridUtils.setDrawMode(GridUtils.DRAW_MODES.index(value))
+        if value in GridUtils.DRAW_MODES:
+            GridUtils.setDrawMode(value)
 
     def setIsGridEnabled(self, widget, enabled):
         GridUtils.setIsGridEnabled(enabled)
@@ -434,8 +435,8 @@ class GridUtils(object):
             draw_mode (GridLayer.DISPLAYMODE):
                 POINT | CROSSHAIR | LINES
         """
-        if draw_mode in list(GridUtils.DRAW_MODES):
-            KatanaPrefs[GRID_DRAW_MODE_PREF_NAME] = draw_mode
+        if draw_mode in GridUtils.DRAW_MODES:
+            KatanaPrefs[GRID_DRAW_MODE_PREF_NAME] = GridUtils.DRAW_MODES.index(draw_mode)
             KatanaPrefs.commit()
             GridUtils.updateNodegraph()
 
