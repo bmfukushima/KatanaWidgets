@@ -101,34 +101,7 @@ class PopupWidget(QWidget):
         self._pin_button_widget.setFixedSize(PIN_SIZE, PIN_SIZE)
 
         self._pin_button_widget.show()
-
-        # move button, and create margins
-        # int left, int top, int right, int bottom
-        # # todo update ellipse popup
-        # if self.direction() == attrs.NORTH:
-        #     self._pin_button_widget.move(
-        #         0.5 * (width - self._pin_button_widget.width()),
-        #         0.5 * (PIN_OFFSET - self._pin_button_widget.height())
-        #     )
-        #     popup_widget.delegateWidget().layout().setContentsMargins(PIN_OFFSET * 0.25, PIN_OFFSET, PIN_OFFSET * 0.25, 0)
-        # if self.direction() == attrs.SOUTH:
-        #     self._pin_button_widget.move(
-        #         0.5 * (width - self._pin_button_widget.width()),
-        #         height - (0.5 * (PIN_OFFSET + self._pin_button_widget.height()))
-        #     )
-        #     popup_widget.delegateWidget().layout().setContentsMargins(PIN_OFFSET * 0.25, 0, PIN_OFFSET * 0.25, PIN_OFFSET)
-        # if self.direction() == attrs.EAST:
-        #     self._pin_button_widget.move(
-        #         width - (0.5 * (PIN_OFFSET + self._pin_button_widget.width())),
-        #         0.5 * (height - self._pin_button_widget.height()),
-        #     )
-        #     popup_widget.delegateWidget().layout().setContentsMargins(0, PIN_OFFSET * 0.25, PIN_OFFSET, PIN_OFFSET * 0.25)
-        # if self.direction() == attrs.WEST:
-        #     self._pin_button_widget.move(
-        #         0.5 * (PIN_OFFSET - self._pin_button_widget.width()),
-        #         0.5 * (height - self._pin_button_widget.height()),
-        #     )
-        #     popup_widget.delegateWidget().layout().setContentsMargins(PIN_OFFSET, PIN_OFFSET * 0.25, 0, PIN_OFFSET * 0.25)
+        self._pin_button_widget.resizeImage()
 
     """ MASKING """
     def maskSize(self):

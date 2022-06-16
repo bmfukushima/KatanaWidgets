@@ -16,7 +16,7 @@ class PythonWidget(QtWidgets.QWidget):
         return self.command_widget
 
 widget = PythonWidget()
-file_path = "/media/ssd01/dev/katana/KatanaResources_old/Scripts/scripts/1101951632188788352.SceneGraph/90387519.placeNode.py"
+file_path = "/media/ssd02/dev/katana/KatanaResources_old/Scripts/scripts/1101951632188788352.SceneGraph/90387519.placeNode.py"
 current_file = open('%s' % (file_path), 'r')
 text_list = current_file.readlines()
 text = ''.join(text_list)

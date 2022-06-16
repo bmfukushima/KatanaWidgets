@@ -326,14 +326,14 @@ class KatanaLauncherWidget(QWidget):
         self.installPlugins(katana_resources, envars)
 
         # image library directory
-        # os.environ['LIBRARY_DIR'] = '/media/ssd01/library/library'
+        # os.environ['LIBRARY_DIR'] = '/media/ssd02/library/library'
 
         # display launcher text
         self.launcherText()
 
         # TODO Move this to a dynamic module
         # image library directory
-        # os.environ['LIBRARY_DIR'] = '/media/ssd01/library/library'
+        # os.environ['LIBRARY_DIR'] = '/media/ssd02/library/library'
 
         # additional 2.7 libs
         # os.environ["PYTHONPATH"] += ":/usr/local/lib/python2.7/dist-packages"
@@ -530,10 +530,10 @@ if __name__ == "__main__":
 
     plugins = {
         'Foundry': {
-            'KATANA_RESOURCES'  :'/media/ssd01/dev/katana/KatanaResources_foundry/',
+            'KATANA_RESOURCES'  :'/media/ssd02/dev/katana/KatanaResources_foundry/',
             '__ENABLED__'       : False},
         'Katana Widgets': {
-            'KATANA_RESOURCES'  : '/media/ssd01/dev/katana/KatanaWidgets',
+            'KATANA_RESOURCES'  : '/media/ssd02/dev/katana/KatanaWidgets',
             '__ENABLED__'       : True},
         'USD': {
             'KATANA_RESOURCES'  : '{katana_root}/plugins/Resources/Usd/plugin',
@@ -546,7 +546,7 @@ if __name__ == "__main__":
             'KATANA_RESOURCES'  : '{katana_root}/plugins/Src/Resources/Examples',
             '__ENABLED__'       : False},
         'Old Crap': {
-            'KATANA_RESOURCES': '/media/ssd01/dev/katana/KatanaResources_old/',
+            'KATANA_RESOURCES': '/media/ssd02/dev/katana/KatanaResources_old/',
             '__ENABLED__': False}
     }
 

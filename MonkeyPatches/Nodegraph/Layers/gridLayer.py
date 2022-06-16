@@ -227,13 +227,13 @@ class GridGUIWidget(FrameInputWidgetContainer):
         self._color_widget = QWidget()
         self._color_layout = QHBoxLayout(self._color_widget)
         self._colorr_widget = FloatInputWidget(allow_negative=False, allow_zero=False)
-        self._colorr_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1], range_min=0, range_max=1, range_enabled=True)
+        self._colorr_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1], range_min=0, range_max=1)
         self._colorg_widget = FloatInputWidget(allow_negative=False, allow_zero=False)
-        self._colorg_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1], range_min=0, range_max=1, range_enabled=True)
+        self._colorg_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1], range_min=0, range_max=1)
         self._colorb_widget = FloatInputWidget(allow_negative=False, allow_zero=False)
-        self._colorb_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1], range_min=0, range_max=1, range_enabled=True)
+        self._colorb_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1], range_min=0, range_max=1)
         self._colora_widget = FloatInputWidget(allow_negative=False, allow_zero=False)
-        self._colora_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1], range_min=0, range_max=1, range_enabled=True)
+        self._colora_widget.setUseLadder(True, value_list=[0.001, 0.01, 0.1], range_min=0, range_max=1)
         self._color_layout.addWidget(self._colorr_widget)
         self._color_layout.addWidget(self._colorg_widget)
         self._color_layout.addWidget(self._colorb_widget)
@@ -570,10 +570,8 @@ def __installGridPrefs():
     GridUtils.setGridSizeX(grid_size_x)
     KatanaPrefs.declareIntPref(GRID_SIZE_Y_PREF_NAME, grid_size_y, helpText="Determines the grid y spacing")
     GridUtils.setGridSizeY(grid_size_y)
-    KatanaPrefs.declareIntPref(ALIGN_X_OFFSET_PREF_NAME, align_offset_x,
-                               helpText="Determines how many grid units to space the nodes during alignment")
-    KatanaPrefs.declareIntPref(ALIGN_Y_OFFSET_PREF_NAME, align_offset_y,
-                               helpText="Determines how many grid units to space the nodes during alignment")
+    KatanaPrefs.declareIntPref(ALIGN_X_OFFSET_PREF_NAME, align_offset_x, helpText="Determines how many grid units to space the nodes during alignment")
+    KatanaPrefs.declareIntPref(ALIGN_Y_OFFSET_PREF_NAME, align_offset_y, helpText="Determines how many grid units to space the nodes during alignment")
 
     def gridPrefChangedEvent(*args, **kwargs):
         if kwargs["prefKey"] in [

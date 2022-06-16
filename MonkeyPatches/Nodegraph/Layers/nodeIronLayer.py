@@ -59,7 +59,7 @@ class NodeIronLayer(AbstractGestureLayer):
             file_path = f"{current_dir}/NodeAlignment/AlignNodes.json"
             popup_widget = PopupHotkeyMenu(parent=widgetutils.katanaMainWindow(), file_path=file_path)
             popup_widget.show()
-            "/media/ssd01/dev/katana/KatanaWidgets/MonkeyPatches/Nodegraph/Layers/NodeAlignment/AlignNodes.json"
+            "/media/ssd02/dev/katana/KatanaWidgets/MonkeyPatches/Nodegraph/Layers/NodeAlignment/AlignNodes.json"
             # need to make sure this releases
             nodegraphutils.setCurrentKeyPressed(None)
         return AbstractGestureLayer.keyReleaseEvent(self, event)
